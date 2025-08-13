@@ -1,62 +1,42 @@
+/// Main entry point of the Job Sahi Flutter application
+
+library;
+
 import 'package:flutter/material.dart';
-import 'splash1.dart'; // Import your next screen
+import 'utils/navigation_service.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+/// The main function - this is where the Flutter app starts
+/// It calls runApp() which inflates the given widget and attaches it to the screen
+void main() => runApp(const MyApp());
 
+/// MyApp - The root widget of the application
+/// This is a StatelessWidget that sets up the MaterialApp with all necessary configurations
+/// StatelessWidget means this widget doesn't change over time - it's static
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  /// The build method is called whenever Flutter needs to render this widget
+  /// It returns a MaterialApp which provides Material Design styling and navigation
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Job Sahi',
+    return MaterialApp(
+      // Remove the debug banner in the top-right corner (for production apps)
       debugShowCheckedModeBanner: false,
-      home: Splash1(), // Start with Splash1
-    );
-  }
-}
 
-class Splash1 extends StatefulWidget {
-  const Splash1({Key? key}) : super(key: key);
+      // The title of the app (shown in task switcher on mobile)
+      title: 'Job Sahi',
 
-  @override
-  State<Splash1> createState() => _Splash1State();
-}
+      // Use the NavigationService navigator key for global navigation
+      // This allows us to navigate from anywhere in the app, even outside widgets
+      navigatorKey: NavigationService.navigatorKey,
 
-class _Splash1State extends State<Splash1> {
-  @override
-  void initState() {
-    super.initState();
+      // Use the RouteGenerator for named routes
+      // This handles all the navigation between different screens
+      onGenerateRoute: RouteGenerator.generateRoute,
 
-    // Navigate to Splash2 after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const Splash1()), // Go to Splash2 instead
-      );
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App Logo
-            Image.asset(
-              'assets/job_sahi_logo.png', // Ensure this path is correct in pubspec.yaml
-              height: 120,
-            ),
-            const SizedBox(height: 24),
-            const CircularProgressIndicator(color: Colors.green),
-          ],
-        ),
-      ),
+      // Set initial route to the splash screen
+      // This is the first screen users see when they open the app
+      initialRoute: RouteNames.splash,
     );
   }
 }

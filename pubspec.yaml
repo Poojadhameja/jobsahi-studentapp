@@ -53,8 +53,20 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Assets organized by type for better project structure
   assets:
-    - assets/
+    # Images - logos, icons, illustrations, and other image assets
+    - assets/images/
+    - assets/images/logo/
+    - assets/images/onboarding/
+    - assets/images/home/
+    - assets/images/company/
+    - assets/images/social/
+    - assets/images/profile/
+    # Fonts - custom font files (currently empty, ready for future fonts)
+    - assets/fonts/
+    # Icons - icon files separate from images (currently empty)
+    - assets/icons/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
