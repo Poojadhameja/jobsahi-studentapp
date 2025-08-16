@@ -92,7 +92,7 @@ class ProfileScreen extends StatelessWidget {
           // Edit button
           IconButton(
             onPressed: () {
-              NavigationService.navigateTo(const UserProfileScreen());
+              NavigationService.smartNavigate(destination: const UserProfileScreen());
             },
             icon: const Icon(
               Icons.edit,
@@ -113,7 +113,7 @@ class ProfileScreen extends StatelessWidget {
           title: 'Personal Information',
           subtitle: 'Update your personal details',
           onTap: () {
-            NavigationService.navigateTo(const UserProfileScreen());
+            NavigationService.smartNavigate(destination: const UserProfileScreen());
           },
         ),
         _buildOptionTile(
@@ -234,6 +234,6 @@ class ProfileScreen extends StatelessWidget {
   /// Handles logout
   void _logout() {
     // TODO: Clear user data and navigate to signin screen
-    NavigationService.navigateToAndClear(const SigninScreen());
+    NavigationService.smartNavigate(destination: const SigninScreen());
   }
 }

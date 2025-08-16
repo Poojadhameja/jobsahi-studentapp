@@ -87,12 +87,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   /// Complete onboarding and navigate to signin
   void _completeOnboarding() {
-    NavigationService.navigateToReplacement(const SigninScreen());
+    NavigationService.smartNavigate(destination: const SigninScreen());
   }
 
   /// Skip onboarding and go directly to signin
   void _skipOnboarding() {
-    NavigationService.navigateToReplacement(const SigninScreen());
+    NavigationService.smartNavigate(destination: const SigninScreen());
   }
 
   @override

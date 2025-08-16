@@ -317,7 +317,7 @@ class JobDetailsScreen extends StatelessWidget {
         ),
         onPressed: () {
           // Navigate to job application step 1
-          NavigationService.navigateTo(JobStep1Screen(job: job));
+          NavigationService.smartNavigate(destination: JobStep1Screen(job: job));
         },
         child: const Text(
           AppConstants.applyJobText,

@@ -190,7 +190,7 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
         return JobCard(
           job: job,
           onTap: () {
-            NavigationService.navigateTo(JobDetailsScreen(job: job));
+            NavigationService.smartNavigate(destination: JobDetailsScreen(job: job));
           },
         );
       },

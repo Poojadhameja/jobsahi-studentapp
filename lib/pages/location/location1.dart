@@ -166,7 +166,7 @@ class _Location1ScreenState extends State<Location1Screen> {
   void _continueToNext() {
     if (_selectedLocation != null) {
       // TODO: Save selected location
-      NavigationService.navigateTo(const Location2Screen());
+      NavigationService.smartNavigate(destination: const Location2Screen());
     }
   }
 }

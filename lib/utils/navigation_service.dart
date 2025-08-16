@@ -97,6 +97,184 @@ class NavigationService {
       arguments: arguments,
     );
   }
+
+  /// Smart navigation 
+  static Future<T?> smartNavigate<T>({
+    Widget? destination,
+    String? routeName,
+    Object? arguments,
+  }) async {
+    assert(destination != null || routeName != null,
+      'Either destination widget or routeName must be provided');
+
+    final currentRoute = _getCurrentRouteName();
+    final targetRoute = routeName ?? _getRouteNameFromWidget(destination!);
+    final navigationAction = _determineNavigationAction(currentRoute, targetRoute);
+
+    return await _executeNavigation<T>(
+      navigationAction: navigationAction,
+      destination: destination,
+      routeName: routeName,
+      arguments: arguments,
+    );
+  }
+
+  static String? _getCurrentRouteName() {
+    final context = navigatorKey.currentContext;
+    if (context == null) return null;
+
+    final modalRoute = ModalRoute.of(context);
+    return modalRoute?.settings.name;
+  }
+
+  static String _getRouteNameFromWidget(Widget widget) {
+    final widgetType = widget.runtimeType.toString();
+
+    switch (widgetType) {
+      case 'SplashScreen':
+        return RouteNames.splash;
+      case 'OnboardingScreen':
+        return RouteNames.onboarding;
+      case 'SigninScreen':
+        return RouteNames.signin;
+      case 'Signin1Screen':
+        return RouteNames.signin1;
+      case 'Signin2Screen':
+        return RouteNames.signin2;
+      case 'CreateAccountScreen':
+        return RouteNames.createAccount;
+      case 'ForgotPasswordScreen':
+        return RouteNames.forgotPassword;
+      case 'EnterCodeScreen':
+        return RouteNames.enterCode;
+      case 'EnterNewPasswordScreen':
+        return RouteNames.enterNewPassword;
+      case 'HomeScreen':
+        return RouteNames.home;
+      case 'SearchJobScreen':
+        return RouteNames.searchJob;
+      case 'SearchResultScreen':
+        return RouteNames.searchResult;
+      case 'JobDetailsScreen':
+        return RouteNames.jobDetails;
+      case 'JobStep1Screen':
+        return RouteNames.jobStep1;
+      case 'JobStep2Screen':
+        return RouteNames.jobStep2;
+      case 'JobStep3Screen':
+        return RouteNames.jobStep3;
+      case 'Location1Screen':
+        return RouteNames.location1;
+      case 'Location2Screen':
+        return RouteNames.location2;
+      case 'ProfileScreen':
+        return RouteNames.profile;
+      case 'UserProfileScreen':
+        return RouteNames.userProfile;
+      default:
+        return '/unknown';
+    }
+  }
+
+  static _NavigationAction _determineNavigationAction(String? currentRoute, String targetRoute) {
+    if (currentRoute == null) return _NavigationAction.push;
+
+    if (_isAuthFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.replacement;
+    }
+
+    if (_isLocationCompletionFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.clearStack;
+    }
+
+    if (_isJobApplicationFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
+    }
+
+    if (_isAuthToHomeFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.clearStack;
+    }
+
+    return _NavigationAction.push;
+  }
+
+  static bool _isAuthFlow(String currentRoute, String targetRoute) {
+    final authFlowSequences = [
+      [RouteNames.splash, RouteNames.onboarding],
+      [RouteNames.onboarding, RouteNames.signin],
+      [RouteNames.signin, RouteNames.signin1],
+      [RouteNames.signin1, RouteNames.signin2],
+      [RouteNames.forgotPassword, RouteNames.enterCode],
+      [RouteNames.enterCode, RouteNames.enterNewPassword],
+    ];
+
+    return authFlowSequences.any((sequence) =>
+      sequence[0] == currentRoute && sequence[1] == targetRoute);
+  }
+
+  static bool _isLocationCompletionFlow(String currentRoute, String targetRoute) {
+    return currentRoute == RouteNames.location2 && targetRoute == RouteNames.home;
+  }
+
+  static bool _isJobApplicationFlow(String currentRoute, String targetRoute) {
+    final jobFlowSequences = [
+      [RouteNames.jobStep1, RouteNames.jobStep2],
+      [RouteNames.jobStep2, RouteNames.jobStep3],
+    ];
+
+    return jobFlowSequences.any((sequence) =>
+      sequence[0] == currentRoute && sequence[1] == targetRoute);
+  }
+
+  static bool _isAuthToHomeFlow(String currentRoute, String targetRoute) {
+    final authRoutes = [
+      RouteNames.splash,
+      RouteNames.onboarding,
+      RouteNames.signin,
+      RouteNames.signin1,
+      RouteNames.signin2,
+      RouteNames.createAccount,
+      RouteNames.forgotPassword,
+      RouteNames.enterCode,
+      RouteNames.enterNewPassword,
+    ];
+
+    return authRoutes.contains(currentRoute) && targetRoute == RouteNames.home;
+  }
+
+  static Future<T?> _executeNavigation<T>({
+    required _NavigationAction navigationAction,
+    Widget? destination,
+    String? routeName,
+    Object? arguments,
+  }) async {
+    switch (navigationAction) {
+      case _NavigationAction.push:
+        if (destination != null) {
+          return await navigateTo<T>(destination);
+        } else {
+          return await navigateToNamed<T>(routeName!, arguments: arguments);
+        }
+      case _NavigationAction.replacement:
+        if (destination != null) {
+          return await navigateToReplacement<T>(destination);
+        } else {
+          return await navigateToNamedReplacement<T>(routeName!, arguments: arguments);
+        }
+      case _NavigationAction.clearStack:
+        if (destination != null) {
+          return await navigateToAndClear<T>(destination);
+        } else {
+          return await navigateToNamedAndClear<T>(routeName!, arguments: arguments);
+        }
+    }
+  }
+}
+
+enum _NavigationAction {
+  push,
+  replacement,
+  clearStack,
 }
 
 /// Route Names
