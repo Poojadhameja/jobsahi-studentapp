@@ -27,9 +27,14 @@ import '../pages/location/location1.dart';
 import '../pages/location/location2.dart';
 import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
+// Course screens
+import '../pages/courses/learning_center.dart';
+import '../pages/courses/saved_courses.dart';
+import '../pages/courses/course_details.dart';
 
 // Import data classes
 import '../data/job_data.dart';
+import '../data/course_data.dart';
 
 class NavigationService {
   // Private constructor to prevent instantiation
@@ -132,6 +137,11 @@ class RouteNames {
   static const String location2 = '/location2';
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
+
+  // Course screens
+  static const String learningCenter = '/learning-center';
+  static const String savedCourses = '/saved-courses';
+  static const String courseDetails = '/course-details';
 }
 
 /// Route Generator
@@ -191,6 +201,14 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case RouteNames.userProfile:
         return MaterialPageRoute(builder: (_) => const UserProfileScreen());
+      case RouteNames.learningCenter:
+        return MaterialPageRoute(builder: (_) => const LearningCenterPage());
+      case RouteNames.savedCourses:
+        return MaterialPageRoute(builder: (_) => const SavedCoursesScreen());
+      case RouteNames.courseDetails:
+        // Pass course data from arguments
+        final course = args as Map<String, dynamic>? ?? CourseData.featuredCourses.first;
+        return MaterialPageRoute(builder: (_) => CourseDetailsPage(course: course));
       default:
         // If there is no such named route, return an error page
         return _errorRoute();

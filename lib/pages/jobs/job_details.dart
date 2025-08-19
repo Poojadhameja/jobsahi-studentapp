@@ -12,19 +12,13 @@ class JobDetailsScreen extends StatelessWidget {
   /// Job data to display
   final Map<String, dynamic> job;
 
-  const JobDetailsScreen({
-    super.key,
-    required this.job,
-  });
+  const JobDetailsScreen({super.key, required this.job});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Job Details',
-        showBackButton: true,
-      ),
+      appBar: const SimpleAppBar(title: 'Job Details', showBackButton: true),
       bottomNavigationBar: _buildApplyButton(),
       body: DefaultTabController(
         length: 3,
@@ -32,14 +26,12 @@ class JobDetailsScreen extends StatelessWidget {
           children: [
             // Job header section
             _buildJobHeader(),
-            
+
             // Tab bar
             _buildTabBar(),
-            
+
             // Tab content
-            Expanded(
-              child: _buildTabContent(),
-            ),
+            Expanded(child: _buildTabContent()),
           ],
         ),
       ),
@@ -50,17 +42,24 @@ class JobDetailsScreen extends StatelessWidget {
   Widget _buildJobHeader() {
     return Container(
       color: AppConstants.backgroundColor,
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.defaultPadding,
+        vertical: 12,
+      ),
       child: Row(
         children: [
           // Company logo
           const CircleAvatar(
             backgroundColor: Color(0xFFD7EDFF),
             radius: 26,
-            child: Icon(Icons.contact_mail_rounded, color: AppConstants.accentColor, size: 28),
+            child: Icon(
+              Icons.contact_mail_rounded,
+              color: AppConstants.accentColor,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 12),
-          
+
           // Job title and company
           Expanded(
             child: Column(
@@ -77,7 +76,10 @@ class JobDetailsScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   job['company'] ?? 'Company Name',
-                  style: const TextStyle(fontSize: 14, color: AppConstants.successColor),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppConstants.successColor,
+                  ),
                 ),
               ],
             ),
@@ -110,10 +112,10 @@ class JobDetailsScreen extends StatelessWidget {
       children: [
         // Description tab
         _buildDescriptionTab(),
-        
+
         // Requirements tab
         _buildRequirementsTab(),
-        
+
         // Benefits tab
         _buildBenefitsTab(),
       ],
@@ -130,15 +132,15 @@ class JobDetailsScreen extends StatelessWidget {
           // Job tags
           _buildJobTags(),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Salary information
           _buildSalaryInfo(),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Location and time
           _buildLocationAndTime(),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Job description
           _buildJobDescription(),
         ],
@@ -149,7 +151,7 @@ class JobDetailsScreen extends StatelessWidget {
   /// Builds the requirements tab
   Widget _buildRequirementsTab() {
     final requirements = job['requirements'] as List<dynamic>? ?? [];
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       itemCount: requirements.length,
@@ -181,7 +183,7 @@ class JobDetailsScreen extends StatelessWidget {
   /// Builds the benefits tab
   Widget _buildBenefitsTab() {
     final benefits = job['benefits'] as List<dynamic>? ?? [];
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       itemCount: benefits.length,
@@ -213,29 +215,38 @@ class JobDetailsScreen extends StatelessWidget {
   /// Builds the job tags section
   Widget _buildJobTags() {
     final tags = job['tags'] as List<dynamic>? ?? [];
-    
+
     return Wrap(
       spacing: 8,
-      children: tags.map((tag) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppConstants.accentColor.withValues(alpha: 0.1),
-          borderRadius: const BorderRadius.all(Radius.circular(AppConstants.largeBorderRadius)),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(2, 2),
+      children: tags
+          .map(
+            (tag) => DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppConstants.accentColor.withValues(alpha: 0.1),
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(AppConstants.largeBorderRadius),
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(2, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                child: Text(
+                  tag.toString(),
+                  style: const TextStyle(color: AppConstants.accentColor),
+                ),
+              ),
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Text(
-            tag.toString(),
-            style: const TextStyle(color: AppConstants.accentColor),
-          ),
-        ),
-      )).toList(),
+          )
+          .toList(),
     );
   }
 
