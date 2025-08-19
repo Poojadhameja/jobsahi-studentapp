@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
       // Use NavigationService to navigate to onboarding screen
       // This replaces the current screen so users can't go back to splash
-      NavigationService.smartNavigate(destination: const OnboardingScreen());
+      NavigationService.navigateToReplacement(const OnboardingScreen());
     });
   }
 

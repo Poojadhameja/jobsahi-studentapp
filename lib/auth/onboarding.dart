@@ -24,10 +24,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Your Skills Deserve the Right Opportunity',
       subtitle: 'आपकी प्रतिभा और नौकरी के बीच की दूरी को\nकम करें',
       tags: [
-        OnboardingTag('#Civil', Colors.purple, 0.02, 0.55),
+        OnboardingTag('#Civil', Colors.purple, 0.3, 0.85),
         OnboardingTag('#Diesel Mechanic', Colors.blue, 0.8, 0.05),
-        OnboardingTag('#Mechanical', Colors.teal, 0.05, 0.85),
-        OnboardingTag('#Electrician', Colors.red, 0.9, 0.8),
+        OnboardingTag('#Mechanical', Colors.teal, 0.05, 0.55),
+        OnboardingTag('#Electrician', Colors.red, 0.9, 0.7),
         OnboardingTag('#Fitter', Colors.deepOrange, 0.2, 0.1),
       ],
     ),
@@ -36,11 +36,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Built for Graduates, Backed by Industry',
       subtitle: 'जब आसानियाँ के साथ करियर की शुरुआत\nकरें',
       tags: [
-        OnboardingTag('#Civil', Colors.purple, 0.9, 0.85),
-        OnboardingTag('#Diesel Mechanic', Colors.blue, 0.1, 0.15),
-        OnboardingTag('#Electrician', Colors.red, 0.05, 0.85),
-        OnboardingTag('#Mining', Colors.orange, 0.9, 0.30),
-        OnboardingTag('#Mechanical', Colors.teal, 0.8, 0.05),
+        OnboardingTag('#Civil', Colors.purple, 0.3, 0.85),
+        OnboardingTag('#Diesel Mechanic', Colors.blue, 0.8, 0.05),
+        OnboardingTag('#Electrician', Colors.red, 0.9, 0.7),
+        OnboardingTag('#Mining', Colors.orange, 0.6, 0.15),
+        OnboardingTag('#Mechanical', Colors.teal, 0.05, 0.55),
       ],
     ),
     OnboardingData(
@@ -48,11 +48,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Smarter Job Matching. Better Results.',
       subtitle: 'जब बार-बार खोजने की जरूरत नहीं, नौकरियाँ खुद\nआपको खोजेंगी',
       tags: [
-        OnboardingTag('#Civil', Colors.purple, 0.2, 0.1),
-        OnboardingTag('#Electrical', Colors.blue, 0.9, 0.90),
-        OnboardingTag('#Electrician', Colors.red, 0.9, 0.15),
-        OnboardingTag('#COPA', Colors.orange, 0.9, 0.6),
-        OnboardingTag('#Mechanical', Colors.teal, 0.05, 0.90),
+        OnboardingTag('#Civil', Colors.purple, 0.3, 0.85),
+        OnboardingTag('#Electrical', Colors.blue, 0.8, 0.05),
+        OnboardingTag('#Electrician', Colors.red, 0.9, 0.7),
+        OnboardingTag('#CODA', Colors.orange, 0.6, 0.15),
+        OnboardingTag('#Mechanical', Colors.teal, 0.05, 0.55),
       ],
     ),
   ];
@@ -87,12 +87,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   /// Complete onboarding and navigate to signin
   void _completeOnboarding() {
-    NavigationService.smartNavigate(destination: const SigninScreen());
+    NavigationService.navigateToReplacement(const SigninScreen());
   }
 
   /// Skip onboarding and go directly to signin
   void _skipOnboarding() {
-    NavigationService.smartNavigate(destination: const SigninScreen());
+    NavigationService.navigateToReplacement(const SigninScreen());
   }
 
   @override
@@ -165,7 +165,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // Main image
                 Image.asset(
                   data.image,
-                  height: 200 ,
+                  height: 280,
                   fit: BoxFit.contain,
                 ),
                 // Floating tags
@@ -251,7 +251,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onTap: _previousPage,
                   child: const CircleAvatar(
                     radius: 20,
-                    backgroundColor: Colors.green,
+                    backgroundColor: Colors.grey,
                     child: Icon(Icons.arrow_back, color: Colors.white),
                   ),
                 ),

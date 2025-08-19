@@ -2,6 +2,8 @@
 
 library;
 
+import '../../utils/app_constants.dart';
+
 class JobData {
   /// List of recommended jobs displayed on the home screen
   static const List<Map<String, dynamic>> recommendedJobs = [
@@ -15,19 +17,20 @@ class JobData {
       "location": "Nashik, India",
       "time": "3 दिन पहले",
       "logo": "assets/images/company/group.png",
-      "description": "We are looking for an enthusiastic Electrician Apprentice to join our team...",
+      "description":
+          "We are looking for an enthusiastic Electrician Apprentice to join our team...",
       "requirements": [
         "10th or 12th pass",
         "Basic knowledge of electrical systems",
         "Willingness to learn",
-        "Good communication skills"
+        "Good communication skills",
       ],
       "benefits": [
         "On-the-job training",
         "Health insurance",
         "Performance bonuses",
-        "Career growth opportunities"
-      ]
+        "Career growth opportunities",
+      ],
     },
     {
       "id": "2",
@@ -39,19 +42,20 @@ class JobData {
       "location": "Pune, India",
       "time": "2 दिन पहले",
       "logo": "assets/images/company/group.png",
-      "description": "Join our mechanical team as a Fitter Apprentice and learn from experienced professionals...",
+      "description":
+          "Join our mechanical team as a Fitter Apprentice and learn from experienced professionals...",
       "requirements": [
         "ITI in Fitter trade",
         "Basic mechanical knowledge",
         "Team player",
-        "Safety conscious"
+        "Safety conscious",
       ],
       "benefits": [
         "Comprehensive training",
         "Competitive salary",
         "Transport allowance",
-        "Professional development"
-      ]
+        "Professional development",
+      ],
     },
     {
       "id": "3",
@@ -63,19 +67,20 @@ class JobData {
       "location": "Mumbai, India",
       "time": "1 दिन पहले",
       "logo": "assets/images/company/group.png",
-      "description": "Learn the art of welding with our expert team in a safe and professional environment...",
+      "description":
+          "Learn the art of welding with our expert team in a safe and professional environment...",
       "requirements": [
         "10th pass minimum",
         "Interest in welding",
         "Physical fitness",
-        "Attention to detail"
+        "Attention to detail",
       ],
       "benefits": [
         "Certified training program",
         "Safety equipment provided",
         "Overtime opportunities",
-        "Skill certification"
-      ]
+        "Skill certification",
+      ],
     },
   ];
 
@@ -111,41 +116,14 @@ class JobData {
   ];
 
   /// Filter options for job search
-  static const List<String> filterOptions = [
-    "Filter",
-    "Sort",
-    "Job Title",
-    "Experience",
-    "Location",
-    "Salary",
-    "Company",
-  ];
+  static List<String> get filterOptions => AppConstants.jobFilterOptions;
 
   /// Job categories for filtering
-  static const List<String> jobCategories = [
-    "All Jobs",
-    "Electrician",
-    "Fitter",
-    "Welder",
-    "Mechanic",
-    "Plumber",
-    "Carpenter",
-  ];
+  static List<String> get jobCategories => AppConstants.jobCategories;
 
   /// Experience levels
-  static const List<String> experienceLevels = [
-    "Fresher",
-    "1-2 years",
-    "2-5 years",
-    "5+ years",
-  ];
+  static List<String> get experienceLevels => AppConstants.experienceLevels;
 
   /// Salary ranges
-  static const List<String> salaryRanges = [
-    "Below ₹1L",
-    "₹1L - ₹2L",
-    "₹2L - ₹3L",
-    "₹3L - ₹5L",
-    "Above ₹5L",
-  ];
+  static List<String> get salaryRanges => AppConstants.salaryRanges;
 }

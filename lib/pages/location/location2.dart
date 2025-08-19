@@ -170,7 +170,7 @@ class _Location2ScreenState extends State<Location2Screen> {
       });
       
       // Navigate to home screen
-      NavigationService.smartNavigate(destination: const HomeScreen());
+      NavigationService.navigateToAndClear(const HomeScreen());
     });
   }
 }

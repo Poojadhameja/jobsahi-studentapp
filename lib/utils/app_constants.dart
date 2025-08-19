@@ -62,7 +62,8 @@ class AppConstants {
   static const String logoAsset = 'assets/images/logo/jobsahi_logo.png';
   static const String homeBannerAsset = 'assets/images/home/home.png';
   static const String defaultCompanyLogo = 'assets/images/company/group.png';
-  static const String defaultProfileImage = 'assets/images/profile/profile_img.png';
+  static const String defaultProfileImage =
+      'assets/images/profile/profile_img.png';
   static const String googleLogoAsset = 'assets/images/social/google.png';
   static const String linkedinLogoAsset = 'assets/images/social/linkedin.png';
 
@@ -72,7 +73,8 @@ class AppConstants {
   static const String searchPlaceholder = 'नौकरी खोजें';
   static const String savedJobsText = 'सेव की गई नौकरियाँ';
   static const String appliedJobsText = 'आवेदन की गई नौकरियाँ';
-  static const String recommendedJobsText = 'Recommended jobs (अनुशंसित नौकरियाँ)';
+  static const String recommendedJobsText =
+      'Recommended jobs (अनुशंसित नौकरियाँ)';
   static const String applyJobText = 'Apply This Job';
   static const String saveText = 'Save';
   static const String savedText = 'Saved';
@@ -106,7 +108,8 @@ class AppConstants {
   static const String emailRequired = 'Email is required';
   static const String invalidEmail = 'Please enter a valid email';
   static const String passwordRequired = 'Password is required';
-  static const String passwordTooShort = 'Password must be at least 6 characters';
+  static const String passwordTooShort =
+      'Password must be at least 6 characters';
   static const String phoneRequired = 'Phone number is required';
   static const String invalidPhone = 'Please enter a valid phone number';
   static const String otpRequired = 'OTP is required';
@@ -139,4 +142,61 @@ class AppConstants {
   static const String signupEndpoint = '/auth/signup';
   static const String jobsEndpoint = '/jobs';
   static const String profileEndpoint = '/user/profile';
+
+  /// Course Categories
+  static const List<String> courseCategories = [
+    'All',
+    'Technology',
+    'Business',
+    'Design',
+    'Marketing',
+    'Value', // For your electrician courses
+  ];
+
+  /// Course Levels
+  static const List<String> courseLevels = [
+    'All',
+    'Beginner',
+    'Intermediate',
+    'Advanced',
+  ];
+
+  /// Job Categories
+  static const List<String> jobCategories = [
+    'All Jobs',
+    'Electrician',
+    'Fitter',
+    'Welder',
+    'Mechanic',
+    'Plumber',
+    'Carpenter',
+  ];
+
+  /// Job Filter Options
+  static const List<String> jobFilterOptions = [
+    'Filter',
+    'Sort',
+    'Job Title',
+    'Experience',
+    'Location',
+    'Salary',
+    'Company',
+  ];
+
+  /// Experience Levels
+  static const List<String> experienceLevels = [
+    'Fresher',
+    '1-2 years',
+    '2-5 years',
+    '5+ years',
+  ];
+
+  /// Salary Ranges
+  static const List<String> salaryRanges = [
+    'Below ₹1L',
+    '₹1L - ₹2L',
+    '₹2L - ₹3L',
+    '₹3L - ₹5L',
+    'Above ₹5L',
+  ];
 }

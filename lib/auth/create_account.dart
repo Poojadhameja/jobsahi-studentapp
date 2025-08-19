@@ -279,7 +279,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ),
           TextButton(
             onPressed: () {
-              NavigationService.smartNavigate(destination: const SigninScreen());
+              NavigationService.navigateToReplacement(const SigninScreen());
             },
             child: const Text(
               AppConstants.loginText,
@@ -310,7 +310,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Show success message and navigate to signin
         _showSuccessSnackBar(AppConstants.signupSuccess);
         Future.delayed(const Duration(seconds: 1), () {
-          NavigationService.smartNavigate(destination: const SigninScreen());
+          NavigationService.navigateToReplacement(const SigninScreen());
         });
       });
     }

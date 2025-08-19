@@ -258,7 +258,7 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
       // For demo purposes, accept any 6-digit code
       if (code.length == 6) {
         // Navigate to enter new password screen
-        NavigationService.smartNavigate(destination: const EnterNewPasswordScreen());
+        NavigationService.navigateTo(const EnterNewPasswordScreen());
       } else {
         _showErrorSnackBar('Invalid verification code');
       }

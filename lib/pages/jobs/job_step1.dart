@@ -329,7 +329,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
         });
         
         // Navigate to next step
-        NavigationService.smartNavigate(destination: JobStep2Screen(job: widget.job));
+        NavigationService.navigateTo(JobStep2Screen(job: widget.job));
       });
     }
   }

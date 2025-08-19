@@ -145,7 +145,7 @@ class _Signin2ScreenState extends State<Signin2Screen> {
       });
       
       // Navigate to home screen
-      NavigationService.smartNavigate(destination: const HomeScreen());
+      NavigationService.navigateToAndClear(const HomeScreen());
     });
   }
 }
