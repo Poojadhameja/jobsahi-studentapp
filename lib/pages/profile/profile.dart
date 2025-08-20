@@ -9,6 +9,7 @@ import '../../utils/navigation_service.dart';
 import '../../widgets/global/simple_app_bar.dart';
 import 'user_profile.dart';
 import '../../auth/signin.dart';
+import '../setting/settings.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -17,10 +18,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Profile',
-        showBackButton: false,
-      ),
+      appBar: const SimpleAppBar(title: 'Profile', showBackButton: false),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -29,7 +27,7 @@ class ProfileScreen extends StatelessWidget {
               // Profile header
               _buildProfileHeader(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Profile options
               _buildProfileOptions(),
             ],
@@ -42,7 +40,7 @@ class ProfileScreen extends StatelessWidget {
   /// Builds the profile header section
   Widget _buildProfileHeader() {
     final user = UserData.currentUser;
-    
+
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -54,10 +52,12 @@ class ProfileScreen extends StatelessWidget {
           // Profile image
           CircleAvatar(
             radius: 40,
-            backgroundImage: AssetImage(user['profileImage'] ?? AppConstants.defaultProfileImage),
+            backgroundImage: AssetImage(
+              user['profileImage'] ?? AppConstants.defaultProfileImage,
+            ),
           ),
           const SizedBox(width: AppConstants.defaultPadding),
-          
+
           // User info
           Expanded(
             child: Column(
@@ -88,16 +88,15 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Edit button
           IconButton(
             onPressed: () {
-              NavigationService.smartNavigate(destination: const UserProfileScreen());
+              NavigationService.smartNavigate(
+                destination: const UserProfileScreen(),
+              );
             },
-            icon: const Icon(
-              Icons.edit,
-              color: AppConstants.accentColor,
-            ),
+            icon: const Icon(Icons.edit, color: AppConstants.accentColor),
           ),
         ],
       ),
@@ -113,7 +112,9 @@ class ProfileScreen extends StatelessWidget {
           title: 'Personal Information',
           subtitle: 'Update your personal details',
           onTap: () {
-            NavigationService.smartNavigate(destination: const UserProfileScreen());
+            NavigationService.smartNavigate(
+              destination: const UserProfileScreen(),
+            );
           },
         ),
         _buildOptionTile(
@@ -145,7 +146,7 @@ class ProfileScreen extends StatelessWidget {
           title: 'Settings',
           subtitle: 'App settings and preferences',
           onTap: () {
-            // TODO: Navigate to settings screen
+            NavigationService.smartNavigate(destination: const SettingsPage());
           },
         ),
         _buildOptionTile(
@@ -180,20 +181,22 @@ class ProfileScreen extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: isDestructive ? AppConstants.errorColor : AppConstants.textPrimaryColor,
+        color: isDestructive
+            ? AppConstants.errorColor
+            : AppConstants.textPrimaryColor,
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: isDestructive ? AppConstants.errorColor : AppConstants.textPrimaryColor,
+          color: isDestructive
+              ? AppConstants.errorColor
+              : AppConstants.textPrimaryColor,
           fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
-          color: AppConstants.textSecondaryColor,
-        ),
+        style: const TextStyle(color: AppConstants.textSecondaryColor),
       ),
       trailing: const Icon(
         Icons.arrow_forward_ios,
