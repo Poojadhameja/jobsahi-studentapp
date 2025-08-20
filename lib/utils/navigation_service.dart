@@ -27,7 +27,11 @@ import '../pages/location/location1.dart';
 import '../pages/location/location2.dart';
 import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
-import '../pages/setting/settings.dart';
+import '../pages/setting/settings.dart'; // Course screens
+import '../pages/courses/learning_center.dart';
+import '../pages/courses/course_details.dart';
+import '../pages/courses/saved_courses.dart';
+
 // Import data classes
 import '../data/job_data.dart';
 
@@ -193,6 +197,12 @@ class NavigationService {
       case 'SettingsPage':
         return RouteNames.settings;
 
+      case 'LearningCenterPage':
+        return RouteNames.learningCenter;
+      case 'CourseDetailsPage':
+        return RouteNames.courseDetails;
+      case 'SavedCoursesScreen':
+        return RouteNames.savedCourses;
       default:
         return '/unknown';
     }
@@ -218,6 +228,10 @@ class NavigationService {
 
     if (_isAuthToHomeFlow(currentRoute, targetRoute)) {
       return _NavigationAction.clearStack;
+    }
+
+    if (_isCourseFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
     }
 
     return _NavigationAction.push;
@@ -271,6 +285,18 @@ class NavigationService {
     ];
 
     return authRoutes.contains(currentRoute) && targetRoute == RouteNames.home;
+  }
+
+  static bool _isCourseFlow(String currentRoute, String targetRoute) {
+    final courseFlowSequences = [
+      [RouteNames.learningCenter, RouteNames.courseDetails],
+      [RouteNames.courseDetails, RouteNames.savedCourses],
+      [RouteNames.savedCourses, RouteNames.courseDetails],
+    ];
+
+    return courseFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
   }
 
   static Future<T?> _executeNavigation<T>({
@@ -343,6 +369,11 @@ class RouteNames {
   static const String location2 = '/location2';
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
+
+  // Course screens
+  static const String learningCenter = '/learning-center';
+  static const String courseDetails = '/course-details';
+  static const String savedCourses = '/saved-courses';
   static const String settings = '/settings';
 }
 
@@ -412,6 +443,15 @@ class RouteGenerator {
       case RouteNames.settings:
         return MaterialPageRoute(builder: (_) => const SettingsPage());
 
+      case RouteNames.learningCenter:
+        return MaterialPageRoute(builder: (_) => const LearningCenterPage());
+      case RouteNames.courseDetails:
+        final course = args as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => CourseDetailsPage(course: course),
+        );
+      case RouteNames.savedCourses:
+        return MaterialPageRoute(builder: (_) => const SavedCoursesScreen());
       default:
         // If there is no such named route, return an error page
         return _errorRoute();

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
 import '../../utils/navigation_service.dart';
-import '../../widgets/global/simple_app_bar.dart';
 import 'user_profile.dart';
 import '../../auth/signin.dart';
 import '../setting/settings.dart';

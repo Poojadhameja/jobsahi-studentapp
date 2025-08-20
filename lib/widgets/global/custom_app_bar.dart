@@ -9,37 +9,37 @@ import '../../utils/app_constants.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Title to be displayed in the app bar
   final String? title;
-  
+
   /// Whether to show the search bar (default: true)
   final bool showSearchBar;
-  
+
   /// Whether to show the back button (default: false)
   final bool showBackButton;
-  
+
   /// Whether to show the menu button (default: true)
   final bool showMenuButton;
-  
+
   /// Whether to show the notification icon (default: true)
   final bool showNotificationIcon;
-  
+
   /// Whether to show the bookmark icon (default: false)
   final bool showBookmarkIcon;
-  
+
   /// Callback function when search is performed
   final Function(String)? onSearch;
-  
+
   /// Callback function when back button is pressed
   final VoidCallback? onBackPressed;
-  
+
   /// Callback function when menu button is pressed
   final VoidCallback? onMenuPressed;
-  
+
   /// Callback function when notification icon is pressed
   final VoidCallback? onNotificationPressed;
-  
+
   /// Callback function when bookmark icon is pressed
   final VoidCallback? onBookmarkPressed;
-  
+
   /// Search hint text
   final String searchHint;
 
@@ -75,7 +75,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget? _buildLeadingWidget() {
     if (showBackButton) {
       return IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimaryColor),
+        icon: const Icon(
+          Icons.arrow_back,
+          color: AppConstants.textPrimaryColor,
+        ),
         onPressed: onBackPressed ?? () {},
       );
     } else if (showMenuButton) {
@@ -108,7 +111,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     return TextField(
       decoration: InputDecoration(
         hintText: searchHint,
-        prefixIcon: const Icon(Icons.search, color: AppConstants.textPrimaryColor),
+        prefixIcon: const Icon(
+          Icons.search,
+          color: AppConstants.textPrimaryColor,
+        ),
         filled: true,
         fillColor: Colors.grey[200],
         contentPadding: const EdgeInsets.symmetric(vertical: 0),
@@ -131,7 +137,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         Padding(
           padding: const EdgeInsets.only(right: 16),
           child: IconButton(
-            icon: const Icon(Icons.bookmark_border, color: AppConstants.textPrimaryColor),
+            icon: const Icon(
+              Icons.bookmark_border,
+              color: AppConstants.textPrimaryColor,
+            ),
             onPressed: onBookmarkPressed ?? () {},
           ),
         ),
@@ -143,7 +152,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions.add(
         const Padding(
           padding: EdgeInsets.only(right: 12),
-          child: Icon(Icons.notifications_none, color: AppConstants.textPrimaryColor),
+          child: Icon(
+            Icons.notifications_none,
+            color: AppConstants.textPrimaryColor,
+          ),
         ),
       );
     }
@@ -160,16 +172,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Title to be displayed
   final String title;
-  
+
   /// Whether to show the back button (default: true)
   final bool showBackButton;
-  
+
   /// Callback function when back button is pressed
   final VoidCallback? onBackPressed;
-  
+
   /// Background color of the app bar
   final Color backgroundColor;
-  
+
   /// Text color of the title
   final Color textColor;
 
@@ -193,9 +205,62 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
               onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
             )
           : null,
+      title: Text(title, style: TextStyle(color: textColor)),
+      centerTitle: true,
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+/// Tab App Bar Widget
+/// A simple app bar for tabs with heading and back icon
+/// Used for courses, applications, messages, and profile tabs
+class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
+  /// Title to be displayed in the app bar
+  final String title;
+
+  /// Callback function when back button is pressed
+  final VoidCallback? onBackPressed;
+
+  /// Background color of the app bar
+  final Color backgroundColor;
+
+  /// Text color of the title
+  final Color textColor;
+
+  const TabAppBar({
+    super.key,
+    required this.title,
+    this.onBackPressed,
+    this.backgroundColor = AppConstants.cardBackgroundColor,
+    this.textColor = AppConstants.textPrimaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: backgroundColor,
+      elevation: 0,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back, color: textColor),
+        onPressed:
+            onBackPressed ??
+            () {
+              // Navigate back to home tab
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+      ),
       title: Text(
         title,
-        style: TextStyle(color: textColor),
+        style: TextStyle(
+          color: textColor,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       centerTitle: true,
     );

@@ -271,7 +271,7 @@ class _SigninScreenState extends State<SigninScreen> {
           child: ElevatedButton(
             onPressed: () {
               // Navigate to email verification screen
-              NavigationService.smartNavigate(destination: const Signin2Screen());
+               NavigationService.smartNavigate(destination: const Signin2Screen());
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.textPrimaryColor,
@@ -373,7 +373,7 @@ class _SigninScreenState extends State<SigninScreen> {
           TextButton(
             onPressed: () {
               // Navigate to create account screen
-              NavigationService.smartNavigate(destination: const CreateAccountScreen());
+               NavigationService.smartNavigate(destination: const CreateAccountScreen());
             },
             child: const Text(
               AppConstants.signupText,

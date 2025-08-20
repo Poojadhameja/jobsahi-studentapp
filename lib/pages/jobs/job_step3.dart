@@ -303,7 +303,7 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
             onPressed: () {
               Navigator.of(context).pop();
               // Navigate to home screen
-              NavigationService.smartNavigate(destination: const HomeScreen());
+               NavigationService.smartNavigate(destination: const HomeScreen());
             },
             child: const Text('OK'),
           ),
