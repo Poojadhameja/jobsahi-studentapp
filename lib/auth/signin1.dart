@@ -271,7 +271,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
       // For demo purposes, accept any 6-digit OTP
       if (otp.length == 6) {
         // Navigate to home screen
-        NavigationService.navigateToAndClear(const HomeScreen());
+         NavigationService.smartNavigate(destination: const HomeScreen());
       } else {
         // Show error message
         _showErrorSnackBar('Please enter a valid 6-digit OTP');

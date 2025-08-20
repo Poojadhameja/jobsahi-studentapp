@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/course_data.dart';
 import '../../widgets/feature_specific/course_card.dart';
+import '../../utils/navigation_service.dart';
 
 import 'course_details.dart';
 import 'saved_courses.dart';
@@ -357,11 +358,8 @@ class _LearningCenterPageState extends State<LearningCenterPage>
   }
 
   void _navigateToCourseDetails(Map<String, dynamic> course) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CourseDetailsPage(course: course),
-      ),
+    NavigationService.smartNavigate(
+      destination: CourseDetailsPage(course: course),
     );
   }
 

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/course_data.dart';
 import '../../widgets/feature_specific/course_card.dart';
+import '../../utils/navigation_service.dart';
 import 'course_details.dart';
 
 class SavedCoursesPage extends StatefulWidget {
@@ -35,7 +36,9 @@ class _SavedCoursesPageState extends State<SavedCoursesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
-      body: _savedCourses.isEmpty ? _buildEmptyState() : _buildSavedCoursesList(),
+      body: _savedCourses.isEmpty
+          ? _buildEmptyState()
+          : _buildSavedCoursesList(),
     );
   }
 
@@ -80,7 +83,9 @@ class _SavedCoursesPageState extends State<SavedCoursesPage> {
                 backgroundColor: AppConstants.primaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppConstants.largePadding,
@@ -89,10 +94,7 @@ class _SavedCoursesPageState extends State<SavedCoursesPage> {
               ),
               child: const Text(
                 'Browse Courses',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -120,11 +122,8 @@ class _SavedCoursesPageState extends State<SavedCoursesPage> {
   }
 
   void _navigateToCourseDetails(Map<String, dynamic> course) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CourseDetailsPage(course: course),
-      ),
+    NavigationService.smartNavigate(
+      destination: CourseDetailsPage(course: course),
     );
   }
 
@@ -176,14 +175,13 @@ class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
           ),
         ),
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppConstants.primaryColor,
-          ),
+          onPressed: () => NavigationService.goBack(),
+          icon: const Icon(Icons.arrow_back, color: AppConstants.primaryColor),
         ),
       ),
-      body: _savedCourses.isEmpty ? _buildEmptyState() : _buildSavedCoursesList(),
+      body: _savedCourses.isEmpty
+          ? _buildEmptyState()
+          : _buildSavedCoursesList(),
     );
   }
 
@@ -221,13 +219,15 @@ class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
             const SizedBox(height: AppConstants.largePadding),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
+                NavigationService.goBack();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppConstants.primaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppConstants.largePadding,
@@ -236,10 +236,7 @@ class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
               ),
               child: const Text(
                 'Browse Courses',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -267,11 +264,8 @@ class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
   }
 
   void _navigateToCourseDetails(Map<String, dynamic> course) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CourseDetailsPage(course: course),
-      ),
+    NavigationService.smartNavigate(
+      destination: CourseDetailsPage(course: course),
     );
   }
 

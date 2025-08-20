@@ -6,6 +6,7 @@ library;
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/course_data.dart';
+import '../../utils/navigation_service.dart';
 
 class CourseDetailsPage extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -60,7 +61,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
         ),
       ),
       leading: IconButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => NavigationService.goBack(),
         icon: const Icon(Icons.arrow_back, color: AppConstants.primaryColor),
       ),
       actions: [

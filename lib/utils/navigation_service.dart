@@ -29,40 +29,44 @@ import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
 // Course screens
 import '../pages/courses/learning_center.dart';
-import '../pages/courses/saved_courses.dart';
 import '../pages/courses/course_details.dart';
+import '../pages/courses/saved_courses.dart';
 
 // Import data classes
 import '../data/job_data.dart';
-import '../data/course_data.dart';
 
 class NavigationService {
   // Private constructor to prevent instantiation
   NavigationService._();
 
   /// Global navigator key for accessing navigation from anywhere
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   /// Get the current context
   static BuildContext? get context => navigatorKey.currentContext;
 
   /// Navigate to a new screen
   static Future<T?> navigateTo<T>(Widget screen) async {
-    return await Navigator.of(navigatorKey.currentContext!).push<T>(
-      MaterialPageRoute<T>(builder: (context) => screen),
-    );
+    return await Navigator.of(
+      navigatorKey.currentContext!,
+    ).push<T>(MaterialPageRoute<T>(builder: (context) => screen));
   }
 
   /// Navigate to a new screen and replace the current screen
   static Future<T?> navigateToReplacement<T>(Widget screen) async {
-    return await Navigator.of(navigatorKey.currentContext!).pushReplacement<T, void>(
+    return await Navigator.of(
+      navigatorKey.currentContext!,
+    ).pushReplacement<T, void>(
       MaterialPageRoute<T>(builder: (context) => screen),
     );
   }
 
   /// Navigate to a new screen and clear the navigation stack
   static Future<T?> navigateToAndClear<T>(Widget screen) async {
-    return await Navigator.of(navigatorKey.currentContext!).pushAndRemoveUntil<T>(
+    return await Navigator.of(
+      navigatorKey.currentContext!,
+    ).pushAndRemoveUntil<T>(
       MaterialPageRoute<T>(builder: (context) => screen),
       (route) => false,
     );
@@ -79,30 +83,255 @@ class NavigationService {
   }
 
   /// Navigate to a named route
-  static Future<T?> navigateToNamed<T>(String routeName, {Object? arguments}) async {
-    return await Navigator.of(navigatorKey.currentContext!).pushNamed<T>(
-      routeName,
-      arguments: arguments,
-    );
+  static Future<T?> navigateToNamed<T>(
+    String routeName, {
+    Object? arguments,
+  }) async {
+    return await Navigator.of(
+      navigatorKey.currentContext!,
+    ).pushNamed<T>(routeName, arguments: arguments);
   }
 
   /// Navigate to a named route and replace the current screen
-  static Future<T?> navigateToNamedReplacement<T>(String routeName, {Object? arguments}) async {
-    return await Navigator.of(navigatorKey.currentContext!).pushReplacementNamed<T, void>(
-      routeName,
-      arguments: arguments,
-    );
+  static Future<T?> navigateToNamedReplacement<T>(
+    String routeName, {
+    Object? arguments,
+  }) async {
+    return await Navigator.of(
+      navigatorKey.currentContext!,
+    ).pushReplacementNamed<T, void>(routeName, arguments: arguments);
   }
 
   /// Navigate to a named route and clear the navigation stack
-  static Future<T?> navigateToNamedAndClear<T>(String routeName, {Object? arguments}) async {
-    return await Navigator.of(navigatorKey.currentContext!).pushNamedAndRemoveUntil<T>(
+  static Future<T?> navigateToNamedAndClear<T>(
+    String routeName, {
+    Object? arguments,
+  }) async {
+    return await Navigator.of(
+      navigatorKey.currentContext!,
+    ).pushNamedAndRemoveUntil<T>(
       routeName,
       (route) => false,
       arguments: arguments,
     );
   }
+
+  /// Smart navigation
+  static Future<T?> smartNavigate<T>({
+    Widget? destination,
+    String? routeName,
+    Object? arguments,
+  }) async {
+    assert(
+      destination != null || routeName != null,
+      'Either destination widget or routeName must be provided',
+    );
+
+    final currentRoute = _getCurrentRouteName();
+    final targetRoute = routeName ?? _getRouteNameFromWidget(destination!);
+    final navigationAction = _determineNavigationAction(
+      currentRoute,
+      targetRoute,
+    );
+
+    return await _executeNavigation<T>(
+      navigationAction: navigationAction,
+      destination: destination,
+      routeName: routeName,
+      arguments: arguments,
+    );
+  }
+
+  static String? _getCurrentRouteName() {
+    final context = navigatorKey.currentContext;
+    if (context == null) return null;
+
+    final modalRoute = ModalRoute.of(context);
+    return modalRoute?.settings.name;
+  }
+
+  static String _getRouteNameFromWidget(Widget widget) {
+    final widgetType = widget.runtimeType.toString();
+
+    switch (widgetType) {
+      case 'SplashScreen':
+        return RouteNames.splash;
+      case 'OnboardingScreen':
+        return RouteNames.onboarding;
+      case 'SigninScreen':
+        return RouteNames.signin;
+      case 'Signin1Screen':
+        return RouteNames.signin1;
+      case 'Signin2Screen':
+        return RouteNames.signin2;
+      case 'CreateAccountScreen':
+        return RouteNames.createAccount;
+      case 'ForgotPasswordScreen':
+        return RouteNames.forgotPassword;
+      case 'EnterCodeScreen':
+        return RouteNames.enterCode;
+      case 'EnterNewPasswordScreen':
+        return RouteNames.enterNewPassword;
+      case 'HomeScreen':
+        return RouteNames.home;
+      case 'SearchJobScreen':
+        return RouteNames.searchJob;
+      case 'SearchResultScreen':
+        return RouteNames.searchResult;
+      case 'JobDetailsScreen':
+        return RouteNames.jobDetails;
+      case 'JobStep1Screen':
+        return RouteNames.jobStep1;
+      case 'JobStep2Screen':
+        return RouteNames.jobStep2;
+      case 'JobStep3Screen':
+        return RouteNames.jobStep3;
+      case 'Location1Screen':
+        return RouteNames.location1;
+      case 'Location2Screen':
+        return RouteNames.location2;
+      case 'ProfileScreen':
+        return RouteNames.profile;
+      case 'UserProfileScreen':
+        return RouteNames.userProfile;
+      case 'LearningCenterPage':
+        return RouteNames.learningCenter;
+      case 'CourseDetailsPage':
+        return RouteNames.courseDetails;
+      case 'SavedCoursesScreen':
+        return RouteNames.savedCourses;
+      default:
+        return '/unknown';
+    }
+  }
+
+  static _NavigationAction _determineNavigationAction(
+    String? currentRoute,
+    String targetRoute,
+  ) {
+    if (currentRoute == null) return _NavigationAction.push;
+
+    if (_isAuthFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.replacement;
+    }
+
+    if (_isLocationCompletionFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.clearStack;
+    }
+
+    if (_isJobApplicationFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
+    }
+
+    if (_isAuthToHomeFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.clearStack;
+    }
+
+    if (_isCourseFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
+    }
+
+    return _NavigationAction.push;
+  }
+
+  static bool _isAuthFlow(String currentRoute, String targetRoute) {
+    final authFlowSequences = [
+      [RouteNames.splash, RouteNames.onboarding],
+      [RouteNames.onboarding, RouteNames.signin],
+      [RouteNames.signin, RouteNames.signin1],
+      [RouteNames.signin1, RouteNames.signin2],
+      [RouteNames.forgotPassword, RouteNames.enterCode],
+      [RouteNames.enterCode, RouteNames.enterNewPassword],
+    ];
+
+    return authFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
+  }
+
+  static bool _isLocationCompletionFlow(
+    String currentRoute,
+    String targetRoute,
+  ) {
+    return currentRoute == RouteNames.location2 &&
+        targetRoute == RouteNames.home;
+  }
+
+  static bool _isJobApplicationFlow(String currentRoute, String targetRoute) {
+    final jobFlowSequences = [
+      [RouteNames.jobStep1, RouteNames.jobStep2],
+      [RouteNames.jobStep2, RouteNames.jobStep3],
+    ];
+
+    return jobFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
+  }
+
+  static bool _isAuthToHomeFlow(String currentRoute, String targetRoute) {
+    final authRoutes = [
+      RouteNames.splash,
+      RouteNames.onboarding,
+      RouteNames.signin,
+      RouteNames.signin1,
+      RouteNames.signin2,
+      RouteNames.createAccount,
+      RouteNames.forgotPassword,
+      RouteNames.enterCode,
+      RouteNames.enterNewPassword,
+    ];
+
+    return authRoutes.contains(currentRoute) && targetRoute == RouteNames.home;
+  }
+
+  static bool _isCourseFlow(String currentRoute, String targetRoute) {
+    final courseFlowSequences = [
+      [RouteNames.learningCenter, RouteNames.courseDetails],
+      [RouteNames.courseDetails, RouteNames.savedCourses],
+      [RouteNames.savedCourses, RouteNames.courseDetails],
+    ];
+
+    return courseFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
+  }
+
+  static Future<T?> _executeNavigation<T>({
+    required _NavigationAction navigationAction,
+    Widget? destination,
+    String? routeName,
+    Object? arguments,
+  }) async {
+    switch (navigationAction) {
+      case _NavigationAction.push:
+        if (destination != null) {
+          return await navigateTo<T>(destination);
+        } else {
+          return await navigateToNamed<T>(routeName!, arguments: arguments);
+        }
+      case _NavigationAction.replacement:
+        if (destination != null) {
+          return await navigateToReplacement<T>(destination);
+        } else {
+          return await navigateToNamedReplacement<T>(
+            routeName!,
+            arguments: arguments,
+          );
+        }
+      case _NavigationAction.clearStack:
+        if (destination != null) {
+          return await navigateToAndClear<T>(destination);
+        } else {
+          return await navigateToNamedAndClear<T>(
+            routeName!,
+            arguments: arguments,
+          );
+        }
+    }
+  }
 }
+
+enum _NavigationAction { push, replacement, clearStack }
 
 /// Route Names
 /// Centralized route names for the app
@@ -140,8 +369,8 @@ class RouteNames {
 
   // Course screens
   static const String learningCenter = '/learning-center';
-  static const String savedCourses = '/saved-courses';
   static const String courseDetails = '/course-details';
+  static const String savedCourses = '/saved-courses';
 }
 
 /// Route Generator
@@ -170,7 +399,9 @@ class RouteGenerator {
       case RouteNames.enterCode:
         return MaterialPageRoute(builder: (_) => const EnterCodeScreen());
       case RouteNames.enterNewPassword:
-        return MaterialPageRoute(builder: (_) => const EnterNewPasswordScreen());
+        return MaterialPageRoute(
+          builder: (_) => const EnterNewPasswordScreen(),
+        );
       case RouteNames.home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case RouteNames.searchJob:
@@ -179,19 +410,23 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SearchResultScreen());
       case RouteNames.jobDetails:
         // Pass a default job object for now - in real app, this would come from arguments
-        final job = args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
+        final job =
+            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobDetailsScreen(job: job));
       case RouteNames.jobStep1:
         // Pass a default job object for now - in real app, this would come from arguments
-        final job = args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
+        final job =
+            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobStep1Screen(job: job));
       case RouteNames.jobStep2:
         // Pass a default job object for now - in real app, this would come from arguments
-        final job = args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
+        final job =
+            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobStep2Screen(job: job));
       case RouteNames.jobStep3:
         // Pass a default job object for now - in real app, this would come from arguments
-        final job = args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
+        final job =
+            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobStep3Screen(job: job));
       case RouteNames.location1:
         return MaterialPageRoute(builder: (_) => const Location1Screen());
@@ -203,12 +438,13 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const UserProfileScreen());
       case RouteNames.learningCenter:
         return MaterialPageRoute(builder: (_) => const LearningCenterPage());
+      case RouteNames.courseDetails:
+        final course = args as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => CourseDetailsPage(course: course),
+        );
       case RouteNames.savedCourses:
         return MaterialPageRoute(builder: (_) => const SavedCoursesScreen());
-      case RouteNames.courseDetails:
-        // Pass course data from arguments
-        final course = args as Map<String, dynamic>? ?? CourseData.featuredCourses.first;
-        return MaterialPageRoute(builder: (_) => CourseDetailsPage(course: course));
       default:
         // If there is no such named route, return an error page
         return _errorRoute();
@@ -217,15 +453,13 @@ class RouteGenerator {
 
   /// Error route for undefined routes
   static Route<dynamic> _errorRoute() {
-    return MaterialPageRoute(builder: (_) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Error'),
-        ),
-        body: const Center(
-          child: Text('Route not found!'),
-        ),
-      );
-    });
+    return MaterialPageRoute(
+      builder: (_) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: const Center(child: Text('Route not found!')),
+        );
+      },
+    );
   }
 }

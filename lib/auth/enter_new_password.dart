@@ -239,7 +239,7 @@ class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               // Navigate to signin screen
-              NavigationService.navigateToAndClear(const SigninScreen());
+              NavigationService.smartNavigate(destination: const SigninScreen());
             },
             child: const Text('OK'),
           ),

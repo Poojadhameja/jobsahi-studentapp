@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Handles search functionality
   static void _onSearch(String query) {
     // Navigate to search results screen
-    NavigationService.navigateTo(SearchJobScreen(searchQuery: query));
+NavigationService.smartNavigate(destination: SearchJobScreen(searchQuery: query));
   }
 }
 
@@ -259,7 +259,7 @@ class JobList extends StatelessWidget {
               job: job,
               onTap: () {
                 // Navigate to job details screen
-                NavigationService.navigateTo(JobDetailsScreen(job: job));
+                NavigationService.smartNavigate(destination: JobDetailsScreen(job: job));
               },
               isInitiallySaved: UserData.savedJobIds.contains(job['id']),
             ),
