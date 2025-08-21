@@ -1,5 +1,5 @@
 /// Course Details Page
-/// Detailed view of a specific course with all information
+/// Detailed view of a specific course with all informationr
 
 library;
 
@@ -29,7 +29,8 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
+      backgroundColor:
+          AppConstants.backgroundColor, // Changed to white background
       appBar: _buildAppBar(),
       body: SingleChildScrollView(
         child: Column(

@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 
 class CourseCard extends StatelessWidget {
+  static const Color backgroundColor = Color(0xFFF5F9FC);
+
   final Map<String, dynamic> course;
   final VoidCallback onTap;
   final VoidCallback onSaveToggle;
@@ -22,6 +24,7 @@ class CourseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
+      color: Colors.white, // Pure white background
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       ),
@@ -197,6 +200,7 @@ class CompactCourseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
+      color: Colors.white, // Pure white background
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       ),

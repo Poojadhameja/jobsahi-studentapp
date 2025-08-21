@@ -81,7 +81,8 @@ class _LearningCenterPageState extends State<LearningCenterPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
+      backgroundColor:
+          AppConstants.backgroundColor, // Changed to white background
       body: Column(
         children: [
           _buildSearchBar(),
