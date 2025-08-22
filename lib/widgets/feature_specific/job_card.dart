@@ -1,20 +1,16 @@
-/// Reusable Job Card Widget
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 
 class JobCard extends StatefulWidget {
   /// Job data to be displayed
   final Map<String, dynamic> job;
-  
+
   /// Callback function when the card is tapped
   final VoidCallback? onTap;
-  
+
   /// Whether to show the save button (default: true)
   final bool showSaveButton;
-  
+
   /// Whether the job is initially saved (default: false)
   final bool isInitiallySaved;
 
@@ -76,15 +72,15 @@ class _JobCardState extends State<JobCard> {
             // Job header with company logo, title, company name, rating, and save button
             _buildJobHeader(job),
             const SizedBox(height: 12),
-            
+
             // Job tags
             _buildJobTags(job),
             const SizedBox(height: 10),
-            
+
             // Salary information
             _buildSalaryInfo(job),
             const SizedBox(height: 4),
-            
+
             // Location and time information
             _buildLocationAndTime(job),
           ],
@@ -104,7 +100,7 @@ class _JobCardState extends State<JobCard> {
           height: 40,
         ),
         const SizedBox(width: 10),
-        
+
         // Job title and company name
         Expanded(
           child: Column(
@@ -121,7 +117,7 @@ class _JobCardState extends State<JobCard> {
             ],
           ),
         ),
-        
+
         // Rating
         Column(
           children: [
@@ -130,7 +126,7 @@ class _JobCardState extends State<JobCard> {
           ],
         ),
         const SizedBox(width: 12),
-        
+
         // Save button (optional)
         if (widget.showSaveButton) _buildSaveButton(),
       ],
@@ -163,12 +159,16 @@ class _JobCardState extends State<JobCard> {
   /// Builds the job tags section
   Widget _buildJobTags(Map<String, dynamic> job) {
     final tags = job['tags'] as List<dynamic>? ?? [];
-    
+
     return Row(
-      children: tags.map<Widget>((tag) => Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: JobTag(text: tag.toString()),
-      )).toList(),
+      children: tags
+          .map<Widget>(
+            (tag) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: JobTag(text: tag.toString()),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -207,10 +207,7 @@ class JobTag extends StatelessWidget {
   /// Text to be displayed in the tag
   final String text;
 
-  const JobTag({
-    super.key,
-    required this.text,
-  });
+  const JobTag({super.key, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -222,10 +219,7 @@ class JobTag extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 12,
-          color: AppConstants.accentColor,
-        ),
+        style: const TextStyle(fontSize: 12, color: AppConstants.accentColor),
       ),
     );
   }

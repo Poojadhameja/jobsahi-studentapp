@@ -1,7 +1,3 @@
-/// Sign In Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
@@ -27,32 +23,34 @@ class _SigninScreenState extends State<SigninScreen> {
       backgroundColor: AppConstants.cardBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppConstants.largePadding),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.largePadding,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
-              
+
               // Back button
               _buildBackButton(),
               const SizedBox(height: 8),
-              
+
               // Main content
               _buildMainContent(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Login method selector
               _buildLoginMethodSelector(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Login options
               _buildLoginOptions(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Social login buttons
               _buildSocialLoginButtons(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Create account link
               _buildCreateAccountLink(),
             ],
@@ -82,10 +80,14 @@ class _SigninScreenState extends State<SigninScreen> {
           const CircleAvatar(
             radius: 40,
             backgroundColor: Color(0xFFE0E7EF),
-            child: Icon(Icons.person, size: 45, color: AppConstants.textPrimaryColor),
+            child: Icon(
+              Icons.person,
+              size: 45,
+              color: AppConstants.textPrimaryColor,
+            ),
           ),
           const SizedBox(height: 16),
-          
+
           // Title
           const Text(
             "Sign In With",
@@ -108,7 +110,9 @@ class _SigninScreenState extends State<SigninScreen> {
         // OTP button
         Container(
           decoration: BoxDecoration(
-            color: isOTPSelected ? AppConstants.textPrimaryColor : AppConstants.cardBackgroundColor,
+            color: isOTPSelected
+                ? AppConstants.textPrimaryColor
+                : AppConstants.cardBackgroundColor,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(6),
               bottomLeft: Radius.circular(6),
@@ -124,16 +128,20 @@ class _SigninScreenState extends State<SigninScreen> {
             child: Text(
               "OTP",
               style: TextStyle(
-                color: isOTPSelected ? Colors.white : AppConstants.textPrimaryColor,
+                color: isOTPSelected
+                    ? Colors.white
+                    : AppConstants.textPrimaryColor,
               ),
             ),
           ),
         ),
-        
+
         // Email button
         Container(
           decoration: BoxDecoration(
-            color: !isOTPSelected ? AppConstants.textPrimaryColor : AppConstants.cardBackgroundColor,
+            color: !isOTPSelected
+                ? AppConstants.textPrimaryColor
+                : AppConstants.cardBackgroundColor,
             borderRadius: const BorderRadius.only(
               topRight: Radius.circular(6),
               bottomRight: Radius.circular(6),
@@ -149,7 +157,9 @@ class _SigninScreenState extends State<SigninScreen> {
             child: Text(
               "MAIL",
               style: TextStyle(
-                color: !isOTPSelected ? Colors.white : AppConstants.textPrimaryColor,
+                color: !isOTPSelected
+                    ? Colors.white
+                    : AppConstants.textPrimaryColor,
               ),
             ),
           ),
@@ -182,19 +192,19 @@ class _SigninScreenState extends State<SigninScreen> {
             prefixIcon: const Icon(Icons.phone),
           ),
           keyboardType: TextInputType.phone,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-          ],
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Get OTP button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
               // Navigate to OTP verification screen
-              NavigationService.smartNavigate(destination: const Signin1Screen());
+              NavigationService.smartNavigate(
+                destination: const Signin1Screen(),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.textPrimaryColor,
@@ -206,10 +216,7 @@ class _SigninScreenState extends State<SigninScreen> {
             ),
             child: const Text(
               'Get OTP',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -234,7 +241,7 @@ class _SigninScreenState extends State<SigninScreen> {
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Password input
         TextField(
           decoration: InputDecoration(
@@ -249,7 +256,7 @@ class _SigninScreenState extends State<SigninScreen> {
           obscureText: true,
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Forgot password link
         Align(
           alignment: Alignment.centerRight,
@@ -264,14 +271,16 @@ class _SigninScreenState extends State<SigninScreen> {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Sign in button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
               // Navigate to email verification screen
-              NavigationService.smartNavigate(destination: const Signin2Screen());
+              NavigationService.smartNavigate(
+                destination: const Signin2Screen(),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.textPrimaryColor,
@@ -283,10 +292,7 @@ class _SigninScreenState extends State<SigninScreen> {
             ),
             child: const Text(
               AppConstants.loginText,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -316,7 +322,7 @@ class _SigninScreenState extends State<SigninScreen> {
           ],
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Social login buttons
         Row(
           children: [
@@ -331,13 +337,15 @@ class _SigninScreenState extends State<SigninScreen> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(width: AppConstants.defaultPadding),
-            
+
             // LinkedIn button
             Expanded(
               child: OutlinedButton.icon(
@@ -349,7 +357,9 @@ class _SigninScreenState extends State<SigninScreen> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
                   ),
                 ),
               ),
@@ -373,7 +383,9 @@ class _SigninScreenState extends State<SigninScreen> {
           TextButton(
             onPressed: () {
               // Navigate to create account screen
-              NavigationService.smartNavigate(destination: const CreateAccountScreen());
+              NavigationService.smartNavigate(
+                destination: const CreateAccountScreen(),
+              );
             },
             child: const Text(
               AppConstants.signupText,

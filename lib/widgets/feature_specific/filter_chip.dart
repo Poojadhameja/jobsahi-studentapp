@@ -1,26 +1,22 @@
-/// Filter Chip Widget
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 
 class FilterChip extends StatelessWidget {
   /// Text to be displayed on the chip
   final String label;
-  
+
   /// Whether the chip is selected (default: false)
   final bool isSelected;
-  
+
   /// Callback function when the chip is tapped
   final VoidCallback? onTap;
-  
+
   /// Background color of the chip
   final Color? backgroundColor;
-  
+
   /// Text color of the chip
   final Color? textColor;
-  
+
   /// Border color of the chip
   final Color? borderColor;
 
@@ -42,15 +38,25 @@ class FilterChip extends StatelessWidget {
         label: Text(
           label,
           style: TextStyle(
-            color: textColor ?? (isSelected ? Colors.white : AppConstants.textPrimaryColor),
+            color:
+                textColor ??
+                (isSelected ? Colors.white : AppConstants.textPrimaryColor),
             fontWeight: FontWeight.w500,
           ),
         ),
-        backgroundColor: backgroundColor ?? (isSelected ? AppConstants.primaryColor : AppConstants.cardBackgroundColor),
+        backgroundColor:
+            backgroundColor ??
+            (isSelected
+                ? AppConstants.primaryColor
+                : AppConstants.cardBackgroundColor),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(
-            color: borderColor ?? (isSelected ? AppConstants.primaryColor : AppConstants.primaryColor),
+            color:
+                borderColor ??
+                (isSelected
+                    ? AppConstants.primaryColor
+                    : AppConstants.primaryColor),
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -64,13 +70,13 @@ class FilterChip extends StatelessWidget {
 class HorizontalFilterChips extends StatelessWidget {
   /// List of filter options
   final List<String> filterOptions;
-  
+
   /// Currently selected filter index
   final int selectedIndex;
-  
+
   /// Callback function when a filter is selected
   final Function(int) onFilterSelected;
-  
+
   /// Whether to show selection state (default: true)
   final bool showSelection;
 
@@ -90,7 +96,7 @@ class HorizontalFilterChips extends StatelessWidget {
         children: filterOptions.asMap().entries.map((entry) {
           final index = entry.key;
           final option = entry.value;
-          
+
           return Padding(
             padding: const EdgeInsets.only(right: AppConstants.smallPadding),
             child: FilterChip(
@@ -110,16 +116,16 @@ class HorizontalFilterChips extends StatelessWidget {
 class FilterSection extends StatelessWidget {
   /// Title of the filter section
   final String title;
-  
+
   /// List of filter options
   final List<String> filterOptions;
-  
+
   /// Currently selected filter index
   final int selectedIndex;
-  
+
   /// Callback function when a filter is selected
   final Function(int) onFilterSelected;
-  
+
   /// Whether to show the title (default: true)
   final bool showTitle;
 
@@ -138,10 +144,7 @@ class FilterSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (showTitle) ...[
-          Text(
-            title,
-            style: AppConstants.subheadingStyle,
-          ),
+          Text(title, style: AppConstants.subheadingStyle),
           const SizedBox(height: AppConstants.smallPadding),
         ],
         HorizontalFilterChips(

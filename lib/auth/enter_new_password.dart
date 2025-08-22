@@ -1,7 +1,3 @@
-/// Enter New Password Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
@@ -18,15 +14,15 @@ class EnterNewPasswordScreen extends StatefulWidget {
 class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
-  
+
   /// Text editing controllers
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   /// Whether passwords are visible
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  
+
   /// Whether the password is being reset
   bool _isResetting = false;
 
@@ -41,10 +37,7 @@ class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'New Password',
-        showBackButton: true,
-      ),
+      appBar: const SimpleAppBar(title: 'New Password', showBackButton: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.largePadding),
@@ -56,15 +49,15 @@ class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
                 // Header section
                 _buildHeader(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Password input
                 _buildPasswordInput(),
                 const SizedBox(height: AppConstants.defaultPadding),
-                
+
                 // Confirm password input
                 _buildConfirmPasswordInput(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Submit button
                 _buildSubmitButton(),
               ],
@@ -196,10 +189,7 @@ class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
               )
             : const Text(
                 'Reset Password',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -239,7 +229,9 @@ class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               // Navigate to signin screen
-              NavigationService.smartNavigate(destination: const SigninScreen());
+              NavigationService.smartNavigate(
+                destination: const SigninScreen(),
+              );
             },
             child: const Text('OK'),
           ),

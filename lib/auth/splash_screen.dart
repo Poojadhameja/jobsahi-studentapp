@@ -1,7 +1,3 @@
-/// Splash Screen - Initial app loading screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../utils/navigation_service.dart';
 import 'onboarding.dart';

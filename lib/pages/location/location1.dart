@@ -1,7 +1,3 @@
-/// Location Screen 1
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
@@ -50,12 +46,10 @@ class _Location1ScreenState extends State<Location1Screen> {
               // Header
               _buildHeader(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Location list
-              Expanded(
-                child: _buildLocationList(),
-              ),
-              
+              Expanded(child: _buildLocationList()),
+
               // Continue button
               _buildContinueButton(),
             ],
@@ -98,26 +92,32 @@ class _Location1ScreenState extends State<Location1Screen> {
       itemBuilder: (context, index) {
         final location = _locations[index];
         final isSelected = _selectedLocation == location;
-        
+
         return Card(
           margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             side: BorderSide(
-              color: isSelected ? AppConstants.primaryColor : Colors.grey.shade300,
+              color: isSelected
+                  ? AppConstants.primaryColor
+                  : Colors.grey.shade300,
               width: isSelected ? 2 : 1,
             ),
           ),
           child: ListTile(
             leading: Icon(
               Icons.location_on,
-              color: isSelected ? AppConstants.primaryColor : AppConstants.textSecondaryColor,
+              color: isSelected
+                  ? AppConstants.primaryColor
+                  : AppConstants.textSecondaryColor,
             ),
             title: Text(
               location,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? AppConstants.primaryColor : AppConstants.textPrimaryColor,
+                color: isSelected
+                    ? AppConstants.primaryColor
+                    : AppConstants.textPrimaryColor,
               ),
             ),
             trailing: isSelected
@@ -153,10 +153,7 @@ class _Location1ScreenState extends State<Location1Screen> {
         ),
         child: const Text(
           'Continue',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );

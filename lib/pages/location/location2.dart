@@ -1,7 +1,3 @@
-/// Location Screen 2
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
@@ -36,11 +32,11 @@ class _Location2ScreenState extends State<Location2Screen> {
               // Success icon
               _buildSuccessIcon(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Content
               _buildContent(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Continue button
               _buildContinueButton(),
             ],
@@ -59,11 +55,7 @@ class _Location2ScreenState extends State<Location2Screen> {
         color: AppConstants.successColor,
         shape: BoxShape.circle,
       ),
-      child: const Icon(
-        Icons.location_on,
-        color: Colors.white,
-        size: 50,
-      ),
+      child: const Icon(Icons.location_on, color: Colors.white, size: 50),
     );
   }
 
@@ -81,7 +73,7 @@ class _Location2ScreenState extends State<Location2Screen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         const Text(
           'Your preferred work location has been set. We will show you relevant job opportunities based on your location preference.',
           style: TextStyle(
@@ -92,7 +84,7 @@ class _Location2ScreenState extends State<Location2Screen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         Container(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
           decoration: BoxDecoration(
@@ -103,10 +95,7 @@ class _Location2ScreenState extends State<Location2Screen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.location_on,
-                color: AppConstants.primaryColor,
-              ),
+              const Icon(Icons.location_on, color: AppConstants.primaryColor),
               const SizedBox(width: 8),
               const Text(
                 'Mumbai, Maharashtra',
@@ -148,10 +137,7 @@ class _Location2ScreenState extends State<Location2Screen> {
               )
             : const Text(
                 'Continue to Home',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -168,7 +154,7 @@ class _Location2ScreenState extends State<Location2Screen> {
       setState(() {
         _isSaving = false;
       });
-      
+
       // Navigate to home screen
       NavigationService.smartNavigate(destination: const HomeScreen());
     });

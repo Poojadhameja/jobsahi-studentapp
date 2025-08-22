@@ -1,7 +1,3 @@
-/// Home Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/job_data.dart';
@@ -13,6 +9,7 @@ import '../../widgets/feature_specific/job_card.dart';
 import '../../widgets/feature_specific/filter_chip.dart';
 import '../jobs/job_details.dart';
 import '../jobs/search_job.dart';
+import '../jobs/saved_jobs.dart';
 import '../profile/profile.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,13 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Currently selected tab index
   int _selectedIndex = 0;
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const CustomAppBar(
+      appBar: CustomAppBar(
         showSearchBar: true,
         showMenuButton: true,
         showNotificationIcon: true,
@@ -74,7 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Handles search functionality
   static void _onSearch(String query) {
     // Navigate to search results screen
-    NavigationService.smartNavigate(destination: SearchJobScreen(searchQuery: query));
+    NavigationService.smartNavigate(
+      destination: SearchJobScreen(searchQuery: query),
+    );
   }
 }
 
@@ -100,19 +97,19 @@ class _HomePageState extends State<HomePage> {
           // Greeting section
           _buildGreetingSection(),
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Action buttons
           _buildActionButtons(),
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Banner image
           _buildBannerImage(),
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Filter chips
           _buildFilterChips(),
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Recommended jobs section
           _buildRecommendedJobsSection(),
         ],
@@ -123,11 +120,8 @@ class _HomePageState extends State<HomePage> {
   /// Builds the greeting section
   Widget _buildGreetingSection() {
     final userName = UserData.currentUser['name'] as String? ?? 'User';
-    
-    return Text(
-      'Hi $userName,',
-      style: AppConstants.headingStyle,
-    );
+
+    return Text('Hi $userName,', style: AppConstants.headingStyle);
   }
 
   /// Builds the action buttons (saved jobs and applied jobs)
@@ -138,7 +132,9 @@ class _HomePageState extends State<HomePage> {
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              // TODO: Navigate to saved jobs screen
+              NavigationService.smartNavigate(
+                destination: const SavedJobsScreen(),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.cardBackgroundColor,
@@ -154,7 +150,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         const SizedBox(width: AppConstants.smallPadding),
-        
+
         // Applied jobs button
         Expanded(
           child: ElevatedButton(
@@ -215,7 +211,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         // Job list
         JobList(jobs: JobData.recommendedJobs),
       ],
@@ -229,22 +225,25 @@ class JobList extends StatelessWidget {
   /// List of jobs to display
   final List<Map<String, dynamic>> jobs;
 
-  const JobList({
-    super.key,
-    required this.jobs,
-  });
+  const JobList({super.key, required this.jobs});
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: jobs.map((job) => JobCard(
-        job: job,
-        onTap: () {
-          // Navigate to job details screen
-          NavigationService.smartNavigate(destination: JobDetailsScreen(job: job));
-        },
-        isInitiallySaved: UserData.savedJobIds.contains(job['id']),
-      )).toList(),
+      children: jobs
+          .map(
+            (job) => JobCard(
+              job: job,
+              onTap: () {
+                // Navigate to job details screen
+                NavigationService.smartNavigate(
+                  destination: JobDetailsScreen(job: job),
+                );
+              },
+              isInitiallySaved: UserData.savedJobIds.contains(job['id']),
+            ),
+          )
+          .toList(),
     );
   }
 }
@@ -291,10 +290,7 @@ class MessagesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text(
-          'Messages Page (Inbox)',
-          style: TextStyle(fontSize: 20),
-        ),
+        child: Text('Messages Page (Inbox)', style: TextStyle(fontSize: 20)),
       ),
     );
   }

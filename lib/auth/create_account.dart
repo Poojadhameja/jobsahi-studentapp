@@ -1,7 +1,3 @@
-/// Create Account Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
@@ -17,14 +13,14 @@ class CreateAccountScreen extends StatefulWidget {
 class _CreateAccountScreenState extends State<CreateAccountScreen> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
-  
+
   /// Text editing controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   /// Whether the form is being submitted
   bool _isSubmitting = false;
 
@@ -46,7 +42,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimaryColor),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppConstants.textPrimaryColor,
+          ),
           onPressed: () => NavigationService.goBack(),
         ),
         title: const Text(
@@ -65,15 +64,15 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                 // Header
                 _buildHeader(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Form fields
                 _buildFormFields(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Submit button
                 _buildSubmitButton(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Sign in link
                 _buildSignInLink(),
               ],
@@ -132,7 +131,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Email
         TextFormField(
           controller: _emailController,
@@ -156,7 +155,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Phone Number
         TextFormField(
           controller: _phoneController,
@@ -180,7 +179,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Password
         TextFormField(
           controller: _passwordController,
@@ -205,7 +204,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Confirm Password
         TextFormField(
           controller: _confirmPasswordController,
@@ -258,10 +257,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               )
             : const Text(
                 AppConstants.signupText,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -279,7 +275,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           ),
           TextButton(
             onPressed: () {
-              NavigationService.smartNavigate(destination: const SigninScreen());
+              NavigationService.smartNavigate(
+                destination: const SigninScreen(),
+              );
             },
             child: const Text(
               AppConstants.loginText,

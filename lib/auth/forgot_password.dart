@@ -1,7 +1,3 @@
-/// Forgot Password Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
@@ -17,10 +13,10 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
-  
+
   /// Email controller
   final _emailController = TextEditingController();
-  
+
   /// Whether the reset link is being sent
   bool _isSending = false;
 
@@ -49,15 +45,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 // Header section
                 _buildHeader(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Email input
                 _buildEmailInput(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Submit button
                 _buildSubmitButton(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Help text
                 _buildHelpText(),
               ],
@@ -144,10 +140,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               )
             : const Text(
                 'Send Reset Link',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
