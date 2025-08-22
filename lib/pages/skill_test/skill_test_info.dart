@@ -1,0 +1,312 @@
+/// Skills Test Info Screen
+/// Displays test information and instructions before starting the test
+
+library;
+
+import 'package:flutter/material.dart';
+import '../../utils/app_constants.dart';
+import '../../utils/navigation_service.dart';
+import '../../widgets/global/simple_app_bar.dart';
+import 'skills_test_faq.dart';
+
+class SkillTestInfoScreen extends StatefulWidget {
+  /// Job data for context
+  final Map<String, dynamic> job;
+
+  /// Test data to display information
+  final Map<String, dynamic> test;
+
+  const SkillTestInfoScreen({super.key, required this.job, required this.test});
+
+  @override
+  State<SkillTestInfoScreen> createState() => _SkillTestInfoScreenState();
+}
+
+class _SkillTestInfoScreenState extends State<SkillTestInfoScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppConstants.cardBackgroundColor,
+      appBar: const SimpleAppBar(
+        title: 'Skills Test Info / स्किल्स टेस्ट जानकारी',
+        showBackButton: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Test overview card
+              _buildTestOverviewCard(),
+              const SizedBox(height: AppConstants.largePadding),
+
+              // Instructions section
+              _buildInstructionsSection(),
+              const SizedBox(height: AppConstants.largePadding),
+
+              // Good luck message
+              _buildGoodLuckMessage(),
+              const SizedBox(height: AppConstants.largePadding),
+
+              // Start test button
+              _buildStartTestButton(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the test overview card
+  Widget _buildTestOverviewCard() {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      decoration: BoxDecoration(
+        color: AppConstants.backgroundColor,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Left side - Icon
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: (widget.test['color'] as Color).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              widget.test['icon'] as IconData,
+              color: widget.test['color'] as Color,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: AppConstants.defaultPadding),
+
+          // Right side - Test details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.test['title'] as String,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'By ${widget.test['provider']}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppConstants.successColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Time and MCQ tags
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppConstants.successColor.withValues(alpha: 0.1),
+                        border: Border.all(
+                          color: AppConstants.successColor,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${widget.test['time']} Mins',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppConstants.successColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppConstants.successColor.withValues(alpha: 0.1),
+                        border: Border.all(
+                          color: AppConstants.successColor,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${widget.test['mcqs']} MCQs',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppConstants.successColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the instructions section
+  Widget _buildInstructionsSection() {
+    final instructions = [
+      'प्रत्येक परीक्षा के लिए एक निर्धारित समय सीमा होती है |',
+      'परीक्षा शुरू करने से पहले सुनिश्चित करें कि आपका इंटरनेट कनेक्शन स्थिर हो |',
+      '"Attempt Test" बटन पर क्लिक करने के बाद, आप परीक्षा छोड़ नहीं पाएंगे |',
+      'सभी प्रश्नों को ध्यानपूर्वक पढ़ें और उत्तर सोच-समझकर दें |',
+      'परीक्षा समाप्त होने के बाद परिणाम जल्द ही उपलब्ध कराए जाएंगे |',
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Instructions:',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppConstants.textPrimaryColor,
+          ),
+        ),
+        const SizedBox(height: AppConstants.defaultPadding),
+
+        ...instructions.map(
+          (instruction) => _buildInstructionItem(instruction),
+        ),
+      ],
+    );
+  }
+
+  /// Builds a single instruction item
+  Widget _buildInstructionItem(String instruction) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 6, right: 12),
+            decoration: const BoxDecoration(
+              color: AppConstants.textPrimaryColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              instruction,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppConstants.textPrimaryColor,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the good luck message
+  Widget _buildGoodLuckMessage() {
+    return Row(
+      children: [
+        Icon(Icons.thumb_up, color: AppConstants.successColor, size: 20),
+        const SizedBox(width: 8),
+        const Text(
+          'Good luck for test',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppConstants.textPrimaryColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the start test button
+  Widget _buildStartTestButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _startTest,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppConstants.secondaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+          ),
+          elevation: 2,
+        ),
+        child: const Text(
+          'Start Test',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  /// Handles starting the test
+  void _startTest() {
+    // Show confirmation dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Start Test?'),
+        content: const Text(
+          'Are you sure you want to start the test? You won\'t be able to leave once started.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _proceedToTest();
+            },
+            child: const Text('Start Test'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Proceeds to the actual test
+  void _proceedToTest() {
+    // Navigate to the skills test FAQ screen
+    NavigationService.navigateTo(
+      SkillsTestFAQScreen(job: widget.job, test: widget.test),
+    );
+  }
+}
