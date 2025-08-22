@@ -11,6 +11,7 @@ import '../jobs/job_details.dart';
 import '../jobs/search_job.dart';
 import '../jobs/saved_jobs.dart';
 import '../profile/profile.dart';
+import '../courses/learning_center.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,12 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: CustomAppBar(
-        showSearchBar: true,
-        showMenuButton: true,
-        showNotificationIcon: true,
-        onSearch: _onSearch,
-      ),
+      appBar: _buildAppBar(),
       body: _buildCurrentScreen(),
       bottomNavigationBar: CustomBottomNavigation(
         currentIndex: _selectedIndex,
@@ -41,13 +37,41 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Builds the appropriate app bar based on selected tab
+  PreferredSizeWidget? _buildAppBar() {
+    switch (_selectedIndex) {
+      case 0:
+        // Home tab - show hamburger menu, search, and notification
+        return const CustomAppBar(
+          showSearchBar: true,
+          showMenuButton: true,
+          showNotificationIcon: true,
+          onSearch: _onSearch,
+        );
+      case 1:
+        // Courses tab - show heading with back icon
+        return const TabAppBar(title: 'Learning Center');
+      case 2:
+        // Applications tab - show heading with back icon
+        return const TabAppBar(title: 'My Applications');
+      case 3:
+        // Messages tab - show heading with back icon
+        return const TabAppBar(title: 'Messages');
+      case 4:
+        // Profile tab - show heading with back icon
+        return const TabAppBar(title: 'Profile');
+      default:
+        return null;
+    }
+  }
+
   /// Builds the current screen based on selected tab
   Widget _buildCurrentScreen() {
     switch (_selectedIndex) {
       case 0:
         return const HomePage();
       case 1:
-        return const CoursesPage();
+        return const LearningCenterPage();
       case 2:
         return const ApplicationsPage();
       case 3:
@@ -69,9 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Handles search functionality
   static void _onSearch(String query) {
     // Navigate to search results screen
-    NavigationService.smartNavigate(
-      destination: SearchJobScreen(searchQuery: query),
-    );
+NavigationService.smartNavigate(destination: SearchJobScreen(searchQuery: query));
   }
 }
 
@@ -236,9 +258,7 @@ class JobList extends StatelessWidget {
               job: job,
               onTap: () {
                 // Navigate to job details screen
-                NavigationService.smartNavigate(
-                  destination: JobDetailsScreen(job: job),
-                );
+                NavigationService.smartNavigate(destination: JobDetailsScreen(job: job));
               },
               isInitiallySaved: UserData.savedJobIds.contains(job['id']),
             ),
@@ -251,32 +271,58 @@ class JobList extends StatelessWidget {
 /// Bottom Navigation Screen Widgets
 /// These are placeholder screens for the bottom navigation tabs
 
-class CoursesPage extends StatelessWidget {
-  const CoursesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Courses Page (Connect with Courses)',
-          style: TextStyle(fontSize: 20),
-        ),
-      ),
-    );
-  }
-}
-
 class ApplicationsPage extends StatelessWidget {
   const ApplicationsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Applications Page (Jobs you applied)',
-          style: TextStyle(fontSize: 20),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Applications content
+            const Text(
+              'Your Job Applications',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppConstants.textPrimaryColor,
+              ),
+            ),
+            const SizedBox(height: AppConstants.defaultPadding),
+
+            // Placeholder content
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.assignment_outlined,
+                      size: 64,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    Text(
+                      'No applications yet',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: AppConstants.textSecondaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    Text(
+                      'Start applying to jobs to see them here',
+                      style: TextStyle(color: AppConstants.textSecondaryColor),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -288,9 +334,54 @@ class MessagesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Messages Page (Inbox)', style: TextStyle(fontSize: 20)),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Messages content
+            const Text(
+              'Your Messages',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppConstants.textPrimaryColor,
+              ),
+            ),
+            const SizedBox(height: AppConstants.defaultPadding),
+
+            // Placeholder content
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.message_outlined,
+                      size: 64,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    Text(
+                      'No messages yet',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: AppConstants.textSecondaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    Text(
+                      'Messages from employers will appear here',
+                      style: TextStyle(color: AppConstants.textSecondaryColor),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

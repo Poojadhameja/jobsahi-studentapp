@@ -2,6 +2,8 @@
 
 library;
 
+import '../../utils/app_constants.dart';
+
 class JobData {
   /// List of recommended jobs displayed on the home screen
   static const List<Map<String, dynamic>> recommendedJobs = [
@@ -122,34 +124,13 @@ class JobData {
   ];
 
   /// Filter options for job search
-  static const List<String> filterOptions = [
-    "Filter",
-    "Sort",
-    "Job Title",
-    "Experience",
-    "Location",
-    "Salary",
-    "Company",
-  ];
+  static List<String> get filterOptions => AppConstants.jobFilterOptions;
 
   /// Job categories for filtering
-  static const List<String> jobCategories = [
-    "All Jobs",
-    "Electrician",
-    "Fitter",
-    "Welder",
-    "Mechanic",
-    "Plumber",
-    "Carpenter",
-  ];
+  static List<String> get jobCategories => AppConstants.jobCategories;
 
   /// Experience levels
-  static const List<String> experienceLevels = [
-    "Fresher",
-    "1-2 years",
-    "2-5 years",
-    "5+ years",
-  ];
+  static List<String> get experienceLevels => AppConstants.experienceLevels;
 
   /// Salary ranges
   static const List<String> salaryRanges = [

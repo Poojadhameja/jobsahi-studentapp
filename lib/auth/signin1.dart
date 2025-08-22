@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import '../pages/home/home.dart';
 
 class Signin1Screen extends StatefulWidget {
   const Signin1Screen({super.key});
@@ -266,8 +265,8 @@ class _Signin1ScreenState extends State<Signin1Screen> {
 
       // For demo purposes, accept any 6-digit OTP
       if (otp.length == 6) {
-        // Navigate to home screen
-        NavigationService.smartNavigate(destination: const HomeScreen());
+        // Navigate to location screen using smart navigation
+        NavigationService.smartNavigate(routeName: RouteNames.location1);
       } else {
         // Show error message
         _showErrorSnackBar('Please enter a valid 6-digit OTP');

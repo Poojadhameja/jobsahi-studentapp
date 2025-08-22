@@ -10,6 +10,7 @@ import '../../widgets/global/simple_app_bar.dart';
 import 'user_profile.dart';
 import '../../auth/signin.dart';
 import '../jobs/saved_jobs.dart';
+import '../setting/settings.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -148,7 +149,7 @@ class ProfileScreen extends StatelessWidget {
           title: 'Settings',
           subtitle: 'App settings and preferences',
           onTap: () {
-            // TODO: Navigate to settings screen
+            NavigationService.smartNavigate(destination: const SettingsPage());
           },
         ),
         _buildOptionTile(

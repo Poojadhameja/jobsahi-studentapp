@@ -5,6 +5,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Title to be displayed in the app bar
   final String? title;
 
+
   /// Whether to show the search bar (default: true)
   final bool showSearchBar;
 
@@ -201,6 +202,62 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : null,
       title: Text(title, style: TextStyle(color: textColor)),
+      centerTitle: true,
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+/// Tab App Bar Widget
+/// A simple app bar for tabs with heading and back icon
+/// Used for courses, applications, messages, and profile tabs
+class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
+  /// Title to be displayed in the app bar
+  final String title;
+
+  /// Callback function when back button is pressed
+  final VoidCallback? onBackPressed;
+
+  /// Background color of the app bar
+  final Color backgroundColor;
+
+  /// Text color of the title
+  final Color textColor;
+
+  const TabAppBar({
+    super.key,
+    required this.title,
+    this.onBackPressed,
+    this.backgroundColor = AppConstants.cardBackgroundColor,
+    this.textColor = AppConstants.textPrimaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      backgroundColor: backgroundColor,
+      elevation: 0,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back, color: textColor),
+        onPressed:
+            onBackPressed ??
+            () {
+              // Navigate back to home tab
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
       centerTitle: true,
     );
   }

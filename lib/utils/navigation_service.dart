@@ -26,10 +26,14 @@ import '../pages/jobs/calendar_view.dart';
 import '../pages/jobs/write_review.dart';
 import '../pages/jobs/saved_jobs.dart';
 import '../pages/jobs/about_company.dart';
-import '../pages/location/location1.dart';
-import '../pages/location/location2.dart';
+import '../pages/location/your_location.dart';
+import '../pages/location/location_permission.dart';
 import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
+import '../pages/setting/settings.dart'; // Course screens
+import '../pages/courses/learning_center.dart';
+import '../pages/courses/course_details.dart';
+import '../pages/courses/saved_courses.dart';
 
 // Import data classes
 import '../data/job_data.dart';
@@ -204,12 +208,21 @@ class NavigationService {
         return RouteNames.savedJobs;
       case 'Location1Screen':
         return RouteNames.location1;
-      case 'Location2Screen':
+      case 'LocationPermissionScreen':
         return RouteNames.location2;
       case 'ProfileScreen':
         return RouteNames.profile;
       case 'UserProfileScreen':
         return RouteNames.userProfile;
+      case 'SettingsPage':
+        return RouteNames.settings;
+
+      case 'LearningCenterPage':
+        return RouteNames.learningCenter;
+      case 'CourseDetailsPage':
+        return RouteNames.courseDetails;
+      case 'SavedCoursesScreen':
+        return RouteNames.savedCourses;
       default:
         return '/unknown';
     }
@@ -229,12 +242,20 @@ class NavigationService {
       return _NavigationAction.clearStack;
     }
 
+    if (_isLocationFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
+    }
+
     if (_isJobApplicationFlow(currentRoute, targetRoute)) {
       return _NavigationAction.push;
     }
 
     if (_isAuthToHomeFlow(currentRoute, targetRoute)) {
       return _NavigationAction.clearStack;
+    }
+
+    if (_isCourseFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
     }
 
     return _NavigationAction.push;
@@ -261,6 +282,17 @@ class NavigationService {
   ) {
     return currentRoute == RouteNames.location2 &&
         targetRoute == RouteNames.home;
+  }
+
+  static bool _isLocationFlow(String currentRoute, String targetRoute) {
+    final locationFlowSequences = [
+      [RouteNames.location1, RouteNames.location2],
+      [RouteNames.location2, RouteNames.home],
+    ];
+
+    return locationFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
   }
 
   static bool _isJobApplicationFlow(String currentRoute, String targetRoute) {
@@ -291,6 +323,18 @@ class NavigationService {
     ];
 
     return authRoutes.contains(currentRoute) && targetRoute == RouteNames.home;
+  }
+
+  static bool _isCourseFlow(String currentRoute, String targetRoute) {
+    final courseFlowSequences = [
+      [RouteNames.learningCenter, RouteNames.courseDetails],
+      [RouteNames.courseDetails, RouteNames.savedCourses],
+      [RouteNames.savedCourses, RouteNames.courseDetails],
+    ];
+
+    return courseFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
   }
 
   static Future<T?> _executeNavigation<T>({
@@ -366,10 +410,16 @@ class RouteNames {
   static const String writeReview = '/write-review';
   static const String aboutCompany = '/about-company';
   static const String savedJobs = '/saved-jobs';
-  static const String location1 = '/location1';
-  static const String location2 = '/location2';
+  static const String location1 = '/your-location';
+  static const String location2 = '/enter-location';
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
+
+  // Course screens
+  static const String learningCenter = '/learning-center';
+  static const String courseDetails = '/course-details';
+  static const String savedCourses = '/saved-courses';
+  static const String settings = '/settings';
 }
 
 /// Route Generator
@@ -452,13 +502,32 @@ class RouteGenerator {
       case RouteNames.savedJobs:
         return MaterialPageRoute(builder: (_) => const SavedJobsScreen());
       case RouteNames.location1:
-        return MaterialPageRoute(builder: (_) => const Location1Screen());
+        return MaterialPageRoute(builder: (_) => const YourLocationScreen());
       case RouteNames.location2:
-        return MaterialPageRoute(builder: (_) => const Location2Screen());
+        final locationArgs = args as Map<String, dynamic>? ?? {};
+        final isFromCurrentLocation =
+            locationArgs['isFromCurrentLocation'] ?? false;
+        return MaterialPageRoute(
+          builder: (_) => LocationPermissionScreen(
+            isFromCurrentLocation: isFromCurrentLocation,
+          ),
+        );
       case RouteNames.profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case RouteNames.userProfile:
         return MaterialPageRoute(builder: (_) => const UserProfileScreen());
+      case RouteNames.settings:
+        return MaterialPageRoute(builder: (_) => const SettingsPage());
+
+      case RouteNames.learningCenter:
+        return MaterialPageRoute(builder: (_) => const LearningCenterPage());
+      case RouteNames.courseDetails:
+        final course = args as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => CourseDetailsPage(course: course),
+        );
+      case RouteNames.savedCourses:
+        return MaterialPageRoute(builder: (_) => const SavedCoursesScreen());
       default:
         // If there is no such named route, return an error page
         return _errorRoute();

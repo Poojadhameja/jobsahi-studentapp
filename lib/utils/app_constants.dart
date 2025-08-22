@@ -8,6 +8,7 @@ class AppConstants {
   static const Color primaryColor = Color(0xFF144B75);
   static const Color secondaryColor = Color(0xFF58B248);
   static const Color accentColor = Colors.blue;
+  static const Color locationAccentColor = Color(0xFF4A90E2);
   static const Color backgroundColor = Color(0xFFF5F9FC);
   static const Color cardBackgroundColor = Colors.white;
   static const Color textPrimaryColor = Color(0xFF144B75);
@@ -62,10 +63,27 @@ class AppConstants {
       'assets/images/profile/profile_img.png';
   static const String googleLogoAsset = 'assets/images/social/google.png';
   static const String linkedinLogoAsset = 'assets/images/social/linkedin.png';
+  static const String locationIconAsset = 'assets/images/location_icon.png';
 
   /// App Strings
   static const String appName = 'Job Sahi';
   static const String appTagline = 'Find Your Perfect Job';
+
+  /// Location Strings
+  static const String yourLocationTitle = 'Your Location';
+  static const String enterLocationTitle = 'What is your Location?';
+  static const String searchAreaHint = 'क्षेत्र खोजें';
+  static const String useCurrentLocation = 'Use current location';
+  static const String selectButton = 'Select';
+  static const String searchResultLabel = 'Search Result';
+  static const String nextButton = 'NEXT';
+  static const String locationDescription =
+      'Start location to find jobs near you';
+  static const String allowLocationAccess = 'Allow Location Access';
+  static const String enterLocationManually = 'Enter location Manually';
+  static const String currentLocationDescription =
+      'अपने पास की नौकरियों को खोजने के लिए लोकेशन शुरू करें।';
+  static const String allowLocationQuestion = 'Allow Location Access?';
   static const String searchPlaceholder = 'नौकरी खोजें';
   static const String savedJobsText = 'सेव की गई नौकरियाँ';
   static const String appliedJobsText = 'आवेदन की गई नौकरियाँ';
@@ -138,4 +156,61 @@ class AppConstants {
   static const String signupEndpoint = '/auth/signup';
   static const String jobsEndpoint = '/jobs';
   static const String profileEndpoint = '/user/profile';
+
+  /// Course Categories
+  static const List<String> courseCategories = [
+    'All',
+    'Technology',
+    'Business',
+    'Design',
+    'Marketing',
+    'Value', // For your electrician courses
+  ];
+
+  /// Course Levels
+  static const List<String> courseLevels = [
+    'All',
+    'Beginner',
+    'Intermediate',
+    'Advanced',
+  ];
+
+  /// Job Categories
+  static const List<String> jobCategories = [
+    'All Jobs',
+    'Electrician',
+    'Fitter',
+    'Welder',
+    'Mechanic',
+    'Plumber',
+    'Carpenter',
+  ];
+
+  /// Job Filter Options
+  static const List<String> jobFilterOptions = [
+    'Filter',
+    'Sort',
+    'Job Title',
+    'Experience',
+    'Location',
+    'Salary',
+    'Company',
+  ];
+
+  /// Experience Levels
+  static const List<String> experienceLevels = [
+    'Fresher',
+    '1-2 years',
+    '2-5 years',
+    '5+ years',
+  ];
+
+  /// Salary Ranges
+  static const List<String> salaryRanges = [
+    'Below ₹1L',
+    '₹1L - ₹2L',
+    '₹2L - ₹3L',
+    '₹3L - ₹5L',
+    'Above ₹5L',
+  ];
 }

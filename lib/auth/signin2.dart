@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import '../pages/home/home.dart';
 
 class Signin2Screen extends StatefulWidget {
   const Signin2Screen({super.key});
@@ -136,8 +135,8 @@ class _Signin2ScreenState extends State<Signin2Screen> {
         _isVerifying = false;
       });
 
-      // Navigate to home screen
-      NavigationService.smartNavigate(destination: const HomeScreen());
+      // Navigate to location flow instead of directly to home using smart navigation
+      NavigationService.smartNavigate(routeName: RouteNames.location1);
     });
   }
 }

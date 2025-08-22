@@ -46,7 +46,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             Icons.arrow_back,
             color: AppConstants.textPrimaryColor,
           ),
-          onPressed: () => NavigationService.goBack(),
+          onPressed: () =>
+              NavigationService.smartNavigate(routeName: RouteNames.signin),
         ),
         title: const Text(
           'Create Account',
