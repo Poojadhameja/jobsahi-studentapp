@@ -5,7 +5,6 @@ library;
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import '../pages/home/home.dart';
 
 class Signin2Screen extends StatefulWidget {
   const Signin2Screen({super.key});
@@ -26,7 +25,10 @@ class _Signin2ScreenState extends State<Signin2Screen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimaryColor),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppConstants.textPrimaryColor,
+          ),
           onPressed: () => NavigationService.goBack(),
         ),
       ),
@@ -39,11 +41,11 @@ class _Signin2ScreenState extends State<Signin2Screen> {
               // Success icon
               _buildSuccessIcon(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Title and description
               _buildContent(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Continue button
               _buildContinueButton(),
             ],
@@ -62,11 +64,7 @@ class _Signin2ScreenState extends State<Signin2Screen> {
         color: AppConstants.successColor,
         shape: BoxShape.circle,
       ),
-      child: const Icon(
-        Icons.check,
-        color: Colors.white,
-        size: 50,
-      ),
+      child: const Icon(Icons.check, color: Colors.white, size: 50),
     );
   }
 
@@ -84,7 +82,7 @@ class _Signin2ScreenState extends State<Signin2Screen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         const Text(
           'Your email has been verified successfully. You can now access all features of the app.',
           style: TextStyle(
@@ -123,10 +121,7 @@ class _Signin2ScreenState extends State<Signin2Screen> {
               )
             : const Text(
                 'Continue to App',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -143,9 +138,9 @@ class _Signin2ScreenState extends State<Signin2Screen> {
       setState(() {
         _isVerifying = false;
       });
-      
-      // Navigate to home screen
-      NavigationService.smartNavigate(destination: const HomeScreen());
+
+      // Navigate to location flow instead of directly to home using smart navigation
+      NavigationService.smartNavigate(routeName: RouteNames.location1);
     });
   }
 }

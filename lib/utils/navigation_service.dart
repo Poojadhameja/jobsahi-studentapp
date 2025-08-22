@@ -23,8 +23,8 @@ import '../pages/jobs/job_details.dart';
 import '../pages/jobs/job_step1.dart';
 import '../pages/jobs/job_step2.dart';
 import '../pages/jobs/job_step3.dart';
-import '../pages/location/location1.dart';
-import '../pages/location/location2.dart';
+import '../pages/location/your_location.dart';
+import '../pages/location/location_permission.dart';
 import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
 import '../pages/setting/settings.dart'; // Course screens
@@ -186,9 +186,9 @@ class NavigationService {
         return RouteNames.jobStep2;
       case 'JobStep3Screen':
         return RouteNames.jobStep3;
-      case 'Location1Screen':
+      case 'YourLocationScreen':
         return RouteNames.location1;
-      case 'Location2Screen':
+      case 'LocationPermissionScreen':
         return RouteNames.location2;
       case 'ProfileScreen':
         return RouteNames.profile;
@@ -220,6 +220,10 @@ class NavigationService {
 
     if (_isLocationCompletionFlow(currentRoute, targetRoute)) {
       return _NavigationAction.clearStack;
+    }
+
+    if (_isLocationFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
     }
 
     if (_isJobApplicationFlow(currentRoute, targetRoute)) {
@@ -258,6 +262,17 @@ class NavigationService {
   ) {
     return currentRoute == RouteNames.location2 &&
         targetRoute == RouteNames.home;
+  }
+
+  static bool _isLocationFlow(String currentRoute, String targetRoute) {
+    final locationFlowSequences = [
+      [RouteNames.location1, RouteNames.location2],
+      [RouteNames.location2, RouteNames.home],
+    ];
+
+    return locationFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
   }
 
   static bool _isJobApplicationFlow(String currentRoute, String targetRoute) {
@@ -365,8 +380,8 @@ class RouteNames {
   static const String jobStep1 = '/job-step1';
   static const String jobStep2 = '/job-step2';
   static const String jobStep3 = '/job-step3';
-  static const String location1 = '/location1';
-  static const String location2 = '/location2';
+  static const String location1 = '/your-location';
+  static const String location2 = '/enter-location';
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
 
@@ -433,9 +448,16 @@ class RouteGenerator {
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobStep3Screen(job: job));
       case RouteNames.location1:
-        return MaterialPageRoute(builder: (_) => const Location1Screen());
+        return MaterialPageRoute(builder: (_) => const YourLocationScreen());
       case RouteNames.location2:
-        return MaterialPageRoute(builder: (_) => const Location2Screen());
+        final locationArgs = args as Map<String, dynamic>? ?? {};
+        final isFromCurrentLocation =
+            locationArgs['isFromCurrentLocation'] ?? false;
+        return MaterialPageRoute(
+          builder: (_) => LocationPermissionScreen(
+            isFromCurrentLocation: isFromCurrentLocation,
+          ),
+        );
       case RouteNames.profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case RouteNames.userProfile:

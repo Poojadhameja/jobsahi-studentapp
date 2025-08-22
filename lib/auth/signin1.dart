@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import '../pages/home/home.dart';
 
 class Signin1Screen extends StatefulWidget {
   const Signin1Screen({super.key});
@@ -51,7 +50,10 @@ class _Signin1ScreenState extends State<Signin1Screen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimaryColor),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppConstants.textPrimaryColor,
+          ),
           onPressed: () => NavigationService.goBack(),
         ),
       ),
@@ -64,15 +66,15 @@ class _Signin1ScreenState extends State<Signin1Screen> {
               // Header section
               _buildHeaderSection(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // OTP input section
               _buildOTPInputSection(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Verify button
               _buildVerifyButton(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Resend OTP section
               _buildResendOTPSection(),
             ],
@@ -97,7 +99,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
           ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         // Description
         const Text(
           'We have sent a verification code to your phone number',
@@ -107,7 +109,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
           ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         // Phone number display
         Text(
           '+91 98765 43210', // TODO: Get from previous screen
@@ -135,7 +137,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
           ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         // OTP input fields
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -170,14 +172,14 @@ class _Signin1ScreenState extends State<Signin1Screen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-            borderSide: const BorderSide(color: AppConstants.primaryColor, width: 2),
+            borderSide: const BorderSide(
+              color: AppConstants.primaryColor,
+              width: 2,
+            ),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
         ),
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         onChanged: (value) {
           if (value.isNotEmpty && index < 5) {
             // Move to next field
@@ -216,10 +218,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
               )
             : const Text(
                 AppConstants.verifyText,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -261,7 +260,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
 
     // Get the complete OTP
     final otp = _otpControllers.map((controller) => controller.text).join();
-    
+
     // Simulate API call
     Future.delayed(const Duration(seconds: 2), () {
       setState(() {
@@ -270,8 +269,8 @@ class _Signin1ScreenState extends State<Signin1Screen> {
 
       // For demo purposes, accept any 6-digit OTP
       if (otp.length == 6) {
-        // Navigate to home screen
-         NavigationService.smartNavigate(destination: const HomeScreen());
+        // Navigate to location screen using smart navigation
+        NavigationService.smartNavigate(routeName: RouteNames.location1);
       } else {
         // Show error message
         _showErrorSnackBar('Please enter a valid 6-digit OTP');

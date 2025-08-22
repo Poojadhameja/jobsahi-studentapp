@@ -57,6 +57,7 @@ flutter:
   assets:
     # Images - logos, icons, illustrations, and other image assets
     - assets/images/
+    - assets/images/location_icon.png
     - assets/images/logo/
     - assets/images/onboarding/
     - assets/images/home/
