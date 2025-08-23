@@ -104,6 +104,16 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildProfile() {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      decoration: BoxDecoration(
+        color: AppConstants.backgroundColor,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      ),
+    );
+  }
+
   /// Builds the profile options section
   Widget _buildProfileOptions() {
     return Column(
