@@ -1,7 +1,3 @@
-/// Home Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/job_data.dart';
@@ -13,6 +9,8 @@ import '../../widgets/feature_specific/job_card.dart';
 import '../../widgets/feature_specific/filter_chip.dart';
 import '../jobs/job_details.dart';
 import '../jobs/search_job.dart';
+import '../jobs/saved_jobs.dart';
+import '../jobs/app_tracker1.dart';
 import '../profile/profile.dart';
 import '../courses/learning_center.dart';
 
@@ -55,8 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
         // Courses tab - show heading with back icon
         return const TabAppBar(title: 'Learning Center');
       case 2:
-        // Applications tab - show heading with back icon
-        return const TabAppBar(title: 'My Applications');
+        // Application Tracker tab - show heading with back icon
+        return const TabAppBar(title: 'Application Tracker');
       case 3:
         // Messages tab - show heading with back icon
         return const TabAppBar(title: 'Messages');
@@ -76,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return const LearningCenterPage();
       case 2:
-        return const ApplicationsPage();
+        return const AppTracker1Screen();
       case 3:
         return const MessagesPage();
       case 4:
@@ -96,7 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Handles search functionality
   static void _onSearch(String query) {
     // Navigate to search results screen
-NavigationService.smartNavigate(destination: SearchJobScreen(searchQuery: query));
+    NavigationService.smartNavigate(
+      destination: SearchJobScreen(searchQuery: query),
+    );
   }
 }
 
@@ -157,7 +157,9 @@ class _HomePageState extends State<HomePage> {
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              // TODO: Navigate to saved jobs screen
+              NavigationService.smartNavigate(
+                destination: const SavedJobsScreen(),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.cardBackgroundColor,
@@ -259,7 +261,9 @@ class JobList extends StatelessWidget {
               job: job,
               onTap: () {
                 // Navigate to job details screen
-                NavigationService.smartNavigate(destination: JobDetailsScreen(job: job));
+                NavigationService.smartNavigate(
+                  destination: JobDetailsScreen(job: job),
+                );
               },
               isInitiallySaved: UserData.savedJobIds.contains(job['id']),
             ),
@@ -271,64 +275,6 @@ class JobList extends StatelessWidget {
 
 /// Bottom Navigation Screen Widgets
 /// These are placeholder screens for the bottom navigation tabs
-
-class ApplicationsPage extends StatelessWidget {
-  const ApplicationsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Applications content
-            const Text(
-              'Your Job Applications',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppConstants.textPrimaryColor,
-              ),
-            ),
-            const SizedBox(height: AppConstants.defaultPadding),
-
-            // Placeholder content
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.assignment_outlined,
-                      size: 64,
-                      color: AppConstants.textSecondaryColor,
-                    ),
-                    const SizedBox(height: AppConstants.defaultPadding),
-                    Text(
-                      'No applications yet',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: AppConstants.textSecondaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    Text(
-                      'Start applying to jobs to see them here',
-                      style: TextStyle(color: AppConstants.textSecondaryColor),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class MessagesPage extends StatelessWidget {
   const MessagesPage({super.key});

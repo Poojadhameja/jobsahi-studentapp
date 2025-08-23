@@ -1,7 +1,3 @@
-/// Enter Code Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
@@ -47,10 +43,7 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Enter Code',
-        showBackButton: true,
-      ),
+      appBar: const SimpleAppBar(title: 'Enter Code', showBackButton: true),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.largePadding),
@@ -60,15 +53,15 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
               // Header section
               _buildHeader(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Code input section
               _buildCodeInput(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Verify button
               _buildVerifyButton(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Resend code section
               _buildResendCodeSection(),
             ],
@@ -118,7 +111,7 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
           ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         // Code input fields
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -153,14 +146,14 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-            borderSide: const BorderSide(color: AppConstants.primaryColor, width: 2),
+            borderSide: const BorderSide(
+              color: AppConstants.primaryColor,
+              width: 2,
+            ),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
         ),
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         onChanged: (value) {
           if (value.isNotEmpty && index < 5) {
             // Move to next field
@@ -199,10 +192,7 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
               )
             : const Text(
                 AppConstants.verifyText,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -239,7 +229,7 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
   /// Verifies the entered code
   void _verifyCode() {
     final code = _codeControllers.map((controller) => controller.text).join();
-    
+
     if (code.length != 6) {
       _showErrorSnackBar('Please enter a valid 6-digit code');
       return;
@@ -258,7 +248,9 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
       // For demo purposes, accept any 6-digit code
       if (code.length == 6) {
         // Navigate to enter new password screen
-        NavigationService.smartNavigate(destination: const EnterNewPasswordScreen());
+        NavigationService.smartNavigate(
+          destination: const EnterNewPasswordScreen(),
+        );
       } else {
         _showErrorSnackBar('Invalid verification code');
       }

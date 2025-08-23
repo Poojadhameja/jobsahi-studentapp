@@ -1,7 +1,3 @@
-/// Create Account Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';

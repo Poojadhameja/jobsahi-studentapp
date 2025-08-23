@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
 import '../../utils/navigation_service.dart';
+import '../../widgets/global/simple_app_bar.dart';
 import 'user_profile.dart';
 import '../../auth/signin.dart';
+import '../jobs/saved_jobs.dart';
+import '../setting/settings.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -16,6 +19,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
+      appBar: const SimpleAppBar(title: 'Profile', showBackButton: false),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -89,7 +93,9 @@ class ProfileScreen extends StatelessWidget {
           // Edit button
           IconButton(
             onPressed: () {
-                   NavigationService.smartNavigate(destination: const UserProfileScreen());
+              NavigationService.smartNavigate(
+                destination: const UserProfileScreen(),
+              );
             },
             icon: const Icon(Icons.edit, color: AppConstants.accentColor),
           ),
@@ -107,7 +113,9 @@ class ProfileScreen extends StatelessWidget {
           title: 'Personal Information',
           subtitle: 'Update your personal details',
           onTap: () {
-     NavigationService.smartNavigate(destination: const UserProfileScreen());
+            NavigationService.smartNavigate(
+              destination: const UserProfileScreen(),
+            );
           },
         ),
         _buildOptionTile(
@@ -123,7 +131,9 @@ class ProfileScreen extends StatelessWidget {
           title: 'Saved Jobs',
           subtitle: 'View your saved jobs',
           onTap: () {
-            // TODO: Navigate to saved jobs screen
+            NavigationService.smartNavigate(
+              destination: const SavedJobsScreen(),
+            );
           },
         ),
         _buildOptionTile(
@@ -139,7 +149,7 @@ class ProfileScreen extends StatelessWidget {
           title: 'Settings',
           subtitle: 'App settings and preferences',
           onTap: () {
-            // TODO: Navigate to settings screen
+            NavigationService.smartNavigate(destination: const SettingsPage());
           },
         ),
         _buildOptionTile(
@@ -230,6 +240,6 @@ class ProfileScreen extends StatelessWidget {
   /// Handles logout
   void _logout() {
     // TODO: Clear user data and navigate to signin screen
-   NavigationService.smartNavigate(destination: const SigninScreen());
+    NavigationService.smartNavigate(destination: const SigninScreen());
   }
 }

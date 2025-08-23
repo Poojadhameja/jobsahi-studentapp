@@ -1,7 +1,3 @@
-/// App-wide constants including colors, text styles, and other static values
-
-library;
-
 import 'package:flutter/material.dart';
 
 class AppConstants {
@@ -100,7 +96,7 @@ class AppConstants {
   /// Navigation Labels
   static const String homeLabel = 'Home';
   static const String coursesLabel = 'Courses';
-  static const String applicationsLabel = 'Applications';
+  static const String applicationsLabel = 'Application Tracker';
   static const String messagesLabel = 'Messages';
   static const String profileLabel = 'Profile';
 

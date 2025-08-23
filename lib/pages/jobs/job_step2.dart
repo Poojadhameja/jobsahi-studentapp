@@ -1,7 +1,3 @@
-/// Job Application Step 2 Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
@@ -12,10 +8,7 @@ class JobStep2Screen extends StatefulWidget {
   /// Job data for the application
   final Map<String, dynamic> job;
 
-  const JobStep2Screen({
-    super.key,
-    required this.job,
-  });
+  const JobStep2Screen({super.key, required this.job});
 
   @override
   State<JobStep2Screen> createState() => _JobStep2ScreenState();
@@ -24,11 +17,11 @@ class JobStep2Screen extends StatefulWidget {
 class _JobStep2ScreenState extends State<JobStep2Screen> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
-  
+
   /// Text editing controllers
   final _skillsController = TextEditingController();
   final _coverLetterController = TextEditingController();
-  
+
   /// Whether the form is being submitted
   bool _isSubmitting = false;
 
@@ -58,15 +51,15 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
                 // Job information header
                 _buildJobHeader(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Progress indicator
                 _buildProgressIndicator(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Form fields
                 _buildFormFields(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Navigation buttons
                 _buildNavigationButtons(),
               ],
@@ -126,14 +119,14 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
         LinearProgressIndicator(
           value: 0.66,
           backgroundColor: AppConstants.backgroundColor,
-          valueColor: const AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+          valueColor: const AlwaysStoppedAnimation<Color>(
+            AppConstants.primaryColor,
+          ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
         const Text(
           'Skills & Cover Letter',
-          style: TextStyle(
-            color: AppConstants.textSecondaryColor,
-          ),
+          style: TextStyle(color: AppConstants.textSecondaryColor),
         ),
       ],
     );
@@ -153,7 +146,7 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Skills
         TextFormField(
           controller: _skillsController,
@@ -168,14 +161,15 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Cover Letter
         TextFormField(
           controller: _coverLetterController,
           maxLines: 6,
           decoration: InputDecoration(
             labelText: 'Cover Letter',
-            hintText: 'Write a brief cover letter explaining why you are interested in this position...',
+            hintText:
+                'Write a brief cover letter explaining why you are interested in this position...',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             ),
@@ -205,15 +199,12 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
             ),
             child: const Text(
               'Back',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ),
         const SizedBox(width: AppConstants.defaultPadding),
-        
+
         // Next button
         Expanded(
           child: ElevatedButton(
@@ -237,10 +228,7 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
                   )
                 : const Text(
                     'Next',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
           ),
         ),
@@ -259,9 +247,11 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
       setState(() {
         _isSubmitting = false;
       });
-      
+
       // Navigate to next step
-        NavigationService.smartNavigate(destination: JobStep3Screen(job: widget.job));
+      NavigationService.smartNavigate(
+        destination: JobStep3Screen(job: widget.job),
+      );
     });
   }
 }

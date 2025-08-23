@@ -1,7 +1,3 @@
-/// Sign In Screen 2 - Email Verification
-
-library;
-
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';

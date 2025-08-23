@@ -1,7 +1,3 @@
-/// Main entry point of the Job Sahi Flutter application
-
-library;
-
 import 'package:flutter/material.dart';
 import 'utils/navigation_service.dart';
 

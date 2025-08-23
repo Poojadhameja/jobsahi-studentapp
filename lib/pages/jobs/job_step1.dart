@@ -1,7 +1,3 @@
-/// Job Application Step 1 Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
@@ -12,10 +8,7 @@ class JobStep1Screen extends StatefulWidget {
   /// Job data for the application
   final Map<String, dynamic> job;
 
-  const JobStep1Screen({
-    super.key,
-    required this.job,
-  });
+  const JobStep1Screen({super.key, required this.job});
 
   @override
   State<JobStep1Screen> createState() => _JobStep1ScreenState();
@@ -24,14 +17,14 @@ class JobStep1Screen extends StatefulWidget {
 class _JobStep1ScreenState extends State<JobStep1Screen> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
-  
+
   /// Text editing controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _experienceController = TextEditingController();
   final _educationController = TextEditingController();
-  
+
   /// Whether the form is being submitted
   bool _isSubmitting = false;
 
@@ -70,15 +63,15 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
                 // Job information header
                 _buildJobHeader(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Progress indicator
                 _buildProgressIndicator(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Form fields
                 _buildFormFields(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Next button
                 _buildNextButton(),
               ],
@@ -129,9 +122,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
           const SizedBox(height: 4),
           Text(
             widget.job['location'] ?? 'Location',
-            style: const TextStyle(
-              color: AppConstants.textSecondaryColor,
-            ),
+            style: const TextStyle(color: AppConstants.textSecondaryColor),
           ),
         ],
       ),
@@ -155,14 +146,14 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
         LinearProgressIndicator(
           value: 0.33,
           backgroundColor: AppConstants.backgroundColor,
-          valueColor: const AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+          valueColor: const AlwaysStoppedAnimation<Color>(
+            AppConstants.primaryColor,
+          ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
         const Text(
           'Basic Information',
-          style: TextStyle(
-            color: AppConstants.textSecondaryColor,
-          ),
+          style: TextStyle(color: AppConstants.textSecondaryColor),
         ),
       ],
     );
@@ -182,7 +173,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Full Name
         TextFormField(
           controller: _nameController,
@@ -202,7 +193,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Email
         TextFormField(
           controller: _emailController,
@@ -226,7 +217,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Phone Number
         TextFormField(
           controller: _phoneController,
@@ -250,7 +241,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Experience
         TextFormField(
           controller: _experienceController,
@@ -264,7 +255,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Education
         TextFormField(
           controller: _educationController,
@@ -306,10 +297,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
               )
             : const Text(
                 'Next',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -327,9 +315,11 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
         setState(() {
           _isSubmitting = false;
         });
-        
+
         // Navigate to next step
-        NavigationService.smartNavigate(destination: JobStep2Screen(job: widget.job));
+        NavigationService.smartNavigate(
+          destination: JobStep2Screen(job: widget.job),
+        );
       });
     }
   }

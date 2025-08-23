@@ -1,7 +1,3 @@
-/// Mock data for user-related information
-
-library;
-
 class UserData {
   /// Current user profile information
   static const Map<String, dynamic> currentUser = {
@@ -106,7 +102,8 @@ class UserData {
       "id": "msg_002",
       "sender": "TechMech Pvt Ltd",
       "subject": "Interview Schedule",
-      "message": "Please confirm your availability for the interview on 25th January.",
+      "message":
+          "Please confirm your availability for the interview on 25th January.",
       "timestamp": "2024-01-19T14:15:00Z",
       "isRead": true,
     },

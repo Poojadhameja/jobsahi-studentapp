@@ -1,18 +1,13 @@
-/// Bottom Navigation Widget
-/// A reusable bottom navigation bar with 5 main sections
-/// Used across multiple screens in the app
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 
 class CustomBottomNavigation extends StatelessWidget {
   /// Currently selected index
   final int currentIndex;
-  
+
   /// Callback function when a tab is selected
   final Function(int) onTap;
-  
+
   /// Whether to show unselected labels (default: true)
   final bool showUnselectedLabels;
 
@@ -69,7 +64,7 @@ class CustomBottomNavigation extends StatelessWidget {
 class BottomNavigationWithScreens extends StatefulWidget {
   /// List of screens to be displayed
   final List<Widget> screens;
-  
+
   /// Initial selected index (default: 0)
   final int initialIndex;
 
@@ -80,10 +75,12 @@ class BottomNavigationWithScreens extends StatefulWidget {
   });
 
   @override
-  State<BottomNavigationWithScreens> createState() => _BottomNavigationWithScreensState();
+  State<BottomNavigationWithScreens> createState() =>
+      _BottomNavigationWithScreensState();
 }
 
-class _BottomNavigationWithScreensState extends State<BottomNavigationWithScreens> {
+class _BottomNavigationWithScreensState
+    extends State<BottomNavigationWithScreens> {
   /// Currently selected index
   late int _selectedIndex;
 

@@ -1,14 +1,10 @@
-/// Custom App Bar Widget
-/// A reusable app bar with search functionality and notification icon
-/// Used across multiple screens in the app
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Title to be displayed in the app bar
   final String? title;
+
 
   /// Whether to show the search bar (default: true)
   final bool showSearchBar;
