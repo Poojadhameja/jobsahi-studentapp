@@ -1,7 +1,3 @@
-/// Unified Onboarding Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../utils/navigation_service.dart';
 import 'signin.dart';
@@ -104,7 +100,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             // Skip button at the top
             _buildSkipButton(),
-            
+
             // PageView with onboarding content
             Expanded(
               child: PageView.builder(
@@ -120,7 +116,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            
+
             // Bottom section with navigation
             _buildBottomSection(),
           ],
@@ -163,20 +159,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               alignment: Alignment.center,
               children: [
                 // Main image
-                Image.asset(
-                  data.image,
-                  height: 200 ,
-                  fit: BoxFit.contain,
-                ),
+                Image.asset(data.image, height: 200, fit: BoxFit.contain),
                 // Floating tags
-                ...data.tags.map((tag) => Align(
-                  alignment: FractionalOffset(tag.x, tag.y),
-                  child: _buildTag(tag.text, tag.color),
-                )),
+                ...data.tags.map(
+                  (tag) => Align(
+                    alignment: FractionalOffset(tag.x, tag.y),
+                    child: _buildTag(tag.text, tag.color),
+                  ),
+                ),
               ],
             ),
           ),
-          
+
           // Content section
           Expanded(
             flex: 1,
@@ -194,14 +188,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Subtitle
                 Text(
                   data.subtitle,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
               ],

@@ -1,7 +1,3 @@
-/// User Profile Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
@@ -18,7 +14,7 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
-  
+
   /// Text editing controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -26,7 +22,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   final _locationController = TextEditingController();
   final _experienceController = TextEditingController();
   final _educationController = TextEditingController();
-  
+
   /// Whether the form is being saved
   bool _isSaving = false;
 
@@ -51,10 +47,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Edit Profile',
-        showBackButton: true,
-      ),
+      appBar: const SimpleAppBar(title: 'Edit Profile', showBackButton: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -65,11 +58,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 // Profile image section
                 _buildProfileImageSection(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Form fields
                 _buildFormFields(),
                 const SizedBox(height: AppConstants.largePadding),
-                
+
                 // Save button
                 _buildSaveButton(),
               ],
@@ -101,7 +94,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             children: [
               CircleAvatar(
                 radius: 60,
-                backgroundImage: AssetImage(UserData.currentUser['profileImage'] ?? AppConstants.defaultProfileImage),
+                backgroundImage: AssetImage(
+                  UserData.currentUser['profileImage'] ??
+                      AppConstants.defaultProfileImage,
+                ),
               ),
               Positioned(
                 bottom: 0,
@@ -122,7 +118,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ],
           ),
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Change photo button
           TextButton(
             onPressed: () {
@@ -164,7 +160,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Email
         TextFormField(
           controller: _emailController,
@@ -188,7 +184,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Phone Number
         TextFormField(
           controller: _phoneController,
@@ -212,7 +208,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           },
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Location
         TextFormField(
           controller: _locationController,
@@ -226,7 +222,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Experience
         TextFormField(
           controller: _experienceController,
@@ -240,7 +236,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Education
         TextFormField(
           controller: _educationController,
@@ -282,10 +278,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               )
             : const Text(
                 AppConstants.saveChangesText,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );

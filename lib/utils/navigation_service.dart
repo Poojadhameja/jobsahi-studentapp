@@ -1,7 +1,3 @@
-/// Navigation Service
-
-library;
-
 import 'package:flutter/material.dart';
 
 // Import all screen classes
@@ -23,6 +19,14 @@ import '../pages/jobs/job_details.dart';
 import '../pages/jobs/job_step1.dart';
 import '../pages/jobs/job_step2.dart';
 import '../pages/jobs/job_step3.dart';
+import '../pages/skill_test/skill_test.dart';
+import '../pages/skill_test/skill_test_info.dart';
+import '../pages/skill_test/skills_test_faq.dart';
+import '../pages/jobs/app_tracker1.dart';
+import '../pages/jobs/calendar_view.dart';
+import '../pages/jobs/write_review.dart';
+import '../pages/jobs/saved_jobs.dart';
+import '../pages/jobs/about_company.dart';
 import '../pages/location/your_location.dart';
 import '../pages/location/location_permission.dart';
 import '../pages/profile/profile.dart';
@@ -48,6 +52,9 @@ class NavigationService {
 
   /// Navigate to a new screen
   static Future<T?> navigateTo<T>(Widget screen) async {
+    if (navigatorKey.currentContext == null) {
+      return null;
+    }
     return await Navigator.of(
       navigatorKey.currentContext!,
     ).push<T>(MaterialPageRoute<T>(builder: (context) => screen));
@@ -186,7 +193,26 @@ class NavigationService {
         return RouteNames.jobStep2;
       case 'JobStep3Screen':
         return RouteNames.jobStep3;
+      case 'SkillTestScreen':
+        return RouteNames.skillTest;
+      case 'SkillTestInfoScreen':
+        return RouteNames.skillTestInfo;
+      case 'SkillsTestFAQScreen':
+        return RouteNames.skillsTestFAQ;
+
       case 'YourLocationScreen':
+
+      case 'AppTracker1Screen':
+        return RouteNames.appTracker1;
+      case 'CalendarViewScreen':
+        return RouteNames.calendarView;
+      case 'WriteReviewScreen':
+        return RouteNames.writeReview;
+      case 'AboutCompanyScreen':
+        return RouteNames.aboutCompany;
+      case 'SavedJobsScreen':
+        return RouteNames.savedJobs;
+      case 'Location1Screen':
         return RouteNames.location1;
       case 'LocationPermissionScreen':
         return RouteNames.location2;
@@ -279,6 +305,9 @@ class NavigationService {
     final jobFlowSequences = [
       [RouteNames.jobStep1, RouteNames.jobStep2],
       [RouteNames.jobStep2, RouteNames.jobStep3],
+      [RouteNames.jobStep3, RouteNames.skillTest],
+      [RouteNames.skillTest, RouteNames.skillTestInfo],
+      [RouteNames.jobStep3, RouteNames.appTracker1],
     ];
 
     return jobFlowSequences.any(
@@ -380,6 +409,14 @@ class RouteNames {
   static const String jobStep1 = '/job-step1';
   static const String jobStep2 = '/job-step2';
   static const String jobStep3 = '/job-step3';
+  static const String skillTest = '/skill-test';
+  static const String skillTestInfo = '/skill-test-info';
+  static const String skillsTestFAQ = '/skills-test-faq';
+  static const String appTracker1 = '/app-tracker1';
+  static const String calendarView = '/calendar-view';
+  static const String writeReview = '/write-review';
+  static const String aboutCompany = '/about-company';
+  static const String savedJobs = '/saved-jobs';
   static const String location1 = '/your-location';
   static const String location2 = '/enter-location';
   static const String profile = '/profile';
@@ -447,6 +484,44 @@ class RouteGenerator {
         final job =
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobStep3Screen(job: job));
+      case RouteNames.skillTest:
+        final job =
+            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
+        return MaterialPageRoute(builder: (_) => SkillTestScreen(job: job));
+      case RouteNames.skillTestInfo:
+        final skillTestArgs = args as Map<String, dynamic>? ?? {};
+        final job = skillTestArgs['job'] ?? JobData.recommendedJobs.first;
+        final test = skillTestArgs['test'] ?? {};
+        return MaterialPageRoute(
+          builder: (_) => SkillTestInfoScreen(job: job, test: test),
+        );
+      case RouteNames.skillsTestFAQ:
+        final skillTestArgs = args as Map<String, dynamic>? ?? {};
+        final job = skillTestArgs['job'] ?? JobData.recommendedJobs.first;
+        final test = skillTestArgs['test'] ?? {};
+        return MaterialPageRoute(
+          builder: (_) => SkillsTestFAQScreen(job: job, test: test),
+        );
+
+
+      case RouteNames.appTracker1:
+        return MaterialPageRoute(builder: (_) => const AppTracker1Screen());
+      case RouteNames.calendarView:
+        return MaterialPageRoute(builder: (_) => const CalendarViewScreen());
+      case RouteNames.writeReview:
+        // Pass a job object for the review
+        final job =
+            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
+        return MaterialPageRoute(builder: (_) => WriteReviewScreen(job: job));
+      case RouteNames.aboutCompany:
+        // Pass a company object for the company details
+        final company =
+            args as Map<String, dynamic>? ?? JobData.companies.values.first;
+        return MaterialPageRoute(
+          builder: (_) => AboutCompanyScreen(company: company),
+        );
+      case RouteNames.savedJobs:
+        return MaterialPageRoute(builder: (_) => const SavedJobsScreen());
       case RouteNames.location1:
         return MaterialPageRoute(builder: (_) => const YourLocationScreen());
       case RouteNames.location2:

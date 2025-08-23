@@ -1,7 +1,3 @@
-/// Search Job Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/job_data.dart';
@@ -15,10 +11,7 @@ class SearchJobScreen extends StatefulWidget {
   /// Initial search query
   final String? searchQuery;
 
-  const SearchJobScreen({
-    super.key,
-    this.searchQuery,
-  });
+  const SearchJobScreen({super.key, this.searchQuery});
 
   @override
   State<SearchJobScreen> createState() => _SearchJobScreenState();
@@ -27,13 +20,13 @@ class SearchJobScreen extends StatefulWidget {
 class _SearchJobScreenState extends State<SearchJobScreen> {
   /// Search controller
   final _searchController = TextEditingController();
-  
+
   /// Currently selected filter index
   int _selectedFilterIndex = 0;
-  
+
   /// Currently selected category index
   int _selectedCategoryIndex = 0;
-  
+
   /// List of filtered jobs
   List<Map<String, dynamic>> _filteredJobs = [];
 
@@ -54,19 +47,14 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Search Jobs',
-        showBackButton: true,
-      ),
+      appBar: const SimpleAppBar(title: 'Search Jobs', showBackButton: true),
       body: Column(
         children: [
           // Search and filter section
           _buildSearchAndFilterSection(),
-          
+
           // Job results
-          Expanded(
-            child: _buildJobResults(),
-          ),
+          Expanded(child: _buildJobResults()),
         ],
       ),
     );
@@ -81,11 +69,11 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
           // Search bar
           _buildSearchBar(),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Category filters
           _buildCategoryFilters(),
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Filter chips
           _buildFilterChips(),
         ],
@@ -99,7 +87,10 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
       controller: _searchController,
       decoration: InputDecoration(
         hintText: AppConstants.searchPlaceholder,
-        prefixIcon: const Icon(Icons.search, color: AppConstants.textPrimaryColor),
+        prefixIcon: const Icon(
+          Icons.search,
+          color: AppConstants.textPrimaryColor,
+        ),
         suffixIcon: IconButton(
           icon: const Icon(Icons.clear),
           onPressed: () {
@@ -183,14 +174,18 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.defaultPadding,
+      ),
       itemCount: _filteredJobs.length,
       itemBuilder: (context, index) {
         final job = _filteredJobs[index];
         return JobCard(
           job: job,
           onTap: () {
-            NavigationService.smartNavigate(destination: JobDetailsScreen(job: job));
+            NavigationService.smartNavigate(
+              destination: JobDetailsScreen(job: job),
+            );
           },
         );
       },
@@ -220,9 +215,7 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
           const SizedBox(height: AppConstants.smallPadding),
           const Text(
             'Try adjusting your search criteria or filters',
-            style: TextStyle(
-              color: AppConstants.textSecondaryColor,
-            ),
+            style: TextStyle(color: AppConstants.textSecondaryColor),
             textAlign: TextAlign.center,
           ),
         ],
@@ -234,19 +227,23 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
   void _filterJobs() {
     final query = _searchController.text.toLowerCase();
     final selectedCategory = JobData.jobCategories[_selectedCategoryIndex];
-    
+
     setState(() {
       _filteredJobs = JobData.recommendedJobs.where((job) {
         // Filter by search query
-        final matchesQuery = query.isEmpty ||
+        final matchesQuery =
+            query.isEmpty ||
             job['title'].toString().toLowerCase().contains(query) ||
             job['company'].toString().toLowerCase().contains(query) ||
             job['location'].toString().toLowerCase().contains(query);
-        
+
         // Filter by category
-        final matchesCategory = selectedCategory == 'All Jobs' ||
-            job['title'].toString().toLowerCase().contains(selectedCategory.toLowerCase());
-        
+        final matchesCategory =
+            selectedCategory == 'All Jobs' ||
+            job['title'].toString().toLowerCase().contains(
+              selectedCategory.toLowerCase(),
+            );
+
         return matchesQuery && matchesCategory;
       }).toList();
     });

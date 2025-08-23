@@ -1,7 +1,8 @@
+export 'custom_app_bar.dart' show CustomAppBar, SimpleAppBar;
+
 /// Simple App Bar Widget
 /// A basic app bar with title and optional back button
 /// Used across multiple screens for consistent navigation
-library;
 
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
@@ -11,22 +12,22 @@ import '../../utils/navigation_service.dart';
 class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Title to display in the app bar
   final String title;
-  
+
   /// Whether to show a back button
   final bool showBackButton;
-  
+
   /// Whether to show a close button instead of back button
   final bool showCloseButton;
-  
+
   /// Optional actions to show on the right side
   final List<Widget>? actions;
-  
+
   /// Background color of the app bar
   final Color? backgroundColor;
-  
+
   /// Text color of the title
   final Color? titleColor;
-  
+
   /// Whether to center the title
   final bool centerTitle;
 
@@ -92,16 +93,16 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
 class SearchAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Controller for the search text field
   final TextEditingController searchController;
-  
+
   /// Callback when search text changes
   final Function(String)? onSearchChanged;
-  
+
   /// Callback when search is submitted
   final Function(String)? onSearchSubmitted;
-  
+
   /// Hint text for the search field
   final String hintText;
-  
+
   /// Whether to show a back button
   final bool showBackButton;
 
@@ -153,10 +154,7 @@ class SearchAppBar extends StatelessWidget implements PreferredSizeWidget {
               vertical: 8,
             ),
           ),
-          style: TextStyle(
-            color: AppConstants.textPrimaryColor,
-            fontSize: 14,
-          ),
+          style: TextStyle(color: AppConstants.textPrimaryColor, fontSize: 14),
         ),
       ),
       actions: [

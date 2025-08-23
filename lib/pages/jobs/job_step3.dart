@@ -6,16 +6,14 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
 import '../../widgets/global/simple_app_bar.dart';
+import '../skill_test/skill_test.dart';
 import '../home/home.dart';
 
 class JobStep3Screen extends StatefulWidget {
   /// Job data for the application
   final Map<String, dynamic> job;
 
-  const JobStep3Screen({
-    super.key,
-    required this.job,
-  });
+  const JobStep3Screen({super.key, required this.job});
 
   @override
   State<JobStep3Screen> createState() => _JobStep3ScreenState();
@@ -42,15 +40,15 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
               // Job information header
               _buildJobHeader(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Progress indicator
               _buildProgressIndicator(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Review section
               _buildReviewSection(),
               const SizedBox(height: AppConstants.largePadding),
-              
+
               // Submit button
               _buildSubmitButton(),
             ],
@@ -109,14 +107,14 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
         LinearProgressIndicator(
           value: 1.0,
           backgroundColor: AppConstants.backgroundColor,
-          valueColor: const AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+          valueColor: const AlwaysStoppedAnimation<Color>(
+            AppConstants.primaryColor,
+          ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
         const Text(
           'Review & Submit',
-          style: TextStyle(
-            color: AppConstants.textSecondaryColor,
-          ),
+          style: TextStyle(color: AppConstants.textSecondaryColor),
         ),
       ],
     );
@@ -136,7 +134,7 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Personal information
         _buildReviewCard(
           title: 'Personal Information',
@@ -149,7 +147,7 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
           ],
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Additional information
         _buildReviewCard(
           title: 'Additional Information',
@@ -159,7 +157,7 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
           ],
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Terms and conditions
         _buildTermsAndConditions(),
       ],
@@ -190,15 +188,15 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
             ),
           ),
           const SizedBox(height: AppConstants.smallPadding),
-          ...items.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              item,
-              style: const TextStyle(
-                color: AppConstants.textSecondaryColor,
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                item,
+                style: const TextStyle(color: AppConstants.textSecondaryColor),
               ),
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -262,10 +260,7 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
               )
             : const Text(
                 'Submit Application',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -296,19 +291,29 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
       builder: (context) => AlertDialog(
         title: const Text('Application Submitted!'),
         content: const Text(
-          'Your job application has been submitted successfully. You will receive a confirmation email shortly.',
+          'Your job application has been submitted successfully. Now you need to take a skills test to complete your application.',
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               // Navigate to home screen
-               NavigationService.smartNavigate(destination: const HomeScreen());
+              NavigationService.smartNavigate(destination: const HomeScreen());
             },
-            child: const Text('OK'),
+            style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+            child: const Text('Later'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Navigate to skills test screen
+              NavigationService.navigateTo(SkillTestScreen(job: widget.job));
+            },
+            child: const Text('Take Skills Test'),
           ),
         ],
       ),
     );
   }
 }
+

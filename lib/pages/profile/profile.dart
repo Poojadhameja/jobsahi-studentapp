@@ -9,6 +9,7 @@ import '../../utils/navigation_service.dart';
 import '../../widgets/global/simple_app_bar.dart';
 import 'user_profile.dart';
 import '../../auth/signin.dart';
+import '../jobs/saved_jobs.dart';
 import '../setting/settings.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -130,7 +131,9 @@ class ProfileScreen extends StatelessWidget {
           title: 'Saved Jobs',
           subtitle: 'View your saved jobs',
           onTap: () {
-            // TODO: Navigate to saved jobs screen
+            NavigationService.smartNavigate(
+              destination: const SavedJobsScreen(),
+            );
           },
         ),
         _buildOptionTile(
