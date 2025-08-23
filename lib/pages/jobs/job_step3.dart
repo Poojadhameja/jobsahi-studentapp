@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/global/simple_app_bar.dart';
-import 'take_skill_test.dart';
+import 'app_tracker1.dart';
 
 class JobStep3Screen extends StatefulWidget {
   /// Job data for the application
@@ -292,10 +292,10 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
             onPressed: () {
               // Close the dialog first
               Navigator.of(dialogContext).pop();
-              // Then navigate directly to TakeSkillTest screen
+              // Then navigate directly to Application Tracker screen
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const TakeSkillTestScreen(),
+                  builder: (context) => const AppTracker1Screen(),
                 ),
               );
             },

@@ -19,8 +19,6 @@ import '../pages/jobs/job_details.dart';
 import '../pages/jobs/job_step1.dart';
 import '../pages/jobs/job_step2.dart';
 import '../pages/jobs/job_step3.dart';
-import '../pages/jobs/take_skill_test.dart';
-import '../pages/jobs/application_submitted.dart';
 import '../pages/jobs/app_tracker1.dart';
 import '../pages/jobs/calendar_view.dart';
 import '../pages/jobs/write_review.dart';
@@ -192,10 +190,7 @@ class NavigationService {
         return RouteNames.jobStep2;
       case 'JobStep3Screen':
         return RouteNames.jobStep3;
-      case 'TakeSkillTestScreen':
-        return RouteNames.takeSkillTest;
-      case 'ApplicationSubmittedScreen':
-        return RouteNames.applicationSubmitted;
+
       case 'AppTracker1Screen':
         return RouteNames.appTracker1;
       case 'CalendarViewScreen':
@@ -299,9 +294,7 @@ class NavigationService {
     final jobFlowSequences = [
       [RouteNames.jobStep1, RouteNames.jobStep2],
       [RouteNames.jobStep2, RouteNames.jobStep3],
-      [RouteNames.jobStep3, RouteNames.takeSkillTest],
-      [RouteNames.takeSkillTest, RouteNames.applicationSubmitted],
-      [RouteNames.applicationSubmitted, RouteNames.appTracker1],
+      [RouteNames.jobStep3, RouteNames.appTracker1],
     ];
 
     return jobFlowSequences.any(
@@ -403,8 +396,6 @@ class RouteNames {
   static const String jobStep1 = '/job-step1';
   static const String jobStep2 = '/job-step2';
   static const String jobStep3 = '/job-step3';
-  static const String takeSkillTest = '/take-skill-test';
-  static const String applicationSubmitted = '/application-submitted';
   static const String appTracker1 = '/app-tracker1';
   static const String calendarView = '/calendar-view';
   static const String writeReview = '/write-review';
@@ -477,12 +468,7 @@ class RouteGenerator {
         final job =
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobStep3Screen(job: job));
-      case RouteNames.takeSkillTest:
-        return MaterialPageRoute(builder: (_) => const TakeSkillTestScreen());
-      case RouteNames.applicationSubmitted:
-        return MaterialPageRoute(
-          builder: (_) => const ApplicationSubmittedScreen(),
-        );
+
       case RouteNames.appTracker1:
         return MaterialPageRoute(builder: (_) => const AppTracker1Screen());
       case RouteNames.calendarView:

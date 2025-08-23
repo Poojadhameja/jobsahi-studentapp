@@ -15,13 +15,11 @@ class JobDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> job;
 
   const JobDetailsScreen({super.key, required this.job});
-  const JobDetailsScreen({super.key, required this.job});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(title: 'Job Details', showBackButton: true),
       appBar: const SimpleAppBar(title: 'Job Details', showBackButton: true),
       bottomNavigationBar: _buildApplyButton(),
       body: DefaultTabController(
