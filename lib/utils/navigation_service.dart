@@ -31,6 +31,8 @@ import '../pages/location/your_location.dart';
 import '../pages/location/location_permission.dart';
 import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
+import '../pages/profile/profile_details.dart';
+import '../pages/profile/resume.dart';
 import '../pages/setting/settings.dart'; // Course screens
 import '../pages/courses/learning_center.dart';
 import '../pages/courses/course_details.dart';
@@ -219,6 +221,10 @@ class NavigationService {
         return RouteNames.profile;
       case 'UserProfileScreen':
         return RouteNames.userProfile;
+      case 'ProfileDetailsScreen':
+        return RouteNames.profileDetails;
+      case 'ResumeScreen':
+        return RouteNames.resume;
       case 'SettingsPage':
         return RouteNames.settings;
 
@@ -420,6 +426,8 @@ class RouteNames {
   static const String location2 = '/enter-location';
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
+  static const String profileDetails = '/profile-details';
+  static const String resume = '/resume';
 
   // Course screens
   static const String learningCenter = '/learning-center';
@@ -535,6 +543,10 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case RouteNames.userProfile:
         return MaterialPageRoute(builder: (_) => const UserProfileScreen());
+      case RouteNames.profileDetails:
+        return MaterialPageRoute(builder: (_) => const ProfileDetailsScreen());
+      case RouteNames.resume:
+        return MaterialPageRoute(builder: (_) => const ResumeScreen());
       case RouteNames.settings:
         return MaterialPageRoute(builder: (_) => const SettingsPage());
 
