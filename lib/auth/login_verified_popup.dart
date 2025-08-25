@@ -136,8 +136,10 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen> {
         _isVerifying = false;
       });
 
-      // Navigate to location flow instead of directly to home using smart navigation
-      NavigationService.smartNavigate(routeName: RouteNames.location1);
+      // Navigate to profile builder step 1 instead of directly to location using smart navigation
+      NavigationService.smartNavigate(
+        routeName: RouteNames.profileBuilderStep1,
+      );
     });
   }
 }

@@ -27,8 +27,9 @@ import '../pages/jobs/calendar_view.dart';
 import '../pages/jobs/write_review.dart';
 import '../pages/jobs/saved_jobs.dart';
 import '../pages/jobs/about_company.dart';
-import '../pages/location/your_location.dart';
-import '../pages/location/location_permission.dart';
+import '../pages/profile_builder/your_location.dart';
+import '../pages/profile_builder/location_permission.dart';
+import '../pages/profile_builder/profile_builder_steps.dart';
 import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
 import '../pages/profile/profile_details.dart';
@@ -217,6 +218,12 @@ class NavigationService {
         return RouteNames.location1;
       case 'LocationPermissionScreen':
         return RouteNames.location2;
+      case 'ProfileBuilderStep1Screen':
+        return RouteNames.profileBuilderStep1;
+      case 'ProfileBuilderStep2Screen':
+        return RouteNames.profileBuilderStep2;
+      case 'ProfileBuilderStep3Screen':
+        return RouteNames.profileBuilderStep3;
       case 'ProfileScreen':
         return RouteNames.profile;
       case 'UserProfileScreen':
@@ -256,6 +263,10 @@ class NavigationService {
     }
 
     if (_isLocationFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
+    }
+
+    if (_isProfileBuilderFlow(currentRoute, targetRoute)) {
       return _NavigationAction.push;
     }
 
@@ -308,6 +319,18 @@ class NavigationService {
     );
   }
 
+  static bool _isProfileBuilderFlow(String currentRoute, String targetRoute) {
+    final profileBuilderFlowSequences = [
+      [RouteNames.profileBuilderStep1, RouteNames.profileBuilderStep2],
+      [RouteNames.profileBuilderStep2, RouteNames.profileBuilderStep3],
+      [RouteNames.profileBuilderStep3, RouteNames.location1],
+    ];
+
+    return profileBuilderFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
+  }
+
   static bool _isJobApplicationFlow(String currentRoute, String targetRoute) {
     final jobFlowSequences = [
       [RouteNames.jobStep1, RouteNames.jobStep2],
@@ -335,7 +358,15 @@ class NavigationService {
       RouteNames.setNewPassword,
     ];
 
-    return authRoutes.contains(currentRoute) && targetRoute == RouteNames.home;
+    final profileBuilderRoutes = [
+      RouteNames.profileBuilderStep1,
+      RouteNames.profileBuilderStep2,
+      RouteNames.profileBuilderStep3,
+    ];
+
+    return (authRoutes.contains(currentRoute) ||
+            profileBuilderRoutes.contains(currentRoute)) &&
+        targetRoute == RouteNames.home;
   }
 
   static bool _isCourseFlow(String currentRoute, String targetRoute) {
@@ -426,6 +457,9 @@ class RouteNames {
   static const String savedJobs = '/saved-jobs';
   static const String location1 = '/your-location';
   static const String location2 = '/enter-location';
+  static const String profileBuilderStep1 = '/profile-builder-step1';
+  static const String profileBuilderStep2 = '/profile-builder-step2';
+  static const String profileBuilderStep3 = '/profile-builder-step3';
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
   static const String profileDetails = '/profile-details';
@@ -540,6 +574,28 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => LocationPermissionScreen(
             isFromCurrentLocation: isFromCurrentLocation,
+          ),
+        );
+      case RouteNames.profileBuilderStep1:
+        return MaterialPageRoute(
+          builder: (_) => const ProfileBuilderStep1Screen(),
+        );
+      case RouteNames.profileBuilderStep2:
+        final stepArgs = args as Map<String, dynamic>? ?? {};
+        final selectedJobType = stepArgs['selectedJobType'] ?? 'Full Time';
+        return MaterialPageRoute(
+          builder: (_) =>
+              ProfileBuilderStep2Screen(selectedJobType: selectedJobType),
+        );
+      case RouteNames.profileBuilderStep3:
+        final stepArgs = args as Map<String, dynamic>? ?? {};
+        final selectedJobType = stepArgs['selectedJobType'] ?? 'Full Time';
+        final selectedExperienceLevel =
+            stepArgs['selectedExperienceLevel'] ?? 'Fresher';
+        return MaterialPageRoute(
+          builder: (_) => ProfileBuilderStep3Screen(
+            selectedJobType: selectedJobType,
+            selectedExperienceLevel: selectedExperienceLevel,
           ),
         );
       case RouteNames.profile:

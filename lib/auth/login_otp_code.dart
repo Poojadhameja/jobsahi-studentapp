@@ -274,8 +274,10 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
       // For demo purposes, accept any 4-digit OTP
       if (otp.length == 4) {
-        // Navigate to location screen using smart navigation
-        NavigationService.smartNavigate(routeName: RouteNames.location1);
+        // Navigate to profile builder step 1 using smart navigation
+        NavigationService.smartNavigate(
+          routeName: RouteNames.profileBuilderStep1,
+        );
       } else {
         // Show error message
         _showErrorSnackBar('Please enter a valid 4-digit OTP');
