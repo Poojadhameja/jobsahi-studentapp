@@ -94,39 +94,43 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
 
               /// Form fields
               Form(key: _formKey, child: _buildFormFields()),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
               /// Submit button
               _buildSubmitButton(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
 
               /// Or divider
               Row(
                 children: [
                   const Expanded(child: Divider(color: Color(0xFF58B248))),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       "Or Sign up with",
-                      style: const TextStyle(color: Color(0xFF58B248)),
+                      style: const TextStyle(
+                        color: Color(0xFF58B248),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const Expanded(child: Divider(color: Color(0xFF58B248))),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
               /// Social buttons
               _buildSocialLoginButtons(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               /// Sign in link
               _buildSignInLink(),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -151,7 +155,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
 
         // Email
         _buildFormField(
@@ -170,7 +174,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
 
         // Phone Number
         _buildFormField(
@@ -189,7 +193,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
 
         // Password
         _buildFormField(
@@ -214,7 +218,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
 
         // Confirm Password
         _buildFormField(
@@ -239,7 +243,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
 
         // Terms and Conditions Checkbox
         Row(
@@ -297,7 +301,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: isPassword ? !(passwordVisible ?? false) : false,
@@ -308,16 +312,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             filled: true,
             fillColor: const Color(0xFFF1F5F9),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+              horizontal: 18,
+              vertical: 16,
             ),
           ),
           validator: validator,
         ),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -364,7 +369,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             debugPrint("Redirect to Google signup API");
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         SignInButton(
           logoPath: AppConstants.linkedinLogoAsset,
           text: 'Sign up with Linkedin',

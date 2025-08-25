@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import '../widgets/global/simple_app_bar.dart';
 import 'enter_new_password.dart';
 
 class EnterCodeScreen extends StatefulWidget {
@@ -15,13 +14,13 @@ class EnterCodeScreen extends StatefulWidget {
 class _EnterCodeScreenState extends State<EnterCodeScreen> {
   /// Controllers for code input fields
   final List<TextEditingController> _codeControllers = List.generate(
-    6,
+    4,
     (index) => TextEditingController(),
   );
 
   /// Focus nodes for code input fields
   final List<FocusNode> _codeFocusNodes = List.generate(
-    6,
+    4,
     (index) => FocusNode(),
   );
 
@@ -42,25 +41,67 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(title: 'Enter Code', showBackButton: true),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.largePadding),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.largePadding,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header section
-              _buildHeader(),
-              const SizedBox(height: AppConstants.largePadding),
+              const SizedBox(height: 2),
+
+              /// Back button
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppConstants.textPrimaryColor,
+                ),
+                onPressed: () => NavigationService.goBack(),
+              ),
+              const SizedBox(height: 4),
+
+              /// Profile avatar & title
+              Center(
+                child: Column(
+                  children: [
+                    const CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Color(0xFFE0E7EF),
+                      child: Icon(
+                        Icons.verified_user,
+                        size: 45,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "Enter Verification Code",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "हमने आपके ईमेल पर 4 अंकों का सत्यापन कोड भेजा है",
+                      style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
 
               // Code input section
               _buildCodeInput(),
-              const SizedBox(height: AppConstants.largePadding),
+              const SizedBox(height: 24),
 
               // Verify button
               _buildVerifyButton(),
-              const SizedBox(height: AppConstants.largePadding),
+              const SizedBox(height: 24),
 
               // Resend code section
               _buildResendCodeSection(),
@@ -71,51 +112,31 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
     );
   }
 
-  /// Builds the header section
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Enter Verification Code',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: AppConstants.textPrimaryColor,
-          ),
-        ),
-        const SizedBox(height: AppConstants.smallPadding),
-        const Text(
-          'We have sent a verification code to your email address. Please enter the code below.',
-          style: TextStyle(
-            fontSize: 16,
-            color: AppConstants.textSecondaryColor,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-
   /// Builds the code input section
   Widget _buildCodeInput() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Verification Code',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppConstants.textPrimaryColor,
+        const SizedBox(height: 20),
+
+        // Email display
+        Center(
+          child: Text(
+            'rahul.kumar@email.com', // TODO: Replace with dynamic email
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(height: AppConstants.smallPadding),
+
+        const SizedBox(height: 20),
 
         // Code input fields
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(6, (index) => _buildCodeField(index)),
+          children: List.generate(4, (index) => _buildCodeField(index)),
         ),
       ],
     );
@@ -124,8 +145,8 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
   /// Builds individual code input field
   Widget _buildCodeField(int index) {
     return SizedBox(
-      width: 45,
-      height: 55,
+      width: 56,
+      height: 60,
       child: TextField(
         controller: _codeControllers[index],
         focusNode: _codeFocusNodes[index],
@@ -136,26 +157,38 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
           LengthLimitingTextInputFormatter(1),
         ],
         decoration: InputDecoration(
+          filled: true,
+          fillColor: const Color(0xFFF5F5F5),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-            borderSide: const BorderSide(color: AppConstants.borderColor),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: AppConstants.textPrimaryColor,
+              width: 1.5,
+            ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-            borderSide: const BorderSide(color: AppConstants.borderColor),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: AppConstants.textPrimaryColor,
+              width: 1.5,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+            borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
-              color: AppConstants.primaryColor,
+              color: AppConstants.textPrimaryColor,
               width: 2,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontSize: 26,
+          fontWeight: FontWeight.bold,
+          color: AppConstants.textPrimaryColor,
+        ),
         onChanged: (value) {
-          if (value.isNotEmpty && index < 5) {
+          if (value.isNotEmpty && index < 3) {
             // Move to next field
             _codeFocusNodes[index + 1].requestFocus();
           } else if (value.isEmpty && index > 0) {
@@ -174,11 +207,11 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
       child: ElevatedButton(
         onPressed: _isVerifying ? null : _verifyCode,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.primaryColor,
+          backgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: _isVerifying
@@ -191,7 +224,7 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
                 ),
               )
             : const Text(
-                AppConstants.verifyText,
+                "Verify Code",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
@@ -200,29 +233,27 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
 
   /// Builds the resend code section
   Widget _buildResendCodeSection() {
-    return Center(
-      child: Column(
-        children: [
-          const Text(
-            "Didn't receive the code?",
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text(
+          "Didn’t get the verification code? ",
+          style: TextStyle(
+            color: AppConstants.textSecondaryColor,
+            fontSize: 14,
+          ),
+        ),
+        GestureDetector(
+          onTap: _resendCode,
+          child: const Text(
+            "Resend",
             style: TextStyle(
-              color: AppConstants.textSecondaryColor,
-              fontSize: 14,
+              color: Color(0xFF58B248),
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 4),
-          TextButton(
-            onPressed: _resendCode,
-            child: const Text(
-              'Resend Code',
-              style: TextStyle(
-                color: AppConstants.accentColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -230,8 +261,8 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
   void _verifyCode() {
     final code = _codeControllers.map((controller) => controller.text).join();
 
-    if (code.length != 6) {
-      _showErrorSnackBar('Please enter a valid 6-digit code');
+    if (code.length != 4) {
+      _showErrorSnackBar('Please enter a valid 4-digit code');
       return;
     }
 
@@ -245,8 +276,8 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
         _isVerifying = false;
       });
 
-      // For demo purposes, accept any 6-digit code
-      if (code.length == 6) {
+      // For demo purposes, accept any 4-digit code
+      if (code.length == 4) {
         // Navigate to enter new password screen
         NavigationService.smartNavigate(
           destination: const EnterNewPasswordScreen(),
