@@ -115,7 +115,10 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
           // Company tagline
           Text(
             widget.company['tagline'] ?? 'Company Tagline',
-            style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 16),
+            style: const TextStyle(
+              color: Color.fromARGB(255, 255, 255, 255),
+              fontSize: 16,
+            ),
           ),
         ],
       ),
@@ -1131,6 +1134,7 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
           ),
         ],
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
