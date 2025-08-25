@@ -48,7 +48,7 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
             icon: const Icon(Icons.public),
           ),
           const Padding(
-            padding: EdgeInsets.only(right: 16),
+            padding: EdgeInsets.only(right: 10),
             child: Center(
               child: Text(
                 'Visit',
@@ -81,7 +81,7 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
   Widget _buildCompanyHeader() {
     return Container(
       width: double.infinity,
-      color: const Color.fromARGB(255, 0, 70, 88), // Teal color
+      color: const Color.fromARGB(255, 0, 40, 63), // Teal color
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
@@ -115,7 +115,7 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
           // Company tagline
           Text(
             widget.company['tagline'] ?? 'Company Tagline',
-            style: const TextStyle(color: Colors.white70, fontSize: 16),
+            style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 16),
           ),
         ],
       ),
@@ -225,53 +225,53 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
           const Divider(),
           const SizedBox(height: AppConstants.defaultPadding),
 
-          // Company Specialties
-          const Text(
-            'Company Specialties',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: AppConstants.smallPadding),
-          _buildSpecialtiesList(),
+          // // Company Specialties
+          // const Text(
+          //   'Company Specialties',
+          //   style: TextStyle(
+          //     fontSize: 18,
+          //     fontWeight: FontWeight.bold,
+          //     color: AppConstants.textPrimaryColor,
+          //   ),
+          // ),
+          // const SizedBox(height: AppConstants.smallPadding),
+          // _buildSpecialtiesList(),
 
-          const SizedBox(height: AppConstants.defaultPadding),
-          const Divider(),
-          const SizedBox(height: AppConstants.defaultPadding),
+          // const SizedBox(height: AppConstants.defaultPadding),
+          // const Divider(),
+          // const SizedBox(height: AppConstants.defaultPadding),
 
           // Certifications
-          const Text(
-            'Certifications',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: AppConstants.smallPadding),
-          _buildCertificationsList(),
+          // const Text(
+          //   'Certifications',
+          //   style: TextStyle(
+          //     fontSize: 18,
+          //     fontWeight: FontWeight.bold,
+          //     color: AppConstants.textPrimaryColor,
+          //   ),
+          // ),
+          // const SizedBox(height: AppConstants.smallPadding),
+          // _buildCertificationsList(),
 
-          const SizedBox(height: AppConstants.defaultPadding),
-          const Divider(),
-          const SizedBox(height: AppConstants.defaultPadding),
+          // const SizedBox(height: AppConstants.defaultPadding),
+          // const Divider(),
+          // const SizedBox(height: AppConstants.defaultPadding),
 
-          // Awards
-          const Text(
-            'Awards & Recognition',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: AppConstants.smallPadding),
-          _buildAwardsList(),
+          // // Awards
+          // const Text(
+          //   'Awards & Recognition',
+          //   style: TextStyle(
+          //     fontSize: 18,
+          //     fontWeight: FontWeight.bold,
+          //     color: AppConstants.textPrimaryColor,
+          //   ),
+          // ),
+          // const SizedBox(height: AppConstants.smallPadding),
+          // _buildAwardsList(),
 
-          const SizedBox(height: AppConstants.defaultPadding),
-          const Divider(),
-          const SizedBox(height: AppConstants.defaultPadding),
+          // const SizedBox(height: AppConstants.defaultPadding),
+          // const Divider(),
+          // const SizedBox(height: AppConstants.defaultPadding),
 
           // Life of Company section
           const Text(
