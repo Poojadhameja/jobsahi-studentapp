@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import 'enter_new_password.dart';
+import 'set_new_password.dart';
 
-class EnterCodeScreen extends StatefulWidget {
-  const EnterCodeScreen({super.key});
+class SetPasswordCodeScreen extends StatefulWidget {
+  const SetPasswordCodeScreen({super.key});
 
   @override
-  State<EnterCodeScreen> createState() => _EnterCodeScreenState();
+  State<SetPasswordCodeScreen> createState() => _SetPasswordCodeScreenState();
 }
 
-class _EnterCodeScreenState extends State<EnterCodeScreen> {
+class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
   /// Controllers for code input fields
   final List<TextEditingController> _codeControllers = List.generate(
     4,
@@ -278,9 +278,9 @@ class _EnterCodeScreenState extends State<EnterCodeScreen> {
 
       // For demo purposes, accept any 4-digit code
       if (code.length == 4) {
-        // Navigate to enter new password screen
+        // Navigate to set new password screen
         NavigationService.smartNavigate(
-          destination: const EnterNewPasswordScreen(),
+          destination: const SetNewPasswordScreen(),
         );
       } else {
         _showErrorSnackBar('Invalid verification code');

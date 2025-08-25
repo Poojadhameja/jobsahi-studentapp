@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 // Authentication screens (moved to auth folder)
 import '../auth/splash_screen.dart';
 import '../auth/onboarding.dart';
-import '../auth/signin.dart';
-import '../auth/signin1.dart';
-import '../auth/signin2.dart';
+import '../auth/login_otp_email.dart';
+import '../auth/login_otp_code.dart';
+import '../auth/login_verified_popup.dart';
 import '../auth/create_account.dart';
 import '../auth/forgot_password.dart';
-import '../auth/enter_code.dart';
-import '../auth/enter_new_password.dart';
+import '../auth/set_password_code.dart';
+import '../auth/set_new_password.dart';
 // Main app screens (organized by feature in pages folder)
 import '../pages/home/home.dart';
 import '../pages/jobs/search_job.dart';
@@ -167,20 +167,20 @@ class NavigationService {
         return RouteNames.splash;
       case 'OnboardingScreen':
         return RouteNames.onboarding;
-      case 'SigninScreen':
-        return RouteNames.signin;
-      case 'Signin1Screen':
-        return RouteNames.signin1;
-      case 'Signin2Screen':
-        return RouteNames.signin2;
+      case 'LoginOtpEmailScreen':
+        return RouteNames.loginOtpEmail;
+      case 'LoginOtpCodeScreen':
+        return RouteNames.loginOtpCode;
+      case 'LoginVerifiedPopupScreen':
+        return RouteNames.loginVerifiedPopup;
       case 'CreateAccountScreen':
         return RouteNames.createAccount;
       case 'ForgotPasswordScreen':
         return RouteNames.forgotPassword;
-      case 'EnterCodeScreen':
-        return RouteNames.enterCode;
-      case 'EnterNewPasswordScreen':
-        return RouteNames.enterNewPassword;
+      case 'SetPasswordCodeScreen':
+        return RouteNames.setPasswordCode;
+      case 'SetNewPasswordScreen':
+        return RouteNames.setNewPassword;
       case 'HomeScreen':
         return RouteNames.home;
       case 'SearchJobScreen':
@@ -277,11 +277,11 @@ class NavigationService {
   static bool _isAuthFlow(String currentRoute, String targetRoute) {
     final authFlowSequences = [
       [RouteNames.splash, RouteNames.onboarding],
-      [RouteNames.onboarding, RouteNames.signin],
-      [RouteNames.signin, RouteNames.signin1],
-      [RouteNames.signin1, RouteNames.signin2],
-      [RouteNames.forgotPassword, RouteNames.enterCode],
-      [RouteNames.enterCode, RouteNames.enterNewPassword],
+      [RouteNames.onboarding, RouteNames.loginOtpEmail],
+      [RouteNames.loginOtpEmail, RouteNames.loginOtpCode],
+      [RouteNames.loginOtpCode, RouteNames.loginVerifiedPopup],
+      [RouteNames.forgotPassword, RouteNames.setPasswordCode],
+      [RouteNames.setPasswordCode, RouteNames.setNewPassword],
     ];
 
     return authFlowSequences.any(
@@ -326,13 +326,13 @@ class NavigationService {
     final authRoutes = [
       RouteNames.splash,
       RouteNames.onboarding,
-      RouteNames.signin,
-      RouteNames.signin1,
-      RouteNames.signin2,
+      RouteNames.loginOtpEmail,
+      RouteNames.loginOtpCode,
+      RouteNames.loginVerifiedPopup,
       RouteNames.createAccount,
       RouteNames.forgotPassword,
-      RouteNames.enterCode,
-      RouteNames.enterNewPassword,
+      RouteNames.setPasswordCode,
+      RouteNames.setNewPassword,
     ];
 
     return authRoutes.contains(currentRoute) && targetRoute == RouteNames.home;
@@ -400,13 +400,13 @@ class RouteNames {
   static const String onboarding = '/onboarding';
 
   // Authentication screens
-  static const String signin = '/signin';
-  static const String signin1 = '/signin1';
-  static const String signin2 = '/signin2';
+  static const String loginOtpEmail = '/login-otp-email';
+  static const String loginOtpCode = '/login-otp-code';
+  static const String loginVerifiedPopup = '/login-verified-popup';
   static const String createAccount = '/create-account';
   static const String forgotPassword = '/forgot-password';
-  static const String enterCode = '/enter-code';
-  static const String enterNewPassword = '/enter-new-password';
+  static const String setPasswordCode = '/set-password-code';
+  static const String setNewPassword = '/set-new-password';
 
   // Main app screens
   static const String home = '/home';
@@ -452,22 +452,22 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case RouteNames.onboarding:
         return MaterialPageRoute(builder: (_) => const OnboardingScreen());
-      case RouteNames.signin:
-        return MaterialPageRoute(builder: (_) => const SigninScreen());
-      case RouteNames.signin1:
-        return MaterialPageRoute(builder: (_) => const Signin1Screen());
-      case RouteNames.signin2:
-        return MaterialPageRoute(builder: (_) => const Signin2Screen());
+      case RouteNames.loginOtpEmail:
+        return MaterialPageRoute(builder: (_) => const LoginOtpEmailScreen());
+      case RouteNames.loginOtpCode:
+        return MaterialPageRoute(builder: (_) => const LoginOtpCodeScreen());
+      case RouteNames.loginVerifiedPopup:
+        return MaterialPageRoute(
+          builder: (_) => const LoginVerifiedPopupScreen(),
+        );
       case RouteNames.createAccount:
         return MaterialPageRoute(builder: (_) => const CreateAccountScreen());
       case RouteNames.forgotPassword:
         return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
-      case RouteNames.enterCode:
-        return MaterialPageRoute(builder: (_) => const EnterCodeScreen());
-      case RouteNames.enterNewPassword:
-        return MaterialPageRoute(
-          builder: (_) => const EnterNewPasswordScreen(),
-        );
+      case RouteNames.setPasswordCode:
+        return MaterialPageRoute(builder: (_) => const SetPasswordCodeScreen());
+      case RouteNames.setNewPassword:
+        return MaterialPageRoute(builder: (_) => const SetNewPasswordScreen());
       case RouteNames.home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case RouteNames.searchJob:

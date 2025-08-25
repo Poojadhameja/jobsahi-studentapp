@@ -9,7 +9,7 @@ import '../../utils/navigation_service.dart';
 import 'user_profile.dart';
 import 'profile_details.dart';
 import 'resume.dart';
-import '../../auth/signin.dart';
+import '../../auth/login_otp_email.dart';
 import '../jobs/saved_jobs.dart';
 import '../setting/settings.dart';
 
@@ -123,9 +123,7 @@ class ProfileScreen extends StatelessWidget {
           title: 'Upload Resume / बायोडाटा डालें',
           subtitle: 'Upload your resume',
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const ResumeScreen(),
-            );
+            NavigationService.smartNavigate(destination: const ResumeScreen());
           },
         ),
         _buildOptionTile(
@@ -265,7 +263,7 @@ class ProfileScreen extends StatelessWidget {
 
   /// Handles logout
   void _logout() {
-    // TODO: Clear user data and navigate to signin screen
-    NavigationService.smartNavigate(destination: const SigninScreen());
+    // TODO: Clear user data and navigate to login screen
+    NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
   }
 }

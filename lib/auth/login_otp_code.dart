@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
 
-class Signin1Screen extends StatefulWidget {
-  const Signin1Screen({super.key});
+class LoginOtpCodeScreen extends StatefulWidget {
+  const LoginOtpCodeScreen({super.key});
 
   @override
-  State<Signin1Screen> createState() => _Signin1ScreenState();
+  State<LoginOtpCodeScreen> createState() => _LoginOtpCodeScreenState();
 }
 
-class _Signin1ScreenState extends State<Signin1Screen> {
+class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
   /// Controllers for OTP input fields
   final List<TextEditingController> _otpControllers = List.generate(
     4,

@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
 
-class Signin2Screen extends StatefulWidget {
-  const Signin2Screen({super.key});
+class LoginVerifiedPopupScreen extends StatefulWidget {
+  const LoginVerifiedPopupScreen({super.key});
 
   @override
-  State<Signin2Screen> createState() => _Signin2ScreenState();
+  State<LoginVerifiedPopupScreen> createState() =>
+      _LoginVerifiedPopupScreenState();
 }
 
-class _Signin2ScreenState extends State<Signin2Screen> {
+class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen> {
   /// Whether the verification is in progress
   bool _isVerifying = false;
 

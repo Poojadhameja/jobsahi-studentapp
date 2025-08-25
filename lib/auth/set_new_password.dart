@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import 'signin.dart';
+import 'login_otp_email.dart';
 
-class EnterNewPasswordScreen extends StatefulWidget {
-  const EnterNewPasswordScreen({super.key});
+class SetNewPasswordScreen extends StatefulWidget {
+  const SetNewPasswordScreen({super.key});
 
   @override
-  State<EnterNewPasswordScreen> createState() => _EnterNewPasswordScreenState();
+  State<SetNewPasswordScreen> createState() => _SetNewPasswordScreenState();
 }
 
-class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
+class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
 
@@ -271,10 +271,12 @@ class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
           _isResetting = false;
         });
 
-        // Show success message and navigate to signin
+        // Show success message and navigate to login
         _showSuccessSnackBar('Password reset successfully');
         Future.delayed(const Duration(seconds: 1), () {
-          NavigationService.smartNavigate(destination: const SigninScreen());
+          NavigationService.smartNavigate(
+            destination: const LoginOtpEmailScreen(),
+          );
         });
       });
     }

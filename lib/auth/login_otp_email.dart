@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import 'signin1.dart';
-import 'signin2.dart';
+import 'login_otp_code.dart';
+import 'login_verified_popup.dart';
 import 'create_account.dart';
 import 'forgot_password.dart';
 
-class SigninScreen extends StatefulWidget {
-  const SigninScreen({super.key});
+class LoginOtpEmailScreen extends StatefulWidget {
+  const LoginOtpEmailScreen({super.key});
 
   @override
-  State<SigninScreen> createState() => _SigninScreenState();
+  State<LoginOtpEmailScreen> createState() => _LoginOtpEmailScreenState();
 }
 
-class _SigninScreenState extends State<SigninScreen> {
+class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   bool isOTPSelected = true;
   bool _isPasswordVisible = false;
 
@@ -248,7 +248,7 @@ class _SigninScreenState extends State<SigninScreen> {
                 ),
               );
               NavigationService.smartNavigate(
-                destination: const Signin1Screen(),
+                destination: const LoginOtpCodeScreen(),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -385,7 +385,7 @@ class _SigninScreenState extends State<SigninScreen> {
           child: ElevatedButton(
             onPressed: () {
               NavigationService.smartNavigate(
-                destination: const Signin2Screen(),
+                destination: const LoginVerifiedPopupScreen(),
               );
             },
             style: ElevatedButton.styleFrom(

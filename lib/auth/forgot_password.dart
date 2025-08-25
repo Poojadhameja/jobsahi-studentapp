@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import 'enter_code.dart';
+import 'set_password_code.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -243,7 +243,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         // Show success message and navigate to enter code screen
         _showSuccessSnackBar('Verification code sent to your email');
         Future.delayed(const Duration(seconds: 1), () {
-          NavigationService.smartNavigate(destination: const EnterCodeScreen());
+          NavigationService.smartNavigate(
+            destination: const SetPasswordCodeScreen(),
+          );
         });
       });
     }
