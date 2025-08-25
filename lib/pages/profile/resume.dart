@@ -37,7 +37,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
           children: [
             // Header with back button and title
             _buildHeader(),
-            
+
             // Main content
             Expanded(
               child: SingleChildScrollView(
@@ -47,15 +47,15 @@ class _ResumeScreenState extends State<ResumeScreen> {
                     // Instruction text
                     _buildInstructionText(),
                     const SizedBox(height: AppConstants.largePadding),
-                    
+
                     // Upload existing resume option
                     _buildUploadOption(),
                     const SizedBox(height: AppConstants.defaultPadding),
-                    
+
                     // OR separator
                     _buildOrSeparator(),
                     const SizedBox(height: AppConstants.defaultPadding),
-                    
+
                     // Build new resume option
                     _buildBuildOption(),
                   ],
@@ -79,11 +79,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
@@ -161,7 +157,9 @@ class _ResumeScreenState extends State<ResumeScreen> {
                 height: 50,
                 decoration: BoxDecoration(
                   color: AppConstants.errorColor,
-                  borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.smallBorderRadius,
+                  ),
                 ),
                 child: const Center(
                   child: Text(
@@ -175,7 +173,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
                 ),
               ),
               const SizedBox(width: AppConstants.defaultPadding),
-              
+
               // File details
               Expanded(
                 child: Column(
@@ -204,7 +202,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
             ],
           ),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Upload button
           SizedBox(
             width: double.infinity,
@@ -217,7 +215,9 @@ class _ResumeScreenState extends State<ResumeScreen> {
                   vertical: AppConstants.defaultPadding,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.smallBorderRadius,
+                  ),
                 ),
                 elevation: 0,
               ),
@@ -231,14 +231,16 @@ class _ResumeScreenState extends State<ResumeScreen> {
                       ),
                     )
                   : Text(
-                      _uploadedFileName != null ? 'Update Resume' : 'Upload Resume',
+                      _uploadedFileName != null
+                          ? 'Update Resume'
+                          : 'Upload Resume',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
             ),
-          ),           
+          ),
         ],
       ),
     );
@@ -255,7 +257,9 @@ class _ResumeScreenState extends State<ResumeScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.defaultPadding,
+          ),
           child: Text(
             'OR',
             style: TextStyle(
@@ -306,7 +310,9 @@ class _ResumeScreenState extends State<ResumeScreen> {
                 height: 50,
                 decoration: BoxDecoration(
                   color: AppConstants.errorColor,
-                  borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.smallBorderRadius,
+                  ),
                 ),
                 child: const Center(
                   child: Text(
@@ -320,7 +326,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
                 ),
               ),
               const SizedBox(width: AppConstants.defaultPadding),
-              
+
               // Build details
               Expanded(
                 child: Column(
@@ -348,7 +354,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
             ],
           ),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Get Started button
           SizedBox(
             width: double.infinity,
@@ -364,15 +370,14 @@ class _ResumeScreenState extends State<ResumeScreen> {
                   vertical: AppConstants.defaultPadding,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.smallBorderRadius,
+                  ),
                 ),
               ),
               child: const Text(
                 'Get Started',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -397,7 +402,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
 
       if (result != null) {
         PlatformFile file = result.files.first;
-        
+
         // Validate file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
           _showMessage('File size should be less than 10MB');
@@ -422,12 +427,11 @@ class _ResumeScreenState extends State<ResumeScreen> {
 
         // Show success message
         _showMessage('Resume uploaded successfully!');
-        
+
         // TODO: Implement actual file upload to server
         // - Upload file to cloud storage
         // - Update user profile in database
         // - Handle upload errors and retry logic
-        
       } else {
         // User canceled file picker
         _showMessage('File selection cancelled');
@@ -448,52 +452,9 @@ class _ResumeScreenState extends State<ResumeScreen> {
     // - Form-based resume creation
     // - Template selection
     // - Step-by-step wizard
-    
+
     // Show message
     _showMessage('Opening resume builder...');
-  }
-
-  /// Handles resume deletion action
-  void _handleDeleteResume() {
-    showDialog(
-      context: NavigationService.context!,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Resume'),
-          content: const Text('Are you sure you want to delete your resume? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _confirmDeleteResume();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: AppConstants.errorColor,
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Confirms and executes resume deletion
-  void _confirmDeleteResume() {
-    setState(() {
-      _uploadedFileName = null;
-      _lastUpdatedDate = null;
-    });
-    
-    _showMessage('Resume deleted successfully!');
-    
-    // TODO: Implement actual resume deletion from server
-    // - Remove file from cloud storage
-    // - Update user profile in database
   }
 
   /// Shows a temporary message to the user
@@ -521,8 +482,18 @@ class _ResumeScreenState extends State<ResumeScreen> {
   String _getCurrentDate() {
     final now = DateTime.now();
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${now.day} ${months[now.month - 1]} ${now.year}';
   }

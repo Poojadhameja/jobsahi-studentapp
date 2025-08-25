@@ -22,19 +22,19 @@ class AboutPage extends StatelessWidget {
             // Main title section
             _buildMainTitle(),
             const SizedBox(height: AppConstants.largePadding),
-            
+
             // Content sections
             _buildContentSection(),
             const SizedBox(height: AppConstants.largePadding),
-            
+
             // Company info section
             _buildCompanyInfo(),
             const SizedBox(height: AppConstants.largePadding),
-            
+
             // Contact section
             _buildContactSection(),
             const SizedBox(height: AppConstants.largePadding),
-            
+
             // Back button
             _buildBackButton(),
           ],
@@ -52,7 +52,7 @@ class AboutPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -61,13 +61,9 @@ class AboutPage extends StatelessWidget {
       child: Column(
         children: [
           // Info icon
-          Icon(
-            Icons.info_outline,
-            size: 48,
-            color: AppConstants.primaryColor,
-          ),
+          Icon(Icons.info_outline, size: 48, color: AppConstants.primaryColor),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Main title
           Text(
             'About JOBSAHI',
@@ -77,9 +73,9 @@ class AboutPage extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Subtitle
           Text(
             'Satpuda Group\'s Jobsahi.com',
@@ -104,7 +100,7 @@ class AboutPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -120,35 +116,35 @@ class AboutPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Mission content in Hindi
           _buildMissionParagraph(
             'JOBSAHI शिक्षा और रोजगार के बीच की खाई को पाटने के लिए प्रतिबद्ध है, '
-            'विशेष रूप से IT और Polytechnic छात्रों के लिए।'
+            'विशेष रूप से IT और Polytechnic छात्रों के लिए।',
           ),
-          
+
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           _buildMissionParagraph(
             'हमारा प्लेटफॉर्म कुशल व्यक्तियों को प्रमुख उद्योगों से जोड़ने के लिए '
-            'डिज़ाइन किया गया है, जो पूर्णकालिक नौकरियां, प्रशिक्षुता और अनुबंध भूमिकाएं प्रदान करता है।'
+            'डिज़ाइन किया गया है, जो पूर्णकालिक नौकरियां, प्रशिक्षुता और अनुबंध भूमिकाएं प्रदान करता है।',
           ),
-          
+
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           _buildMissionParagraph(
             'हमारा मिशन तकनीकी प्रतिभा को सशक्त बनाना है, '
             'उद्योग की मांगों के आधार पर व्यक्तिगत करियर विकास समाधान और '
-            'स्किल-अप प्रोग्राम प्रदान करके।'
+            'स्किल-अप प्रोग्राम प्रदान करके।',
           ),
-          
+
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           _buildMissionParagraph(
             'JOBSAHI एक पारदर्शी और कुशल पारिस्थितिकी तंत्र बनाने का प्रयास करता है, '
             'Satpuda Group के दो दशकों के तकनीकी शिक्षा अनुभव का लाभ उठाते हुए, '
             'जहां छात्र, संस्थान और उद्योग एक कुशल और भविष्य-तैयार कार्यबल '
-            'बनाने के लिए सहयोग करते हैं।'
+            'बनाने के लिए सहयोग करते हैं।',
           ),
         ],
       ),
@@ -174,7 +170,7 @@ class AboutPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -190,7 +186,7 @@ class AboutPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           _buildInfoRow('Company', 'Satpuda Group'),
           _buildInfoRow('Founded', '2004'),
           _buildInfoRow('Industry', 'Technical Education & Job Placement'),
@@ -239,7 +235,7 @@ class AboutPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -255,11 +251,19 @@ class AboutPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           _buildContactRow(Icons.email_outlined, 'Email', 'info@jobsahi.com'),
           _buildContactRow(Icons.phone_outlined, 'Phone', '+91 12345 67890'),
-          _buildContactRow(Icons.location_on_outlined, 'Address', 'Central India'),
-          _buildContactRow(Icons.language_outlined, 'Website', 'www.jobsahi.com'),
+          _buildContactRow(
+            Icons.location_on_outlined,
+            'Address',
+            'Central India',
+          ),
+          _buildContactRow(
+            Icons.language_outlined,
+            'Website',
+            'www.jobsahi.com',
+          ),
         ],
       ),
     );
@@ -270,11 +274,7 @@ class AboutPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppConstants.smallPadding),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: AppConstants.secondaryColor,
-            size: 20,
-          ),
+          Icon(icon, color: AppConstants.secondaryColor, size: 20),
           const SizedBox(width: AppConstants.smallPadding),
           Expanded(
             child: Column(
@@ -308,7 +308,9 @@ class AboutPage extends StatelessWidget {
         child: OutlinedButton(
           onPressed: () => NavigationService.goBack(),
           style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding),
+            padding: const EdgeInsets.symmetric(
+              vertical: AppConstants.defaultPadding,
+            ),
             side: BorderSide(color: AppConstants.secondaryColor),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
