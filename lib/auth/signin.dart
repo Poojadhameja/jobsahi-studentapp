@@ -180,7 +180,7 @@ class _SigninScreenState extends State<SigninScreen> {
       children: [
         RichText(
           text: const TextSpan(
-            text: 'Mobile no.',
+            text: 'Phone Number',
             style: TextStyle(
               fontSize: 14,
               color: AppConstants.textPrimaryColor,
@@ -247,7 +247,7 @@ class _SigninScreenState extends State<SigninScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF58B248),
+              backgroundColor: const Color(0xFF5C9A24),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(

@@ -328,7 +328,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       child: ElevatedButton(
         onPressed: _isSubmitting ? null : _submitForm,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF144B75),
+          backgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
