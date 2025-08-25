@@ -126,6 +126,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
               /// Sign in link
               _buildSignInLink(),
+              const SizedBox(height: 32),
             ],
           ),
         ),
