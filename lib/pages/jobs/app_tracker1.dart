@@ -27,7 +27,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
           // Content
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: _buildContentBasedOnTab(),
             ),
           ),
@@ -40,7 +40,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
   Widget _buildFilterTabs() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
       child: Column(
         children: [
           Row(
@@ -61,16 +61,13 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 12,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(
-                                0xFF475569,
-                              ) // Blue-grey color for selected tab
+                            ? const Color(0xFF0B537D) // Blue-grey color for selected tab
                             : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: isSelected
                               ? const Color(
@@ -86,9 +83,9 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                         tab,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12.5,
                           fontWeight: isSelected
-                              ? FontWeight.w600
+                              ? FontWeight.w700
                               : FontWeight.w500,
                           color: isSelected
                               ? Colors
@@ -144,21 +141,21 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                 onTap: _openCalendarView,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 14,
+                    vertical: 6,
+                    horizontal: 12,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: const Color(0xFF3B82F6), // Light blue border
+                      color: const Color(0xFF0B537D), // Light blue border
                       width: 1,
                     ),
                   ),
                   child: const Text(
                     'Calendar View',
                     style: TextStyle(
-                      color: Color(0xFF1E3A8A), // Dark blue text
+                      color: Color(0xFF0B537D), // Dark blue text
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -207,15 +204,15 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E3A8A),
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFF0B537D),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                     child: const Text(
                       'Applied',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -260,7 +257,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                 child: ElevatedButton(
                   onPressed: _viewApplication,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.successColor,
+                    backgroundColor: const Color(0xFF5C9A24),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -300,40 +297,40 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
     return Column(
       children: [
         // Calendar View button at the top
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              GestureDetector(
-                onTap: _openCalendarView,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFF3B82F6), // Light blue border
-                      width: 1,
-                    ),
-                  ),
-                  child: const Text(
-                    'Calendar View',
-                    style: TextStyle(
-                      color: Color(0xFF1E3A8A),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        // Container(
+        //   width: double.infinity,
+        //   margin: const EdgeInsets.only(bottom: 16),
+        //   child: Row(
+        //     mainAxisAlignment: MainAxisAlignment.end,
+        //     children: [
+        //       GestureDetector(
+        //         onTap: _openCalendarView,
+        //         child: Container(
+        //           padding: const EdgeInsets.symmetric(
+        //             vertical: 8,
+        //             horizontal: 14,
+        //           ),
+        //           decoration: BoxDecoration(
+        //             color: Colors.white,
+        //             borderRadius: BorderRadius.circular(16),
+        //             border: Border.all(
+        //               color: const Color(0xFF3B82F6), // Light blue border
+        //               width: 1,
+        //             ),
+        //           ),
+        //           child: const Text(
+        //             'Calendar View',
+        //             style: TextStyle(
+        //               color: Color(0xFF1E3A8A),
+        //               fontSize: 13,
+        //               fontWeight: FontWeight.w500,
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
 
         // Interview cards list
         Expanded(
@@ -515,7 +512,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Ashok Leyland',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF10B981), // Light green color
+                              color: Color(0xFF5C9A24), // Light green color
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -554,7 +551,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppConstants.successColor,
+                            color: const Color(0xFF5C9A24),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
@@ -643,7 +640,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Ashok Leyland',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF10B981), // Light green color
+                              color: Color(0xFF5C9A24), // Light green color
                               fontWeight: FontWeight.w500,
                             ),
                           ),
