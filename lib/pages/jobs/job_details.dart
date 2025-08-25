@@ -32,9 +32,7 @@ class JobDetailsScreen extends StatelessWidget {
             // Tab bar
             _buildTabBar(),
 
-
             // Tab content
-            Expanded(child: _buildTabContent()),
             Expanded(child: _buildTabContent()),
           ],
         ),
@@ -614,7 +612,6 @@ class JobDetailsScreen extends StatelessWidget {
   /// Builds the job tags section
   Widget _buildJobTags() {
     final tags = job['tags'] as List<dynamic>? ?? [];
-
 
     return Wrap(
       spacing: 8,

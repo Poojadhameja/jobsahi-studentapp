@@ -201,7 +201,6 @@ class NavigationService {
         return RouteNames.skillsTestFAQ;
 
       case 'YourLocationScreen':
-
       case 'AppTracker1Screen':
         return RouteNames.appTracker1;
       case 'CalendarViewScreen':
@@ -502,7 +501,6 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => SkillsTestFAQScreen(job: job, test: test),
         );
-
 
       case RouteNames.appTracker1:
         return MaterialPageRoute(builder: (_) => const AppTracker1Screen());

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
-import '../../widgets/global/simple_app_bar.dart';
 import 'calendar_view.dart';
 
 class AppTracker1Screen extends StatefulWidget {
@@ -20,10 +19,6 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC), // Light grey background
-      appBar: const SimpleAppBar(
-        title: 'Application Tracker / आवेदन ट्रैकर',
-        showBackButton: true,
-      ),
       body: Column(
         children: [
           // Filter tabs

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
 import '../../utils/navigation_service.dart';
-import '../../widgets/global/simple_app_bar.dart';
 import 'user_profile.dart';
 import '../../auth/signin.dart';
 import '../jobs/saved_jobs.dart';
@@ -19,7 +18,6 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(title: 'Profile', showBackButton: false),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
