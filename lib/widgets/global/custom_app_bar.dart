@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
+import '../../utils/navigation_service.dart';
+import '../../pages/profile/profile.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Title to be displayed in the app bar
   final String? title;
-
 
   /// Whether to show the search bar (default: true)
   final bool showSearchBar;
@@ -80,7 +81,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     } else if (showMenuButton) {
       return IconButton(
         icon: const Icon(Icons.menu, color: AppConstants.textPrimaryColor),
-        onPressed: onMenuPressed ?? () {},
+        onPressed:
+            onMenuPressed ??
+            () {
+              // Navigate to profile page when hamburger menu is tapped
+              NavigationService.smartNavigate(
+                destination: const ProfileScreen(),
+              );
+            },
       );
     }
     return null;
@@ -244,10 +252,9 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
         onPressed:
             onBackPressed ??
             () {
-              // Navigate back to home tab
-              if (context.mounted) {
-                Navigator.of(context).pop();
-              }
+              // Navigate back to home tab (index 0)
+              // This will be handled by the parent HomeScreen
+              Navigator.of(context).pop();
             },
       ),
       title: Text(

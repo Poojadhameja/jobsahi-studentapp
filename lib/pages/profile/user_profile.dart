@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
 import '../../utils/navigation_service.dart';
-import '../../widgets/global/simple_app_bar.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -47,7 +46,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(title: 'Edit Profile', showBackButton: true),
+      // appBar: const SimpleAppBar(title: 'Edit Profile', showBackButton: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),

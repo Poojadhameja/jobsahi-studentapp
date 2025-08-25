@@ -11,7 +11,7 @@ import '../jobs/job_details.dart';
 import '../jobs/search_job.dart';
 import '../jobs/saved_jobs.dart';
 import '../jobs/app_tracker1.dart';
-import '../profile/profile.dart';
+import '../profile/user_profile.dart';
 import '../courses/learning_center.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -38,6 +38,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Navigates back to home tab
+  void _navigateToHomeTab() {
+    setState(() {
+      _selectedIndex = 0;
+    });
+  }
+
   /// Builds the appropriate app bar based on selected tab
   PreferredSizeWidget? _buildAppBar() {
     switch (_selectedIndex) {
@@ -51,16 +58,28 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       case 1:
         // Courses tab - show heading with back icon
-        return const TabAppBar(title: 'Learning Center');
+        return TabAppBar(
+          title: 'Learning Center',
+          onBackPressed: _navigateToHomeTab, // Navigate to home tab
+        );
       case 2:
         // Application Tracker tab - show heading with back icon
-        return const TabAppBar(title: 'Application Tracker');
+        return TabAppBar(
+          title: 'Application Tracker',
+          onBackPressed: _navigateToHomeTab, // Navigate to home tab
+        );
       case 3:
         // Messages tab - show heading with back icon
-        return const TabAppBar(title: 'Messages');
+        return TabAppBar(
+          title: 'Messages',
+          onBackPressed: _navigateToHomeTab, // Navigate to home tab
+        );
       case 4:
         // Profile tab - show heading with back icon
-        return const TabAppBar(title: 'Profile');
+        return TabAppBar(
+          title: 'Edit Profile',
+          onBackPressed: _navigateToHomeTab, // Navigate to home tab
+        );
       default:
         return null;
     }
@@ -78,7 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return const MessagesPage();
       case 4:
-        return const ProfilePage();
+        // Profile tab - navigate directly to edit profile
+        return const UserProfileScreen();
       default:
         return const HomePage();
     }
@@ -331,14 +351,5 @@ class MessagesPage extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const ProfileScreen();
   }
 }

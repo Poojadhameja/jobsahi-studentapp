@@ -4,7 +4,7 @@ import '../../widgets/global/custom_app_bar.dart';
 import '../../auth/enter_new_password.dart';
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
