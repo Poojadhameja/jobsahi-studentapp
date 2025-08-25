@@ -60,12 +60,12 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF0B537D) // Blue-grey color for selected tab
+                            ? const Color(
+                                0xFF0B537D,
+                              ) // Blue-grey color for selected tab
                             : Colors.white,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
