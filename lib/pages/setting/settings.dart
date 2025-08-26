@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/navigation_service.dart';
 import '../../widgets/global/custom_app_bar.dart';
 import '../../auth/enter_new_password.dart';
+import 'about_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -48,7 +49,9 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.info_outline,
             title: 'About / हमारे बारे में',
             onTap: () {
-              // TODO: Navigate to About Page
+              NavigationService.smartNavigate(
+                destination: const AboutPage(),
+              );
             },
           ),
           _buildSettingItem(
