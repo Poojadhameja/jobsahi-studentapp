@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
 
-class Signin1Screen extends StatefulWidget {
-  const Signin1Screen({super.key});
+class LoginOtpCodeScreen extends StatefulWidget {
+  const LoginOtpCodeScreen({super.key});
 
   @override
-  State<Signin1Screen> createState() => _Signin1ScreenState();
+  State<LoginOtpCodeScreen> createState() => _LoginOtpCodeScreenState();
 }
 
-class _Signin1ScreenState extends State<Signin1Screen> {
+class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
   /// Controllers for OTP input fields
   final List<TextEditingController> _otpControllers = List.generate(
     4,
@@ -42,40 +42,69 @@ class _Signin1ScreenState extends State<Signin1Screen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppConstants.textPrimaryColor,
-          ),
-          onPressed: () => NavigationService.goBack(),
-        ),
-      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.largePadding),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.largePadding,
+          ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header section with profile icon and title
-              _buildHeaderSection(),
-              const SizedBox(height: AppConstants.largePadding),
+              const SizedBox(height: 2),
 
-              // OTP instruction text
-              _buildOTPInstruction(),
-              const SizedBox(height: AppConstants.largePadding),
+              /// Back button
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppConstants.textPrimaryColor,
+                ),
+                onPressed: () => NavigationService.goBack(),
+              ),
+              const SizedBox(height: 4),
+
+              /// Profile avatar & title
+              Center(
+                child: Column(
+                  children: [
+                    const CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Color(0xFFE0E7EF),
+                      child: Icon(
+                        Icons.verified_user,
+                        size: 45,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "Enter Verification Code",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "हमने आपके मोबाइल पर 4 अंकों का OTP भेजा है",
+                      style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
 
               // OTP input section
               _buildOTPInputSection(),
-              const SizedBox(height: AppConstants.largePadding),
-
-              // Resend OTP section
-              _buildResendOTPSection(),
-              const Spacer(),
+              const SizedBox(height: 24),
 
               // Verify button
               _buildVerifyButton(),
+              const SizedBox(height: 24),
+
+              // Resend OTP section
+              _buildResendOTPSection(),
             ],
           ),
         ),
@@ -83,65 +112,27 @@ class _Signin1ScreenState extends State<Signin1Screen> {
     );
   }
 
-  /// Builds the header section with profile icon and title
-  Widget _buildHeaderSection() {
-    return Column(
-      children: [
-        // Profile icon
-        const CircleAvatar(
-          radius: 40,
-          backgroundColor: Color(0xFFE0E7EF),
-          child: Icon(
-            Icons.person,
-            size: 45,
-            color: AppConstants.textPrimaryColor,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Title
-        const Text(
-          'Enter Code',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: AppConstants.textPrimaryColor,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Builds the OTP instruction text
-  Widget _buildOTPInstruction() {
-    return Column(
-      children: [
-        const Text(
-          'Enter the 4-digit code sent to your phone',
-          style: TextStyle(
-            fontSize: 16,
-            color: AppConstants.textSecondaryColor,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '+91 98765 43210',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppConstants.textPrimaryColor,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
   /// Builds the OTP input section
   Widget _buildOTPInputSection() {
     return Column(
       children: [
+        const SizedBox(height: 20),
+
+        // Phone number display
+        Center(
+          child: Text(
+            '+91 98765 43210', // TODO: Replace with dynamic phone number
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
         // OTP input fields
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -154,8 +145,8 @@ class _Signin1ScreenState extends State<Signin1Screen> {
   /// Builds individual OTP input field
   Widget _buildOTPField(int index) {
     return SizedBox(
-      width: 50,
-      height: 55,
+      width: 56,
+      height: 60,
       child: TextField(
         controller: _otpControllers[index],
         focusNode: _otpFocusNodes[index],
@@ -169,30 +160,30 @@ class _Signin1ScreenState extends State<Signin1Screen> {
           filled: true,
           fillColor: const Color(0xFFF5F5F5),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
               color: AppConstants.textPrimaryColor,
-              width: 1,
+              width: 1.5,
             ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
               color: AppConstants.textPrimaryColor,
-              width: 1,
+              width: 1.5,
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
               color: AppConstants.textPrimaryColor,
               width: 2,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
         style: const TextStyle(
-          fontSize: 24,
+          fontSize: 26,
           fontWeight: FontWeight.bold,
           color: AppConstants.textPrimaryColor,
         ),
@@ -215,7 +206,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
-          "If you don't receive code! ",
+          "Didn’t get the verification code? ",
           style: TextStyle(
             color: AppConstants.textSecondaryColor,
             fontSize: 14,
@@ -242,11 +233,11 @@ class _Signin1ScreenState extends State<Signin1Screen> {
       child: ElevatedButton(
         onPressed: _isVerifying ? null : _verifyOTP,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.secondaryColor,
+          backgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         child: _isVerifying
@@ -259,12 +250,8 @@ class _Signin1ScreenState extends State<Signin1Screen> {
                 ),
               )
             : const Text(
-                "VERIFY & PROCEED",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
+                "Verify Code",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -287,8 +274,10 @@ class _Signin1ScreenState extends State<Signin1Screen> {
 
       // For demo purposes, accept any 4-digit OTP
       if (otp.length == 4) {
-        // Navigate to location screen using smart navigation
-        NavigationService.smartNavigate(routeName: RouteNames.location1);
+        // Navigate to profile builder step 1 using smart navigation
+        NavigationService.smartNavigate(
+          routeName: RouteNames.profileBuilderStep1,
+        );
       } else {
         // Show error message
         _showErrorSnackBar('Please enter a valid 4-digit OTP');

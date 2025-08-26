@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 // Authentication screens (moved to auth folder)
 import '../auth/splash_screen.dart';
 import '../auth/onboarding.dart';
-import '../auth/signin.dart';
-import '../auth/signin1.dart';
-import '../auth/signin2.dart';
+import '../auth/login_otp_email.dart';
+import '../auth/login_otp_code.dart';
+import '../auth/login_verified_popup.dart';
 import '../auth/create_account.dart';
 import '../auth/forgot_password.dart';
-import '../auth/enter_code.dart';
-import '../auth/enter_new_password.dart';
+import '../auth/set_password_code.dart';
+import '../auth/set_new_password.dart';
 // Main app screens (organized by feature in pages folder)
 import '../pages/home/home.dart';
 import '../pages/jobs/search_job.dart';
@@ -27,8 +27,9 @@ import '../pages/jobs/calendar_view.dart';
 import '../pages/jobs/write_review.dart';
 import '../pages/jobs/saved_jobs.dart';
 import '../pages/jobs/about_company.dart';
-import '../pages/location/your_location.dart';
-import '../pages/location/location_permission.dart';
+import '../pages/profile_builder/your_location.dart';
+import '../pages/profile_builder/location_permission.dart';
+import '../pages/profile_builder/profile_builder_steps.dart';
 import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
 import '../pages/profile/profile_details.dart';
@@ -167,20 +168,20 @@ class NavigationService {
         return RouteNames.splash;
       case 'OnboardingScreen':
         return RouteNames.onboarding;
-      case 'SigninScreen':
-        return RouteNames.signin;
-      case 'Signin1Screen':
-        return RouteNames.signin1;
-      case 'Signin2Screen':
-        return RouteNames.signin2;
+      case 'LoginOtpEmailScreen':
+        return RouteNames.loginOtpEmail;
+      case 'LoginOtpCodeScreen':
+        return RouteNames.loginOtpCode;
+      case 'LoginVerifiedPopupScreen':
+        return RouteNames.loginVerifiedPopup;
       case 'CreateAccountScreen':
         return RouteNames.createAccount;
       case 'ForgotPasswordScreen':
         return RouteNames.forgotPassword;
-      case 'EnterCodeScreen':
-        return RouteNames.enterCode;
-      case 'EnterNewPasswordScreen':
-        return RouteNames.enterNewPassword;
+      case 'SetPasswordCodeScreen':
+        return RouteNames.setPasswordCode;
+      case 'SetNewPasswordScreen':
+        return RouteNames.setNewPassword;
       case 'HomeScreen':
         return RouteNames.home;
       case 'SearchJobScreen':
@@ -217,6 +218,12 @@ class NavigationService {
         return RouteNames.location1;
       case 'LocationPermissionScreen':
         return RouteNames.location2;
+      case 'ProfileBuilderStep1Screen':
+        return RouteNames.profileBuilderStep1;
+      case 'ProfileBuilderStep2Screen':
+        return RouteNames.profileBuilderStep2;
+      case 'ProfileBuilderStep3Screen':
+        return RouteNames.profileBuilderStep3;
       case 'ProfileScreen':
         return RouteNames.profile;
       case 'UserProfileScreen':
@@ -259,6 +266,10 @@ class NavigationService {
       return _NavigationAction.push;
     }
 
+    if (_isProfileBuilderFlow(currentRoute, targetRoute)) {
+      return _NavigationAction.push;
+    }
+
     if (_isJobApplicationFlow(currentRoute, targetRoute)) {
       return _NavigationAction.push;
     }
@@ -277,11 +288,11 @@ class NavigationService {
   static bool _isAuthFlow(String currentRoute, String targetRoute) {
     final authFlowSequences = [
       [RouteNames.splash, RouteNames.onboarding],
-      [RouteNames.onboarding, RouteNames.signin],
-      [RouteNames.signin, RouteNames.signin1],
-      [RouteNames.signin1, RouteNames.signin2],
-      [RouteNames.forgotPassword, RouteNames.enterCode],
-      [RouteNames.enterCode, RouteNames.enterNewPassword],
+      [RouteNames.onboarding, RouteNames.loginOtpEmail],
+      [RouteNames.loginOtpEmail, RouteNames.loginOtpCode],
+      [RouteNames.loginOtpCode, RouteNames.loginVerifiedPopup],
+      [RouteNames.forgotPassword, RouteNames.setPasswordCode],
+      [RouteNames.setPasswordCode, RouteNames.setNewPassword],
     ];
 
     return authFlowSequences.any(
@@ -308,6 +319,18 @@ class NavigationService {
     );
   }
 
+  static bool _isProfileBuilderFlow(String currentRoute, String targetRoute) {
+    final profileBuilderFlowSequences = [
+      [RouteNames.profileBuilderStep1, RouteNames.profileBuilderStep2],
+      [RouteNames.profileBuilderStep2, RouteNames.profileBuilderStep3],
+      [RouteNames.profileBuilderStep3, RouteNames.location1],
+    ];
+
+    return profileBuilderFlowSequences.any(
+      (sequence) => sequence[0] == currentRoute && sequence[1] == targetRoute,
+    );
+  }
+
   static bool _isJobApplicationFlow(String currentRoute, String targetRoute) {
     final jobFlowSequences = [
       [RouteNames.jobStep1, RouteNames.jobStep2],
@@ -326,16 +349,24 @@ class NavigationService {
     final authRoutes = [
       RouteNames.splash,
       RouteNames.onboarding,
-      RouteNames.signin,
-      RouteNames.signin1,
-      RouteNames.signin2,
+      RouteNames.loginOtpEmail,
+      RouteNames.loginOtpCode,
+      RouteNames.loginVerifiedPopup,
       RouteNames.createAccount,
       RouteNames.forgotPassword,
-      RouteNames.enterCode,
-      RouteNames.enterNewPassword,
+      RouteNames.setPasswordCode,
+      RouteNames.setNewPassword,
     ];
 
-    return authRoutes.contains(currentRoute) && targetRoute == RouteNames.home;
+    final profileBuilderRoutes = [
+      RouteNames.profileBuilderStep1,
+      RouteNames.profileBuilderStep2,
+      RouteNames.profileBuilderStep3,
+    ];
+
+    return (authRoutes.contains(currentRoute) ||
+            profileBuilderRoutes.contains(currentRoute)) &&
+        targetRoute == RouteNames.home;
   }
 
   static bool _isCourseFlow(String currentRoute, String targetRoute) {
@@ -400,13 +431,13 @@ class RouteNames {
   static const String onboarding = '/onboarding';
 
   // Authentication screens
-  static const String signin = '/signin';
-  static const String signin1 = '/signin1';
-  static const String signin2 = '/signin2';
+  static const String loginOtpEmail = '/login-otp-email';
+  static const String loginOtpCode = '/login-otp-code';
+  static const String loginVerifiedPopup = '/login-verified-popup';
   static const String createAccount = '/create-account';
   static const String forgotPassword = '/forgot-password';
-  static const String enterCode = '/enter-code';
-  static const String enterNewPassword = '/enter-new-password';
+  static const String setPasswordCode = '/set-password-code';
+  static const String setNewPassword = '/set-new-password';
 
   // Main app screens
   static const String home = '/home';
@@ -426,6 +457,9 @@ class RouteNames {
   static const String savedJobs = '/saved-jobs';
   static const String location1 = '/your-location';
   static const String location2 = '/enter-location';
+  static const String profileBuilderStep1 = '/profile-builder-step1';
+  static const String profileBuilderStep2 = '/profile-builder-step2';
+  static const String profileBuilderStep3 = '/profile-builder-step3';
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
   static const String profileDetails = '/profile-details';
@@ -452,22 +486,22 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case RouteNames.onboarding:
         return MaterialPageRoute(builder: (_) => const OnboardingScreen());
-      case RouteNames.signin:
-        return MaterialPageRoute(builder: (_) => const SigninScreen());
-      case RouteNames.signin1:
-        return MaterialPageRoute(builder: (_) => const Signin1Screen());
-      case RouteNames.signin2:
-        return MaterialPageRoute(builder: (_) => const Signin2Screen());
+      case RouteNames.loginOtpEmail:
+        return MaterialPageRoute(builder: (_) => const LoginOtpEmailScreen());
+      case RouteNames.loginOtpCode:
+        return MaterialPageRoute(builder: (_) => const LoginOtpCodeScreen());
+      case RouteNames.loginVerifiedPopup:
+        return MaterialPageRoute(
+          builder: (_) => const LoginVerifiedPopupScreen(),
+        );
       case RouteNames.createAccount:
         return MaterialPageRoute(builder: (_) => const CreateAccountScreen());
       case RouteNames.forgotPassword:
         return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
-      case RouteNames.enterCode:
-        return MaterialPageRoute(builder: (_) => const EnterCodeScreen());
-      case RouteNames.enterNewPassword:
-        return MaterialPageRoute(
-          builder: (_) => const EnterNewPasswordScreen(),
-        );
+      case RouteNames.setPasswordCode:
+        return MaterialPageRoute(builder: (_) => const SetPasswordCodeScreen());
+      case RouteNames.setNewPassword:
+        return MaterialPageRoute(builder: (_) => const SetNewPasswordScreen());
       case RouteNames.home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
       case RouteNames.searchJob:
@@ -540,6 +574,28 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => LocationPermissionScreen(
             isFromCurrentLocation: isFromCurrentLocation,
+          ),
+        );
+      case RouteNames.profileBuilderStep1:
+        return MaterialPageRoute(
+          builder: (_) => const ProfileBuilderStep1Screen(),
+        );
+      case RouteNames.profileBuilderStep2:
+        final stepArgs = args as Map<String, dynamic>? ?? {};
+        final selectedJobType = stepArgs['selectedJobType'] ?? 'Full Time';
+        return MaterialPageRoute(
+          builder: (_) =>
+              ProfileBuilderStep2Screen(selectedJobType: selectedJobType),
+        );
+      case RouteNames.profileBuilderStep3:
+        final stepArgs = args as Map<String, dynamic>? ?? {};
+        final selectedJobType = stepArgs['selectedJobType'] ?? 'Full Time';
+        final selectedExperienceLevel =
+            stepArgs['selectedExperienceLevel'] ?? 'Fresher';
+        return MaterialPageRoute(
+          builder: (_) => ProfileBuilderStep3Screen(
+            selectedJobType: selectedJobType,
+            selectedExperienceLevel: selectedExperienceLevel,
           ),
         );
       case RouteNames.profile:

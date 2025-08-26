@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/navigation_service.dart';
 import '../../widgets/global/custom_app_bar.dart';
-import '../../auth/enter_new_password.dart';
+import '../../auth/set_new_password.dart';
 import 'about_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -32,7 +32,7 @@ class SettingsPage extends StatelessWidget {
             title: 'Password Change / पासवर्ड बदलें',
             onTap: () {
               NavigationService.smartNavigate(
-                destination: const EnterNewPasswordScreen(),
+                destination: const SetNewPasswordScreen(),
               );
             },
           ),
@@ -49,9 +49,7 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.info_outline,
             title: 'About / हमारे बारे में',
             onTap: () {
-              NavigationService.smartNavigate(
-                destination: const AboutPage(),
-              );
+              NavigationService.smartNavigate(destination: const AboutPage());
             },
           ),
           _buildSettingItem(

@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
-import 'signin1.dart';
-import 'signin2.dart';
+import 'login_otp_code.dart';
+import 'login_verified_popup.dart';
 import 'create_account.dart';
+import 'forgot_password.dart';
 
-class SigninScreen extends StatefulWidget {
-  const SigninScreen({super.key});
+class LoginOtpEmailScreen extends StatefulWidget {
+  const LoginOtpEmailScreen({super.key});
 
   @override
-  State<SigninScreen> createState() => _SigninScreenState();
+  State<LoginOtpEmailScreen> createState() => _LoginOtpEmailScreenState();
 }
 
-class _SigninScreenState extends State<SigninScreen> {
+class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   bool isOTPSelected = true;
   bool _isPasswordVisible = false;
 
@@ -83,7 +84,7 @@ class _SigninScreenState extends State<SigninScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
 
               /// OTP / Mail toggle
               Row(
@@ -97,7 +98,7 @@ class _SigninScreenState extends State<SigninScreen> {
                   }),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
 
               /// Hindi welcome text
               const Center(
@@ -108,33 +109,37 @@ class _SigninScreenState extends State<SigninScreen> {
                 ),
               ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 24),
 
               /// Login input section
               isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 24),
 
               /// Or divider
               Row(
                 children: [
                   const Expanded(child: Divider(color: Color(0xFF58B248))),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       "Or Login with",
-                      style: const TextStyle(color: Color(0xFF58B248)),
+                      style: const TextStyle(
+                        color: Color(0xFF58B248),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const Expanded(child: Divider(color: Color(0xFF58B248))),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               /// Social login buttons
               _buildSocialLoginButtons(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               /// Create account link
               _buildCreateAccountLink(),
@@ -193,7 +198,7 @@ class _SigninScreenState extends State<SigninScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         TextField(
           controller: _mobileController,
           decoration: InputDecoration(
@@ -202,15 +207,15 @@ class _SigninScreenState extends State<SigninScreen> {
             filled: true,
             fillColor: const Color(0xFFE7EDF4),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+              horizontal: 18,
+              vertical: 16,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
             prefixIcon: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 '+91',
                 style: TextStyle(color: Colors.black, fontSize: 16),
@@ -227,7 +232,7 @@ class _SigninScreenState extends State<SigninScreen> {
             FilteringTextInputFormatter.digitsOnly,
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
         /// Send OTP
         SizedBox(
@@ -243,7 +248,7 @@ class _SigninScreenState extends State<SigninScreen> {
                 ),
               );
               NavigationService.smartNavigate(
-                destination: const Signin1Screen(),
+                destination: const LoginOtpCodeScreen(),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -285,7 +290,7 @@ class _SigninScreenState extends State<SigninScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 10),
         TextField(
           controller: _emailController,
           decoration: InputDecoration(
@@ -294,14 +299,18 @@ class _SigninScreenState extends State<SigninScreen> {
             filled: true,
             fillColor: Color(0xFFF1F5F9),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 16,
             ),
           ),
           keyboardType: TextInputType.emailAddress,
         ),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: 20),
 
         // Password field
         Align(
@@ -319,7 +328,7 @@ class _SigninScreenState extends State<SigninScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 10),
         TextField(
           controller: _passwordController,
           obscureText: !_isPasswordVisible,
@@ -329,8 +338,12 @@ class _SigninScreenState extends State<SigninScreen> {
             filled: true,
             fillColor: const Color(0xFFF1F5F9),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 16,
             ),
             suffixIcon: IconButton(
               icon: Icon(
@@ -346,21 +359,15 @@ class _SigninScreenState extends State<SigninScreen> {
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
 
         // Forgot Password
         Align(
           alignment: Alignment.centerRight,
           child: GestureDetector(
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'A reset password link has been sent to your email.',
-                  ),
-                  duration: Duration(seconds: 2),
-                  backgroundColor: Color(0xFF144B75),
-                ),
+              NavigationService.smartNavigate(
+                destination: const ForgotPasswordScreen(),
               );
             },
             child: const Text(
@@ -378,7 +385,7 @@ class _SigninScreenState extends State<SigninScreen> {
           child: ElevatedButton(
             onPressed: () {
               NavigationService.smartNavigate(
-                destination: const Signin2Screen(),
+                destination: const LoginVerifiedPopupScreen(),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -410,7 +417,7 @@ class _SigninScreenState extends State<SigninScreen> {
             debugPrint("Redirect to Google login API");
           },
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         SignInButton(
           logoPath: AppConstants.linkedinLogoAsset,
           text: 'Sign in with Linkedin',
