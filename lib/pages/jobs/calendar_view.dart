@@ -16,12 +16,12 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Light grey background
+      backgroundColor: const Color(0xFFFAFCFF), // Light grey background
       appBar: const SimpleAppBar(
         title: 'Interview Calendar / इंटरव्यू कैलेंडर',
         showBackButton: true,
-        backgroundColor: Color(0xFF475569), // Dark grey background
-        titleColor: Colors.white, // White text and icons
+        backgroundColor: Color(0xFFFAFCFF), // Dark grey background
+        titleColor: Color.fromARGB(255, 11, 83, 125), // White text and icons
       ),
       body: SafeArea(
         child: Padding(
@@ -80,7 +80,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A8A),
+                  color: Color(0xFF0B537D),
                 ),
               ),
               IconButton(
@@ -172,13 +172,13 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
               margin: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF3B82F6) // Blue for selected date
+                    ? const Color(0xFF0B537D) // Blue for selected date
                     : isToday
                     ? const Color(0xFFE3F2FD) // Light blue for today
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
                 border: isToday && !isSelected
-                    ? Border.all(color: const Color(0xFF3B82F6), width: 1)
+                    ? Border.all(color: const Color(0xFF0B537D), width: 1)
                     : null,
               ),
               child: Center(
@@ -189,7 +189,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                     fontWeight: isSelected
                         ? FontWeight.bold
                         : FontWeight.normal,
-                    color: isSelected ? Colors.white : const Color(0xFF1E3A8A),
+                    color: isSelected ? Colors.white : const Color(0xFF0B537D),
                   ),
                 ),
               ),
