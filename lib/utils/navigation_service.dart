@@ -37,7 +37,7 @@ import '../pages/setting/settings.dart'; // Course screens
 import '../pages/courses/learning_center.dart';
 import '../pages/courses/course_details.dart';
 import '../pages/courses/saved_courses.dart';
-
+import '../pages/setting/about_page.dart';
 // Import data classes
 import '../data/job_data.dart';
 
@@ -227,6 +227,8 @@ class NavigationService {
         return RouteNames.resume;
       case 'SettingsPage':
         return RouteNames.settings;
+      case 'AboutPage':
+        return RouteNames.about;
 
       case 'LearningCenterPage':
         return RouteNames.learningCenter;
@@ -428,12 +430,13 @@ class RouteNames {
   static const String userProfile = '/user-profile';
   static const String profileDetails = '/profile-details';
   static const String resume = '/resume';
+  static const String settings = '/settings';
+  static const String about = '/about';
 
   // Course screens
   static const String learningCenter = '/learning-center';
   static const String courseDetails = '/course-details';
   static const String savedCourses = '/saved-courses';
-  static const String settings = '/settings';
 }
 
 /// Route Generator
@@ -549,6 +552,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const ResumeScreen());
       case RouteNames.settings:
         return MaterialPageRoute(builder: (_) => const SettingsPage());
+      case RouteNames.about:
+        return MaterialPageRoute(builder: (_) => const AboutPage());
 
       case RouteNames.learningCenter:
         return MaterialPageRoute(builder: (_) => const LearningCenterPage());

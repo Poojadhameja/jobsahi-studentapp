@@ -14,13 +14,28 @@ class SigninScreen extends StatefulWidget {
 }
 
 class _SigninScreenState extends State<SigninScreen> {
-  /// Tracks whether OTP or Email login is selected
   bool isOTPSelected = true;
+  bool _isPasswordVisible = false;
+
+  /// 👁 for password toggle
+
+  // Add controllers for text fields
+  final TextEditingController _mobileController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _mobileController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -29,29 +44,99 @@ class _SigninScreenState extends State<SigninScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: 2),
 
-              // Back button
-              _buildBackButton(),
-              const SizedBox(height: 8),
+              /// Back button
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppConstants.textPrimaryColor,
+                ),
+                onPressed: () {
+                  NavigationService.goBack();
+                },
+              ),
+              const SizedBox(height: 4),
 
-              // Main content
-              _buildMainContent(),
-              const SizedBox(height: AppConstants.largePadding),
+              /// Profile avatar & title
+              Center(
+                child: Column(
+                  children: [
+                    const CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Color(0xFFE0E7EF),
+                      child: Icon(
+                        Icons.person,
+                        size: 45,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "Sign In With",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
 
-              // Login method selector
-              _buildLoginMethodSelector(),
-              const SizedBox(height: AppConstants.largePadding),
+              /// OTP / Mail toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildToggleButton("OTP", isOTPSelected, () {
+                    setState(() => isOTPSelected = true);
+                  }),
+                  _buildToggleButton("MAIL", !isOTPSelected, () {
+                    setState(() => isOTPSelected = false);
+                  }),
+                ],
+              ),
+              const SizedBox(height: 10),
 
-              // Login options
-              _buildLoginOptions(),
-              const SizedBox(height: AppConstants.largePadding),
+              /// Hindi welcome text
+              const Center(
+                child: Text(
+                  "स्वागत है! आपने लॉग इन नहीं किया कुछ समय से",
+                  style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
+                  textAlign: TextAlign.center,
+                ),
+              ),
 
-              // Social login buttons
+              const SizedBox(height: 15),
+
+              /// Login input section
+              isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
+
+              const SizedBox(height: 15),
+
+              /// Or divider
+              Row(
+                children: [
+                  const Expanded(child: Divider(color: Color(0xFF58B248))),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      "Or Login with",
+                      style: const TextStyle(color: Color(0xFF58B248)),
+                    ),
+                  ),
+                  const Expanded(child: Divider(color: Color(0xFF58B248))),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              /// Social login buttons
               _buildSocialLoginButtons(),
-              const SizedBox(height: AppConstants.largePadding),
 
-              // Create account link
+              const SizedBox(height: 20),
+
+              /// Create account link
               _buildCreateAccountLink(),
             ],
           ),
@@ -60,162 +145,117 @@ class _SigninScreenState extends State<SigninScreen> {
     );
   }
 
-  /// Builds the back button
-  Widget _buildBackButton() {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back, color: AppConstants.accentColor),
-      onPressed: () {
-        // Go back to previous screen
-        NavigationService.goBack();
-      },
-    );
-  }
-
-  /// Builds the main content section
-  Widget _buildMainContent() {
-    return Center(
-      child: Column(
-        children: [
-          // Profile avatar
-          const CircleAvatar(
-            radius: 40,
-            backgroundColor: Color(0xFFE0E7EF),
-            child: Icon(
-              Icons.person,
-              size: 45,
-              color: AppConstants.textPrimaryColor,
-            ),
+  /// OTP / MAIL toggle button
+  Widget _buildToggleButton(String text, bool active, VoidCallback onPressed) {
+    return Container(
+      decoration: BoxDecoration(
+        color: active ? AppConstants.textPrimaryColor : Colors.white,
+        borderRadius: text == "OTP"
+            ? const BorderRadius.only(
+                topLeft: Radius.circular(6),
+                bottomLeft: Radius.circular(6),
+              )
+            : const BorderRadius.only(
+                topRight: Radius.circular(6),
+                bottomRight: Radius.circular(6),
+              ),
+        border: Border.all(color: AppConstants.textPrimaryColor),
+      ),
+      child: TextButton(
+        onPressed: onPressed,
+        child: Text(
+          text,
+          style: TextStyle(
+            color: active ? Colors.white : AppConstants.textPrimaryColor,
           ),
-          const SizedBox(height: 16),
-
-          // Title
-          const Text(
-            "Sign In With",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  /// Builds the login method selector (OTP vs Email)
-  Widget _buildLoginMethodSelector() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // OTP button
-        Container(
-          decoration: BoxDecoration(
-            color: isOTPSelected
-                ? AppConstants.textPrimaryColor
-                : AppConstants.cardBackgroundColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(6),
-              bottomLeft: Radius.circular(6),
-            ),
-            border: Border.all(color: AppConstants.textPrimaryColor),
-          ),
-          child: TextButton(
-            onPressed: () {
-              setState(() {
-                isOTPSelected = true;
-              });
-            },
-            child: Text(
-              "OTP",
-              style: TextStyle(
-                color: isOTPSelected
-                    ? Colors.white
-                    : AppConstants.textPrimaryColor,
-              ),
-            ),
-          ),
-        ),
-
-        // Email button
-        Container(
-          decoration: BoxDecoration(
-            color: !isOTPSelected
-                ? AppConstants.textPrimaryColor
-                : AppConstants.cardBackgroundColor,
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(6),
-              bottomRight: Radius.circular(6),
-            ),
-            border: Border.all(color: AppConstants.textPrimaryColor),
-          ),
-          child: TextButton(
-            onPressed: () {
-              setState(() {
-                isOTPSelected = false;
-              });
-            },
-            child: Text(
-              "MAIL",
-              style: TextStyle(
-                color: !isOTPSelected
-                    ? Colors.white
-                    : AppConstants.textPrimaryColor,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Builds the login options based on selected method
-  Widget _buildLoginOptions() {
-    if (isOTPSelected) {
-      return _buildOTPLoginOption();
-    } else {
-      return _buildEmailLoginOption();
-    }
-  }
-
-  /// Builds the OTP login option
-  Widget _buildOTPLoginOption() {
+  /// OTP login form
+  Widget _buildOTPLogin() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Phone number input
-        TextField(
-          decoration: InputDecoration(
-            labelText: AppConstants.phoneLabel,
-            hintText: 'Enter your phone number',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        RichText(
+          text: const TextSpan(
+            text: 'Phone Number',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppConstants.textPrimaryColor,
             ),
-            prefixIcon: const Icon(Icons.phone),
+            children: [
+              TextSpan(
+                text: ' *',
+                style: TextStyle(color: Colors.red),
+              ),
+            ],
           ),
-          keyboardType: TextInputType.phone,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
-        const SizedBox(height: AppConstants.defaultPadding),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _mobileController,
+          decoration: InputDecoration(
+            hintText: "मोबाइल नंबर",
+            hintStyle: const TextStyle(color: Colors.grey),
+            filled: true,
+            fillColor: const Color(0xFFE7EDF4),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            prefixIcon: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                '+91',
+                style: TextStyle(color: Colors.black, fontSize: 16),
+              ),
+            ),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(10),
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+        ),
+        const SizedBox(height: 16),
 
-        // Get OTP button
+        /// Send OTP
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              // Navigate to OTP verification screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('OTP sent successfully'),
+                  duration: Duration(seconds: 2),
+                  backgroundColor: AppConstants.textPrimaryColor,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
               NavigationService.smartNavigate(
                 destination: const Signin1Screen(),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.textPrimaryColor,
+              backgroundColor: const Color(0xFF5C9A24),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               ),
             ),
             child: const Text(
-              'Get OTP',
+              "Send OTP",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
@@ -224,66 +264,127 @@ class _SigninScreenState extends State<SigninScreen> {
     );
   }
 
-  /// Builds the email login option
-  Widget _buildEmailLoginOption() {
+  /// Email login form
+  Widget _buildEmailLogin() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Email input
+        // Email field
+        Align(
+          alignment: Alignment.centerLeft,
+          child: RichText(
+            text: const TextSpan(
+              text: 'Email Address',
+              style: TextStyle(fontSize: 14, color: Color(0xFF144B75)),
+              children: [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
         TextField(
+          controller: _emailController,
           decoration: InputDecoration(
-            labelText: AppConstants.emailLabel,
-            hintText: 'Enter your email',
+            hintText: "ईमेल पता",
+            hintStyle: const TextStyle(color: Colors.grey),
+            filled: true,
+            fillColor: Color(0xFFF1F5F9),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              borderSide: BorderSide.none,
             ),
-            prefixIcon: const Icon(Icons.email),
           ),
           keyboardType: TextInputType.emailAddress,
         ),
+
         const SizedBox(height: AppConstants.defaultPadding),
 
-        // Password input
+        // Password field
+        Align(
+          alignment: Alignment.centerLeft,
+          child: RichText(
+            text: const TextSpan(
+              text: 'Password',
+              style: TextStyle(fontSize: 14, color: Color(0xFF144B75)),
+              children: [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
         TextField(
+          controller: _passwordController,
+          obscureText: !_isPasswordVisible,
           decoration: InputDecoration(
-            labelText: AppConstants.passwordLabel,
-            hintText: 'Enter your password',
+            hintText: "पासवर्ड",
+            hintStyle: const TextStyle(color: Colors.grey),
+            filled: true,
+            fillColor: const Color(0xFFF1F5F9),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              borderSide: BorderSide.none,
             ),
-            prefixIcon: const Icon(Icons.lock),
-            suffixIcon: const Icon(Icons.visibility_off),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                color: Color(0xFF0B537D),
+              ),
+              onPressed: () {
+                setState(() {
+                  _isPasswordVisible = !_isPasswordVisible;
+                });
+              },
+            ),
           ),
-          obscureText: true,
         ),
-        const SizedBox(height: AppConstants.defaultPadding),
 
-        // Forgot password link
+        const SizedBox(height: 8),
+
+        // Forgot Password
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () {
-              // TODO: Navigate to forgot password screen
+          child: GestureDetector(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'A reset password link has been sent to your email.',
+                  ),
+                  duration: Duration(seconds: 2),
+                  backgroundColor: Color(0xFF144B75),
+                ),
+              );
             },
             child: const Text(
-              AppConstants.forgotPasswordText,
-              style: TextStyle(color: AppConstants.accentColor),
+              "Forgot Password?",
+              style: TextStyle(color: Color(0xFF144B75)),
             ),
           ),
         ),
+
         const SizedBox(height: AppConstants.defaultPadding),
 
-        // Sign in button
+        // Sign In Button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              // Navigate to email verification screen
-               NavigationService.smartNavigate(destination: const Signin2Screen());
+              NavigationService.smartNavigate(
+                destination: const Signin2Screen(),
+              );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.textPrimaryColor,
+              backgroundColor: AppConstants.secondaryColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               ),
@@ -298,100 +399,86 @@ class _SigninScreenState extends State<SigninScreen> {
     );
   }
 
-  /// Builds the social login buttons
+  /// Google & LinkedIn login
   Widget _buildSocialLoginButtons() {
     return Column(
       children: [
-        // Divider
-        Row(
-          children: [
-            const Expanded(child: Divider()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Or continue with',
-                style: TextStyle(
-                  color: AppConstants.textSecondaryColor,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            const Expanded(child: Divider()),
-          ],
+        SignInButton(
+          logoPath: AppConstants.googleLogoAsset,
+          text: 'Sign in with Google',
+          onPressed: () {
+            debugPrint("Redirect to Google login API");
+          },
         ),
-        const SizedBox(height: AppConstants.defaultPadding),
-
-        // Social login buttons
-        Row(
-          children: [
-            // Google button
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Implement Google sign in
-                },
-                icon: Image.asset(AppConstants.googleLogoAsset, height: 20),
-                label: const Text('Google'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.borderRadius,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppConstants.defaultPadding),
-
-            // LinkedIn button
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Implement LinkedIn sign in
-                },
-                icon: Image.asset(AppConstants.linkedinLogoAsset, height: 20),
-                label: const Text('LinkedIn'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.borderRadius,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(height: 12),
+        SignInButton(
+          logoPath: AppConstants.linkedinLogoAsset,
+          text: 'Sign in with Linkedin',
+          onPressed: () {
+            debugPrint("Redirect to LinkedIn login API");
+          },
         ),
       ],
     );
   }
 
-  /// Builds the create account link
+  /// Create account link
   Widget _buildCreateAccountLink() {
-    return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            "Don't have an account? ",
-            style: TextStyle(color: AppConstants.textSecondaryColor),
-          ),
-          TextButton(
-            onPressed: () {
-              // Navigate to create account screen
-               NavigationService.smartNavigate(destination: const CreateAccountScreen());
-            },
-            child: const Text(
-              AppConstants.signupText,
-              style: TextStyle(
-                color: AppConstants.accentColor,
-                fontWeight: FontWeight.bold,
-              ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Not a member? "),
+        GestureDetector(
+          onTap: () {
+            NavigationService.smartNavigate(
+              destination: const CreateAccountScreen(),
+            );
+          },
+          child: const Text(
+            "Create an account",
+            style: TextStyle(
+              color: Color(0xFF58B248),
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Custom social login button
+class SignInButton extends StatelessWidget {
+  final String logoPath;
+  final String text;
+  final VoidCallback onPressed;
+
+  const SignInButton({
+    super.key,
+    required this.logoPath,
+    required this.text,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton.icon(
+      icon: Image.asset(
+        logoPath,
+        height: 24,
+        width: 24,
+        errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+      ),
+      label: Text(text),
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0.5,
+        minimumSize: const Size(double.infinity, 50),
+        side: const BorderSide(color: Color(0xFFE0E7EF)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        textStyle: const TextStyle(fontSize: 16),
       ),
     );
   }

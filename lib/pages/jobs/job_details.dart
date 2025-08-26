@@ -106,42 +106,24 @@ class JobDetailsScreen extends StatelessWidget {
                             );
                           }
                         },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppConstants.successColor.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppConstants.successColor.withValues(
-                                alpha: 0.3,
-                              ),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                job['company'] ?? 'Company Name',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppConstants.successColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_forward_ios,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              job['company'] ?? 'Company Name',
+                              style: const TextStyle(
+                                fontSize: 14,
                                 color: AppConstants.successColor,
-                                size: 14,
+                                fontWeight: FontWeight.w600,
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: AppConstants.successColor,
+                              size: 14,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -619,11 +601,10 @@ class JobDetailsScreen extends StatelessWidget {
           .map(
             (tag) => DecoratedBox(
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F4F8),
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(AppConstants.largeBorderRadius),
-                ),
-                border: Border.all(color: Color(0xFFE2E8F0)),
+                color: const Color.fromARGB(255, 255, 255, 255),
+                borderRadius: BorderRadius.circular(5),
+
+                border: Border.all(color: Color.fromARGB(47, 0, 38, 84)),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -635,7 +616,7 @@ class JobDetailsScreen extends StatelessWidget {
                   style: const TextStyle(
                     color: AppConstants.textPrimaryColor,
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

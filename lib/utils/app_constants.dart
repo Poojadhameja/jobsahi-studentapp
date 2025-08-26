@@ -6,7 +6,7 @@ class AppConstants {
 
   /// App Colors
   static const Color primaryColor = Color(0xFF144B75);
-  static const Color secondaryColor = Color(0xFF58B248);
+  static const Color secondaryColor = Color(0xFF5C9A24);
   static const Color accentColor = Colors.blue;
   static const Color locationAccentColor = Color(0xFF4A90E2);
   static const Color backgroundColor = Color(0xFFF5F9FC);
@@ -14,7 +14,7 @@ class AppConstants {
   static const Color textPrimaryColor = Color(0xFF144B75);
   static const Color textSecondaryColor = Colors.black54;
   static const Color borderColor = Colors.grey;
-  static const Color successColor = Colors.green;
+  static const Color successColor = Color(0xFF5C9A24);
   static const Color warningColor = Colors.orange;
   static const Color errorColor = Colors.red;
 

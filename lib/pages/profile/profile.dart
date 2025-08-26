@@ -9,6 +9,7 @@ import '../../utils/navigation_service.dart';
 import 'user_profile.dart';
 import 'profile_details.dart';
 import 'resume.dart';
+import 'job_status.dart';
 import '../../auth/signin.dart';
 import '../jobs/saved_jobs.dart';
 import '../setting/settings.dart';
@@ -127,26 +128,21 @@ class ProfileScreen extends StatelessWidget {
           },
         ),
         _buildOptionTile(
-          icon: Icons.work_outline,
-          title: 'Applied Jobs / आवेदित नौकरियाँ',
+          icon: Icons.track_changes,
+          title: 'Job Status / नौकरी की स्थिति',
           onTap: () {
-            // TODO: Navigate to applications screen
+            NavigationService.smartNavigate(
+              destination: const JobStatusScreen(),
+            );
           },
         ),
-        _buildOptionTile(
-          icon: Icons.bookmark_outline,
-          title: 'Saved Jobs / सेव नौकरियाँ',
+                _buildOptionTile(
+          icon: Icons.timeline,
+          title: 'Track Application / आवेदन ट्रैक करें',
           onTap: () {
             NavigationService.smartNavigate(
               destination: const SavedJobsScreen(),
             );
-          },
-        ),
-        _buildOptionTile(
-          icon: Icons.people_outline,
-          title: 'My Interviews / साक्षात्कार',
-          onTap: () {
-            // TODO: Navigate to interviews screen
           },
         ),
         _buildOptionTile(

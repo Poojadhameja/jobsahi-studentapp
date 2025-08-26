@@ -13,13 +13,13 @@ class Signin1Screen extends StatefulWidget {
 class _Signin1ScreenState extends State<Signin1Screen> {
   /// Controllers for OTP input fields
   final List<TextEditingController> _otpControllers = List.generate(
-    6,
+    4,
     (index) => TextEditingController(),
   );
 
   /// Focus nodes for OTP input fields
   final List<FocusNode> _otpFocusNodes = List.generate(
-    6,
+    4,
     (index) => FocusNode(),
   );
 
@@ -41,7 +41,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -57,22 +57,25 @@ class _Signin1ScreenState extends State<Signin1Screen> {
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.largePadding),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header section
+              // Header section with profile icon and title
               _buildHeaderSection(),
+              const SizedBox(height: AppConstants.largePadding),
+
+              // OTP instruction text
+              _buildOTPInstruction(),
               const SizedBox(height: AppConstants.largePadding),
 
               // OTP input section
               _buildOTPInputSection(),
               const SizedBox(height: AppConstants.largePadding),
 
-              // Verify button
-              _buildVerifyButton(),
-              const SizedBox(height: AppConstants.largePadding),
-
               // Resend OTP section
               _buildResendOTPSection(),
+              const Spacer(),
+
+              // Verify button
+              _buildVerifyButton(),
             ],
           ),
         ),
@@ -80,40 +83,56 @@ class _Signin1ScreenState extends State<Signin1Screen> {
     );
   }
 
-  /// Builds the header section
+  /// Builds the header section with profile icon and title
   Widget _buildHeaderSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Profile icon
+        const CircleAvatar(
+          radius: 40,
+          backgroundColor: Color(0xFFE0E7EF),
+          child: Icon(
+            Icons.person,
+            size: 45,
+            color: AppConstants.textPrimaryColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+
         // Title
         const Text(
-          'Verify OTP',
+          'Enter Code',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             color: AppConstants.textPrimaryColor,
           ),
         ),
-        const SizedBox(height: AppConstants.smallPadding),
+      ],
+    );
+  }
 
-        // Description
+  /// Builds the OTP instruction text
+  Widget _buildOTPInstruction() {
+    return Column(
+      children: [
         const Text(
-          'We have sent a verification code to your phone number',
+          'Enter the 4-digit code sent to your phone',
           style: TextStyle(
             fontSize: 16,
             color: AppConstants.textSecondaryColor,
           ),
+          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: AppConstants.smallPadding),
-
-        // Phone number display
+        const SizedBox(height: 8),
         Text(
-          '+91 98765 43210', // TODO: Get from previous screen
+          '+91 98765 43210',
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: AppConstants.textPrimaryColor,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -122,22 +141,11 @@ class _Signin1ScreenState extends State<Signin1Screen> {
   /// Builds the OTP input section
   Widget _buildOTPInputSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Enter OTP',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppConstants.textPrimaryColor,
-          ),
-        ),
-        const SizedBox(height: AppConstants.smallPadding),
-
         // OTP input fields
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(6, (index) => _buildOTPField(index)),
+          children: List.generate(4, (index) => _buildOTPField(index)),
         ),
       ],
     );
@@ -146,7 +154,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
   /// Builds individual OTP input field
   Widget _buildOTPField(int index) {
     return SizedBox(
-      width: 45,
+      width: 50,
       height: 55,
       child: TextField(
         controller: _otpControllers[index],
@@ -158,26 +166,38 @@ class _Signin1ScreenState extends State<Signin1Screen> {
           LengthLimitingTextInputFormatter(1),
         ],
         decoration: InputDecoration(
+          filled: true,
+          fillColor: const Color(0xFFF5F5F5),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-            borderSide: const BorderSide(color: AppConstants.borderColor),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(
+              color: AppConstants.textPrimaryColor,
+              width: 1,
+            ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-            borderSide: const BorderSide(color: AppConstants.borderColor),
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(
+              color: AppConstants.textPrimaryColor,
+              width: 1,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+            borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(
-              color: AppConstants.primaryColor,
+              color: AppConstants.textPrimaryColor,
               width: 2,
             ),
           ),
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
         ),
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: AppConstants.textPrimaryColor,
+        ),
         onChanged: (value) {
-          if (value.isNotEmpty && index < 5) {
+          if (value.isNotEmpty && index < 3) {
             // Move to next field
             _otpFocusNodes[index + 1].requestFocus();
           } else if (value.isEmpty && index > 0) {
@@ -189,6 +209,32 @@ class _Signin1ScreenState extends State<Signin1Screen> {
     );
   }
 
+  /// Builds the resend OTP section
+  Widget _buildResendOTPSection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text(
+          "If you don't receive code! ",
+          style: TextStyle(
+            color: AppConstants.textSecondaryColor,
+            fontSize: 14,
+          ),
+        ),
+        GestureDetector(
+          onTap: _resendOTP,
+          child: const Text(
+            "Resend",
+            style: TextStyle(
+              color: Color(0xFF58B248),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Builds the verify button
   Widget _buildVerifyButton() {
     return SizedBox(
@@ -196,7 +242,7 @@ class _Signin1ScreenState extends State<Signin1Screen> {
       child: ElevatedButton(
         onPressed: _isVerifying ? null : _verifyOTP,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.primaryColor,
+          backgroundColor: AppConstants.secondaryColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -213,37 +259,13 @@ class _Signin1ScreenState extends State<Signin1Screen> {
                 ),
               )
             : const Text(
-                AppConstants.verifyText,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                "VERIFY & PROCEED",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
               ),
-      ),
-    );
-  }
-
-  /// Builds the resend OTP section
-  Widget _buildResendOTPSection() {
-    return Center(
-      child: Column(
-        children: [
-          const Text(
-            "Didn't receive the code?",
-            style: TextStyle(
-              color: AppConstants.textSecondaryColor,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 4),
-          TextButton(
-            onPressed: _resendOTP,
-            child: const Text(
-              AppConstants.resendOtpText,
-              style: TextStyle(
-                color: AppConstants.accentColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -263,13 +285,13 @@ class _Signin1ScreenState extends State<Signin1Screen> {
         _isVerifying = false;
       });
 
-      // For demo purposes, accept any 6-digit OTP
-      if (otp.length == 6) {
+      // For demo purposes, accept any 4-digit OTP
+      if (otp.length == 4) {
         // Navigate to location screen using smart navigation
         NavigationService.smartNavigate(routeName: RouteNames.location1);
       } else {
         // Show error message
-        _showErrorSnackBar('Please enter a valid 6-digit OTP');
+        _showErrorSnackBar('Please enter a valid 4-digit OTP');
       }
     });
   }
