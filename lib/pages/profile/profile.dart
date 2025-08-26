@@ -7,6 +7,8 @@ import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
 import '../../utils/navigation_service.dart';
 import 'user_profile.dart';
+import 'profile_details.dart';
+import 'resume.dart';
 import '../../auth/signin.dart';
 import '../jobs/saved_jobs.dart';
 import '../setting/settings.dart';
@@ -108,17 +110,27 @@ class ProfileScreen extends StatelessWidget {
       children: [
         _buildOptionTile(
           icon: Icons.person_outline,
-          title: 'Personal Information',
+          title: 'Profile / आपकी जानकारी',
           subtitle: 'Update your personal details',
           onTap: () {
             NavigationService.smartNavigate(
-              destination: const UserProfileScreen(),
+              destination: const ProfileDetailsScreen(),
+            );
+          },
+        ),
+        _buildOptionTile(
+          icon: Icons.upload_file,
+          title: 'Upload Resume / बायोडाटा डालें',
+          subtitle: 'Upload your resume',
+          onTap: () {
+            NavigationService.smartNavigate(
+              destination: const ResumeScreen(),
             );
           },
         ),
         _buildOptionTile(
           icon: Icons.work_outline,
-          title: 'My Applications',
+          title: 'Applied Jobs / आवेदित नौकरियाँ',
           subtitle: 'View your job applications',
           onTap: () {
             // TODO: Navigate to applications screen
@@ -126,7 +138,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         _buildOptionTile(
           icon: Icons.bookmark_outline,
-          title: 'Saved Jobs',
+          title: 'Saved Jobs / सेव नौकरियाँ',
           subtitle: 'View your saved jobs',
           onTap: () {
             NavigationService.smartNavigate(
@@ -135,32 +147,48 @@ class ProfileScreen extends StatelessWidget {
           },
         ),
         _buildOptionTile(
-          icon: Icons.notifications_outlined,
-          title: 'Notifications',
-          subtitle: 'Manage your notifications',
+          icon: Icons.people_outline,
+          title: 'My Interviews / साक्षात्कार',
+          subtitle: 'View your interview schedule',
           onTap: () {
-            // TODO: Navigate to notifications screen
+            // TODO: Navigate to interviews screen
+          },
+        ),
+        _buildOptionTile(
+          icon: Icons.chat_outlined,
+          title: 'My Chats / आपकी बातचीत',
+          subtitle: 'View your conversations',
+          onTap: () {
+            // TODO: Navigate to chats screen
+          },
+        ),
+        _buildOptionTile(
+          icon: Icons.favorite_outline,
+          title: 'Personalize Jobfeed / पसंद की नौकरी',
+          subtitle: 'Customize your job preferences',
+          onTap: () {
+            // TODO: Navigate to jobfeed personalization screen
+          },
+        ),
+        _buildOptionTile(
+          icon: Icons.feedback_outlined,
+          title: 'Feedback / प्रतिक्रिया',
+          subtitle: 'Share your feedback with us',
+          onTap: () {
+            // TODO: Navigate to feedback screen
           },
         ),
         _buildOptionTile(
           icon: Icons.settings_outlined,
-          title: 'Settings',
+          title: 'Settings / सेटिंग्स',
           subtitle: 'App settings and preferences',
           onTap: () {
             NavigationService.smartNavigate(destination: const SettingsPage());
           },
         ),
         _buildOptionTile(
-          icon: Icons.help_outline,
-          title: 'Help & Support',
-          subtitle: 'Get help and contact support',
-          onTap: () {
-            // TODO: Navigate to help screen
-          },
-        ),
-        _buildOptionTile(
           icon: Icons.logout,
-          title: 'Logout',
+          title: 'Logout / लॉगआउट',
           subtitle: 'Sign out of your account',
           onTap: () {
             _showLogoutDialog();

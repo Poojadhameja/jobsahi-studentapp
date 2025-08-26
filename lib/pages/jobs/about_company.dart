@@ -115,7 +115,10 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
           // Company tagline
           Text(
             widget.company['tagline'] ?? 'Company Tagline',
-            style: const TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 16),
+            style: const TextStyle(
+              color: Color.fromARGB(255, 255, 255, 255),
+              fontSize: 16,
+            ),
           ),
         ],
       ),
@@ -677,134 +680,6 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
     );
   }
 
-  /// Builds the specialties list
-  Widget _buildSpecialtiesList() {
-    final specialties = widget.company['specialties'] as List<dynamic>? ?? [];
-    if (specialties.isEmpty) {
-      return const Text(
-        'No specialties listed',
-        style: TextStyle(
-          color: AppConstants.textSecondaryColor,
-          fontStyle: FontStyle.italic,
-        ),
-      );
-    }
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: specialties
-          .map(
-            (specialty) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppConstants.accentColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: AppConstants.accentColor.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                specialty.toString(),
-                style: TextStyle(
-                  color: AppConstants.accentColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  /// Builds the certifications list
-  Widget _buildCertificationsList() {
-    final certifications =
-        widget.company['certifications'] as List<dynamic>? ?? [];
-    if (certifications.isEmpty) {
-      return const Text(
-        'No certifications listed',
-        style: TextStyle(
-          color: AppConstants.textSecondaryColor,
-          fontStyle: FontStyle.italic,
-        ),
-      );
-    }
-
-    return Column(
-      children: certifications
-          .map(
-            (cert) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.verified,
-                    color: AppConstants.successColor,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      cert.toString(),
-                      style: const TextStyle(
-                        color: AppConstants.textPrimaryColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  /// Builds the awards list
-  Widget _buildAwardsList() {
-    final awards = widget.company['awards'] as List<dynamic>? ?? [];
-    if (awards.isEmpty) {
-      return const Text(
-        'No awards listed',
-        style: TextStyle(
-          color: AppConstants.textSecondaryColor,
-          fontStyle: FontStyle.italic,
-        ),
-      );
-    }
-
-    return Column(
-      children: awards
-          .map(
-            (award) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.emoji_events,
-                    color: AppConstants.warningColor,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      award.toString(),
-                      style: const TextStyle(
-                        color: AppConstants.textPrimaryColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
   /// Builds a gallery section with images
   Widget _buildGallerySection(String title, List<String> imagePaths) {
     return Column(
@@ -1131,6 +1006,7 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
           ),
         ],
       ),
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
