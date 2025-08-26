@@ -30,7 +30,7 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: AppConstants.largePadding),
 
               // Profile options
-              _buildProfileOptions(),
+              _buildProfileOptions(context),
             ],
           ),
         ),
@@ -105,13 +105,12 @@ class ProfileScreen extends StatelessWidget {
   }
 
   /// Builds the profile options section
-  Widget _buildProfileOptions() {
+  Widget _buildProfileOptions(BuildContext context) {
     return Column(
       children: [
         _buildOptionTile(
           icon: Icons.person_outline,
           title: 'Profile / आपकी जानकारी',
-          subtitle: 'Update your personal details',
           onTap: () {
             NavigationService.smartNavigate(
               destination: const ProfileDetailsScreen(),
@@ -121,7 +120,6 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.upload_file,
           title: 'Upload Resume / बायोडाटा डालें',
-          subtitle: 'Upload your resume',
           onTap: () {
             NavigationService.smartNavigate(
               destination: const ResumeScreen(),
@@ -131,7 +129,6 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.work_outline,
           title: 'Applied Jobs / आवेदित नौकरियाँ',
-          subtitle: 'View your job applications',
           onTap: () {
             // TODO: Navigate to applications screen
           },
@@ -139,7 +136,6 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.bookmark_outline,
           title: 'Saved Jobs / सेव नौकरियाँ',
-          subtitle: 'View your saved jobs',
           onTap: () {
             NavigationService.smartNavigate(
               destination: const SavedJobsScreen(),
@@ -149,7 +145,6 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.people_outline,
           title: 'My Interviews / साक्षात्कार',
-          subtitle: 'View your interview schedule',
           onTap: () {
             // TODO: Navigate to interviews screen
           },
@@ -157,7 +152,6 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.chat_outlined,
           title: 'My Chats / आपकी बातचीत',
-          subtitle: 'View your conversations',
           onTap: () {
             // TODO: Navigate to chats screen
           },
@@ -165,7 +159,6 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.favorite_outline,
           title: 'Personalize Jobfeed / पसंद की नौकरी',
-          subtitle: 'Customize your job preferences',
           onTap: () {
             // TODO: Navigate to jobfeed personalization screen
           },
@@ -173,7 +166,6 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.feedback_outlined,
           title: 'Feedback / प्रतिक्रिया',
-          subtitle: 'Share your feedback with us',
           onTap: () {
             // TODO: Navigate to feedback screen
           },
@@ -181,7 +173,6 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.settings_outlined,
           title: 'Settings / सेटिंग्स',
-          subtitle: 'App settings and preferences',
           onTap: () {
             NavigationService.smartNavigate(destination: const SettingsPage());
           },
@@ -189,9 +180,8 @@ class ProfileScreen extends StatelessWidget {
         _buildOptionTile(
           icon: Icons.logout,
           title: 'Logout / लॉगआउट',
-          subtitle: 'Sign out of your account',
           onTap: () {
-            _showLogoutDialog();
+            _showLogoutDialog(context);
           },
           isDestructive: true,
         ),
@@ -203,7 +193,6 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildOptionTile({
     required IconData icon,
     required String title,
-    required String subtitle,
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
@@ -223,10 +212,6 @@ class ProfileScreen extends StatelessWidget {
           fontWeight: FontWeight.w500,
         ),
       ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: AppConstants.textSecondaryColor),
-      ),
       trailing: const Icon(
         Icons.arrow_forward_ios,
         size: 16,
@@ -237,20 +222,20 @@ class ProfileScreen extends StatelessWidget {
   }
 
   /// Shows logout confirmation dialog
-  void _showLogoutDialog() {
+  void _showLogoutDialog(BuildContext context) {
     showDialog(
-      context: NavigationService.context!,
-      builder: (context) => AlertDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               _logout();
             },
             child: const Text(

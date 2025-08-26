@@ -24,7 +24,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
   void initState() {
     super.initState();
     // Initialize with existing resume data if available
-    _uploadedFileName = 'Morgan Carter CV 7 Year Expriance';
+    _uploadedFileName = 'Morgan Carter CV 7 Year Experience';
     _lastUpdatedDate = '17 July 2024';
   }
 
@@ -238,7 +238,38 @@ class _ResumeScreenState extends State<ResumeScreen> {
                       ),
                     ),
             ),
-          ),           
+          ),
+          
+          // Delete button (only show when resume exists)
+          if (_uploadedFileName != null) ...[
+            const SizedBox(height: AppConstants.smallPadding),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => _handleDeleteResume(),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppConstants.errorColor,
+                  side: BorderSide(
+                    color: AppConstants.errorColor,
+                    width: 1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppConstants.smallPadding,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                  ),
+                ),
+                child: const Text(
+                  'Delete Resume',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -455,8 +486,11 @@ class _ResumeScreenState extends State<ResumeScreen> {
 
   /// Handles resume deletion action
   void _handleDeleteResume() {
+    final context = NavigationService.context;
+    if (context == null) return;
+    
     showDialog(
-      context: NavigationService.context!,
+      context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Resume'),
@@ -498,10 +532,13 @@ class _ResumeScreenState extends State<ResumeScreen> {
 
   /// Shows a temporary message to the user
   void _showMessage(String message) {
+    final context = NavigationService.context;
+    if (context == null) return;
+    
     // TODO: Implement proper toast/snackbar message
     // For now, show a simple dialog
     showDialog(
-      context: NavigationService.context!,
+      context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Info'),
