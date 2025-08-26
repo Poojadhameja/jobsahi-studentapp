@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
 import '../../widgets/global/simple_app_bar.dart';
-import '../skill_test/skill_test.dart';
+import '../skill_test/skill_test_details.dart';
 import '../home/home.dart';
 
 class JobStep3Screen extends StatefulWidget {
@@ -307,7 +307,9 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
             onPressed: () {
               Navigator.of(context).pop();
               // Navigate to skills test screen
-              NavigationService.navigateTo(SkillTestScreen(job: widget.job));
+              NavigationService.navigateTo(
+                SkillTestDetailsScreen(job: widget.job),
+              );
             },
             child: const Text('Take Skills Test'),
           ),
@@ -316,4 +318,3 @@ class _JobStep3ScreenState extends State<JobStep3Screen> {
     );
   }
 }
-

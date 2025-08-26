@@ -19,8 +19,8 @@ import '../pages/jobs/job_details.dart';
 import '../pages/jobs/job_step1.dart';
 import '../pages/jobs/job_step2.dart';
 import '../pages/jobs/job_step3.dart';
-import '../pages/skill_test/skill_test.dart';
-import '../pages/skill_test/skill_test_info.dart';
+import '../pages/skill_test/skill_test_details.dart';
+import '../pages/skill_test/skill_test_instructions.dart';
 import '../pages/skill_test/skills_test_faq.dart';
 import '../pages/jobs/app_tracker1.dart';
 import '../pages/jobs/calendar_view.dart';
@@ -196,10 +196,10 @@ class NavigationService {
         return RouteNames.jobStep2;
       case 'JobStep3Screen':
         return RouteNames.jobStep3;
-      case 'SkillTestScreen':
-        return RouteNames.skillTest;
-      case 'SkillTestInfoScreen':
-        return RouteNames.skillTestInfo;
+      case 'SkillTestDetailsScreen':
+        return RouteNames.skillTestDetails;
+      case 'SkillTestInstructionsScreen':
+        return RouteNames.skillTestInstructions;
       case 'SkillsTestFAQScreen':
         return RouteNames.skillsTestFAQ;
 
@@ -335,8 +335,8 @@ class NavigationService {
     final jobFlowSequences = [
       [RouteNames.jobStep1, RouteNames.jobStep2],
       [RouteNames.jobStep2, RouteNames.jobStep3],
-      [RouteNames.jobStep3, RouteNames.skillTest],
-      [RouteNames.skillTest, RouteNames.skillTestInfo],
+      [RouteNames.jobStep3, RouteNames.skillTestDetails],
+      [RouteNames.skillTestDetails, RouteNames.skillTestInstructions],
       [RouteNames.jobStep3, RouteNames.appTracker1],
     ];
 
@@ -447,8 +447,8 @@ class RouteNames {
   static const String jobStep1 = '/job-step1';
   static const String jobStep2 = '/job-step2';
   static const String jobStep3 = '/job-step3';
-  static const String skillTest = '/skill-test';
-  static const String skillTestInfo = '/skill-test-info';
+  static const String skillTestDetails = '/skill-test-details';
+  static const String skillTestInstructions = '/skill-test-instructions';
   static const String skillsTestFAQ = '/skills-test-faq';
   static const String appTracker1 = '/app-tracker1';
   static const String calendarView = '/calendar-view';
@@ -528,16 +528,18 @@ class RouteGenerator {
         final job =
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobStep3Screen(job: job));
-      case RouteNames.skillTest:
+      case RouteNames.skillTestDetails:
         final job =
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
-        return MaterialPageRoute(builder: (_) => SkillTestScreen(job: job));
-      case RouteNames.skillTestInfo:
+        return MaterialPageRoute(
+          builder: (_) => SkillTestDetailsScreen(job: job),
+        );
+      case RouteNames.skillTestInstructions:
         final skillTestArgs = args as Map<String, dynamic>? ?? {};
         final job = skillTestArgs['job'] ?? JobData.recommendedJobs.first;
         final test = skillTestArgs['test'] ?? {};
         return MaterialPageRoute(
-          builder: (_) => SkillTestInfoScreen(job: job, test: test),
+          builder: (_) => SkillTestInstructionsScreen(job: job, test: test),
         );
       case RouteNames.skillsTestFAQ:
         final skillTestArgs = args as Map<String, dynamic>? ?? {};
