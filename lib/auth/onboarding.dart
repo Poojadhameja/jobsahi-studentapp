@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/navigation_service.dart';
-import 'signin.dart';
+import 'login_otp_email.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -81,14 +81,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  /// Complete onboarding and navigate to signin
+  /// Complete onboarding and navigate to login
   void _completeOnboarding() {
-    NavigationService.smartNavigate(destination: const SigninScreen());
+    NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
   }
 
-  /// Skip onboarding and go directly to signin
+  /// Skip onboarding and go directly to login
   void _skipOnboarding() {
-    NavigationService.smartNavigate(destination: const SigninScreen());
+    NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
   }
 
   @override

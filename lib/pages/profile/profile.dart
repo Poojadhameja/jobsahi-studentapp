@@ -122,9 +122,7 @@ class ProfileScreen extends StatelessWidget {
           icon: Icons.upload_file,
           title: 'Upload Resume / बायोडाटा डालें',
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const ResumeScreen(),
-            );
+            NavigationService.smartNavigate(destination: const ResumeScreen());
           },
         ),
         _buildOptionTile(
@@ -246,7 +244,7 @@ class ProfileScreen extends StatelessWidget {
 
   /// Handles logout
   void _logout() {
-    // TODO: Clear user data and navigate to signin screen
-    NavigationService.smartNavigate(destination: const SigninScreen());
+    // TODO: Clear user data and navigate to login screen
+    NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
   }
 }

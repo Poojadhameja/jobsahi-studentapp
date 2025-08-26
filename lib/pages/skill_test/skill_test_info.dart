@@ -34,141 +34,157 @@ class _SkillTestInfoScreenState extends State<SkillTestInfoScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Test overview card
-              _buildTestOverviewCard(),
-              const SizedBox(height: AppConstants.largePadding),
-
-              // Instructions section
-              _buildInstructionsSection(),
-              const SizedBox(height: AppConstants.largePadding),
-
-              // Good luck message
-              _buildGoodLuckMessage(),
-              const SizedBox(height: AppConstants.largePadding),
-
-              // Start test button
-              _buildStartTestButton(),
-            ],
-          ),
+          child: _buildMainCard(),
         ),
       ),
     );
   }
 
-  /// Builds the test overview card
-  Widget _buildTestOverviewCard() {
+  /// Builds the main card containing all content
+  Widget _buildMainCard() {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
         color: AppConstants.backgroundColor,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left side - Icon
+          // Test overview section
+          _buildTestOverviewSection(),
+
+          // Divider
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: (widget.test['color'] as Color).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+            margin: const EdgeInsets.symmetric(
+              vertical: AppConstants.defaultPadding,
             ),
-            child: Icon(
-              widget.test['icon'] as IconData,
-              color: widget.test['color'] as Color,
-              size: 32,
-            ),
+            height: 1,
+            color: Colors.grey.shade200,
           ),
-          const SizedBox(width: AppConstants.defaultPadding),
 
-          // Right side - Test details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.test['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppConstants.textPrimaryColor,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'By ${widget.test['provider']}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppConstants.successColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
+          // Instructions section
+          _buildInstructionsSection(),
 
-                // Time and MCQ tags
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppConstants.successColor.withValues(alpha: 0.1),
-                        border: Border.all(
-                          color: AppConstants.successColor,
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${widget.test['time']} Mins',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppConstants.successColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppConstants.successColor.withValues(alpha: 0.1),
-                        border: Border.all(
-                          color: AppConstants.successColor,
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${widget.test['mcqs']} MCQs',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppConstants.successColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          // Divider
+          Container(
+            margin: const EdgeInsets.symmetric(
+              vertical: AppConstants.defaultPadding,
             ),
+            height: 1,
+            color: Colors.grey.shade200,
           ),
+
+          // Good luck message
+          _buildGoodLuckMessage(),
+
+          const SizedBox(height: AppConstants.largePadding),
+
+          // Start test button
+          _buildStartTestButton(),
         ],
       ),
+    );
+  }
+
+  /// Builds the test overview section
+  Widget _buildTestOverviewSection() {
+    return Row(
+      children: [
+        // Left side - Icon
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: (widget.test['color'] as Color).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            widget.test['icon'] as IconData,
+            color: widget.test['color'] as Color,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: AppConstants.defaultPadding),
+
+        // Right side - Test details
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.test['title'] as String,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppConstants.textPrimaryColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'By ${widget.test['provider']}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppConstants.successColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Time and MCQ tags
+              Wrap(
+                spacing: 8,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppConstants.successColor.withValues(alpha: 0.1),
+                      border: Border.all(
+                        color: AppConstants.successColor,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${widget.test['time']} Mins',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppConstants.successColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppConstants.successColor.withValues(alpha: 0.1),
+                      border: Border.all(
+                        color: AppConstants.successColor,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${widget.test['mcqs']} MCQs',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppConstants.successColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -185,16 +201,18 @@ class _SkillTestInfoScreenState extends State<SkillTestInfoScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Header without icon
         const Text(
-          'Instructions:',
+          'Instructions / निर्देश',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppConstants.textPrimaryColor,
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
 
+        // Instructions list
         ...instructions.map(
           (instruction) => _buildInstructionItem(instruction),
         ),
@@ -204,8 +222,14 @@ class _SkillTestInfoScreenState extends State<SkillTestInfoScreen> {
 
   /// Builds a single instruction item
   Widget _buildInstructionItem(String instruction) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -214,7 +238,7 @@ class _SkillTestInfoScreenState extends State<SkillTestInfoScreen> {
             height: 8,
             margin: const EdgeInsets.only(top: 6, right: 12),
             decoration: const BoxDecoration(
-              color: AppConstants.textPrimaryColor,
+              color: AppConstants.successColor,
               shape: BoxShape.circle,
             ),
           ),

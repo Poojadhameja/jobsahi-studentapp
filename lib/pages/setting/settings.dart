@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/navigation_service.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/global/custom_app_bar.dart';
-import '../../auth/enter_new_password.dart';
+import '../../auth/set_new_password.dart';
 import 'about_page.dart';
 
 class SettingsPage extends StatelessWidget {
