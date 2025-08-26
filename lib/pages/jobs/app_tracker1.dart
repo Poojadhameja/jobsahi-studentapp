@@ -91,7 +91,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                               ? Colors
                                     .white // White text for selected tab
                               : const Color(
-                                  0xFF64748B,
+                                  0xFF0B537D,
                                 ), // Dark grey text for unselected tabs
                         ),
                       ),
@@ -194,7 +194,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E3A8A), // Dark blue color
+                        color: Color(0xFF0B537D), // Dark blue color
                       ),
                     ),
                   ),
@@ -225,7 +225,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                 'Bharat Electrician Pvt. Ltd.',
                 style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF64748B),
+                  color: Color(0xFF0B537D),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -240,14 +240,14 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
               // Application date
               const Text(
                 'Applied on 10 july 2025',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 13, color: Color(0xFF0B537D)),
               ),
               const SizedBox(height: 6),
 
               // Number of positions
               const Text(
                 '5 position',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 13, color: Color(0xFF0B537D)),
               ),
               const SizedBox(height: 16),
 
@@ -282,11 +282,11 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
   Widget _buildJobDetail(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: const Color(0xFF64748B)),
+        Icon(icon, size: 18, color: const Color(0xFF0B537D)),
         const SizedBox(width: 8),
         Text(
           text,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+          style: const TextStyle(fontSize: 14, color: Color(0xFF0B537D)),
         ),
       ],
     );
@@ -321,7 +321,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
         //           child: const Text(
         //             'Calendar View',
         //             style: TextStyle(
-        //               color: Color(0xFF1E3A8A),
+        //               color: Color(0xFF0B537D),
         //               fontSize: 13,
         //               fontWeight: FontWeight.w500,
         //             ),
@@ -386,7 +386,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E3A8A), // Dark blue color
+                              color: Color(0xFF0B537D), // Dark blue color
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -396,7 +396,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Ashok Leyland',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Color(0xFF10B981), // Light green color
+                              color: Color(0xFF5C9A24), // Light green color
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -407,7 +407,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Location Bhopal',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B), // Dark grey color
+                              color: Color(0xFF0B537D), // Dark grey color
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -417,7 +417,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Interview: 25 July 2025',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B), // Dark grey color
+                              color: Color(0xFF0B537D), // Dark grey color
                             ),
                           ),
                         ],
@@ -429,7 +429,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                       'Interview:\nWalk-In',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF1E3A8A), // Dark blue color
+                        color: Color(0xFF0B537D), // Dark blue color
                         fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.right,
@@ -475,7 +475,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6),
+                        color: const Color.fromARGB(255, 0, 59, 153),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Center(
@@ -502,7 +502,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E3A8A), // Dark blue color
+                              color: Color(0xFF0B537D), // Dark blue color
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -523,7 +523,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Full Time',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B), // Dark grey color
+                              color: Color(0xFF0B537D), // Dark grey color
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -533,7 +533,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Skills: Drilling, Measuring',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B), // Dark grey color
+                              color: Color(0xFF0B537D), // Dark grey color
                             ),
                           ),
                         ],
@@ -570,7 +570,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                           '₹18,000',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF64748B), // Dark grey color
+                            color: Color(0xFF0B537D), // Dark grey color
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -630,7 +630,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E3A8A), // Dark blue color
+                              color: Color(0xFF0B537D), // Dark blue color
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -651,7 +651,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Full Time',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B), // Dark grey color
+                              color: Color(0xFF0B537D), // Dark grey color
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -661,7 +661,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                             'Skills: Drilling, Measuring',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF64748B), // Dark grey color
+                              color: Color(0xFF0B537D), // Dark grey color
                             ),
                           ),
                         ],
@@ -675,7 +675,7 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E3A8A), // Dark blue
+                        color: const Color(0xFF0B537D), // Dark blue
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(

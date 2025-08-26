@@ -5,15 +5,15 @@ class AppConstants {
   AppConstants._();
 
   /// App Colors
-  static const Color primaryColor = Color(0xFF144B75);
+  static const Color primaryColor = Color(0xFF0B537D);
   static const Color secondaryColor = Color(0xFF5C9A24);
-  static const Color accentColor = Colors.blue;
-  static const Color locationAccentColor = Color(0xFF4A90E2);
+  static const Color accentColor = Color(0xFF0B537D);
+  static const Color locationAccentColor = Color(0xFF0B537D);
   static const Color backgroundColor = Color(0xFFF5F9FC);
   static const Color cardBackgroundColor = Colors.white;
-  static const Color textPrimaryColor = Color(0xFF144B75);
+  static const Color textPrimaryColor = Color(0xFF0B537D);
   static const Color textSecondaryColor = Colors.black54;
-  static const Color borderColor = Colors.grey;
+  static const Color borderColor = Color.fromARGB(44, 11, 83, 125);
   static const Color successColor = Color(0xFF5C9A24);
   static const Color warningColor = Colors.orange;
   static const Color errorColor = Colors.red;
