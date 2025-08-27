@@ -372,12 +372,7 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
     // Close keyboard first
     _closeKeyboard(context);
 
-    print('Next button pressed!'); // Debug print
-    print('Form key: $_formKey'); // Debug print
-    print('Form current state: ${_formKey.currentState}'); // Debug print
-
     if (_formKey.currentState!.validate()) {
-      print('Form validation passed!'); // Debug print
       setState(() {
         _isSubmitting = true;
       });
@@ -389,13 +384,10 @@ class _JobStep1ScreenState extends State<JobStep1Screen> {
         });
 
         // Navigate to next step
-        print('Navigating to next step...'); // Debug print
         NavigationService.smartNavigate(
           destination: JobStep2Screen(job: widget.job),
         );
       });
-    } else {
-      print('Form validation failed!'); // Debug print
     }
   }
 

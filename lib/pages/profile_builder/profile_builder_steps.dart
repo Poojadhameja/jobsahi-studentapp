@@ -448,64 +448,12 @@ class ProfileBuilderStep3Screen extends StatefulWidget {
 }
 
 class _ProfileBuilderStep3ScreenState extends State<ProfileBuilderStep3Screen> {
-  final List<String> trades = [
-    'Computer Science',
-    'COPA',
-    'Diesel Mechanic',
-    'Mining',
-    'Mechanical',
-    'Fitter',
-    'Electrical',
-    'Electrician',
-    'Civil',
-    'On Demand',
-  ];
+  String? selectedOption;
 
-  String? selectedTrade = 'Computer Science';
-
-  Widget _buildTradeOption(String trade) {
-    bool isSelected = selectedTrade == trade;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedTrade = trade;
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppConstants.accentColor.withValues(alpha: 0.1)
-              : AppConstants.cardBackgroundColor,
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-          border: Border.all(
-            color: isSelected
-                ? AppConstants.accentColor
-                : AppConstants.borderColor.withValues(alpha: 0.3),
-            width: 2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Checkbox(
-              value: isSelected,
-              onChanged: (_) {
-                setState(() {
-                  selectedTrade = trade;
-                });
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              activeColor: AppConstants.accentColor,
-            ),
-            const SizedBox(width: AppConstants.smallPadding),
-            Expanded(child: Text(trade, style: AppConstants.bodyStyle)),
-          ],
-        ),
-      ),
-    );
+  void onOptionSelected(String value) {
+    setState(() {
+      selectedOption = value;
+    });
   }
 
   @override
@@ -522,48 +470,83 @@ class _ProfileBuilderStep3ScreenState extends State<ProfileBuilderStep3Screen> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: AppConstants.defaultPadding),
+              const SizedBox(height: AppConstants.smallPadding + 4),
 
               // Header
               const ProfileBuilderHeader(currentStep: 3, totalSteps: 3),
 
-              const SizedBox(height: AppConstants.defaultPadding),
+              const SizedBox(height: AppConstants.defaultPadding + 4),
 
               // Main content
               Expanded(
                 child: BackgroundLayers(
                   child: MainCardContainer(
-                    title: 'What trade are you\nlooking to obtain?',
-                    subtitle: 'नीचे से सही विकल्प चुनें',
-                    content: Expanded(
-                      child: ListView.builder(
-                        itemCount: trades.length,
-                        itemBuilder: (context, index) {
-                          return _buildTradeOption(trades[index]);
-                        },
+                    title: "What trade are you\nlooking to obtain?",
+                    subtitle: "नीचे से सही विकल्प चुनें",
+                    content: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          OptionBuilder(
+                            value: "Computer Science",
+                            isSelected: selectedOption == "Computer Science",
+                            onTap: () => onOptionSelected("Computer Science"),
+                          ),
+                          OptionBuilder(
+                            value: "COPA",
+                            isSelected: selectedOption == "COPA",
+                            onTap: () => onOptionSelected("COPA"),
+                          ),
+                          OptionBuilder(
+                            value: "Diesel Mechanic",
+                            isSelected: selectedOption == "Diesel Mechanic",
+                            onTap: () => onOptionSelected("Diesel Mechanic"),
+                          ),
+                          OptionBuilder(
+                            value: "Mining",
+                            isSelected: selectedOption == "Mining",
+                            onTap: () => onOptionSelected("Mining"),
+                          ),
+                          OptionBuilder(
+                            value: "Mechanical",
+                            isSelected: selectedOption == "Mechanical",
+                            onTap: () => onOptionSelected("Mechanical"),
+                          ),
+                          OptionBuilder(
+                            value: "Fitter",
+                            isSelected: selectedOption == "Fitter",
+                            onTap: () => onOptionSelected("Fitter"),
+                          ),
+                          OptionBuilder(
+                            value: "Electrical",
+                            isSelected: selectedOption == "Electrical",
+                            onTap: () => onOptionSelected("Electrical"),
+                          ),
+                          OptionBuilder(
+                            value: "Electrician",
+                            isSelected: selectedOption == "Electrician",
+                            onTap: () => onOptionSelected("Electrician"),
+                          ),
+                          OptionBuilder(
+                            value: "Civil",
+                            isSelected: selectedOption == "Civil",
+                            onTap: () => onOptionSelected("Civil"),
+                          ),
+                          OptionBuilder(
+                            value: "On Demand",
+                            isSelected: selectedOption == "On Demand",
+                            onTap: () => onOptionSelected("On Demand"),
+                          ),
+                        ],
                       ),
                     ),
-                    actions: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppConstants.secondaryColor,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.smallBorderRadius,
-                          ),
-                        ),
-                      ),
-                      onPressed: () {
-                        NavigationService.smartNavigate(
-                          routeName: RouteNames.location1,
-                        );
-                      },
-                      child: Text(
-                        AppConstants.nextButton,
-                        style: AppConstants.buttonTextStyle.copyWith(
-                          fontSize: 18,
-                        ),
-                      ),
+                    actions: NextButton(
+                      onPressed: selectedOption != null
+                          ? () {
+                              NavigationService.smartNavigate(
+                                routeName: RouteNames.location1,
+                              );
+                            }
+                          : null,
                     ),
                   ),
                 ),
@@ -587,14 +570,14 @@ class StepCircle extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: 15,
-      backgroundColor: AppConstants.cardBackgroundColor,
+      backgroundColor: isFilled
+          ? AppConstants.successColor
+          : AppConstants.accentColor,
       child: Text(
         "$number",
         style: TextStyle(
           fontSize: 16,
-          color: isFilled
-              ? AppConstants.accentColor
-              : AppConstants.textSecondaryColor,
+          color: Colors.white,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -613,7 +596,7 @@ class StepLine extends StatelessWidget {
       width: 40,
       height: 4,
       color: isFilled
-          ? AppConstants.accentColor
+          ? AppConstants.successColor
           : AppConstants.borderColor.withValues(alpha: 0.4),
     );
   }

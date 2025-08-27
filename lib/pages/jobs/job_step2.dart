@@ -15,9 +15,6 @@ class JobStep2Screen extends StatefulWidget {
 }
 
 class _JobStep2ScreenState extends State<JobStep2Screen> {
-  /// Form key for validation
-  final _formKey = GlobalKey<FormState>();
-
   /// Text editing controllers
   final _skillsController = TextEditingController();
   final _coverLetterController = TextEditingController();
