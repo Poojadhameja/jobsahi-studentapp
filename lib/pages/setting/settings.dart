@@ -3,6 +3,10 @@ import '../../utils/navigation_service.dart';
 import '../../widgets/global/custom_app_bar.dart';
 import '../../auth/set_new_password.dart';
 import 'about_page.dart';
+import 'privacy_policy.dart';
+import 'terms_conditions.dart';
+import 'help_center.dart';
+import 'notification_permission.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -41,7 +45,7 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.notifications_outlined,
             title: 'Notification / नोटिफिकेशन',
             onTap: () {
-              // TODO: Navigate to Notification Page
+              NavigationService.smartNavigate(destination: const NotificationPermissionPage());
             },
           ),
           _buildSettingItem(
@@ -57,7 +61,7 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.help_outline,
             title: 'FAQs / सामान्य प्रश्न',
             onTap: () {
-              // TODO: Navigate to FAQs Page
+              NavigationService.smartNavigate(destination: const HelpCenterPage());
             },
           ),
           _buildSettingItem(
@@ -65,7 +69,7 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.article_outlined,
             title: 'Terms & Conditions / नियम और शर्तें',
             onTap: () {
-              // TODO: Navigate to Terms Page
+              NavigationService.smartNavigate(destination: const TermsConditionsPage());
             },
           ),
           _buildSettingItem(
@@ -73,7 +77,7 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.privacy_tip_outlined,
             title: 'Privacy Policy / गोपनीयता नीति',
             onTap: () {
-              // TODO: Navigate to Privacy Page
+              NavigationService.smartNavigate(destination: const PrivacyPolicyPage());
             },
           ),
         ],
