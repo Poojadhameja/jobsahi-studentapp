@@ -169,7 +169,7 @@ class _Message2ScreenState extends State<Message2Screen> {
 
   Widget _buildMessageBubble(Map<String, dynamic> message) {
     final isUser = message['isUser'];
-    final showAvatar = message['showAvatar'];
+    // final showAvatar = message['showAvatar'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
@@ -198,11 +198,17 @@ class _Message2ScreenState extends State<Message2Screen> {
           // ],
 
           // Message bubble
-          Flexible(
+          GestureDetector(
+            onLongPress: () =>
+                _showDeleteDialog(_chatMessages.indexOf(message)),
             child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+                minWidth: MediaQuery.of(context).size.width * 0.2,
+              ),
               padding: const EdgeInsets.symmetric(
                 horizontal: AppConstants.defaultPadding,
-                vertical: AppConstants.smallPadding,
+                vertical: AppConstants.defaultPadding,
               ),
               decoration: BoxDecoration(
                 color: isUser
@@ -213,7 +219,9 @@ class _Message2ScreenState extends State<Message2Screen> {
               child: Text(
                 message['text'],
                 style: TextStyle(
-                  color: isUser ? Colors.white : const Color.fromARGB(255, 0, 0, 0),
+                  color: isUser
+                      ? Colors.white
+                      : const Color.fromARGB(255, 0, 0, 0),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -239,7 +247,6 @@ class _Message2ScreenState extends State<Message2Screen> {
           // ] else if (isUser && !showAvatar) ...[
           //   const SizedBox(width: 40),
           // ],
-
           if (!isUser) const Spacer(),
         ],
       ),
@@ -248,7 +255,10 @@ class _Message2ScreenState extends State<Message2Screen> {
 
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.largePadding,
+        vertical: AppConstants.largePadding + 10,
+      ),
       decoration: BoxDecoration(
         color: AppConstants.cardBackgroundColor,
         border: Border(
@@ -256,12 +266,14 @@ class _Message2ScreenState extends State<Message2Screen> {
         ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Attachment button
           IconButton(
             icon: const Icon(
               Icons.attach_file,
-              color: AppConstants.textSecondaryColor,
+              color: AppConstants.primaryColor,
             ),
             onPressed: () {
               // TODO: Implement file attachment
@@ -272,7 +284,7 @@ class _Message2ScreenState extends State<Message2Screen> {
           IconButton(
             icon: const Icon(
               Icons.emoji_emotions_outlined,
-              color: AppConstants.textSecondaryColor,
+              color: AppConstants.primaryColor,
             ),
             onPressed: () {
               // TODO: Implement emoji picker
@@ -282,18 +294,35 @@ class _Message2ScreenState extends State<Message2Screen> {
           // Text input field
           Expanded(
             child: Container(
-              margin: const EdgeInsets.only(
-                bottom: AppConstants.defaultPadding,
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppConstants.smallPadding,
+                vertical: AppConstants.largePadding,
+              ),
+              decoration: BoxDecoration(
+                // boxShadow: [
+                //   BoxShadow(
+                //     color: Colors.black.withValues(alpha: 0.1),
+                //     blurRadius: 10,
+                //     offset: const Offset(0, 5),
+                //   ),
+                // ],
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                border: Border.all(
+                  color: AppConstants.borderColor.withValues(alpha: 0.3),
+                  width: 1.0,
+                ),
               ),
               child: TextField(
                 controller: _messageController,
+                textAlign: TextAlign.center,
                 decoration: const InputDecoration(
                   hintText: 'Type something...',
                   hintStyle: TextStyle(color: AppConstants.textSecondaryColor),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
-                    horizontal: AppConstants.defaultPadding,
-                    vertical: AppConstants.defaultPadding,
+                    horizontal: AppConstants.smallPadding,
+                    vertical: AppConstants.smallPadding,
                   ),
                 ),
                 maxLines: null,
@@ -333,6 +362,40 @@ class _Message2ScreenState extends State<Message2Screen> {
             curve: Curves.easeOut,
           );
         }
+      });
+    }
+  }
+
+  void _showDeleteDialog(int messageIndex) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Message'),
+          content: const Text('Are you sure you want to delete this message?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteMessage(messageIndex);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteMessage(int messageIndex) {
+    if (messageIndex >= 0 && messageIndex < _chatMessages.length) {
+      setState(() {
+        _chatMessages.removeAt(messageIndex);
       });
     }
   }
