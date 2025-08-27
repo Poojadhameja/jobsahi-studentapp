@@ -15,9 +15,6 @@ class JobStep2Screen extends StatefulWidget {
 }
 
 class _JobStep2ScreenState extends State<JobStep2Screen> {
-  /// Form key for validation
-  final _formKey = GlobalKey<FormState>();
-
   /// Text editing controllers
   final _skillsController = TextEditingController();
   final _coverLetterController = TextEditingController();
@@ -37,145 +34,214 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
       appBar: const SimpleAppBar(
-        title: 'Application Step 2',
+        title: 'Job Application / नौकरी आवेदन',
         showBackButton: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Job information header
-                _buildJobHeader(),
-                const SizedBox(height: AppConstants.largePadding),
-
-                // Progress indicator
-                _buildProgressIndicator(),
-                const SizedBox(height: AppConstants.largePadding),
-
-                // Form fields
-                _buildFormFields(),
-                const SizedBox(height: AppConstants.largePadding),
-
-                // Navigation buttons
-                _buildNavigationButtons(),
-              ],
-            ),
-          ),
+          child: _buildMainCard(),
         ),
       ),
     );
   }
 
-  /// Builds the job information header
-  Widget _buildJobHeader() {
+  /// Builds the main card containing all content
+  Widget _buildMainCard() {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
         color: AppConstants.backgroundColor,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            widget.job['title'] ?? 'Job Title',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
+          // Job overview section
+          _buildJobOverviewSection(),
+
+          // Divider
+          Container(
+            margin: const EdgeInsets.symmetric(
+              vertical: AppConstants.defaultPadding,
             ),
+            height: 1,
+            color: Colors.grey.shade200,
           ),
-          const SizedBox(height: 4),
-          Text(
-            widget.job['company'] ?? 'Company Name',
-            style: const TextStyle(
-              color: AppConstants.successColor,
-              fontWeight: FontWeight.w500,
+
+          // Progress section
+          _buildProgressSection(),
+
+          // Divider
+          Container(
+            margin: const EdgeInsets.symmetric(
+              vertical: AppConstants.defaultPadding,
             ),
+            height: 1,
+            color: Colors.grey.shade200,
           ),
+
+          // Form section
+          _buildFormSection(),
+
+          const SizedBox(height: AppConstants.largePadding),
+
+          // Navigation buttons
+          _buildNavigationButtons(),
         ],
       ),
     );
   }
 
-  /// Builds the progress indicator
-  Widget _buildProgressIndicator() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  /// Builds the job overview section
+  Widget _buildJobOverviewSection() {
+    return Row(
       children: [
-        const Text(
-          'Step 2 of 3',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppConstants.textPrimaryColor,
+        // Left side - Job icon
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppConstants.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
+          child: Icon(Icons.work, color: AppConstants.primaryColor, size: 24),
         ),
-        const SizedBox(height: AppConstants.smallPadding),
-        LinearProgressIndicator(
-          value: 0.66,
-          backgroundColor: AppConstants.backgroundColor,
-          valueColor: const AlwaysStoppedAnimation<Color>(
-            AppConstants.primaryColor,
+        const SizedBox(width: AppConstants.defaultPadding),
+
+        // Right side - Job details
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.job['title'] ?? 'Job Title',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppConstants.textPrimaryColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.job['company'] ?? 'Company Name',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppConstants.successColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: AppConstants.smallPadding),
-        const Text(
-          'Skills & Cover Letter',
-          style: TextStyle(color: AppConstants.textSecondaryColor),
         ),
       ],
     );
   }
 
-  /// Builds the form fields
-  Widget _buildFormFields() {
+  /// Builds the progress section
+  Widget _buildProgressSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Additional Information',
+          'Application Progress / आवेदन प्रगति',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: FontWeight.bold,
             color: AppConstants.textPrimaryColor,
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
 
-        // Skills
-        TextFormField(
-          controller: _skillsController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText: 'Skills',
-            hintText: 'Enter your relevant skills',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            prefixIcon: const Icon(Icons.psychology),
+        // Progress indicator
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Step 2 of 3',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                  ),
+                  Text(
+                    '66%',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppConstants.successColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: 0.66,
+                backgroundColor: Colors.grey.shade300,
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppConstants.successColor,
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Skills & Cover Letter / कौशल और कवर लेटर',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppConstants.textSecondaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the form section
+  Widget _buildFormSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Additional Information / अतिरिक्त जानकारी',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: AppConstants.textPrimaryColor,
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
 
-        // Cover Letter
-        TextFormField(
+        // Skills field
+        _buildFormField(
+          controller: _skillsController,
+          label: 'Skills / कौशल',
+          hint: 'अपने प्रासंगिक कौशल दर्ज करें',
+          prefixIcon: Icons.psychology,
+          maxLines: 3,
+        ),
+        const SizedBox(height: 20),
+
+        // Cover Letter field
+        _buildFormField(
           controller: _coverLetterController,
-          maxLines: 6,
-          decoration: InputDecoration(
-            labelText: 'Cover Letter',
-            hintText:
-                'Write a brief cover letter explaining why you are interested in this position...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            prefixIcon: const Icon(Icons.description),
-            alignLabelWithHint: true,
-          ),
+          label: 'Cover Letter / कवर लेटर',
+          hint:
+              'इस पद में आपकी रुचि क्यों है, यह बताते हुए एक संक्षिप्त कवर लेटर लिखें...',
+          prefixIcon: Icons.description,
+          maxLines: 8,
         ),
       ],
     );
@@ -189,17 +255,24 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
         Expanded(
           child: OutlinedButton(
             onPressed: () {
+              // Close keyboard first
+              _closeKeyboard(context);
               NavigationService.goBack();
             },
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
+              side: BorderSide(color: AppConstants.successColor),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Back',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppConstants.successColor,
+              ),
             ),
           ),
         ),
@@ -210,12 +283,13 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
           child: ElevatedButton(
             onPressed: _isSubmitting ? null : _goToNextStep,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.primaryColor,
+              backgroundColor: AppConstants.secondaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               ),
+              elevation: 2,
             ),
             child: _isSubmitting
                 ? const SizedBox(
@@ -226,8 +300,8 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Text(
-                    'Next',
+                : Text(
+                    'Next Step',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
           ),
@@ -236,8 +310,16 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
     );
   }
 
+  /// Closes the keyboard
+  void _closeKeyboard(BuildContext context) {
+    FocusScope.of(context).requestFocus(FocusNode());
+  }
+
   /// Goes to the next step
   void _goToNextStep() {
+    // Close keyboard first
+    _closeKeyboard(context);
+
     setState(() {
       _isSubmitting = true;
     });
@@ -253,5 +335,47 @@ class _JobStep2ScreenState extends State<JobStep2Screen> {
         destination: JobStep3Screen(job: widget.job),
       );
     });
+  }
+
+  /// Helper method for form fields with modern styling (from create account page)
+  Widget _buildFormField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData prefixIcon,
+    int? maxLines,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: label,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF144B75)),
+          ),
+        ),
+        const SizedBox(height: 7),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          style: const TextStyle(fontSize: 14),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+            filled: true,
+            fillColor: const Color(0xFFF1F5F9),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 17,
+              vertical: 15,
+            ),
+          ),
+        ),
+        const SizedBox(height: 7),
+      ],
+    );
   }
 }
