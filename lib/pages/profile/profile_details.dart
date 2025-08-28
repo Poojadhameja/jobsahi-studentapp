@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
 import '../../utils/navigation_service.dart';
 import 'resume.dart';
+import 'profile_details/profile_edit.dart';
+import 'profile_details/profile_summary_edit.dart';
+import 'profile_details/education_edit.dart';
+import 'profile_details/skills_edit.dart';
+import 'profile_details/experience_edit.dart';
+import 'profile_details/certificates_edit.dart';
 
 /// ---------------- PROFILE DETAILS SCREEN ----------------
 class ProfileDetailsScreen extends StatefulWidget {
@@ -25,13 +32,33 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// State variables for resume details
   String? _uploadedResumeFileName;
   String? _lastResumeUpdatedDate;
+  
+  /// State variables for certificates
+  final List<Map<String, dynamic>> _uploadedCertificates = [];
+  bool _isUploadingCertificate = false;
 
   @override
   void initState() {
     super.initState();
     // Initialize with mock data or actual user data if available
-    _uploadedResumeFileName = 'Morgan Carter CV 7 Year Expriance'; // Example file name
+    _uploadedResumeFileName = 'Morgan Carter CV 7 Year Experience'; // Example file name
     _lastResumeUpdatedDate = '17 July 2024'; // Example last updated date
+    
+    // Set all sections to be collapsed by default (showing down arrows)
+    _isProfileExpanded = false;
+    _isSummaryExpanded = false;
+    _isEducationExpanded = false;
+    _isSkillsExpanded = false;
+    _isExperienceExpanded = false;
+    _isCertificatesExpanded = false;
+    _isResumeExpanded = false;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data when returning from edit pages
+    setState(() {});
   }
 
   @override
@@ -163,6 +190,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// ---------------- EDUCATION SECTION ----------------
   /// Displays education fields like Qualification, Institute, Course
   Widget _buildEducationSection() {
+    final user = UserData.currentUser;
     return _buildSectionCard(
       title: 'Education',
       icon: Icons.school_outlined,
@@ -170,9 +198,14 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       onEditTap: () => _toggleSection('education'),
       child: Column(
         children: [
-          _buildEducationField('Highest Qualification', 'Select', Icons.school_outlined),
-          _buildEducationField('Institute name', 'e.g., Electrician, Fitter,', Icons.business_outlined),
-          _buildEducationField('Course Name', 'Marksheet/Certified PDF', Icons.description_outlined),
+          _buildEducationField('Highest Qualification', user['education_qualification'] ?? 'Select', Icons.school_outlined),
+          _buildEducationField('Institute name', user['education_institute'] ?? 'e.g., Electrician, Fitter,', Icons.business_outlined),
+          _buildEducationField('Course Name', user['education_course'] ?? 'Marksheet/Certified PDF', Icons.description_outlined),
+          if (user['education_year'] != null || user['education_percentage'] != null) ...[
+            const SizedBox(height: AppConstants.smallPadding),
+            _buildEducationField('Year of Completion', user['education_year'] ?? 'Not specified', Icons.calendar_today_outlined),
+            _buildEducationField('Percentage/CGPA', user['education_percentage'] ?? 'Not specified', Icons.grade_outlined),
+          ],
         ],
       ),
     );
@@ -193,9 +226,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       userSkills = []; // Handle errors safely
     }
     
-    // Default fallback skills if none found
+    // Default fallback skills if none found (ITI relevant)
     if (userSkills.isEmpty) {
-      userSkills = ['HTML', 'CSS', 'Photoshop', 'Figma', 'XD'];
+      userSkills = ['Electrical Wiring', 'Safety Procedures', 'Basic Hand Tools', 'Quality Awareness', 'Teamwork'];
     }
     
     return _buildSectionCard(
@@ -214,6 +247,26 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// ---------------- EXPERIENCE SECTION ----------------
   /// Displays user's work experience with company, position, and duration
   Widget _buildExperienceSection() {
+    final user = UserData.currentUser;
+    List<Map<String, dynamic>> experiences = [];
+    
+    try {
+      final experiencesData = user['experiences'];
+      if (experiencesData is List) {
+        experiences = experiencesData.whereType<Map<String, dynamic>>().toList();
+      }
+    } catch (e) {
+      experiences = []; // Handle errors safely
+    }
+    
+    // Default fallback experiences if none found
+    if (experiences.isEmpty) {
+      experiences = [
+        {'company': 'E-commerce Websites', 'position': 'example.com', 'startDate': 'July 2016', 'endDate': 'July 2019'},
+        {'company': 'Custom Web Applications', 'position': 'example.com', 'startDate': 'April 2019', 'endDate': 'Oct 2021'},
+      ];
+    }
+    
     return _buildSectionCard(
       title: 'Experience',
       icon: Icons.work_outline,
@@ -221,9 +274,11 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       onEditTap: () => _toggleSection('experience'),
       child: Column(
         children: [
-          _buildExperienceItem('E-commerce Websites', 'example.com', 'July 2016 - July 2019'),
-          const Divider(height: 1, color: AppConstants.borderColor),
-          _buildExperienceItem('Custom Web Applications', 'example.com', 'April 2019 - Oct 2021'),
+          ...experiences.map((exp) => _buildExperienceItem(
+            exp['company'] ?? '',
+            exp['position'] ?? '',
+            '${exp['startDate'] ?? ''} - ${exp['endDate'] ?? ''}',
+          )),
         ],
       ),
     );
@@ -257,7 +312,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header for Resume/CV section
+          // Header for Resume/CV section with Edit Button + Toggle Arrow
           Padding(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             child: Row(
@@ -273,108 +328,124 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                   ),
                 ),
                 const Spacer(),
-                ElevatedButton(
-                  onPressed: _pickFile, // Trigger file picker on "Update" button tap
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.primaryColor, // Blue background
-                    foregroundColor: AppConstants.backgroundColor, // White text
-                    padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding, vertical: AppConstants.smallPadding),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-                    ),
+                // Edit Button
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AppConstants.primaryColor, size: 20),
+                  onPressed: () => _navigateToEditPage('Resume/CV'), // Navigate to edit page
+                ),
+                // Toggle Arrow Button
+                IconButton(
+                  icon: Icon(
+                    _isResumeExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: AppConstants.primaryColor,
+                    size: 24,
                   ),
-                  child: const Text('Update'),
+                  onPressed: () => _toggleSection('resume'), // Toggle resume section
                 ),
               ],
             ),
           ),
           const Divider(height: 1, color: AppConstants.borderColor), // Separator
 
-          // Upload Area
-          Padding(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: GestureDetector(
-              onTap: _pickFile, // Trigger file picker when upload area is tapped
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding * 2),
-                decoration: BoxDecoration(
-                  color: AppConstants.cardBackgroundColor, // Light blue background
-                  borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                  border: Border.all(
-                    color: AppConstants.borderColor.withValues(alpha: 0.5), // Lighter border
-                    style: BorderStyle.solid, // Solid border as in image
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.cloud_upload_outlined, // Upward arrow icon
-                      size: 48,
-                      color: AppConstants.primaryColor,
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    Text(
-                      'Click to upload documents',
-                      style: TextStyle(
-                        color: AppConstants.textSecondaryColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Display Uploaded File (conditionally)
-          if (_uploadedResumeFileName != null && _uploadedResumeFileName!.isNotEmpty)
+          // Section Content (Shown only if expanded)
+          if (_isResumeExpanded) ...[
+            // Upload Area
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding, vertical: AppConstants.smallPadding),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppConstants.smallPadding),
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: GestureDetector(
+                onTap: _pickFile, // Trigger file picker when upload area is tapped
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click, // Show pointer cursor on hover
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding * 2),
                     decoration: BoxDecoration(
-                      color: Colors.red, // Specific red for PDF icon as in image
-                      borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-                    ),
-                    child: const Text(
-                      'Pdf',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                      color: AppConstants.cardBackgroundColor, // Light blue background
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                      border: Border.all(
+                        color: AppConstants.borderColor.withValues(alpha: 0.5), // Lighter border
+                        style: BorderStyle.solid, // Solid border as in image
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AppConstants.smallPadding),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _uploadedResumeFileName!,
-                        style: TextStyle(
-                          color: AppConstants.textPrimaryColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.cloud_upload_outlined, // Upload icon
+                          size: 48,
+                          color: AppConstants.primaryColor,
                         ),
-                      ),
-                      if (_lastResumeUpdatedDate != null && _lastResumeUpdatedDate!.isNotEmpty)
+                        const SizedBox(height: AppConstants.smallPadding),
                         Text(
-                          'Updated Last: $_lastResumeUpdatedDate',
+                          'Click to upload documents',
+                          style: TextStyle(
+                            color: AppConstants.textSecondaryColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: AppConstants.smallPadding),
+                        Text(
+                          'Supported formats: PDF, DOC, DOCX ',
                           style: TextStyle(
                             color: AppConstants.textSecondaryColor.withValues(alpha: 0.7),
                             fontSize: 12,
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
-          const SizedBox(height: AppConstants.defaultPadding), // Bottom padding for the section
+
+            // Display Uploaded File (conditionally)
+            if (_uploadedResumeFileName != null && _uploadedResumeFileName!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding, vertical: AppConstants.smallPadding),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppConstants.smallPadding),
+                      decoration: BoxDecoration(
+                        color: Colors.red, // Specific red for PDF icon as in image
+                        borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                      ),
+                      child: const Text(
+                        'Pdf',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppConstants.smallPadding),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _uploadedResumeFileName!,
+                          style: TextStyle(
+                            color: AppConstants.textPrimaryColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (_lastResumeUpdatedDate != null && _lastResumeUpdatedDate!.isNotEmpty)
+                          Text(
+                            'Updated Last: $_lastResumeUpdatedDate',
+                            style: TextStyle(
+                              color: AppConstants.textSecondaryColor.withValues(alpha: 0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: AppConstants.defaultPadding), // Bottom padding for the section
+          ],
         ],
       ),
     );
@@ -401,20 +472,35 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       ),
       child: Column(
         children: [
-          // Section Header with Title + Edit Button
+          // Section Header with Title + Edit Button + Toggle Arrow
           ListTile(
             leading: Icon(icon, color: AppConstants.primaryColor, size: 24),
             title: Text(
               title,
               style: const TextStyle(
-                color: AppConstants.secondaryColor,
+                color: AppConstants.textPrimaryColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
-            trailing: IconButton(
-              icon: const Icon(Icons.edit, color: AppConstants.primaryColor, size: 20),
-              onPressed: () => _navigateToEditPage(title), // Navigate to edit page
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Edit Button
+                IconButton(
+                  icon: const Icon(Icons.edit, color: AppConstants.primaryColor, size: 20),
+                  onPressed: () => _navigateToEditPage(title), // Navigate to edit page
+                ),
+                // Toggle Arrow Button
+                IconButton(
+                  icon: Icon(
+                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: AppConstants.primaryColor,
+                    size: 24,
+                  ),
+                  onPressed: onEditTap, // This will toggle the section
+                ),
+              ],
             ),
           ),
 
@@ -620,7 +706,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 ),
                 const SizedBox(height: AppConstants.smallPadding),
                 Text(
-                  'Supported formats: PDF, DOC, DOCX',
+                  'Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB) ',
                   style: TextStyle(
                     color: AppConstants.textSecondaryColor.withValues(alpha: 0.7),
                     fontSize: 12,
@@ -634,7 +720,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         
         // Alternative upload button
         ElevatedButton(
-          onPressed: _pickCertificateFile,
+          onPressed: _isUploadingCertificate ? null : _pickCertificateFile,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppConstants.accentColor,
             foregroundColor: AppConstants.backgroundColor,
@@ -643,8 +729,34 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
             ),
           ),
-          child: const Text('Upload Certificate'),
+          child: _isUploadingCertificate
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text('Upload Certificate'),
         ),
+        
+        // Display uploaded certificates
+        if (_uploadedCertificates.isNotEmpty) ...[
+          const SizedBox(height: AppConstants.defaultPadding),
+          const Divider(),
+          const SizedBox(height: AppConstants.smallPadding),
+          const Text(
+            'Uploaded Certificates',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: AppConstants.smallPadding),
+          ..._uploadedCertificates.map((cert) => _buildCertificateTile(cert)),
+        ],
       ],
     );
   }
@@ -656,21 +768,39 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     switch (sectionTitle) {
       case 'Profile / आपकी जानकारी':
         // Navigate to Profile Edit Page
+        NavigationService.smartNavigate(
+          destination: const ProfileEditScreen(),
+        );
         break;
       case 'Profile summary / प्रोफ़ाइल झलक':
         // Navigate to Summary Edit Page
+        NavigationService.smartNavigate(
+          destination: const ProfileSummaryEditScreen(),
+        );
         break;
       case 'Education':
         // Navigate to Education Edit Page
+        NavigationService.smartNavigate(
+          destination: const EducationEditScreen(),
+        );
         break;
       case 'Key Skills':
         // Navigate to Skills Edit Page
+        NavigationService.smartNavigate(
+          destination: const SkillsEditScreen(),
+        );
         break;
       case 'Experience':
         // Navigate to Experience Edit Page
+        NavigationService.smartNavigate(
+          destination: const ExperienceEditScreen(),
+        );
         break;
       case 'Certificates':
         // Navigate to Certificates Edit Page
+        NavigationService.smartNavigate(
+          destination: const CertificatesEditScreen(),
+        );
         break;
       case 'Resume/CV':
         // Navigate to Resume Edit Page
@@ -683,65 +813,119 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
 
   /// Handles picking a file from the device's drive
   void _pickFile() async {
-    // TODO: Add 'file_picker: ^latest_version' to your pubspec.yaml dependencies
-    // and import 'package:file_picker/file_picker.dart'; at the top of the file.
+    try {
+      // Pick file from device
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'], // Specify allowed file types
+        allowMultiple: false,
+      );
 
-    // Example implementation using file_picker:
-    // FilePickerResult? result = await FilePicker.platform.pickFiles(
-    //   type: FileType.custom,
-    //   allowedExtensions: ['pdf', 'doc', 'docx'], // Specify allowed file types
-    // );
+      if (result != null) {
+        PlatformFile file = result.files.first;
+        
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          _showMessage('File size should be less than 5MB');
+          return;
+        }
 
-    // if (result != null) {
-    //   PlatformFile file = result.files.first;
-    //   print('Picked file: ${file.name}');
-    //   setState(() {
-    //     _uploadedResumeFileName = file.name;
-    //     // You might want to format the date as needed
-    //     _lastResumeUpdatedDate = DateFormat('dd MMMM yyyy').format(DateTime.now());
-    //   });
-    //   // TODO: Implement logic to upload the file to your backend/storage
-    // } else {
-    //   // User canceled the picker
-    //   print('File picking canceled.');
-    // }
-    
-    // For now, let's just simulate an update for demonstration
-    setState(() {
-      _uploadedResumeFileName = 'New_Resume_Updated.pdf';
-      _lastResumeUpdatedDate = '25 July 2024';
-    });
-    // TODO: Replace this with actual file picker implementation
-    // This simulates file pick and update for demonstration purposes
+        // Validate file extension
+        String extension = file.extension?.toLowerCase() ?? '';
+        if (!['pdf', 'doc', 'docx'].contains(extension)) {
+          _showMessage('Please select a valid file (PDF, DOC, DOCX)');
+          return;
+        }
+
+        // Update the resume file name and date
+        setState(() {
+          _uploadedResumeFileName = file.name;
+          _lastResumeUpdatedDate = _getCurrentDate();
+        });
+
+        // Show success message
+        _showMessage('Resume updated successfully!');
+        
+        // TODO: Implement actual file upload to server
+        // - Upload file to cloud storage
+        // - Update user profile in database
+        // - Handle upload errors and retry logic
+        
+      } else {
+        // User canceled file picker
+        _showMessage('File selection cancelled');
+      }
+    } catch (e) {
+      _showMessage('Error updating resume: ${e.toString()}');
+    }
   }
 
   /// Handles picking a file for certificates
-  void _pickCertificateFile() async {
-    // TODO: Add 'file_picker: ^latest_version' to your pubspec.yaml dependencies
-    // and import 'package:file_picker/file_picker.dart'; at the top of the file.
+  Future<void> _pickCertificateFile() async {
+    try {
+      setState(() {
+        _isUploadingCertificate = true;
+      });
 
-    // Example implementation using file_picker:
-    // FilePickerResult? result = await FilePicker.platform.pickFiles(
-    //   type: FileType.custom,
-    //   allowedExtensions: ['pdf', 'doc', 'docx'], // Specify allowed file types
-    // );
+      // Pick file from device
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        allowMultiple: false,
+      );
 
-    // if (result != null) {
-    //   PlatformFile file = result.files.first;
-    //   print('Picked certificate file: ${file.name}');
-    //   // TODO: Implement logic to upload the file to your backend/storage
-    // } else {
-    //   // User canceled the picker
-    //   print('Certificate file picking canceled.');
-    // }
-    
-    // For now, let's just simulate an update for demonstration
-    setState(() {
-      // _uploadedResumeFileName = 'New_Certificate_Updated.pdf'; // Example file name
-      // _lastResumeUpdatedDate = '25 July 2024'; // Example last updated date
-    });
-    // TODO: Replace this with actual file picker implementation
-    // This simulates file pick and update for demonstration purposes
+      if (result != null) {
+        PlatformFile file = result.files.first;
+        
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          _showMessage('File size should be less than 5MB');
+          return;
+        }
+
+        // Validate file extension
+        String extension = file.extension?.toLowerCase() ?? '';
+        if (!['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'].contains(extension)) {
+          _showMessage('Please select a valid file (PDF, DOC, DOCX, JPG, PNG)');
+          return;
+        }
+
+        // Simulate file upload process
+        await Future.delayed(const Duration(seconds: 1));
+
+        // Determine certificate type based on filename or extension
+        String certificateType = _determineCertificateType(file.name, extension);
+
+        // Add certificate to list
+        setState(() {
+          _uploadedCertificates.add({
+            'name': file.name,
+            'type': certificateType,
+            'uploadDate': _getCurrentDate(),
+            'size': file.size,
+            'extension': extension,
+          });
+        });
+
+        // Show success message
+        _showMessage('Certificate uploaded successfully!');
+        
+        // TODO: Implement actual file upload to server
+        // - Upload file to cloud storage
+        // - Update user profile in database
+        // - Handle upload errors and retry logic
+        
+      } else {
+        // User canceled file picker
+        _showMessage('File selection cancelled');
+      }
+    } catch (e) {
+      _showMessage('Error uploading certificate: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isUploadingCertificate = false;
+      });
+    }
   }
 
   /// Show full profile summary in a dialog box
@@ -795,6 +979,194 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           break;
       }
     });
+  }
+
+  /// Builds a certificate tile for display
+  Widget _buildCertificateTile(Map<String, dynamic> certificate) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
+      padding: const EdgeInsets.all(AppConstants.smallPadding),
+      decoration: BoxDecoration(
+        color: AppConstants.backgroundColor,
+        borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+        border: Border.all(
+          color: AppConstants.borderColor.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Certificate icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _getCertificateColor(certificate['type']),
+              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+            ),
+            child: Icon(
+              _getCertificateIcon(certificate['type']),
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: AppConstants.smallPadding),
+          
+          // Certificate details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  certificate['name'],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${certificate['type']} • ${certificate['uploadDate']}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppConstants.textSecondaryColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Delete button
+          IconButton(
+            onPressed: () => _deleteCertificate(certificate),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: AppConstants.errorColor,
+              size: 20,
+            ),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Gets certificate color based on type
+  Color _getCertificateColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'certificate':
+        return Colors.green;
+      case 'license':
+        return Colors.blue;
+      case 'id proof':
+        return Colors.orange;
+      case 'experience letter':
+        return Colors.purple;
+      case 'pdf document':
+        return Colors.red;
+      case 'image document':
+        return Colors.teal;
+      default:
+        return AppConstants.primaryColor;
+    }
+  }
+
+  /// Gets certificate icon based on type
+  IconData _getCertificateIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'certificate':
+        return Icons.verified;
+      case 'license':
+        return Icons.drive_file_rename_outline;
+      case 'id proof':
+        return Icons.badge;
+      case 'experience letter':
+        return Icons.description;
+      case 'pdf document':
+        return Icons.picture_as_pdf;
+      case 'image document':
+        return Icons.image;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  /// Determines certificate type based on filename and extension
+  String _determineCertificateType(String filename, String extension) {
+    String lowerFilename = filename.toLowerCase();
+    
+    if (lowerFilename.contains('certificate') || lowerFilename.contains('cert')) {
+      return 'Certificate';
+    } else if (lowerFilename.contains('license') || lowerFilename.contains('lic')) {
+      return 'License';
+    } else if (lowerFilename.contains('id') || lowerFilename.contains('aadhar') || lowerFilename.contains('pan')) {
+      return 'ID Proof';
+    } else if (lowerFilename.contains('experience') || lowerFilename.contains('exp')) {
+      return 'Experience Letter';
+    } else if (extension == 'pdf') {
+      return 'PDF Document';
+    } else if (['jpg', 'jpeg', 'png'].contains(extension)) {
+      return 'Image Document';
+    } else {
+      return 'Document';
+    }
+  }
+
+  /// Deletes a certificate from the list
+  void _deleteCertificate(Map<String, dynamic> certificate) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Certificate'),
+          content: Text('Are you sure you want to delete "${certificate['name']}"? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                setState(() {
+                  _uploadedCertificates.remove(certificate);
+                });
+                _showMessage('Certificate deleted successfully!');
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppConstants.errorColor,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Gets the current date in the required format
+  String _getCurrentDate() {
+    final now = DateTime.now();
+    final months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${now.day} ${months[now.month - 1]} ${now.year}';
+  }
+
+  /// Shows a snackbar message
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppConstants.primaryColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+        ),
+      ),
+    );
   }
 }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/navigation_service.dart';
+import '../../utils/app_constants.dart';
 import '../../widgets/global/custom_app_bar.dart';
-import '../../auth/set_new_password.dart';
 import 'about_page.dart';
 import 'privacy_policy.dart';
 import 'terms_conditions.dart';
@@ -14,7 +14,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppConstants.backgroundColor,
       appBar: const CustomAppBar(
         title: 'Setting/सेटिंग्स',
         showBackButton: true,
@@ -45,7 +45,9 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.notifications_outlined,
             title: 'Notification / नोटिफिकेशन',
             onTap: () {
-              NavigationService.smartNavigate(destination: const NotificationPermissionPage());
+              NavigationService.smartNavigate(
+                destination: const NotificationPermissionPage(),
+              );
             },
           ),
           _buildSettingItem(
@@ -61,7 +63,9 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.help_outline,
             title: 'FAQs / सामान्य प्रश्न',
             onTap: () {
-              NavigationService.smartNavigate(destination: const HelpCenterPage());
+              NavigationService.smartNavigate(
+                destination: const HelpCenterPage(),
+              );
             },
           ),
           _buildSettingItem(
@@ -69,7 +73,9 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.article_outlined,
             title: 'Terms & Conditions / नियम और शर्तें',
             onTap: () {
-              NavigationService.smartNavigate(destination: const TermsConditionsPage());
+              NavigationService.smartNavigate(
+                destination: const TermsConditionsPage(),
+              );
             },
           ),
           _buildSettingItem(
@@ -77,7 +83,9 @@ class SettingsPage extends StatelessWidget {
             icon: Icons.privacy_tip_outlined,
             title: 'Privacy Policy / गोपनीयता नीति',
             onTap: () {
-              NavigationService.smartNavigate(destination: const PrivacyPolicyPage());
+              NavigationService.smartNavigate(
+                destination: const PrivacyPolicyPage(),
+              );
             },
           ),
         ],
@@ -91,14 +99,31 @@ class SettingsPage extends StatelessWidget {
     required String title,
     required VoidCallback onTap,
   }) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blue),
-        title: Text(title, style: const TextStyle(fontSize: 16)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 4.0),
+        child: Row(
+          children: [
+            Icon(icon, color: AppConstants.primaryColor, size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppConstants.primaryColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppConstants.primaryColor,
+            ),
+          ],
+        ),
       ),
     );
   }

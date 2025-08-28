@@ -24,7 +24,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
   void initState() {
     super.initState();
     // Initialize with existing resume data if available
-    _uploadedFileName = 'Morgan Carter CV 7 Year Expriance';
+    _uploadedFileName = 'Morgan Carter CV 7 Year Experience';
     _lastUpdatedDate = '17 July 2024';
   }
 
@@ -241,6 +241,8 @@ class _ResumeScreenState extends State<ResumeScreen> {
                     ),
             ),
           ),
+          
+
         ],
       ),
     );
@@ -457,12 +459,17 @@ class _ResumeScreenState extends State<ResumeScreen> {
     _showMessage('Opening resume builder...');
   }
 
+
+
   /// Shows a temporary message to the user
   void _showMessage(String message) {
+    final context = NavigationService.context;
+    if (context == null) return;
+    
     // TODO: Implement proper toast/snackbar message
     // For now, show a simple dialog
     showDialog(
-      context: NavigationService.context!,
+      context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Info'),
