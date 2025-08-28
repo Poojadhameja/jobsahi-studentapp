@@ -14,7 +14,6 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
   final _formKey = GlobalKey<FormState>();
   
   // Controllers for form fields
-  final _qualificationController = TextEditingController();
   final _instituteController = TextEditingController();
   final _courseController = TextEditingController();
   final _yearController = TextEditingController();
@@ -56,7 +55,6 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
 
   @override
   void dispose() {
-    _qualificationController.dispose();
     _instituteController.dispose();
     _courseController.dispose();
     _yearController.dispose();
@@ -112,126 +110,157 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: _saveEducation,
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color: AppConstants.primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Highest Qualification
-                _buildDropdownField(
-                  label: 'Highest Qualification',
-                  selectedValue: _selectedQualification,
-                  items: _qualificationOptions,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedQualification = value!;
-                    });
-                  },
-                  icon: Icons.school_outlined,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Highest Qualification
+                      _buildDropdownField(
+                        label: 'Highest Qualification',
+                        selectedValue: _selectedQualification,
+                        items: _qualificationOptions,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedQualification = value!;
+                          });
+                        },
+                        icon: Icons.school_outlined,
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      
+                      // Institute Name
+                      _buildEditField(
+                        controller: _instituteController,
+                        label: 'Institute Name',
+                        icon: Icons.business_outlined,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter institute name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      
+                      // Course Name
+                      _buildEditField(
+                        controller: _courseController,
+                        label: 'Course Name',
+                        icon: Icons.description_outlined,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter course name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      
+                      // Year of Completion
+                      _buildEditField(
+                        controller: _yearController,
+                        label: 'Year of Completion',
+                        icon: Icons.calendar_today_outlined,
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter year of completion';
+                          }
+                          int? year = int.tryParse(value);
+                          if (year == null || year < 1950 || year > DateTime.now().year + 5) {
+                            return 'Please enter a valid year';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      
+                      // Percentage/CGPA
+                      _buildEditField(
+                        controller: _percentageController,
+                        label: 'Percentage/CGPA',
+                        icon: Icons.grade_outlined,
+                        keyboardType: TextInputType.number,
+                        customHintText: 'e.g., 85.5 (percentage) or 8.5 (CGPA)',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter percentage or CGPA';
+                          }
+                          double? number = double.tryParse(value);
+                          if (number == null) {
+                            return 'Please enter a valid number';
+                          }
+                          
+                          // Check if it's percentage (0-100) or CGPA (0-10)
+                          if (number < 0) {
+                            return 'Value cannot be negative';
+                          }
+                          
+                          if (number > 100) {
+                            // Might be CGPA, check if it's reasonable (0-10)
+                            if (number > 10) {
+                              return 'Please enter a valid percentage (0-100) or CGPA (0-10)';
+                            }
+                          }
+                          
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      
+                      // Help Section
+                      _buildHelpSection(),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                
-                // Institute Name
-                _buildEditField(
-                  controller: _instituteController,
-                  label: 'Institute Name',
-                  icon: Icons.business_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter institute name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                
-                // Course Name
-                _buildEditField(
-                  controller: _courseController,
-                  label: 'Course Name',
-                  icon: Icons.description_outlined,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter course name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                
-                // Year of Completion
-                _buildEditField(
-                  controller: _yearController,
-                  label: 'Year of Completion',
-                  icon: Icons.calendar_today_outlined,
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter year of completion';
-                    }
-                    int? year = int.tryParse(value);
-                    if (year == null || year < 1950 || year > DateTime.now().year + 5) {
-                      return 'Please enter a valid year';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                
-                // Percentage/CGPA
-                _buildEditField(
-                  controller: _percentageController,
-                  label: 'Percentage/CGPA',
-                  icon: Icons.grade_outlined,
-                  keyboardType: TextInputType.number,
-                  customHintText: 'e.g., 85.5 (percentage) or 8.5 (CGPA)',
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter percentage or CGPA';
-                    }
-                    double? number = double.tryParse(value);
-                    if (number == null) {
-                      return 'Please enter a valid number';
-                    }
-                    
-                    // Check if it's percentage (0-100) or CGPA (0-10)
-                    if (number < 0) {
-                      return 'Value cannot be negative';
-                    }
-                    
-                    if (number > 100) {
-                      // Might be CGPA, check if it's reasonable (0-10)
-                      if (number > 10) {
-                        return 'Please enter a valid percentage (0-100) or CGPA (0-10)';
-                      }
-                    }
-                    
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                
-                // Helpful Information Section
-                _buildHelpSection(),
-              ],
+              ),
             ),
-          ),
+            // Bottom Save Button
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.cardBackgroundColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saveEducation,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.secondaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppConstants.defaultPadding,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                    ),
+                  ),
+                  child: Text(
+                    AppConstants.saveChangesText,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -250,7 +279,7 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppConstants.textPrimaryColor,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -262,7 +291,7 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
             color: AppConstants.backgroundColor,
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             border: Border.all(
-              color: AppConstants.borderColor,
+              color: AppConstants.borderColor.withValues(alpha: 0.3),
             ),
           ),
           child: TextFormField(
@@ -275,7 +304,7 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
               contentPadding: const EdgeInsets.all(AppConstants.defaultPadding),
               hintText: customHintText ?? 'Enter your $label',
               hintStyle: TextStyle(
-                color: AppConstants.textSecondaryColor,
+                color: AppConstants.textSecondaryColor.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -296,7 +325,7 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppConstants.textPrimaryColor,
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -308,7 +337,7 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
             color: AppConstants.backgroundColor,
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             border: Border.all(
-              color: AppConstants.borderColor,
+              color: AppConstants.borderColor.withValues(alpha: 0.3),
             ),
           ),
           child: Container(
@@ -359,7 +388,7 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
               ),
               const SizedBox(width: AppConstants.smallPadding),
               Text(
-                'Helpful Information',
+                'सहायक जानकारी',
                 style: TextStyle(
                   color: AppConstants.primaryColor,
                   fontWeight: FontWeight.bold,
@@ -370,11 +399,11 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
           ),
           const SizedBox(height: AppConstants.smallPadding),
           Text(
-            '• Enter your highest completed qualification\n'
-            '• Use the full name of your institute\n'
-            '• Include your specific course or specialization\n'
-            '• Year should be when you completed the course\n'
-            '• For percentage: enter 0-100, for CGPA: enter 0-10',
+            '• अपनी उच्चतम पूर्ण योग्यता दर्ज करें\n'
+            '• अपने संस्थान का पूरा नाम उपयोग करें\n'
+            '• अपने विशिष्ट पाठ्यक्रम या विशेषज्ञता को शामिल करें\n'
+            '• वर्ष वह होना चाहिए जब आपने पाठ्यक्रम पूरा किया हो\n'
+            '• प्रतिशत के लिए: 0-100 दर्ज करें, CGPA के लिए: 0-10 दर्ज करें',
             style: TextStyle(
               color: AppConstants.textSecondaryColor,
               fontSize: 14,

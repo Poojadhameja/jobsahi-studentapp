@@ -187,8 +187,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       borderRadius: BorderRadius.circular(AppConstants.borderRadius),
                     ),
                   ),
-                  child: const Text(
-                    'Save Changes',
+                  child: Text(
+                    AppConstants.saveChangesText,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

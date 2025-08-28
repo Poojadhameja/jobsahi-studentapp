@@ -90,134 +90,173 @@ class _ProfileSummaryEditScreenState extends State<ProfileSummaryEditScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: _saveSummary,
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color: AppConstants.primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Character count and limit info
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Profile Summary',
-                      style: TextStyle(
-                        color: AppConstants.textPrimaryColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '$_characterCount/$_maxCharacters',
-                      style: TextStyle(
-                        color: _characterCount > _maxCharacters 
-                            ? AppConstants.errorColor 
-                            : AppConstants.textSecondaryColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppConstants.smallPadding),
-                
-                // Summary text field
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppConstants.backgroundColor,
-                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                    border: Border.all(
-                      color: AppConstants.borderColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: TextFormField(
-                    controller: _summaryController,
-                    maxLines: 8,
-                    maxLength: _maxCharacters,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your profile summary';
-                      }
-                      if (value.length < 50) {
-                        return 'Profile summary should be at least 50 characters';
-                      }
-                      return null;
-                    },
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(AppConstants.defaultPadding),
-                      hintText: 'Write a compelling summary of your professional background, skills, and career objectives...',
-                      counterText: '', // Hide default counter
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                
-                // Tips section
-                Container(
-                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                  decoration: BoxDecoration(
-                    color: AppConstants.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                    border: Border.all(
-                      color: AppConstants.primaryColor.withValues(alpha: 0.3),
-                    ),
-                  ),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Character count and limit info
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.lightbulb_outline,
-                            color: AppConstants.primaryColor,
-                            size: 20,
-                          ),
-                          const SizedBox(width: AppConstants.smallPadding),
                           Text(
-                            'Writing Tips',
+                            'Profile Summary',
                             style: TextStyle(
-                              color: AppConstants.primaryColor,
+                              color: AppConstants.textPrimaryColor,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            '$_characterCount/$_maxCharacters',
+                            style: TextStyle(
+                              color: _characterCount > _maxCharacters 
+                                  ? AppConstants.errorColor 
+                                  : AppConstants.textSecondaryColor,
+                              fontSize: 14,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppConstants.smallPadding),
-                      Text(
-                        '• Keep it professional and concise\n'
-                        '• Highlight your key skills and experience\n'
-                        '• Mention your career goals\n'
-                        '• Use action words and be specific\n'
-                        '• Proofread for grammar and spelling',
-                        style: TextStyle(
-                          color: AppConstants.textSecondaryColor,
-                          fontSize: 14,
-                          height: 1.4,
+                      const SizedBox(height: 8),
+                      
+                      // Summary text field
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppConstants.backgroundColor,
+                          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                          border: Border.all(
+                            color: AppConstants.borderColor.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: TextFormField(
+                          controller: _summaryController,
+                          maxLines: 8,
+                          maxLength: _maxCharacters,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your profile summary';
+                            }
+                            if (value.length < 50) {
+                              return 'Profile summary should be at least 50 characters';
+                            }
+                            return null;
+                          },
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.all(AppConstants.defaultPadding),
+                            hintText: 'Write a compelling summary of your professional background, skills, and career objectives...',
+                            counterText: '', // Hide default counter
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Tips section
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppConstants.primaryColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppConstants.primaryColor.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppConstants.primaryColor.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Icon(
+                                    Icons.lightbulb_outline,
+                                    color: AppConstants.primaryColor,
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Writing Tips',
+                                  style: TextStyle(
+                                    color: AppConstants.primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '• Keep it professional and concise\n'
+                              '• Highlight your key skills and experience\n'
+                              '• Mention your career objectives\n'
+                              '• Use action words and be specific\n'
+                              '• Proofread for grammar and spelling',
+                              style: TextStyle(
+                                color: AppConstants.textSecondaryColor,
+                                fontSize: 13,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+            // Bottom Save Button
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.cardBackgroundColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saveSummary,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.secondaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppConstants.defaultPadding,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                    ),
+                  ),
+                  child: Text(
+                    AppConstants.saveChangesText,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
