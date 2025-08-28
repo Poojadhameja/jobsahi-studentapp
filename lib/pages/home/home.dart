@@ -13,7 +13,7 @@ import '../jobs/saved_jobs.dart';
 import '../jobs/app_tracker1.dart';
 import '../profile/user_profile.dart';
 import '../courses/learning_center.dart';
-import '../messages/message1.dart';
+import '../messages/inbox_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return const AppTracker1Screen();
       case 3:
-        return Message1Screen();
+        return InboxScreen();
       case 4:
         // Profile tab - navigate directly to edit profile
         return const UserProfileScreen();
