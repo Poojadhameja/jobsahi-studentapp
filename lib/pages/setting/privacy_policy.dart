@@ -17,11 +17,8 @@ class PrivacyPolicyPage extends StatelessWidget {
       body: Column(
         children: [
           // Top dark gray bar
-          Container(
-            height: 4,
-            color: const Color(0xFF424242),
-          ),
-          
+          Container(height: 4, color: const Color(0xFF424242)),
+
           // Main content
           Expanded(
             child: SingleChildScrollView(
@@ -35,7 +32,9 @@ class PrivacyPolicyPage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppConstants.secondaryColor.withOpacity(0.1),
+                          color: AppConstants.secondaryColor.withValues(
+                            alpha: 0.1,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -56,39 +55,38 @@ class PrivacyPolicyPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: AppConstants.largePadding),
-                  
+
                   // Personal Identification Information Section
                   _buildSection(
                     title: 'PERSONAL IDENTIFICATION INFORMATION',
-                    content: 'जब आप हमारी सेवाओं के साथ इंटरैक्ट करते हैं, तो आप जो जानकारी साझा करना चुनते हैं, हम उसे एकत्र कर सकते हैं',
+                    content:
+                        'जब आप हमारी सेवाओं के साथ इंटरैक्ट करते हैं, तो आप जो जानकारी साझा करना चुनते हैं, हम उसे एकत्र कर सकते हैं',
                   ),
-                  
+
                   const SizedBox(height: AppConstants.largePadding),
-                  
+
                   // Non-Personal Identification Information Section
                   _buildSection(
                     title: 'NON-PERSONAL IDENTIFICATION INFORMATION',
-                    content: 'हम उपयोगकर्ताओं से गैर-व्यक्तिगत जानकारी भी एकत्र कर सकते हैं, जैसे कि ब्राउज़र प्रकार, ऑपरेटिंग सिस्टम, IP एड्रेस, इंटरनेट सेवा प्रदाता, आदि',
+                    content:
+                        'हम उपयोगकर्ताओं से गैर-व्यक्तिगत जानकारी भी एकत्र कर सकते हैं, जैसे कि ब्राउज़र प्रकार, ऑपरेटिंग सिस्टम, IP एड्रेस, इंटरनेट सेवा प्रदाता, आदि',
                   ),
-                  
+
                   const SizedBox(height: AppConstants.largePadding),
-                  
+
                   // How We Use Collected Information Section
                   _buildUsageSection(),
-                  
+
                   const SizedBox(height: AppConstants.largePadding),
                 ],
               ),
             ),
           ),
-          
+
           // Bottom dark gray bar
-          Container(
-            height: 4,
-            color: const Color(0xFF424242),
-          ),
+          Container(height: 4, color: const Color(0xFF424242)),
         ],
       ),
       bottomNavigationBar: Container(
@@ -104,10 +102,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppConstants.secondaryColor,
-              side: BorderSide(
-                color: AppConstants.secondaryColor,
-                width: 1,
-              ),
+              side: BorderSide(color: AppConstants.secondaryColor, width: 1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               ),
@@ -125,10 +120,7 @@ class PrivacyPolicyPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSection({
-    required String title,
-    required String content,
-  }) {
+  Widget _buildSection({required String title, required String content}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -175,20 +167,20 @@ class PrivacyPolicyPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        
+
         // Bullet points
         _buildBulletPoint(
           'दिया गया व्यक्तिगत डेटा:',
           'नौकरी के मिलान हेतु जानकारी, जिसे नियोक्ताओं के साथ साझा किया जा सकता है',
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         _buildBulletPoint(
           'स्थान जानकारी:',
           'पास के स्थानों में नौकरियों की जानकारी देने हेतु',
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         _buildBulletPoint(
           'कॉल लॉग:',
           'यह ट्रैक करता है कि कॉल सफल रही या नहीं, और सफल कॉल पर किस नौकरी के बारे में बात हुई',

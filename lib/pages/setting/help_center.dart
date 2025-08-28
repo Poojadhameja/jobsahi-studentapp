@@ -63,7 +63,7 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               ],
             ),
           ),
-          
+
           // Tab Content
           Expanded(
             child: TabBarView(
@@ -71,7 +71,7 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               children: [
                 // Feedback Tab
                 _buildFeedbackTab(),
-                
+
                 // FAQs Tab
                 _buildFaqsTab(),
               ],
@@ -98,9 +98,9 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               letterSpacing: 0.5,
             ),
           ),
-          
+
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Subtitle
           Text(
             'हमें बताएं कि आपको ऐप का कौन-सा हिस्सा पसंद है या हम इसे बेहतर कैसे बना सकते हैं',
@@ -109,25 +109,19 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               height: 1.5,
             ),
           ),
-          
+
           const SizedBox(height: AppConstants.largePadding),
-          
+
           // Feedback Input
           TextField(
             controller: _feedbackController,
             maxLines: 8,
             decoration: InputDecoration(
               hintText: 'Enter Feedback',
-              hintStyle: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 16,
-              ),
+              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                borderSide: BorderSide(
-                  color: Colors.grey[300]!,
-                  width: 1,
-                ),
+                borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
@@ -139,9 +133,9 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               contentPadding: const EdgeInsets.all(AppConstants.defaultPadding),
             ),
           ),
-          
+
           const SizedBox(height: AppConstants.largePadding),
-          
+
           // Submit Button
           SizedBox(
             width: double.infinity,
@@ -163,7 +157,9 @@ class _HelpCenterPageState extends State<HelpCenterPage>
                 backgroundColor: AppConstants.secondaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
                 ),
                 disabledBackgroundColor: Colors.grey[300],
               ),
@@ -199,9 +195,9 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               letterSpacing: 0.5,
             ),
           ),
-          
+
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Subtitle
           Text(
             'नौकरी के लिए आवेदन करते समय पूछे जाने वाले सामान्य प्रश्नों की सूची:',
@@ -210,28 +206,19 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               height: 1.5,
             ),
           ),
-          
+
           const SizedBox(height: AppConstants.largePadding),
-          
+
           // Search Bar
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Search keywords',
-              hintStyle: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 16,
-              ),
-              prefixIcon: Icon(
-                Icons.search,
-                color: Colors.grey[600],
-              ),
+              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+              prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                borderSide: BorderSide(
-                  color: Colors.grey[300]!,
-                  width: 1,
-                ),
+                borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
@@ -250,49 +237,55 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               setState(() {});
             },
           ),
-          
+
           const SizedBox(height: AppConstants.largePadding),
-          
+
           // FAQ List
           _buildFaqItem(
             question: 'मैं नौकरी के लिए आवेदन कैसे करूँ?',
-            answer: 'नौकरी के लिए आवेदन करने के लिए आपको पहले अपना अकाउंट बनाना होगा और फिर अपना प्रोफाइल पूरा करना होगा।',
+            answer:
+                'नौकरी के लिए आवेदन करने के लिए आपको पहले अपना अकाउंट बनाना होगा और फिर अपना प्रोफाइल पूरा करना होगा।',
             isExpanded: false,
           ),
-          
+
           _buildFaqItem(
             question: 'क्या आवेदन करने के लिए अकाउंट बनाना ज़रूरी है?',
-            answer: 'हाँ, अधिकतर जॉब पोर्टल्स पर आवेदन करने के लिए अकाउंट बनाना ज़रूरी होता है इससे आप अपनी एप्लिकेशन की स्थिति ट्रैक कर सकते हैं और कई पदों के लिए आवेदन कर सकते हैं',
+            answer:
+                'हाँ, अधिकतर जॉब पोर्टल्स पर आवेदन करने के लिए अकाउंट बनाना ज़रूरी होता है इससे आप अपनी एप्लिकेशन की स्थिति ट्रैक कर सकते हैं और कई पदों के लिए आवेदन कर सकते हैं',
             isExpanded: true,
           ),
-          
+
           _buildFaqItem(
             question: 'आवेदन करने के लिए कौन-कौन से दस्तावेज़ चाहिए होते हैं?',
-            answer: 'आवेदन के लिए आपको अपना रिज्यूमे, फोटो, और आवश्यक प्रमाणपत्र अपलोड करने होंगे।',
+            answer:
+                'आवेदन के लिए आपको अपना रिज्यूमे, फोटो, और आवश्यक प्रमाणपत्र अपलोड करने होंगे।',
             isExpanded: false,
           ),
-          
+
           _buildFaqItem(
             question: 'क्या मैं एक साथ कई नौकरियों के लिए आवेदन कर सकता हूँ?',
             answer: 'हाँ, आप एक साथ कई नौकरियों के लिए आवेदन कर सकते हैं।',
             isExpanded: false,
           ),
-          
+
           _buildFaqItem(
             question: 'क्या मैं आवेदन सबमिट करने के बाद उसे अपडेट कर सकता हूँ?',
-            answer: 'हाँ, आप अपना आवेदन सबमिट करने के बाद भी अपडेट कर सकते हैं।',
+            answer:
+                'हाँ, आप अपना आवेदन सबमिट करने के बाद भी अपडेट कर सकते हैं।',
             isExpanded: false,
           ),
-          
+
           _buildFaqItem(
             question: 'मुझे कैसे पता चलेगा कि मेरा आवेदन सफल रहा या नहीं?',
-            answer: 'आपको ईमेल या SMS के माध्यम से अपने आवेदन की स्थिति के बारे में सूचित किया जाएगा।',
+            answer:
+                'आपको ईमेल या SMS के माध्यम से अपने आवेदन की स्थिति के बारे में सूचित किया जाएगा।',
             isExpanded: false,
           ),
-          
+
           _buildFaqItem(
             question: 'अगर मुझे किसी कंपनी से जवाब नहीं मिले तो क्या करूँ?',
-            answer: 'अगर आपको जवाब नहीं मिलता है, तो आप कंपनी से सीधे संपर्क कर सकते हैं या हमारी सहायता टीम से संपर्क कर सकते हैं।',
+            answer:
+                'अगर आपको जवाब नहीं मिलता है, तो आप कंपनी से सीधे संपर्क कर सकते हैं या हमारी सहायता टीम से संपर्क कर सकते हैं।',
             isExpanded: false,
           ),
         ],
@@ -313,6 +306,10 @@ class _HelpCenterPageState extends State<HelpCenterPage>
           fontWeight: FontWeight.w500,
         ),
       ),
+      iconColor: AppConstants.secondaryColor,
+      collapsedIconColor: AppConstants.secondaryColor,
+      backgroundColor: Colors.transparent,
+      collapsedBackgroundColor: Colors.transparent,
       children: [
         Container(
           width: double.infinity,
@@ -326,10 +323,6 @@ class _HelpCenterPageState extends State<HelpCenterPage>
           ),
         ),
       ],
-      iconColor: AppConstants.secondaryColor,
-      collapsedIconColor: AppConstants.secondaryColor,
-      backgroundColor: Colors.transparent,
-      collapsedBackgroundColor: Colors.transparent,
     );
   }
 }

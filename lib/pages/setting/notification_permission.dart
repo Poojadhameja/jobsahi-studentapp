@@ -11,11 +11,8 @@ class NotificationPermissionPage extends StatelessWidget {
       body: Column(
         children: [
           // Top dark gray bar (status bar area)
-          Container(
-            height: 4,
-            color: const Color(0xFF424242),
-          ),
-          
+          Container(height: 4, color: const Color(0xFF424242)),
+
           // Main content
           Expanded(
             child: Padding(
@@ -25,9 +22,9 @@ class NotificationPermissionPage extends StatelessWidget {
                 children: [
                   // Illustration
                   _buildIllustration(),
-                  
+
                   const SizedBox(height: AppConstants.largePadding * 2),
-                  
+
                   // Main Question
                   Text(
                     'Do you want to turn on notification?',
@@ -39,9 +36,9 @@ class NotificationPermissionPage extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   const SizedBox(height: AppConstants.defaultPadding),
-                  
+
                   // Descriptive Text in Hindi
                   Text(
                     'नोटिफिकेशन चालू करें ताकि आपको अपनी नौकरी की खोज से जुड़ी ज़रूरी जानकारी सीधे अपने फ़ोन पर मिल सके',
@@ -52,9 +49,9 @@ class NotificationPermissionPage extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   const SizedBox(height: AppConstants.largePadding * 2),
-                  
+
                   // Allow Notifications Button
                   SizedBox(
                     width: double.infinity,
@@ -68,7 +65,9 @@ class NotificationPermissionPage extends StatelessWidget {
                         backgroundColor: AppConstants.secondaryColor,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
                         ),
                         elevation: 2,
                       ),
@@ -82,9 +81,9 @@ class NotificationPermissionPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: AppConstants.defaultPadding),
-                  
+
                   // SKIP Button
                   SizedBox(
                     width: double.infinity,
@@ -101,7 +100,9 @@ class NotificationPermissionPage extends StatelessWidget {
                           width: 2,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
                         ),
                       ),
                       child: Text(
@@ -124,7 +125,7 @@ class NotificationPermissionPage extends StatelessWidget {
   }
 
   Widget _buildIllustration() {
-    return Container(
+    return SizedBox(
       width: 200,
       height: 200,
       child: Stack(
@@ -137,20 +138,17 @@ class NotificationPermissionPage extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(60),
-              border: Border.all(
-                color: AppConstants.secondaryColor,
-                width: 3,
-              ),
+              border: Border.all(color: AppConstants.secondaryColor, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
               ],
             ),
           ),
-          
+
           // Megaphone handle
           Positioned(
             right: 40,
@@ -164,7 +162,7 @@ class NotificationPermissionPage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Sound waves
           Positioned(
             left: 20,
@@ -179,7 +177,7 @@ class NotificationPermissionPage extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Speech bubble with dots
           Positioned(
             top: 10,
@@ -202,7 +200,7 @@ class NotificationPermissionPage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Bell icon
           Positioned(
             right: 20,
@@ -214,17 +212,13 @@ class NotificationPermissionPage extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.amber.withOpacity(0.3),
+                    color: Colors.amber.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.notifications,
-                color: Colors.white,
-                size: 24,
-              ),
+              child: Icon(Icons.notifications, color: Colors.white, size: 24),
             ),
           ),
         ],
@@ -237,7 +231,7 @@ class NotificationPermissionPage extends StatelessWidget {
       width: 4,
       height: height,
       decoration: BoxDecoration(
-        color: AppConstants.secondaryColor.withOpacity(opacity),
+        color: AppConstants.secondaryColor.withValues(alpha: opacity),
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -263,10 +257,12 @@ class NotificationPermissionPage extends StatelessWidget {
         duration: const Duration(seconds: 2),
       ),
     );
-    
+
     // Navigate back after a short delay
     Future.delayed(const Duration(seconds: 2), () {
-      Navigator.of(context).pop();
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
     });
   }
 }

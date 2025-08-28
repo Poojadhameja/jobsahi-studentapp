@@ -24,11 +24,8 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
       body: Column(
         children: [
           // Top thin horizontal line
-          Container(
-            height: 1,
-            color: const Color(0xFFE0E0E0),
-          ),
-          
+          Container(height: 1, color: const Color(0xFFE0E0E0)),
+
           // Header with info icon and title
           Container(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -37,7 +34,7 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppConstants.secondaryColor.withOpacity(0.1),
+                    color: AppConstants.secondaryColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -60,13 +57,10 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
               ],
             ),
           ),
-          
+
           // Bottom thin horizontal line
-          Container(
-            height: 1,
-            color: const Color(0xFFE0E0E0),
-          ),
-          
+          Container(height: 1, color: const Color(0xFFE0E0E0)),
+
           // Main content
           Expanded(
             child: SingleChildScrollView(
@@ -84,38 +78,38 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
                       letterSpacing: 0.5,
                     ),
                   ),
-                  
+
                   const SizedBox(height: AppConstants.largePadding),
-                  
+
                   // Content paragraphs
                   _buildParagraph(
                     'Job Sahi आपकी व्यक्तिगत जानकारी को किसी भी अनधिकृत तृतीय पक्ष के साथ साझा नहीं करता है',
                   ),
-                  
+
                   const SizedBox(height: AppConstants.defaultPadding),
-                  
+
                   _buildParagraph(
                     'हालाँकि, एक वैश्विक निगम के रूप में, Workday विभिन्न देशों में मौजूद अपनी संबद्ध कंपनियों और संसाधनों के माध्यम से आपकी जानकारी का उपयोग कर सकता है',
                   ),
-                  
+
                   const SizedBox(height: AppConstants.defaultPadding),
-                  
+
                   _buildParagraph(
                     'Workday अपने समूह की कंपनियों और अन्य तृतीय पक्षों के साथ आपकी जानकारी को साझा या स्थानांतरित कर सकता है ताकि सेवाएं प्रदान की जा सकें',
                   ),
-                  
+
                   const SizedBox(height: AppConstants.defaultPadding),
-                  
+
                   _buildParagraph(
                     'यह स्थानांतरण यूरोपीय आर्थिक क्षेत्र और भारत के बाहर भी हो सकता है',
                   ),
-                  
+
                   const SizedBox(height: AppConstants.largePadding),
                 ],
               ),
             ),
           ),
-          
+
           // Bottom section with checkbox and accept button
           Container(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -149,18 +143,20 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppConstants.defaultPadding),
-                
+
                 // Accept button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: isAgreed ? () {
-                      // Handle accept action
-                      Navigator.of(context).pop();
-                    } : null,
+                    onPressed: isAgreed
+                        ? () {
+                            // Handle accept action
+                            Navigator.of(context).pop();
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: AppConstants.secondaryColor,
@@ -169,7 +165,9 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
                         width: 1,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
                       ),
                       disabledBackgroundColor: Colors.grey[300],
                       disabledForegroundColor: Colors.grey[600],
@@ -177,7 +175,9 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
                     child: Text(
                       'Accept',
                       style: AppConstants.buttonTextStyle.copyWith(
-                        color: isAgreed ? AppConstants.secondaryColor : Colors.grey[600],
+                        color: isAgreed
+                            ? AppConstants.secondaryColor
+                            : Colors.grey[600],
                         fontWeight: FontWeight.bold,
                       ),
                     ),
