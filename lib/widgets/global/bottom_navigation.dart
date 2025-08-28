@@ -22,8 +22,8 @@ class CustomBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       backgroundColor: AppConstants.cardBackgroundColor,
-      selectedItemColor: AppConstants.primaryColor,
-      unselectedItemColor: AppConstants.accentColor,
+      selectedItemColor: AppConstants.bottomNavActiveColor,
+      unselectedItemColor: AppConstants.bottomNavInactiveColor,
       showUnselectedLabels: showUnselectedLabels,
       type: BottomNavigationBarType.fixed,
       currentIndex: currentIndex,
@@ -34,25 +34,27 @@ class CustomBottomNavigation extends StatelessWidget {
 
   /// Builds the navigation items for the bottom navigation bar
   List<BottomNavigationBarItem> _buildNavigationItems() {
-    return const [
+    return [
       BottomNavigationBarItem(
-        icon: Icon(Icons.home),
+        icon: Icon(currentIndex == 0 ? Icons.home : Icons.home_outlined),
         label: AppConstants.homeLabel,
       ),
       BottomNavigationBarItem(
-        icon: Icon(Icons.menu_book),
+        icon: Icon(currentIndex == 1 ? Icons.school : Icons.school_outlined),
         label: AppConstants.coursesLabel,
       ),
       BottomNavigationBarItem(
-        icon: Icon(Icons.assignment_outlined),
+        icon: Icon(
+          currentIndex == 2 ? Icons.assignment : Icons.assignment_outlined,
+        ),
         label: AppConstants.applicationsLabel,
       ),
       BottomNavigationBarItem(
-        icon: Icon(Icons.message_outlined),
+        icon: Icon(currentIndex == 3 ? Icons.message : Icons.message_outlined),
         label: AppConstants.messagesLabel,
       ),
       BottomNavigationBarItem(
-        icon: Icon(Icons.person_outline),
+        icon: Icon(currentIndex == 4 ? Icons.person : Icons.person_outline),
         label: AppConstants.profileLabel,
       ),
     ];
