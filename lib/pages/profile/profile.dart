@@ -1,7 +1,3 @@
-/// Profile Screen
-
-library;
-
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
@@ -10,8 +6,8 @@ import 'user_profile.dart';
 import 'profile_details.dart';
 import 'resume.dart';
 import 'job_status.dart';
-import '../../auth/signin.dart';
-import '../jobs/saved_jobs.dart';
+import '../../auth/login_otp_email.dart';
+import '../jobs/app_tracker1.dart';
 import '../setting/settings.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -134,12 +130,14 @@ class ProfileScreen extends StatelessWidget {
             );
           },
         ),
-                _buildOptionTile(
+        _buildOptionTile(
           icon: Icons.timeline,
           title: 'Track Application / आवेदन ट्रैक करें',
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const SavedJobsScreen(),
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const AppTracker1Screen(),
+              ),
             );
           },
         ),

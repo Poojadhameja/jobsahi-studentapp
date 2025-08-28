@@ -34,6 +34,7 @@ import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
 import '../pages/profile/profile_details.dart';
 import '../pages/profile/resume.dart';
+import '../pages/profile/job_status.dart';
 import '../pages/setting/settings.dart'; // Course screens
 import '../pages/courses/learning_center.dart';
 import '../pages/courses/course_details.dart';
@@ -214,6 +215,8 @@ class NavigationService {
         return RouteNames.aboutCompany;
       case 'SavedJobsScreen':
         return RouteNames.savedJobs;
+      case 'JobStatusScreen':
+        return RouteNames.jobStatus;
       case 'Location1Screen':
         return RouteNames.location1;
       case 'LocationPermissionScreen':
@@ -464,6 +467,7 @@ class RouteNames {
   static const String userProfile = '/user-profile';
   static const String profileDetails = '/profile-details';
   static const String resume = '/resume';
+  static const String jobStatus = '/job-status';
   static const String settings = '/settings';
   static const String about = '/about';
 
@@ -606,6 +610,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const ProfileDetailsScreen());
       case RouteNames.resume:
         return MaterialPageRoute(builder: (_) => const ResumeScreen());
+      case RouteNames.jobStatus:
+        return MaterialPageRoute(builder: (_) => const JobStatusScreen());
       case RouteNames.settings:
         return MaterialPageRoute(builder: (_) => const SettingsPage());
       case RouteNames.about:
