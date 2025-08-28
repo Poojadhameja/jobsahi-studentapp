@@ -66,12 +66,18 @@ class _CertificatesEditScreenState extends State<CertificatesEditScreen> {
         allowMultiple: false,
       );
 
-      if (result != null) {
+      if (result != null && result.files.isNotEmpty) {
         PlatformFile file = result.files.first;
         
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          _showMessage('File size should be less than 5MB');
+        // Validate file size (max 10MB for better user experience)
+        if (file.size > 10 * 1024 * 1024) {
+          _showMessage('File size should be less than 10MB');
+          return;
+        }
+
+        // Validate minimum file size (prevent empty files)
+        if (file.size < 1024) { // Less than 1KB
+          _showMessage('File seems to be empty or too small');
           return;
         }
 
@@ -82,11 +88,28 @@ class _CertificatesEditScreenState extends State<CertificatesEditScreen> {
           return;
         }
 
-        // Simulate file upload process
+        // Validate filename
+        if (file.name.isEmpty || file.name.length > 100) {
+          _showMessage('Invalid filename. Please use a shorter name');
+          return;
+        }
+
+        // Simulate file upload process with better feedback
+        _showMessage('Processing file...');
         await Future.delayed(const Duration(seconds: 1));
 
         // Determine certificate type based on filename or extension
         String certificateType = _determineCertificateType(file.name, extension);
+
+        // Check for duplicate files
+        bool isDuplicate = _uploadedCertificates.any((cert) => 
+          cert['name'].toLowerCase() == file.name.toLowerCase()
+        );
+        
+        if (isDuplicate) {
+          _showMessage('A file with this name already exists. Please rename the file.');
+          return;
+        }
 
         // Add certificate to list
         setState(() {
@@ -96,6 +119,7 @@ class _CertificatesEditScreenState extends State<CertificatesEditScreen> {
             'uploadDate': _getCurrentDate(),
             'size': file.size,
             'extension': extension,
+            'uploadTime': DateTime.now().millisecondsSinceEpoch, // Add timestamp for sorting
           });
         });
 
@@ -112,7 +136,20 @@ class _CertificatesEditScreenState extends State<CertificatesEditScreen> {
         _showMessage('File selection cancelled');
       }
     } catch (e) {
-      _showMessage('Error uploading certificate: ${e.toString()}');
+      String errorMessage = 'Error uploading certificate';
+      
+      // Provide more specific error messages
+      if (e.toString().contains('permission')) {
+        errorMessage = 'Permission denied. Please allow file access.';
+      } else if (e.toString().contains('storage')) {
+        errorMessage = 'Storage error. Please check available space.';
+      } else if (e.toString().contains('network')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else {
+        errorMessage = 'Error uploading certificate: ${e.toString()}';
+      }
+      
+      _showMessage(errorMessage);
     } finally {
       setState(() {
         _isUploadingCertificate = false;
@@ -153,29 +190,38 @@ class _CertificatesEditScreenState extends State<CertificatesEditScreen> {
 
   void _saveCertificates() {
     if (_uploadedCertificates.isNotEmpty) {
-      // TODO: Save to backend/database
-      setState(() {
-        // Update local user data
-        UserData.currentUser['certificates'] = _uploadedCertificates;
-      });
-      
-      _showMessage('Certificates updated successfully!');
-      Future.delayed(const Duration(seconds: 1), () {
-        NavigationService.goBack();
-      });
+      try {
+        // TODO: Save to backend/database
+        setState(() {
+          // Update local user data
+          UserData.currentUser['certificates'] = _uploadedCertificates;
+        });
+        
+        _showMessage('Certificates updated successfully!');
+        Future.delayed(const Duration(seconds: 1), () {
+          NavigationService.goBack();
+        });
+      } catch (e) {
+        _showMessage('Error saving certificates: ${e.toString()}');
+      }
     } else {
       _showMessage('Please add at least one certificate');
     }
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (mounted) { // Check if widget is still mounted
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: message.contains('Error') || message.contains('Error') 
+              ? AppConstants.errorColor 
+              : AppConstants.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   String _getCurrentDate() {
@@ -270,33 +316,64 @@ class _CertificatesEditScreenState extends State<CertificatesEditScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: _saveCertificates,
-            child: Text(
-              'Save',
-              style: TextStyle(
-                color: AppConstants.primaryColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Upload Section
-              _buildUploadSection(),
-              const SizedBox(height: AppConstants.defaultPadding),
-              
-              // Current Certificates
-              _buildCurrentCertificatesSection(),
-            ],
-          ),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Upload Section
+                    _buildUploadSection(),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    
+                    // Current Certificates
+                    _buildCurrentCertificatesSection(),
+                  ],
+                ),
+              ),
+            ),
+            // Bottom Save Button
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.cardBackgroundColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saveCertificates,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.secondaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppConstants.defaultPadding,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                    ),
+                  ),
+                  child: Text(
+                    AppConstants.saveChangesText,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -327,45 +404,77 @@ class _CertificatesEditScreenState extends State<CertificatesEditScreen> {
           
           // Upload Area
           GestureDetector(
-            onTap: _pickCertificateFile,
+            onTap: _isUploadingCertificate ? null : _pickCertificateFile,
             child: MouseRegion(
-              cursor: SystemMouseCursors.click,
+              cursor: _isUploadingCertificate ? SystemMouseCursors.basic : SystemMouseCursors.click,
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding * 2),
                 decoration: BoxDecoration(
-                  color: AppConstants.cardBackgroundColor,
+                  color: _isUploadingCertificate 
+                      ? AppConstants.backgroundColor.withValues(alpha: 0.5)
+                      : AppConstants.cardBackgroundColor,
                   borderRadius: BorderRadius.circular(AppConstants.borderRadius),
                   border: Border.all(
-                    color: AppConstants.borderColor,
+                    color: _isUploadingCertificate 
+                        ? AppConstants.borderColor.withValues(alpha: 0.3)
+                        : AppConstants.borderColor,
                     style: BorderStyle.solid,
                   ),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.cloud_upload_outlined,
-                      size: 48,
-                      color: AppConstants.accentColor,
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    Text(
-                      'Click to upload documents',
-                      style: TextStyle(
-                        color: AppConstants.textPrimaryColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                    if (_isUploadingCertificate) ...[
+                      SizedBox(
+                        height: 48,
+                        width: 48,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    Text(
-                      'Supported formats: PDF, DOC, DOCX, JPG, PNG ',
-                      style: TextStyle(
-                        color: AppConstants.textSecondaryColor,
-                        fontSize: 12,
+                      const SizedBox(height: AppConstants.smallPadding),
+                      Text(
+                        'Processing file...',
+                        style: TextStyle(
+                          color: AppConstants.textPrimaryColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
+                    ] else ...[
+                      Icon(
+                        Icons.cloud_upload_outlined,
+                        size: 48,
+                        color: AppConstants.accentColor,
+                      ),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      Text(
+                        'Click to upload documents',
+                        style: TextStyle(
+                          color: AppConstants.textPrimaryColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      Text(
+                        'Supported formats: PDF, DOC, DOCX, JPG, PNG' ,
+                        style: TextStyle(
+                          color: AppConstants.textSecondaryColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      Text(
+                        'Max file size: 5MB',
+                        style: TextStyle(
+                          color: AppConstants.textSecondaryColor,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -388,13 +497,20 @@ class _CertificatesEditScreenState extends State<CertificatesEditScreen> {
                 elevation: 0,
               ),
               child: _isUploadingCertificate
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: AppConstants.smallPadding),
+                        const Text('Uploading...'),
+                      ],
                     )
                   : const Text('Upload Certificate'),
             ),

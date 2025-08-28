@@ -124,7 +124,7 @@ class AppConstants {
   static const String verifyText = 'Verify';
   static const String submitText = 'Submit';
   static const String cancelText = 'Cancel';
-  static const String saveChangesText = 'Save Changes';
+  static const String saveChangesText = 'Save';
 
   /// Error Messages
   static const String emailRequired = 'Email is required';
