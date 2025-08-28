@@ -306,10 +306,7 @@ class AboutPage extends StatelessWidget {
       child: SizedBox(
         width: double.infinity,
         child: OutlinedButton(
-          onPressed: () {
-            // Navigate back to settings page
-            Navigator.of(context).pop();
-          },
+          onPressed: () => NavigationService.goBack(),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(
               vertical: AppConstants.defaultPadding,
