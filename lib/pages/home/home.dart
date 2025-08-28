@@ -13,6 +13,7 @@ import '../jobs/saved_jobs.dart';
 import '../jobs/app_tracker1.dart';
 import '../profile/user_profile.dart';
 import '../courses/learning_center.dart';
+import '../messages/message1.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -95,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return const AppTracker1Screen();
       case 3:
-        return const MessagesPage();
+        return Message1Screen();
       case 4:
         // Profile tab - navigate directly to edit profile
         return const UserProfileScreen();
@@ -295,61 +296,3 @@ class JobList extends StatelessWidget {
 
 /// Bottom Navigation Screen Widgets
 /// These are placeholder screens for the bottom navigation tabs
-
-class MessagesPage extends StatelessWidget {
-  const MessagesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Messages content
-            const Text(
-              'Your Messages',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppConstants.textPrimaryColor,
-              ),
-            ),
-            const SizedBox(height: AppConstants.defaultPadding),
-
-            // Placeholder content
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.message_outlined,
-                      size: 64,
-                      color: AppConstants.textSecondaryColor,
-                    ),
-                    const SizedBox(height: AppConstants.defaultPadding),
-                    Text(
-                      'No messages yet',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: AppConstants.textSecondaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    Text(
-                      'Messages from employers will appear here',
-                      style: TextStyle(color: AppConstants.textSecondaryColor),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
