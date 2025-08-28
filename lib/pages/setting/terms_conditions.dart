@@ -16,10 +16,14 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
+      appBar: CustomAppBar(
         title: 'Terms & Conditions / नियम और शर्तें',
         showBackButton: true,
         showSearchBar: false,
+        onBackPressed: () {
+          // Navigate back to settings page
+          Navigator.of(context).pop();
+        },
       ),
       body: Column(
         children: [

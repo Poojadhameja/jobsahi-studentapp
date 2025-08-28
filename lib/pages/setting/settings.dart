@@ -23,14 +23,7 @@ class SettingsPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          _buildSettingItem(
-            context,
-            icon: Icons.person_outline,
-            title: 'Account Setting / खाता सेटिंग',
-            onTap: () {
-              // TODO: Navigate to Account Setting Page
-            },
-          ),
+
           _buildSettingItem(
             context,
             icon: Icons.lock_outline,

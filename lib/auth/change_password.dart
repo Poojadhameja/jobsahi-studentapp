@@ -33,9 +33,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
-      appBar: const CustomAppBar(
+      appBar: CustomAppBar(
         title: 'Change Password/पासवर्ड बदलें',
         showBackButton: true,
+        onBackPressed: () {
+          // Navigate back to settings page
+          Navigator.of(context).pop();
+        },
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
