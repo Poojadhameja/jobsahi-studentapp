@@ -11,6 +11,8 @@ import '../auth/create_account.dart';
 import '../auth/forgot_password.dart';
 import '../auth/set_password_code.dart';
 import '../auth/set_new_password.dart';
+import '../pages/profile/job_status.dart';
+import '../auth/change_password.dart';
 // Main app screens (organized by feature in pages folder)
 import '../pages/home/home.dart';
 import '../pages/jobs/search_job.dart';
@@ -34,7 +36,6 @@ import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
 import '../pages/profile/profile_details.dart';
 import '../pages/profile/resume.dart';
-import '../pages/profile/job_status.dart';
 import '../pages/setting/settings.dart'; // Course screens
 import '../pages/courses/learning_center.dart';
 import '../pages/courses/course_details.dart';
@@ -239,6 +240,8 @@ class NavigationService {
         return RouteNames.settings;
       case 'AboutPage':
         return RouteNames.about;
+      case 'ChangePasswordPage':
+        return RouteNames.changePassword;
 
       case 'LearningCenterPage':
         return RouteNames.learningCenter;
@@ -470,6 +473,7 @@ class RouteNames {
   static const String jobStatus = '/job-status';
   static const String settings = '/settings';
   static const String about = '/about';
+  static const String changePassword = '/change-password';
 
   // Course screens
   static const String learningCenter = '/learning-center';
@@ -618,6 +622,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SettingsPage());
       case RouteNames.about:
         return MaterialPageRoute(builder: (_) => const AboutPage());
+      case RouteNames.changePassword:
+        return MaterialPageRoute(builder: (_) => const ChangePasswordPage());
 
       case RouteNames.learningCenter:
         return MaterialPageRoute(builder: (_) => const LearningCenterPage());

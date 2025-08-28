@@ -7,6 +7,7 @@ import 'privacy_policy.dart';
 import 'terms_conditions.dart';
 import 'help_center.dart';
 import 'notification_permission.dart';
+import '../../auth/change_password.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -36,7 +37,7 @@ class SettingsPage extends StatelessWidget {
             title: 'Password Change / पासवर्ड बदलें',
             onTap: () {
               NavigationService.smartNavigate(
-                destination: const SetNewPasswordScreen(),
+                destination: const ChangePasswordPage(),
               );
             },
           ),
