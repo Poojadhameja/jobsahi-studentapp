@@ -25,6 +25,9 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen>
   void initState() {
     super.initState();
 
+    // Reset verification state when screen initializes
+    _isVerifying = false;
+
     // Initialize scale animation controller
     _scaleController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -212,8 +215,11 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen>
 
     // Simulate loading
     Future.delayed(const Duration(seconds: 1), () {
-      // Navigate immediately after loading without setting _isVerifying to false
-      // This prevents the button from briefly showing "Continue to App" text
+      setState(() {
+        _isVerifying = false;
+      });
+
+      // Navigate to profile builder step 1
       NavigationService.smartNavigate(
         routeName: RouteNames.profileBuilderStep1,
       );
