@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/app_constants.dart';
 import '../utils/navigation_service.dart';
+import 'login_verified_popup.dart';
 
 class LoginOtpCodeScreen extends StatefulWidget {
   const LoginOtpCodeScreen({super.key});
@@ -274,9 +275,9 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
       // For demo purposes, accept any 4-digit OTP
       if (otp.length == 4) {
-        // Navigate to profile builder step 1 using smart navigation
+        // Navigate to login verified popup screen
         NavigationService.smartNavigate(
-          routeName: RouteNames.profileBuilderStep1,
+          destination: const LoginVerifiedPopupScreen(),
         );
       } else {
         // Show error message
