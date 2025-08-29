@@ -77,9 +77,26 @@ class _SkillTestDetailsScreenState extends State<SkillTestDetailsScreen> {
         showBackButton: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: _buildMainCard(),
+        child: Column(
+          children: [
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: _buildMainCard(),
+              ),
+            ),
+
+            // Fixed bottom button
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.cardBackgroundColor,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: _buildBottomSection(_skillTest),
+            ),
+          ],
         ),
       ),
     );
@@ -123,8 +140,7 @@ class _SkillTestDetailsScreenState extends State<SkillTestDetailsScreen> {
             color: Colors.grey.shade200,
           ),
 
-          // Bottom section with provider and button
-          _buildBottomSection(test),
+          // Bottom section removed - now fixed at bottom
         ],
       ),
     );

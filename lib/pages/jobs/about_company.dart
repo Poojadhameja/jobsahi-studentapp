@@ -458,8 +458,37 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
             ),
           ),
 
-          // Bottom margin for the button
-          const SizedBox(height: AppConstants.defaultPadding * 3),
+          // Fixed bottom button
+          Container(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            decoration: BoxDecoration(
+              color: AppConstants.cardBackgroundColor,
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // TODO: Navigate to all open jobs
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.secondaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
+                  ),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  'View All Open Positions',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -576,20 +605,18 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppConstants.secondaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
-                    AppConstants.smallBorderRadius,
+                    AppConstants.borderRadius,
                   ),
                 ),
+                elevation: 2,
               ),
               child: const Text(
                 'Write a Review',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),

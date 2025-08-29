@@ -119,19 +119,17 @@ class JobApplicationSuccessScreen extends StatelessWidget {
           child: ElevatedButton(
             onPressed: () => _trackApplication(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.successColor,
+              backgroundColor: AppConstants.secondaryColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  AppConstants.smallBorderRadius,
-                ),
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               ),
               elevation: 2,
             ),
             child: const Text(
               'Track Application',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -141,21 +139,20 @@ class JobApplicationSuccessScreen extends StatelessWidget {
         // Take Test button
         SizedBox(
           width: double.infinity,
-          child: OutlinedButton(
+          child: ElevatedButton(
             onPressed: () => _takeTest(context),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppConstants.successColor,
-              side: BorderSide(color: AppConstants.successColor, width: 2),
-              padding: const EdgeInsets.symmetric(vertical: 16),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.secondaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  AppConstants.smallBorderRadius,
-                ),
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               ),
+              elevation: 2,
             ),
             child: const Text(
               'Take Test',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ),

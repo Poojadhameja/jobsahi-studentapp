@@ -98,24 +98,25 @@ class PrivacyPolicyPage extends StatelessWidget {
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: SizedBox(
           width: double.infinity,
-          height: 50,
           child: ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppConstants.secondaryColor,
-              side: BorderSide(color: AppConstants.secondaryColor, width: 1),
+              backgroundColor: AppConstants.secondaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               ),
+              elevation: 2,
             ),
             child: Text(
               AppConstants.nextButton,
-              style: AppConstants.buttonTextStyle.copyWith(
-                color: AppConstants.secondaryColor,
+              style: TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
           ),

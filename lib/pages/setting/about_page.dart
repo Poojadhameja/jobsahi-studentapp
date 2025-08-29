@@ -14,31 +14,45 @@ class AboutPage extends StatelessWidget {
         title: 'About/हमारे बारे में',
         showBackButton: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Main title section
-            _buildMainTitle(),
-            const SizedBox(height: AppConstants.largePadding),
+      body: Column(
+        children: [
+          // Scrollable content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Main title section
+                  _buildMainTitle(),
+                  const SizedBox(height: AppConstants.largePadding),
 
-            // Content sections
-            _buildContentSection(),
-            const SizedBox(height: AppConstants.largePadding),
+                  // Content sections
+                  _buildContentSection(),
+                  const SizedBox(height: AppConstants.largePadding),
 
-            // Company info section
-            _buildCompanyInfo(),
-            const SizedBox(height: AppConstants.largePadding),
+                  // Company info section
+                  _buildCompanyInfo(),
+                  const SizedBox(height: AppConstants.largePadding),
 
-            // Contact section
-            _buildContactSection(),
-            const SizedBox(height: AppConstants.largePadding),
+                  // Contact section
+                  _buildContactSection(),
+                  const SizedBox(height: AppConstants.largePadding),
+                ],
+              ),
+            ),
+          ),
 
-            // Back button
-            _buildBackButton(),
-          ],
-        ),
+          // Fixed bottom button
+          Container(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            decoration: BoxDecoration(
+              color: AppConstants.backgroundColor,
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: _buildBackButton(),
+          ),
+        ],
       ),
     );
   }
@@ -305,22 +319,20 @@ class AboutPage extends StatelessWidget {
     return Center(
       child: SizedBox(
         width: double.infinity,
-        child: OutlinedButton(
+        child: ElevatedButton(
           onPressed: () => NavigationService.goBack(),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(
-              vertical: AppConstants.defaultPadding,
-            ),
-            side: BorderSide(color: AppConstants.secondaryColor),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppConstants.secondaryColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 18),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             ),
+            elevation: 2,
           ),
           child: Text(
             'BACK',
-            style: AppConstants.buttonTextStyle.copyWith(
-              color: AppConstants.secondaryColor,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       ),
