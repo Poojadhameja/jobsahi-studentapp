@@ -18,9 +18,6 @@ import '../pages/home/home.dart';
 import '../pages/jobs/search_job.dart';
 import '../pages/jobs/search_result.dart';
 import '../pages/jobs/job_details.dart';
-import '../pages/jobs/job_step1.dart';
-import '../pages/jobs/job_step2.dart';
-import '../pages/jobs/job_step3.dart';
 import '../pages/skill_test/skill_test_details.dart';
 import '../pages/skill_test/skill_test_instructions.dart';
 import '../pages/skill_test/skills_test_faq.dart';
@@ -192,12 +189,6 @@ class NavigationService {
         return RouteNames.searchResult;
       case 'JobDetailsScreen':
         return RouteNames.jobDetails;
-      case 'JobStep1Screen':
-        return RouteNames.jobStep1;
-      case 'JobStep2Screen':
-        return RouteNames.jobStep2;
-      case 'JobStep3Screen':
-        return RouteNames.jobStep3;
       case 'SkillTestDetailsScreen':
         return RouteNames.skillTestDetails;
       case 'SkillTestInstructionsScreen':
@@ -339,11 +330,7 @@ class NavigationService {
 
   static bool _isJobApplicationFlow(String currentRoute, String targetRoute) {
     final jobFlowSequences = [
-      [RouteNames.jobStep1, RouteNames.jobStep2],
-      [RouteNames.jobStep2, RouteNames.jobStep3],
-      [RouteNames.jobStep3, RouteNames.skillTestDetails],
       [RouteNames.skillTestDetails, RouteNames.skillTestInstructions],
-      [RouteNames.jobStep3, RouteNames.appTracker1],
     ];
 
     return jobFlowSequences.any(
@@ -450,9 +437,6 @@ class RouteNames {
   static const String searchJob = '/search-job';
   static const String searchResult = '/search-result';
   static const String jobDetails = '/job-details';
-  static const String jobStep1 = '/job-step1';
-  static const String jobStep2 = '/job-step2';
-  static const String jobStep3 = '/job-step3';
   static const String skillTestDetails = '/skill-test-details';
   static const String skillTestInstructions = '/skill-test-instructions';
   static const String skillsTestFAQ = '/skills-test-faq';
@@ -521,21 +505,6 @@ class RouteGenerator {
         final job =
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobDetailsScreen(job: job));
-      case RouteNames.jobStep1:
-        // Pass a default job object for now - in real app, this would come from arguments
-        final job =
-            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
-        return MaterialPageRoute(builder: (_) => JobStep1Screen(job: job));
-      case RouteNames.jobStep2:
-        // Pass a default job object for now - in real app, this would come from arguments
-        final job =
-            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
-        return MaterialPageRoute(builder: (_) => JobStep2Screen(job: job));
-      case RouteNames.jobStep3:
-        // Pass a default job object for now - in real app, this would come from arguments
-        final job =
-            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
-        return MaterialPageRoute(builder: (_) => JobStep3Screen(job: job));
       case RouteNames.skillTestDetails:
         final job =
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
