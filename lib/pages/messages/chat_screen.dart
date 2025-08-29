@@ -256,8 +256,8 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildInputArea() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.largePadding,
-        vertical: AppConstants.largePadding + 10,
+        horizontal: AppConstants.defaultPadding,
+        vertical: AppConstants.smallPadding,
       ),
       decoration: BoxDecoration(
         color: AppConstants.cardBackgroundColor,
@@ -266,18 +266,19 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Attachment button
           IconButton(
             icon: const Icon(
               Icons.attach_file,
               color: AppConstants.primaryColor,
+              size: 22,
             ),
             onPressed: () {
               // TODO: Implement file attachment
             },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
 
           // Emoji button
@@ -285,10 +286,13 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: const Icon(
               Icons.emoji_emotions_outlined,
               color: AppConstants.primaryColor,
+              size: 22,
             ),
             onPressed: () {
               // TODO: Implement emoji picker
             },
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
 
           // Text input field
@@ -296,16 +300,8 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Container(
               margin: const EdgeInsets.symmetric(
                 horizontal: AppConstants.smallPadding,
-                vertical: AppConstants.largePadding,
               ),
               decoration: BoxDecoration(
-                // boxShadow: [
-                //   BoxShadow(
-                //     color: Colors.black.withValues(alpha: 0.1),
-                //     blurRadius: 10,
-                //     offset: const Offset(0, 5),
-                //   ),
-                // ],
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppConstants.borderRadius),
                 border: Border.all(
@@ -315,25 +311,32 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               child: TextField(
                 controller: _messageController,
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.left,
                 decoration: const InputDecoration(
                   hintText: 'Type something...',
                   hintStyle: TextStyle(color: AppConstants.textSecondaryColor),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
-                    horizontal: AppConstants.smallPadding,
+                    horizontal: AppConstants.defaultPadding,
                     vertical: AppConstants.smallPadding,
                   ),
                 ),
                 maxLines: null,
+                minLines: 1,
               ),
             ),
           ),
 
           // Send button
           IconButton(
-            icon: const Icon(Icons.send, color: AppConstants.primaryColor),
+            icon: const Icon(
+              Icons.send,
+              color: AppConstants.primaryColor,
+              size: 22,
+            ),
             onPressed: _sendMessage,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),
         ],
       ),
