@@ -18,6 +18,8 @@ import '../pages/home/home.dart';
 import '../pages/jobs/search_job.dart';
 import '../pages/jobs/search_result.dart';
 import '../pages/jobs/job_details.dart';
+import '../pages/jobs/job_step.dart';
+import '../pages/jobs/job_application_success.dart';
 import '../pages/skill_test/skill_test_details.dart';
 import '../pages/skill_test/skill_test_instructions.dart';
 import '../pages/skill_test/skills_test_faq.dart';

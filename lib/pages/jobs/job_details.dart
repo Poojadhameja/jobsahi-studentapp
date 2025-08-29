@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/global/simple_app_bar.dart';
 import '../../data/job_data.dart';
-import '../../data/user_data.dart';
-import '../skill_test/skill_test_details.dart';
+
+import 'job_step.dart';
 
 import 'write_review.dart';
 import 'about_company.dart';
@@ -729,8 +729,8 @@ class JobDetailsScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             onPressed: () {
-              // Show job application confirmation dialog
-              _showJobApplicationDialog(context);
+              // Navigate directly to job application step
+              _navigateToJobStep(context);
             },
             child: const Text(
               AppConstants.applyJobText,
@@ -746,99 +746,10 @@ class JobDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// Shows the job application confirmation dialog
-  void _showJobApplicationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Job Application'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You are applying for: ${job['title'] ?? 'Job'}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Choose your next step:',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '• Update your profile information before applying',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '• Take a skills test to showcase your abilities',
-              style: TextStyle(fontSize: 14),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Navigate to profile page for updates
-              _navigateToProfile(context);
-            },
-            child: const Text('Update Profile'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Navigate to skills test screen
-              _navigateToSkillTest(context);
-            },
-            child: const Text('Take a Skill Test'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Navigates to profile page
-  void _navigateToProfile(BuildContext context) {
-    Navigator.of(context).pushNamed('/profile-details');
-  }
-
-  /// Navigates to skills test screen
-  void _navigateToSkillTest(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => SkillTestDetailsScreen(job: job)),
-    );
-  }
-
-  /// Submits the job application
-  void _submitJobApplication(BuildContext context) {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Submitting application...'),
-          ],
-        ),
-      ),
-    );
-
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.of(context).pop(); // Close loading dialog
-
-      // Navigate to skills test details screen
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => SkillTestDetailsScreen(job: job),
-        ),
-      );
-    });
+  /// Navigates to job step screen
+  void _navigateToJobStep(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => JobStepScreen(job: job)));
   }
 }
