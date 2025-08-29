@@ -32,7 +32,7 @@ class _HelpCenterPageState extends State<HelpCenterPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppConstants.backgroundColor,
       appBar: CustomAppBar(
         title: 'Help Center/हेल्प सेंटर',
         showBackButton: true,
@@ -46,21 +46,13 @@ class _HelpCenterPageState extends State<HelpCenterPage>
         children: [
           // Tab Bar
           Container(
-            color: Colors.white,
+            color: AppConstants.cardBackgroundColor,
             child: TabBar(
               controller: _tabController,
-              labelColor: Colors.blue,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue,
+              labelColor: AppConstants.primaryColor,
+              unselectedLabelColor: AppConstants.textSecondaryColor,
+              indicatorColor: AppConstants.primaryColor,
               indicatorWeight: 3,
-              labelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.normal,
-              ),
               tabs: const [
                 Tab(text: 'Feedback'),
                 Tab(text: 'FAQs'),
