@@ -10,7 +10,7 @@ import '../../widgets/feature_specific/filter_chip.dart';
 import '../jobs/job_details.dart';
 import '../jobs/search_job.dart';
 import '../jobs/saved_jobs.dart';
-import '../jobs/app_tracker1.dart';
+import '../jobs/application_tracker.dart';
 import '../profile/user_profile.dart';
 import '../courses/learning_center.dart';
 import '../messages/inbox_screen.dart';
@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return const LearningCenterPage();
       case 2:
-        return const AppTracker1Screen();
+        return const ApplicationTrackerScreen();
       case 3:
         return InboxScreen();
       case 4:

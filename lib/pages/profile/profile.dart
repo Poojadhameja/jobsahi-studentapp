@@ -7,7 +7,7 @@ import 'profile_details.dart';
 import 'resume.dart';
 import 'job_status.dart';
 import '../../auth/login_otp_email.dart';
-import '../jobs/app_tracker1.dart';
+import '../jobs/application_tracker.dart';
 import '../setting/settings.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -136,7 +136,7 @@ class ProfileScreen extends StatelessWidget {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => const AppTracker1Screen(),
+                builder: (context) => const ApplicationTrackerScreen(),
               ),
             );
           },
