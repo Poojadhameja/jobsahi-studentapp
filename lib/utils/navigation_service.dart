@@ -33,7 +33,6 @@ import '../pages/profile_builder/profile_builder_steps.dart';
 import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
 import '../pages/profile/profile_details.dart';
-import '../pages/profile/resume.dart';
 import '../pages/profile/job_status.dart';
 import '../pages/setting/settings.dart'; // Course screens
 import '../pages/courses/learning_center.dart';
@@ -233,8 +232,7 @@ class NavigationService {
         return RouteNames.userProfile;
       case 'ProfileDetailsScreen':
         return RouteNames.profileDetails;
-      case 'ResumeScreen':
-        return RouteNames.resume;
+    
       case 'SettingsPage':
         return RouteNames.settings;
       case 'AboutPage':
@@ -244,7 +242,7 @@ class NavigationService {
         return RouteNames.learningCenter;
       case 'CourseDetailsPage':
         return RouteNames.courseDetails;
-      case 'SavedCoursesScreen':
+      case 'SavedCoursesPage':
         return RouteNames.savedCourses;
       default:
         return '/unknown';
@@ -466,7 +464,7 @@ class RouteNames {
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
   static const String profileDetails = '/profile-details';
-  static const String resume = '/resume';
+  // static const String resume = '/resume';
   static const String jobStatus = '/job-status';
   static const String settings = '/settings';
   static const String about = '/about';
@@ -608,8 +606,6 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const UserProfileScreen());
       case RouteNames.profileDetails:
         return MaterialPageRoute(builder: (_) => const ProfileDetailsScreen());
-      case RouteNames.resume:
-        return MaterialPageRoute(builder: (_) => const ResumeScreen());
       case RouteNames.jobStatus:
         return MaterialPageRoute(builder: (_) => const JobStatusScreen());
       case RouteNames.settings:
@@ -625,7 +621,7 @@ class RouteGenerator {
           builder: (_) => CourseDetailsPage(course: course),
         );
       case RouteNames.savedCourses:
-        return MaterialPageRoute(builder: (_) => const SavedCoursesScreen());
+        return MaterialPageRoute(builder: (_) => const SavedCoursesPage());
       default:
         // If there is no such named route, return an error page
         return _errorRoute();

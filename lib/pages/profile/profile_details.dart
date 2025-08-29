@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
 import '../../utils/navigation_service.dart';
-import 'resume.dart';
+import 'profile_details/resume_edit.dart';
 import 'profile_details/profile_edit.dart';
 import 'profile_details/profile_summary_edit.dart';
 import 'profile_details/education_edit.dart';
@@ -26,22 +26,23 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   bool _isSkillsExpanded = true;
   bool _isExperienceExpanded = true;
   bool _isCertificatesExpanded = true;
-  bool _isResumeExpanded = true;
+  bool _isResumeExpanded = true; // Allow expansion like other sections
 
-  /// State variables for resume details
-  String? _uploadedResumeFileName;
-  String? _lastResumeUpdatedDate;
-  
   /// State variables for certificates
   final List<Map<String, dynamic>> _uploadedCertificates = [];
+  
+  /// State variables for resume
+  String? _uploadedResumeFileName;
+  String? _lastResumeUpdatedDate;
+  int _resumeFileSize = 0;
+
+  /// State variables for profile image
+  String? _profileImagePath;
+  String? _profileImageName;
 
   @override
   void initState() {
     super.initState();
-    // Initialize with mock data or actual user data if available
-    _uploadedResumeFileName = 'Morgan Carter CV 7 Year Experience'; // Example file name
-    _lastResumeUpdatedDate = '17 July 2024'; // Example last updated date
-    
     // Initialize with sample certificates to show by default
     _uploadedCertificates.addAll([
       {
@@ -67,6 +68,12 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       },
     ]);
     
+    // Load resume data
+    _loadResumeData();
+    
+    // Load profile image data
+    _loadProfileImageData();
+    
     // Set all sections to be collapsed by default (showing down arrows)
     _isProfileExpanded = false;
     _isSummaryExpanded = false;
@@ -74,14 +81,32 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     _isSkillsExpanded = false;
     _isExperienceExpanded = false;
     _isCertificatesExpanded = false;
-    _isResumeExpanded = false;
+    _isResumeExpanded = false; // Start collapsed like other sections
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Refresh data when returning from edit pages
-    setState(() {});
+    setState(() {
+      _loadResumeData(); // Reload resume data when returning from edit pages
+      _loadProfileImageData(); // Reload profile image data when returning from edit pages
+    });
+  }
+
+  /// Loads resume data from user data
+  void _loadResumeData() {
+    final user = UserData.currentUser;
+    _uploadedResumeFileName = user['resume_file_name'];
+    _lastResumeUpdatedDate = user['resume_last_updated'];
+    _resumeFileSize = user['resume_file_size'] ?? 0;
+  }
+
+  /// Loads profile image data from user data
+  void _loadProfileImageData() {
+    final user = UserData.currentUser;
+    _profileImagePath = user['profile_image_path'];
+    _profileImageName = user['profile_image_name'];
   }
 
   @override
@@ -113,6 +138,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
           child: Column(
             children: [
+              // Profile Image Section (Center)
+              _buildProfileImageSection(),
+              const SizedBox(height: AppConstants.defaultPadding),
+
               // Profile Section
               _buildProfileSection(),
               const SizedBox(height: AppConstants.defaultPadding),
@@ -146,13 +175,271 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     );
   }
 
+  /// ---------------- PROFILE IMAGE SECTION ----------------
+  /// Shows profile image at the center with upload functionality
+  Widget _buildProfileImageSection() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppConstants.backgroundColor,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        border: Border.all(
+          color: AppConstants.borderColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: AppConstants.defaultPadding),
+          
+          // Profile Image Display
+          Center(
+            child: Stack(
+              children: [
+                // Profile Image Circle
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppConstants.primaryColor.withValues(alpha: 0.3),
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppConstants.primaryColor.withValues(alpha: 0.1),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: _profileImagePath != null && _profileImagePath!.isNotEmpty
+                        ? Image.asset(
+                            _profileImagePath!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildDefaultProfileImage();
+                            },
+                          )
+                        : _buildDefaultProfileImage(),
+                  ),
+                ),
+                
+                // Edit Button Overlay
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppConstants.primaryColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppConstants.backgroundColor,
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppConstants.primaryColor.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      onPressed: () => _showProfileImageOptions(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: AppConstants.smallPadding),
+          
+          // Profile Image Info
+          if (_profileImageName != null && _profileImageName!.isNotEmpty) ...[
+            Text(
+              _profileImageName!,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppConstants.textPrimaryColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Profile Image',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppConstants.textSecondaryColor,
+              ),
+            ),
+          ] else ...[
+            Text(
+              'No profile image uploaded',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppConstants.textSecondaryColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tap the camera icon to upload',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppConstants.textSecondaryColor.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: AppConstants.defaultPadding),
+        ],
+      ),
+    );
+  }
+
+  /// Builds default profile image placeholder
+  Widget _buildDefaultProfileImage() {
+    return Container(
+      color: AppConstants.cardBackgroundColor,
+      child: Icon(
+        Icons.person,
+        size: 60,
+        color: AppConstants.textSecondaryColor.withValues(alpha: 0.5),
+      ),
+    );
+  }
+
+  /// Shows options for profile image (upload/remove)
+  void _showProfileImageOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppConstants.backgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppConstants.textSecondaryColor.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: AppConstants.defaultPadding),
+              
+              // Title
+              const Text(
+                'Profile Image',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppConstants.textPrimaryColor,
+                ),
+              ),
+              const SizedBox(height: AppConstants.defaultPadding),
+              
+              // Upload option
+              ListTile(
+                leading: Icon(Icons.upload, color: AppConstants.primaryColor),
+                title: const Text('Upload New Image'),
+                subtitle: const Text('Choose from gallery or camera'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _uploadProfileImage();
+                },
+              ),
+              
+              // Remove option (only if image exists)
+              if (_profileImagePath != null && _profileImagePath!.isNotEmpty)
+                ListTile(
+                  leading: Icon(Icons.delete, color: AppConstants.errorColor),
+                  title: const Text('Remove Image'),
+                  subtitle: const Text('Delete current profile image'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeProfileImage();
+                  },
+                ),
+              
+              const SizedBox(height: AppConstants.smallPadding),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Handles profile image upload
+  void _uploadProfileImage() {
+    // TODO: Implement actual image picker functionality
+    // For now, simulate upload with sample data
+    setState(() {
+      _profileImagePath = 'assets/images/profile/sample_profile.jpg';
+      _profileImageName = 'profile_photo.jpg';
+    });
+    
+    _showMessage('Profile image uploaded successfully!');
+  }
+
+  /// Removes profile image
+  void _removeProfileImage() {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Remove Profile Image'),
+          content: const Text('Are you sure you want to remove your profile image?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                setState(() {
+                  _profileImagePath = null;
+                  _profileImageName = null;
+                });
+                _showMessage('Profile image removed successfully!');
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppConstants.errorColor,
+              ),
+              child: const Text('Remove'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// ---------------- PROFILE SECTION ----------------
   /// Shows user details like Email, Location, Phone, Experience
   Widget _buildProfileSection() {
     final user = UserData.currentUser; // Get current user data
     
     return _buildSectionCard(
-      title: 'Profile / आपकी जानकारी',
+      title: 'Profile',
       icon: Icons.person_outline,
       isExpanded: _isProfileExpanded,
       onEditTap: () => _toggleSection('profile'),
@@ -175,7 +462,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         'I design visually engaging, user-focused websites, specializing in UX/UI, responsive design, and creating seamless digital experiences.';
     
     return _buildSectionCard(
-      title: 'Profile summary / प्रोफ़ाइल झलक',
+      title: 'Profile summary ',
       icon: Icons.book_outlined,
       isExpanded: _isSummaryExpanded,
       onEditTap: () => _toggleSection('summary'),
@@ -345,14 +632,16 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     );
   }
 
+
+
   /// ---------------- RESUME/CV SECTION ----------------
-  /// Displays resume/CV upload section with file management
+  /// Displays resume/CV section with file management
   Widget _buildResumeSection() {
     return _buildSectionCard(
       title: 'Resume/CV',
       icon: Icons.description_outlined,
       isExpanded: _isResumeExpanded,
-      onEditTap: () => _toggleSection('resume'),
+      onEditTap: () => _toggleSection('resume'), // Toggle expand/collapse
       child: _buildResumeContent(),
     );
   }
@@ -363,48 +652,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       children: [
         // Display Uploaded File
         if (_uploadedResumeFileName != null && _uploadedResumeFileName!.isNotEmpty) ...[
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(AppConstants.smallPadding),
-                decoration: BoxDecoration(
-                  color: Colors.red, // Specific red for PDF icon as in image
-                  borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-                ),
-                child: const Text(
-                  'Pdf',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppConstants.smallPadding),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _uploadedResumeFileName!,
-                      style: TextStyle(
-                        color: AppConstants.textPrimaryColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    if (_lastResumeUpdatedDate != null && _lastResumeUpdatedDate!.isNotEmpty)
-                      Text(
-                        'Updated Last: $_lastResumeUpdatedDate',
-                        style: TextStyle(
-                          color: AppConstants.textSecondaryColor.withValues(alpha: 0.7),
-                          fontSize: 12,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          _buildResumeTile(),
         ] else ...[
           // No resume uploaded yet
           Container(
@@ -422,14 +670,13 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 const SizedBox(width: AppConstants.smallPadding),
                 Expanded(
                   child: Text(
-                    'No resume uploaded yet.',
+                    'No resume uploaded yet. Click edit button to upload your resume/CV.',
                     style: TextStyle(
                       color: AppConstants.textSecondaryColor,
                       fontSize: 14,
                     ),
                   ),
                 ),
-                const SizedBox(width: AppConstants.smallPadding),
               ],
             ),
           ),
@@ -697,13 +944,13 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// Navigate to section-specific edit pages
   void _navigateToEditPage(String sectionTitle) {
     switch (sectionTitle) {
-      case 'Profile / आपकी जानकारी':
+      case 'Profile':
         // Navigate to Profile Edit Page
         NavigationService.smartNavigate(
           destination: const ProfileEditScreen(),
         );
         break;
-      case 'Profile summary / प्रोफ़ाइल झलक':
+      case 'Profile summary ':
         // Navigate to Summary Edit Page
         NavigationService.smartNavigate(
           destination: const ProfileSummaryEditScreen(),
@@ -736,9 +983,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       case 'Resume/CV':
         // Navigate to Resume Edit Page
         NavigationService.smartNavigate(
-          destination: const ResumeScreen(),
+          destination: const ResumeEditScreen(),
         );
         break;
+
     }
   }
 
@@ -791,6 +1039,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         case 'resume':
           _isResumeExpanded = !_isResumeExpanded;
           break;
+
       }
     });
   }
@@ -846,6 +1095,47 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         return Icons.insert_drive_file;
     }
   }
+
+  /// Gets the appropriate icon for the resume file type
+  IconData _getResumeIcon() {
+    if (_uploadedResumeFileName == null) return Icons.description_outlined;
+    
+    String extension = _uploadedResumeFileName!.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      default:
+        return Icons.description_outlined;
+    }
+  }
+
+  /// Gets the appropriate color for the resume file type
+  Color _getResumeColor() {
+    if (_uploadedResumeFileName == null) return AppConstants.primaryColor;
+    
+    String extension = _uploadedResumeFileName!.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return AppConstants.errorColor; // Red for PDF
+      case 'doc':
+      case 'docx':
+        return AppConstants.accentColor; // Blue for Word docs
+      default:
+        return AppConstants.primaryColor;
+    }
+  }
+
+  /// Formats file size in human-readable format
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+
 
   /// Builds a certificate tile for display
   Widget _buildCertificateTile(Map<String, dynamic> certificate) {
@@ -960,6 +1250,74 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
         ),
+      ),
+    );
+  }
+
+  /// Builds a resume tile for display
+  Widget _buildResumeTile() {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      decoration: BoxDecoration(
+        color: AppConstants.backgroundColor,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        border: Border.all(
+          color: AppConstants.borderColor.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Resume icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _getResumeColor(),
+              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+            ),
+            child: Icon(
+              _getResumeIcon(),
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: AppConstants.smallPadding),
+          
+          // Resume details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _uploadedResumeFileName!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Resume/CV • $_lastResumeUpdatedDate',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppConstants.textSecondaryColor,
+                  ),
+                ),
+                if (_resumeFileSize > 0) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Size: ${_formatFileSize(_resumeFileSize)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -11,7 +11,7 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  /// Form key for validation
+  /// Form key for validation 
   final _formKey = GlobalKey<FormState>();
 
   /// Text editing controllers
@@ -141,16 +141,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Column(
       children: [
         // Full Name
-        TextFormField(
+        _buildStyledFormField(
           controller: _nameController,
-          decoration: InputDecoration(
-            labelText: AppConstants.nameLabel,
-            hintText: 'Enter your full name',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            prefixIcon: const Icon(Icons.person),
-          ),
+          label: AppConstants.nameLabel,
+          hint: 'Enter your full name',
+          icon: Icons.person,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return AppConstants.nameRequired;
@@ -161,17 +156,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Email
-        TextFormField(
+        _buildStyledFormField(
           controller: _emailController,
+          label: AppConstants.emailLabel,
+          hint: 'Enter your email address',
+          icon: Icons.email,
           keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: AppConstants.emailLabel,
-            hintText: 'Enter your email address',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            prefixIcon: const Icon(Icons.email),
-          ),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return AppConstants.emailRequired;
@@ -185,17 +175,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Phone Number
-        TextFormField(
+        _buildStyledFormField(
           controller: _phoneController,
+          label: AppConstants.phoneLabel,
+          hint: 'Enter your phone number',
+          icon: Icons.phone,
           keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            labelText: AppConstants.phoneLabel,
-            hintText: 'Enter your phone number',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            prefixIcon: const Icon(Icons.phone),
-          ),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return AppConstants.phoneRequired;
@@ -209,44 +194,106 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Location
-        TextFormField(
+        _buildStyledFormField(
           controller: _locationController,
-          decoration: InputDecoration(
-            labelText: 'Location',
-            hintText: 'Enter your location',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            prefixIcon: const Icon(Icons.location_on),
-          ),
+          label: 'Location',
+          hint: 'Enter your location',
+          icon: Icons.location_on,
         ),
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Experience
-        TextFormField(
+        _buildStyledFormField(
           controller: _experienceController,
-          decoration: InputDecoration(
-            labelText: 'Experience',
-            hintText: 'Enter your experience',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            prefixIcon: const Icon(Icons.work),
-          ),
+          label: 'Experience',
+          hint: 'Enter your experience',
+          icon: Icons.work,
         ),
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Education
-        TextFormField(
+        _buildStyledFormField(
           controller: _educationController,
-          decoration: InputDecoration(
-            labelText: 'Education',
-            hintText: 'Enter your education',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            prefixIcon: const Icon(Icons.school),
+          label: 'Education',
+          hint: 'Enter your education',
+          icon: Icons.school,
+        ),
+      ],
+    );
+  }
+
+  /// Builds a styled form field with consistent design
+  Widget _buildStyledFormField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF1E3A8A), // Dark blue color
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
+        ),
+        const SizedBox(height: 8),
+        
+        // Input field
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(
+              color: Color(0xFF6B7280), // Medium grey color
+              fontSize: 14,
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF1F5F9), // Light blue-grey background
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF3B82F6), // Blue border when focused
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFEF4444), // Red border for errors
+                width: 1,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: const Color(0xFF6B7280), // Medium grey icon color
+              size: 20,
+            ),
+          ),
+          style: const TextStyle(
+            color: Color(0xFF1F2937), // Dark grey text color
+            fontSize: 14,
+          ),
+          validator: validator,
         ),
       ],
     );
@@ -261,7 +308,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.primaryColor,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
           ),
@@ -275,9 +322,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Text(
+            : Text(
                 AppConstants.saveChangesText,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: AppConstants.buttonTextStyle,
               ),
       ),
     );

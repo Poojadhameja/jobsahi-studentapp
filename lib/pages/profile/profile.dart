@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../data/user_data.dart';
 import '../../utils/navigation_service.dart';
-import 'user_profile.dart';
 import 'profile_details.dart';
-import 'resume.dart';
 import 'job_status.dart';
 import '../../auth/login_otp_email.dart';
 import '../jobs/app_tracker1.dart';
@@ -39,64 +37,62 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildProfileHeader() {
     final user = UserData.currentUser;
 
-    return Container(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      decoration: BoxDecoration(
-        color: AppConstants.backgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-      ),
-      child: Row(
-        children: [
-          // Profile image
-          CircleAvatar(
-            radius: 40,
-            backgroundImage: AssetImage(
-              user['profileImage'] ?? AppConstants.defaultProfileImage,
+    return GestureDetector(
+      onTap: () {
+        // Navigate to profile details when profile header is tapped
+        NavigationService.smartNavigate(
+          destination: const ProfileDetailsScreen(),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        decoration: BoxDecoration(
+          color: AppConstants.backgroundColor,
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        ),
+        child: Row(
+          children: [
+            // Profile image
+            CircleAvatar(
+              radius: 40,
+              backgroundImage: AssetImage(
+                user['profileImage'] ?? AppConstants.defaultProfileImage,
+              ),
             ),
-          ),
-          const SizedBox(width: AppConstants.defaultPadding),
+            const SizedBox(width: AppConstants.defaultPadding),
 
-          // User info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user['name'] ?? 'User Name',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppConstants.textPrimaryColor,
+            // User info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user['name'] ?? 'User Name',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppConstants.textPrimaryColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user['email'] ?? 'user@email.com',
-                  style: const TextStyle(
-                    color: AppConstants.textSecondaryColor,
+                  const SizedBox(height: 4),
+                  Text(
+                    user['email'] ?? 'user@email.com',
+                    style: const TextStyle(
+                      color: AppConstants.textSecondaryColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user['location'] ?? 'Location',
-                  style: const TextStyle(
-                    color: AppConstants.textSecondaryColor,
+                  const SizedBox(height: 4),
+                  Text(
+                    user['phone'] ?? 'phone',
+                    style: const TextStyle(
+                      color: AppConstants.textSecondaryColor,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-
-          // Edit button
-          IconButton(
-            onPressed: () {
-              NavigationService.smartNavigate(
-                destination: const UserProfileScreen(),
-              );
-            },
-            icon: const Icon(Icons.edit, color: AppConstants.accentColor),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -105,22 +101,6 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildProfileOptions(BuildContext context) {
     return Column(
       children: [
-        _buildOptionTile(
-          icon: Icons.person_outline,
-          title: 'Profile / आपकी जानकारी',
-          onTap: () {
-            NavigationService.smartNavigate(
-              destination: const ProfileDetailsScreen(),
-            );
-          },
-        ),
-        _buildOptionTile(
-          icon: Icons.upload_file,
-          title: 'Upload Resume / बायोडाटा डालें',
-          onTap: () {
-            NavigationService.smartNavigate(destination: const ResumeScreen());
-          },
-        ),
         _buildOptionTile(
           icon: Icons.track_changes,
           title: 'Job Status / नौकरी की स्थिति',

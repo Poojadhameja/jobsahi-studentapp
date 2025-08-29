@@ -1,31 +1,42 @@
-/// Resume Screen
-/// Allows users to upload an existing resume or build a new one
+/// Resume Edit Screen
+/// Allows users to upload, view, and manage their resume/CV files
 
 library;
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../utils/app_constants.dart';
-import '../../utils/navigation_service.dart';
+import '../../../utils/app_constants.dart';
+import '../../../utils/navigation_service.dart';
+import '../../../data/user_data.dart';
 
-class ResumeScreen extends StatefulWidget {
-  const ResumeScreen({super.key});
+class ResumeEditScreen extends StatefulWidget {
+  const ResumeEditScreen({super.key});
 
   @override
-  State<ResumeScreen> createState() => _ResumeScreenState();
+  State<ResumeEditScreen> createState() => _ResumeEditScreenState();
 }
 
-class _ResumeScreenState extends State<ResumeScreen> {
+class _ResumeEditScreenState extends State<ResumeEditScreen> {
   String? _uploadedFileName;
   String? _lastUpdatedDate;
   bool _isUploading = false;
+  int _resumeFileSize = 0;
 
   @override
   void initState() {
     super.initState();
-    // Initialize with existing resume data if available
-    _uploadedFileName = 'Morgan Carter CV 7 Year Experience';
-    _lastUpdatedDate = '17 July 2024';
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    final user = UserData.currentUser;
+    
+    // Load resume data from user data or set default
+    _uploadedFileName = user['resume_file_name'] ?? 'Morgan Carter CV 7 Year Experience';
+    _lastUpdatedDate = user['resume_last_updated'] ?? '17 July 2024';
+    
+    // Load file size if available
+    _resumeFileSize = user['resume_file_size'] ?? 0;
   }
 
   @override
@@ -196,6 +207,14 @@ class _ResumeScreenState extends State<ResumeScreen> {
                           color: AppConstants.textSecondaryColor,
                         ),
                       ),
+                    if (_resumeFileSize > 0)
+                      Text(
+                        'Size: ${_formatFileSize(_resumeFileSize)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppConstants.textSecondaryColor,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -203,14 +222,86 @@ class _ResumeScreenState extends State<ResumeScreen> {
           ),
           const SizedBox(height: AppConstants.defaultPadding),
 
-          // Upload button
+          // Upload area - made smaller
+          GestureDetector(
+            onTap: _isUploading ? null : _handleUploadResume,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: _isUploading 
+                    ? AppConstants.backgroundColor.withValues(alpha: 0.5)
+                    : AppConstants.cardBackgroundColor,
+                borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                border: Border.all(
+                  color: _isUploading 
+                      ? AppConstants.borderColor.withValues(alpha: 0.3)
+                      : AppConstants.borderColor,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isUploading) ...[
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Processing file...',
+                      style: TextStyle(
+                        color: AppConstants.textPrimaryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ] else ...[
+                    Icon(
+                      Icons.cloud_upload_outlined,
+                      size: 24,
+                      color: AppConstants.accentColor,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Click to upload resume/CV',
+                      style: TextStyle(
+                        color: AppConstants.textPrimaryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      'PDF, DOC, DOCX • Max 5MB',
+                      style: TextStyle(
+                        color: AppConstants.textSecondaryColor,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppConstants.defaultPadding),
+
+          // Upload button - only enabled when resume exists
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isUploading ? null : () => _handleUploadResume(),
+              onPressed: (_isUploading || _uploadedFileName == null) ? null : () => _handleUpdateResume(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppConstants.secondaryColor,
-                foregroundColor: Colors.white,
+                backgroundColor: _uploadedFileName == null 
+                    ? AppConstants.borderColor.withValues(alpha: 0.3)
+                    : AppConstants.secondaryColor,
+                foregroundColor: _uploadedFileName == null 
+                    ? AppConstants.textSecondaryColor
+                    : Colors.white,
                 padding: const EdgeInsets.symmetric(
                   vertical: AppConstants.defaultPadding,
                 ),
@@ -233,7 +324,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
                   : Text(
                       _uploadedFileName != null
                           ? 'Update Resume'
-                          : 'Upload Resume',
+                          : 'No Resume to Update',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -241,8 +332,6 @@ class _ResumeScreenState extends State<ResumeScreen> {
                     ),
             ),
           ),
-          
-
         ],
       ),
     );
@@ -388,7 +477,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
     );
   }
 
-  /// Handles resume upload action
+  /// Handles resume upload action with enhanced functionality
   Future<void> _handleUploadResume() async {
     try {
       setState(() {
@@ -402,19 +491,37 @@ class _ResumeScreenState extends State<ResumeScreen> {
         allowMultiple: false,
       );
 
-      if (result != null) {
+      if (result != null && result.files.isNotEmpty) {
         PlatformFile file = result.files.first;
 
-        // Validate file size (max 10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          _showMessage('File size should be less than 10MB');
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          _showMessage('File size should be less than 5MB');
+          return;
+        }
+
+        // Validate minimum file size (prevent empty files)
+        if (file.size < 1024) { // Less than 1KB
+          _showMessage('File seems to be empty or too small');
           return;
         }
 
         // Validate file extension
         String extension = file.extension?.toLowerCase() ?? '';
         if (!['pdf', 'doc', 'docx'].contains(extension)) {
-          _showMessage('Please select a valid PDF, DOC, or DOCX file');
+          _showMessage('Please select a valid file (PDF, DOC, DOCX)');
+          return;
+        }
+
+        // Validate filename
+        if (file.name.isEmpty || file.name.length > 100) {
+          _showMessage('Invalid filename. Please use a shorter name');
+          return;
+        }
+
+        // Check for duplicate files
+        if (_uploadedFileName == file.name) {
+          _showMessage('A file with this name already exists. Please rename the file.');
           return;
         }
 
@@ -425,7 +532,13 @@ class _ResumeScreenState extends State<ResumeScreen> {
         setState(() {
           _uploadedFileName = file.name;
           _lastUpdatedDate = _getCurrentDate();
+          _resumeFileSize = file.size;
         });
+
+        // Update user data
+        UserData.currentUser['resume_file_name'] = _uploadedFileName;
+        UserData.currentUser['resume_last_updated'] = _lastUpdatedDate;
+        UserData.currentUser['resume_file_size'] = _resumeFileSize;
 
         // Show success message
         _showMessage('Resume uploaded successfully!');
@@ -439,12 +552,42 @@ class _ResumeScreenState extends State<ResumeScreen> {
         _showMessage('File selection cancelled');
       }
     } catch (e) {
-      _showMessage('Error uploading resume: ${e.toString()}');
+      String errorMessage = 'Error uploading resume';
+      
+      // Provide more specific error messages
+      if (e.toString().contains('permission')) {
+        errorMessage = 'Permission denied. Please allow file access.';
+      } else if (e.toString().contains('storage')) {
+        errorMessage = 'Storage error. Please check available space.';
+      } else if (e.toString().contains('network')) {
+        errorMessage = 'Network error. Please check your connection.';
+      } else {
+        errorMessage = 'Error uploading resume: ${e.toString()}';
+      }
+      
+      _showMessage(errorMessage);
     } finally {
       setState(() {
         _isUploading = false;
       });
     }
+  }
+
+  /// Handles resume update action (only called when resume exists)
+  void _handleUpdateResume() {
+    if (_uploadedFileName == null) {
+      _showMessage('No resume to update. Please upload a resume first.');
+      return;
+    }
+    
+    // Show message that update is not implemented yet
+    _showMessage('Update functionality will be implemented soon. For now, please upload a new resume.');
+    
+    // TODO: Implement resume update functionality
+    // This could include:
+    // - Opening the current resume for editing
+    // - Allowing users to modify existing resume details
+    // - Re-uploading with the same name
   }
 
   /// Handles resume building action
@@ -458,8 +601,6 @@ class _ResumeScreenState extends State<ResumeScreen> {
     // Show message
     _showMessage('Opening resume builder...');
   }
-
-
 
   /// Shows a temporary message to the user
   void _showMessage(String message) {
@@ -503,5 +644,12 @@ class _ResumeScreenState extends State<ResumeScreen> {
       'December',
     ];
     return '${now.day} ${months[now.month - 1]} ${now.year}';
+  }
+
+  /// Formats file size for display
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }
