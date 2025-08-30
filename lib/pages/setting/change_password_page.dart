@@ -74,7 +74,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.5),
+
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -117,7 +118,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 1.0),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
