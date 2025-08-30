@@ -71,6 +71,185 @@ class _ProfileSummaryEditScreenState extends State<ProfileSummaryEditScreen> {
     );
   }
 
+  void _showEditOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppConstants.cardBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppConstants.textSecondaryColor.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Edit Options',
+              style: TextStyle(
+                color: AppConstants.textPrimaryColor,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Icon(Icons.content_copy, color: AppConstants.primaryColor),
+              title: Text(
+                'Copy Summary',
+                style: TextStyle(color: AppConstants.textPrimaryColor),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _copySummary();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.refresh, color: AppConstants.primaryColor),
+              title: Text(
+                'Reset to Default',
+                style: TextStyle(color: AppConstants.textPrimaryColor),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _resetToDefault();
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.clear, color: AppConstants.errorColor),
+              title: Text(
+                'Clear All',
+                style: TextStyle(color: AppConstants.errorColor),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _clearSummary();
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _copySummary() {
+    // Copy summary to clipboard
+    // You can implement clipboard functionality here
+    _showMessage('Summary copied to clipboard!');
+  }
+
+  void _resetToDefault() {
+    setState(() {
+      _summaryController.text = "ITI Electrician fresher with practical knowledge of "
+          "electrical wiring, installation, maintenance, and troubleshooting. "
+          "Skilled in handling domestic and industrial circuits, motors, and control "
+          "panels with focus on safety standards. Quick learner, hardworking, and eager "
+          "to apply technical skills in a professional environment to contribute to "
+          "organizational growth.";
+    });
+    _showMessage('Summary reset to default!');
+  }
+
+  void _clearSummary() {
+    setState(() {
+      _summaryController.text = '';
+    });
+    _showMessage('Summary cleared!');
+  }
+
+  void _showTipsAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppConstants.successColor.withValues(alpha: 0.5),
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  Icons.lightbulb_outline,
+                  color: AppConstants.successColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'प्रोफाइल सारांश सुझाव',
+                style: TextStyle(
+                  color: AppConstants.successColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'एक प्रभावी प्रोफाइल सारांश लिखने के लिए इन सुझावों का पालन करें:',
+                style: TextStyle(
+                  color: AppConstants.successColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '• इसे छोटा और साफ़ लिखें\n'
+                '• अपने ज़रूरी कौशल और अनुभव बताएं\n'
+                '• करियर में आगे क्या करना चाहते हैं, यह लिखें\n'
+                '• काम करने वाले शब्दों का इस्तेमाल करें (जैसे: संभाला, बनाया, सीखा)\n'
+                '• लिखाई और वर्तनी सही रखें',
+                style: TextStyle(
+                  color: AppConstants.successColor,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'समझ गया!',
+                style: TextStyle(
+                  color: AppConstants.successColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,6 +269,16 @@ class _ProfileSummaryEditScreenState extends State<ProfileSummaryEditScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit, color: AppConstants.primaryColor),
+            onPressed: () {
+              // Enable editing mode or show edit options
+              _showEditOptions();
+            },
+            tooltip: 'Edit',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -159,59 +348,33 @@ class _ProfileSummaryEditScreenState extends State<ProfileSummaryEditScreen> {
                       ),
                       const SizedBox(height: 12),
                       
-                      // Tips section
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppConstants.primaryColor.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppConstants.primaryColor.withValues(alpha: 0.2),
-                            width: 1,
+                      // Tips button - shows alert when tapped
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: _showTipsAlert,
+                          icon: Icon(
+                            Icons.lightbulb_outline,
+                            color: AppConstants.primaryColor,
+                            size: 20,
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: AppConstants.primaryColor.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Icon(
-                                    Icons.lightbulb_outline,
-                                    color: AppConstants.primaryColor,
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Writing Tips',
-                                  style: TextStyle(
-                                    color: AppConstants.primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ],
+                          label: Text(
+                            'Show Writing Tips',
+                            style: TextStyle(
+                              color: AppConstants.primaryColor,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '• Keep it professional and concise\n'
-                              '• Highlight your key skills and experience\n'
-                              '• Mention your career objectives\n'
-                              '• Use action words and be specific\n'
-                              '• Proofread for grammar and spelling',
-                              style: TextStyle(
-                                color: AppConstants.textSecondaryColor,
-                                fontSize: 13,
-                                height: 1.3,
-                              ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
                             ),
-                          ],
+                            backgroundColor: AppConstants.primaryColor.withValues(alpha: 0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
                         ),
                       ),
                     ],
