@@ -38,9 +38,26 @@ class _SkillTestInstructionsScreenState
         showBackButton: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: _buildMainCard(),
+        child: Column(
+          children: [
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: _buildMainCard(),
+              ),
+            ),
+
+            // Fixed bottom button
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.cardBackgroundColor,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: _buildStartTestButton(),
+            ),
+          ],
         ),
       ),
     );
@@ -85,10 +102,7 @@ class _SkillTestInstructionsScreenState
           // Good luck message
           _buildGoodLuckMessage(),
 
-          const SizedBox(height: AppConstants.largePadding),
-
-          // Start test button
-          _buildStartTestButton(),
+          // Button removed - now fixed at bottom
         ],
       ),
     );
@@ -312,7 +326,7 @@ class _SkillTestInstructionsScreenState
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _startTest,
+        onPressed: () => _startTest(),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.secondaryColor,
           foregroundColor: Colors.white,
@@ -324,7 +338,7 @@ class _SkillTestInstructionsScreenState
         ),
         child: const Text(
           'Start Test',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );

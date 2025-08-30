@@ -15,7 +15,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isOldPasswordVisible = false;
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -41,30 +41,43 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           Navigator.of(context).pop();
         },
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header section
-              _buildHeader(),
-              const SizedBox(height: AppConstants.largePadding),
-              
-              // Password form
-              _buildPasswordForm(),
-              const SizedBox(height: AppConstants.largePadding),
-              
-              // Submit button
-              _buildSubmitButton(),
-              const SizedBox(height: AppConstants.defaultPadding),
-              
-              // Password requirements
-              _buildPasswordRequirements(),
-            ],
+      body: Column(
+        children: [
+          // Scrollable content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header section
+                    _buildHeader(),
+                    const SizedBox(height: AppConstants.largePadding),
+
+                    // Password form
+                    _buildPasswordForm(),
+                    const SizedBox(height: AppConstants.largePadding),
+
+                    // Password requirements
+                    _buildPasswordRequirements(),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+
+          // Fixed bottom button
+          Container(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            decoration: BoxDecoration(
+              color: AppConstants.backgroundColor,
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: _buildSubmitButton(),
+          ),
+        ],
       ),
     );
   }
@@ -86,13 +99,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.lock_outline,
-            size: 48,
-            color: AppConstants.primaryColor,
-          ),
+          Icon(Icons.lock_outline, size: 48, color: AppConstants.primaryColor),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           Text(
             'Change Your Password',
             style: AppConstants.headingStyle.copyWith(
@@ -101,9 +110,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           Text(
             'Enter your current password and choose a new one',
             style: AppConstants.captionStyle.copyWith(
@@ -141,7 +150,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             ),
           ),
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Old Password Field
           _buildPasswordField(
             controller: _oldPasswordController,
@@ -160,9 +169,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               return null;
             },
           ),
-          
+
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // New Password Field
           _buildPasswordField(
             controller: _newPasswordController,
@@ -184,9 +193,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               return null;
             },
           ),
-          
+
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Confirm Password Field
           _buildPasswordField(
             controller: _confirmPasswordController,
@@ -232,7 +241,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        
+
         TextFormField(
           controller: controller,
           obscureText: !isVisible,
@@ -243,19 +252,30 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             filled: true,
             fillColor: AppConstants.backgroundColor,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
+              ),
               borderSide: BorderSide(color: AppConstants.borderColor),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
+              ),
               borderSide: BorderSide(color: AppConstants.borderColor),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
-              borderSide: BorderSide(color: AppConstants.primaryColor, width: 2),
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
+              ),
+              borderSide: BorderSide(
+                color: AppConstants.primaryColor,
+                width: 2,
+              ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
+              ),
               borderSide: BorderSide(color: AppConstants.errorColor),
             ),
             suffixIcon: IconButton(
@@ -281,8 +301,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handlePasswordChange,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.primaryColor,
-          padding: const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding),
+          backgroundColor: AppConstants.secondaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
           ),
@@ -299,9 +320,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               )
             : Text(
                 'Change Password / पासवर्ड बदलें',
-                style: AppConstants.buttonTextStyle.copyWith(
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -327,10 +346,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             ),
           ),
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           _buildRequirementItem('At least 6 characters long', true),
           _buildRequirementItem('Should not be same as current password', true),
-          _buildRequirementItem('Use a combination of letters and numbers', false),
+          _buildRequirementItem(
+            'Use a combination of letters and numbers',
+            false,
+          ),
           _buildRequirementItem('Avoid common passwords', false),
         ],
       ),
@@ -345,7 +367,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           Icon(
             isRequired ? Icons.check_circle : Icons.info_outline,
             size: 16,
-            color: isRequired ? AppConstants.successColor : AppConstants.textSecondaryColor,
+            color: isRequired
+                ? AppConstants.successColor
+                : AppConstants.textSecondaryColor,
           ),
           const SizedBox(width: AppConstants.smallPadding),
           Expanded(
@@ -373,7 +397,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     try {
       // Simulate API call delay
       await Future.delayed(const Duration(seconds: 2));
-      
+
       // TODO: Implement actual password change API call here
       // await ApiService.changePassword(
       //   oldPassword: _oldPasswordController.text,
@@ -437,11 +461,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(
-              Icons.error_outline,
-              color: AppConstants.errorColor,
-              size: 24,
-            ),
+            Icon(Icons.error_outline, color: AppConstants.errorColor, size: 24),
             const SizedBox(width: AppConstants.smallPadding),
             const Text('Error'),
           ],

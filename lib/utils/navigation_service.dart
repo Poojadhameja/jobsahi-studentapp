@@ -23,7 +23,7 @@ import '../pages/jobs/job_application_success.dart';
 import '../pages/skill_test/skill_test_details.dart';
 import '../pages/skill_test/skill_test_instructions.dart';
 import '../pages/skill_test/skills_test_faq.dart';
-import '../pages/jobs/app_tracker1.dart';
+import '../pages/jobs/application_tracker.dart';
 import '../pages/jobs/calendar_view.dart';
 import '../pages/jobs/write_review.dart';
 import '../pages/jobs/saved_jobs.dart';
@@ -199,7 +199,7 @@ class NavigationService {
         return RouteNames.skillsTestFAQ;
 
       case 'YourLocationScreen':
-      case 'AppTracker1Screen':
+      case 'ApplicationTrackerScreen':
         return RouteNames.appTracker1;
       case 'CalendarViewScreen':
         return RouteNames.calendarView;
@@ -528,7 +528,9 @@ class RouteGenerator {
         );
 
       case RouteNames.appTracker1:
-        return MaterialPageRoute(builder: (_) => const AppTracker1Screen());
+        return MaterialPageRoute(
+          builder: (_) => const ApplicationTrackerScreen(),
+        );
       case RouteNames.calendarView:
         return MaterialPageRoute(builder: (_) => const CalendarViewScreen());
       case RouteNames.writeReview:

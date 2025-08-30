@@ -10,9 +10,69 @@ class LoginVerifiedPopupScreen extends StatefulWidget {
       _LoginVerifiedPopupScreenState();
 }
 
-class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen> {
+class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen>
+    with TickerProviderStateMixin {
   /// Whether the verification is in progress
   bool _isVerifying = false;
+
+  /// Animation controllers
+  late AnimationController _scaleController;
+  late AnimationController _checkController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _checkAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Reset verification state when screen initializes
+    _isVerifying = false;
+
+    // Initialize scale animation controller
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    // Initialize check animation controller
+    _checkController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    // Create scale animation with bouncy effect
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
+    );
+
+    // Create check animation
+    _checkAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _checkController, curve: Curves.easeInOut),
+    );
+
+    // Start animations
+    _startAnimations();
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    _checkController.dispose();
+    super.dispose();
+  }
+
+  /// Start the success icon animations
+  void _startAnimations() {
+    // Start scale animation
+    _scaleController.forward();
+
+    // Start check animation after scale animation completes
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) {
+        _checkController.forward();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,16 +112,39 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen> {
     );
   }
 
-  /// Builds the success icon
+  /// Builds the success icon with animation
   Widget _buildSuccessIcon() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: const BoxDecoration(
-        color: AppConstants.successColor,
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(Icons.check, color: Colors.white, size: 50),
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: const BoxDecoration(
+              color: AppConstants.successColor,
+              shape: BoxShape.circle,
+            ),
+            child: AnimatedBuilder(
+              animation: _checkAnimation,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _checkAnimation.value,
+                  child: Transform.scale(
+                    scale: _checkAnimation.value,
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -74,7 +157,7 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen> {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppConstants.textPrimaryColor,
+            color: AppConstants.successColor,
           ),
           textAlign: TextAlign.center,
         ),
@@ -100,7 +183,7 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen> {
       child: ElevatedButton(
         onPressed: _isVerifying ? null : _continueToApp,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.primaryColor,
+          backgroundColor: AppConstants.successColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -136,7 +219,7 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen> {
         _isVerifying = false;
       });
 
-      // Navigate to profile builder step 1 instead of directly to location using smart navigation
+      // Navigate to profile builder step 1
       NavigationService.smartNavigate(
         routeName: RouteNames.profileBuilderStep1,
       );

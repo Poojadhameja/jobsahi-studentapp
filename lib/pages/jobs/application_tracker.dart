@@ -3,169 +3,85 @@ import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
 import 'calendar_view.dart';
 
-class AppTracker1Screen extends StatefulWidget {
-  const AppTracker1Screen({super.key});
+class ApplicationTrackerScreen extends StatefulWidget {
+  const ApplicationTrackerScreen({super.key});
 
   @override
-  State<AppTracker1Screen> createState() => _AppTracker1ScreenState();
+  State<ApplicationTrackerScreen> createState() => _ApplicationTrackerScreenState();
 }
 
-class _AppTracker1ScreenState extends State<AppTracker1Screen> {
-  int _selectedTabIndex = 0;
-
-  final List<String> _tabs = ['Applied', 'Interview Scheduled', 'Offers'];
+class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Light grey background
-      body: Column(
-        children: [
-          // Filter tabs
-          _buildFilterTabs(),
-
-          // Content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: _buildContentBasedOnTab(),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        backgroundColor: AppConstants.backgroundColor,
+        body: Column(
+          children: [
+            _buildTabBar(),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildAppliedTab(),
+                  _buildInterviewTab(),
+                  _buildOffersTab(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  /// Builds the filter tabs
-  Widget _buildFilterTabs() {
+  /// Builds the tab bar similar to learning center
+  Widget _buildTabBar() {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: _tabs.asMap().entries.map((entry) {
-              final index = entry.key;
-              final tab = entry.value;
-              final isSelected = index == _selectedTabIndex;
-
-              return Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedTabIndex = index;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(
-                                0xFF0B537D,
-                              ) // Blue-grey color for selected tab
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(
-                                  0xFF475569,
-                                ) // Blue-grey color for selected tab
-                              : const Color(
-                                  0xFFE2E8F0,
-                                ), // Light grey border for unselected tabs
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        tab,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? Colors
-                                    .white // White text for selected tab
-                              : const Color(
-                                  0xFF0B537D,
-                                ), // Dark grey text for unselected tabs
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          // Bottom border line
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            height: 1,
-            color: const Color(0xFFE3F2FD), // Light blue horizontal line
-          ),
+      color: AppConstants.cardBackgroundColor,
+      child: TabBar(
+        labelColor: AppConstants.primaryColor,
+        unselectedLabelColor: AppConstants.textSecondaryColor,
+        indicatorColor: AppConstants.primaryColor,
+        indicatorWeight: 3,
+        tabs: const [
+          Tab(text: 'Applied'),
+          Tab(text: 'Interview Scheduled'),
+          Tab(text: 'Offers'),
         ],
       ),
     );
   }
 
-  /// Builds content based on selected tab
-  Widget _buildContentBasedOnTab() {
-    switch (_selectedTabIndex) {
-      case 0: // Applied
-        return _buildAppliedCard();
-      case 1: // Interview Scheduled
-        return _buildInterviewCards();
-      case 2: // Offers
-        return _buildOffersCard();
-      default:
-        return _buildAppliedCard();
-    }
+  /// Builds the applied tab content
+  Widget _buildAppliedTab() {
+    return Padding(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      child: _buildAppliedCard(),
+    );
+  }
+
+  /// Builds the interview tab content
+  Widget _buildInterviewTab() {
+    return Padding(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      child: _buildInterviewCards(),
+    );
+  }
+
+  /// Builds the offers tab content
+  Widget _buildOffersTab() {
+    return Padding(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      child: _buildOffersCard(),
+    );
   }
 
   /// Builds the applied job card
   Widget _buildAppliedCard() {
     return Column(
       children: [
-        // Calendar View button at the top
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              GestureDetector(
-                onTap: _openCalendarView,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: const Color(0xFF0B537D), // Light blue border
-                      width: 1,
-                    ),
-                  ),
-                  child: const Text(
-                    'Calendar View',
-                    style: TextStyle(
-                      color: Color(0xFF0B537D), // Dark blue text
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
         // Job application card
         Container(
           width: double.infinity,
@@ -296,42 +212,6 @@ class _AppTracker1ScreenState extends State<AppTracker1Screen> {
   Widget _buildInterviewCards() {
     return Column(
       children: [
-        // Calendar View button at the top
-        // Container(
-        //   width: double.infinity,
-        //   margin: const EdgeInsets.only(bottom: 16),
-        //   child: Row(
-        //     mainAxisAlignment: MainAxisAlignment.end,
-        //     children: [
-        //       GestureDetector(
-        //         onTap: _openCalendarView,
-        //         child: Container(
-        //           padding: const EdgeInsets.symmetric(
-        //             vertical: 8,
-        //             horizontal: 14,
-        //           ),
-        //           decoration: BoxDecoration(
-        //             color: Colors.white,
-        //             borderRadius: BorderRadius.circular(16),
-        //             border: Border.all(
-        //               color: const Color(0xFF3B82F6), // Light blue border
-        //               width: 1,
-        //             ),
-        //           ),
-        //           child: const Text(
-        //             'Calendar View',
-        //             style: TextStyle(
-        //               color: Color(0xFF0B537D),
-        //               fontSize: 13,
-        //               fontWeight: FontWeight.w500,
-        //             ),
-        //           ),
-        //         ),
-        //       ),
-        //     ],
-        //   ),
-        // ),
-
         // Interview cards list
         Expanded(
           child: ListView.builder(

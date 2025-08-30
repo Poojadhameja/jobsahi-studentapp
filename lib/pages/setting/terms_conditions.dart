@@ -109,85 +109,80 @@ class _TermsConditionsPageState extends State<TermsConditionsPage> {
                   ),
 
                   const SizedBox(height: AppConstants.largePadding),
+
+                  // Checkbox and agreement text
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: isAgreed,
+                        onChanged: (value) {
+                          setState(() {
+                            isAgreed = value ?? false;
+                          });
+                        },
+                        activeColor: AppConstants.secondaryColor,
+                        side: BorderSide(
+                          color: AppConstants.secondaryColor,
+                          width: 2,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'I agree Term & Conditions',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: AppConstants.secondaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: AppConstants.largePadding),
                 ],
               ),
             ),
           ),
 
-          // Bottom section with checkbox and accept button
+          // Fixed bottom button container
           Container(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Column(
-              children: [
-                // Checkbox and agreement text
-                Row(
-                  children: [
-                    Checkbox(
-                      value: isAgreed,
-                      onChanged: (value) {
-                        setState(() {
-                          isAgreed = value ?? false;
-                        });
-                      },
-                      activeColor: AppConstants.secondaryColor,
-                      side: BorderSide(
-                        color: AppConstants.secondaryColor,
-                        width: 2,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'I agree Term & Conditions',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: AppConstants.secondaryColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppConstants.defaultPadding),
-
-                // Accept button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: isAgreed
-                        ? () {
-                            // Handle accept action
-                            Navigator.of(context).pop();
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppConstants.secondaryColor,
-                      side: BorderSide(
-                        color: AppConstants.secondaryColor,
-                        width: 1,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
-                        ),
-                      ),
-                      disabledBackgroundColor: Colors.grey[300],
-                      disabledForegroundColor: Colors.grey[600],
-                    ),
-                    child: Text(
-                      'Accept',
-                      style: AppConstants.buttonTextStyle.copyWith(
-                        color: isAgreed
-                            ? AppConstants.secondaryColor
-                            : Colors.grey[600],
-                        fontWeight: FontWeight.bold,
-                      ),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 255, 255, 255),
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isAgreed
+                    ? () {
+                        // Handle accept action
+                        Navigator.of(context).pop();
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.secondaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
                     ),
                   ),
+                  elevation: 2,
+                  disabledBackgroundColor: Colors.grey[300],
+                  disabledForegroundColor: Colors.grey[600],
                 ),
-              ],
+                child: Text(
+                  'Accept',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isAgreed ? Colors.white : Colors.grey[600],
+                  ),
+                ),
+              ),
             ),
           ),
         ],

@@ -32,7 +32,7 @@ class _HelpCenterPageState extends State<HelpCenterPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppConstants.backgroundColor,
       appBar: CustomAppBar(
         title: 'Help Center/हेल्प सेंटर',
         showBackButton: true,
@@ -46,21 +46,13 @@ class _HelpCenterPageState extends State<HelpCenterPage>
         children: [
           // Tab Bar
           Container(
-            color: Colors.white,
+            color: AppConstants.cardBackgroundColor,
             child: TabBar(
               controller: _tabController,
-              labelColor: Colors.blue,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue,
+              labelColor: AppConstants.primaryColor,
+              unselectedLabelColor: AppConstants.textSecondaryColor,
+              indicatorColor: AppConstants.primaryColor,
               indicatorWeight: 3,
-              labelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.normal,
-              ),
               tabs: const [
                 Tab(text: 'Feedback'),
                 Tab(text: 'FAQs'),
@@ -87,63 +79,89 @@ class _HelpCenterPageState extends State<HelpCenterPage>
   }
 
   Widget _buildFeedbackTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section Title
-          Text(
-            'Send Feedback',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.secondaryColor,
-              letterSpacing: 0.5,
-            ),
-          ),
-
-          const SizedBox(height: AppConstants.smallPadding),
-
-          // Subtitle
-          Text(
-            'हमें बताएं कि आपको ऐप का कौन-सा हिस्सा पसंद है या हम इसे बेहतर कैसे बना सकते हैं',
-            style: AppConstants.bodyStyle.copyWith(
-              color: const Color(0xFF424242),
-              height: 1.5,
-            ),
-          ),
-
-          const SizedBox(height: AppConstants.largePadding),
-
-          // Feedback Input
-          TextField(
-            controller: _feedbackController,
-            maxLines: 8,
-            decoration: InputDecoration(
-              hintText: 'Enter Feedback',
-              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                borderSide: BorderSide(
-                  color: AppConstants.secondaryColor,
-                  width: 2,
+    return Column(
+      children: [
+        // Scrollable content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Section Title
+                Text(
+                  'Send Feedback',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.secondaryColor,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-              contentPadding: const EdgeInsets.all(AppConstants.defaultPadding),
+
+                const SizedBox(height: AppConstants.smallPadding),
+
+                // Subtitle
+                Text(
+                  'हमें बताएं कि आपको ऐप का कौन-सा हिस्सा पसंद है या हम इसे बेहतर कैसे बना सकते हैं',
+                  style: AppConstants.bodyStyle.copyWith(
+                    color: const Color(0xFF424242),
+                    height: 1.5,
+                  ),
+                ),
+
+                const SizedBox(height: AppConstants.largePadding),
+
+                // Feedback Input
+                TextField(
+                  controller: _feedbackController,
+                  maxLines: 8,
+                  onChanged: (value) {
+                    // Rebuild UI when text changes to enable/disable button
+                    setState(() {});
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter Feedback',
+                    hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
+                      borderSide: BorderSide(
+                        color: Colors.grey[300]!,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
+                      borderSide: BorderSide(
+                        color: AppConstants.secondaryColor,
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.all(
+                      AppConstants.defaultPadding,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: AppConstants.largePadding),
+              ],
             ),
           ),
+        ),
 
-          const SizedBox(height: AppConstants.largePadding),
-
-          // Submit Button
-          SizedBox(
+        // Fixed bottom button
+        Container(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          decoration: BoxDecoration(
+            color: AppConstants.cardBackgroundColor,
+            border: Border(top: BorderSide(color: Colors.grey.shade200)),
+          ),
+          child: SizedBox(
             width: double.infinity,
-            height: 50,
             child: ElevatedButton(
               onPressed: _feedbackController.text.trim().isNotEmpty
                   ? () {
@@ -160,140 +178,195 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppConstants.secondaryColor,
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
                     AppConstants.borderRadius,
                   ),
                 ),
+                elevation: 2,
                 disabledBackgroundColor: Colors.grey[300],
               ),
               child: Text(
                 'Submit Feedback',
-                style: AppConstants.buttonTextStyle.copyWith(
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                   color: _feedbackController.text.trim().isNotEmpty
                       ? Colors.white
                       : Colors.grey[600],
-                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildFaqsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section Title
-          Text(
-            'Frequently Asked Questions',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.secondaryColor,
-              letterSpacing: 0.5,
-            ),
-          ),
-
-          const SizedBox(height: AppConstants.smallPadding),
-
-          // Subtitle
-          Text(
-            'नौकरी के लिए आवेदन करते समय पूछे जाने वाले सामान्य प्रश्नों की सूची:',
-            style: AppConstants.bodyStyle.copyWith(
-              color: const Color(0xFF424242),
-              height: 1.5,
-            ),
-          ),
-
-          const SizedBox(height: AppConstants.largePadding),
-
-          // Search Bar
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search keywords',
-              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
-              prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                borderSide: BorderSide(
-                  color: AppConstants.secondaryColor,
-                  width: 2,
+    return Column(
+      children: [
+        // Scrollable content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Section Title
+                Text(
+                  'Frequently Asked Questions',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.secondaryColor,
+                    letterSpacing: 0.5,
+                  ),
                 ),
+
+                const SizedBox(height: AppConstants.smallPadding),
+
+                // Subtitle
+                Text(
+                  'नौकरी के लिए आवेदन करते समय पूछे जाने वाले सामान्य प्रश्नों की सूची:',
+                  style: AppConstants.bodyStyle.copyWith(
+                    color: const Color(0xFF424242),
+                    height: 1.5,
+                  ),
+                ),
+
+                const SizedBox(height: AppConstants.largePadding),
+
+                // Search Bar
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search keywords',
+                    hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
+                      borderSide: BorderSide(
+                        color: Colors.grey[300]!,
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
+                      borderSide: BorderSide(
+                        color: AppConstants.secondaryColor,
+                        width: 2,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.defaultPadding,
+                      vertical: AppConstants.smallPadding,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    // Handle search functionality
+                    setState(() {});
+                  },
+                ),
+
+                const SizedBox(height: AppConstants.largePadding),
+
+                // FAQ List
+                _buildFaqItem(
+                  question: 'मैं नौकरी के लिए आवेदन कैसे करूँ?',
+                  answer:
+                      'नौकरी के लिए आवेदन करने के लिए आपको पहले अपना अकाउंट बनाना होगा और फिर अपना प्रोफाइल पूरा करना होगा।',
+                  isExpanded: false,
+                ),
+
+                _buildFaqItem(
+                  question: 'क्या आवेदन करने के लिए अकाउंट बनाना ज़रूरी है?',
+                  answer:
+                      'हाँ, अधिकतर जॉब पोर्टल्स पर आवेदन करने के लिए अकाउंट बनाना ज़रूरी होता है इससे आप अपनी एप्लिकेशन की स्थिति ट्रैक कर स हैं और कई पदों के लिए आवेदन कर सकते हैं',
+                  isExpanded: true,
+                ),
+
+                _buildFaqItem(
+                  question:
+                      'आवेदन करने के लिए कौन-कौन से दस्तावेज़ चाहिए होते हैं?',
+                  answer:
+                      'आवेदन के लिए आपको अपना रिज्यूमे, फोटो, और आवश्यक प्रमाणपत्र अपलोड करने होंगे।',
+                  isExpanded: false,
+                ),
+
+                _buildFaqItem(
+                  question:
+                      'क्या मैं एक साथ कई नौकरियों के लिए आवेदन कर सकता हूँ?',
+                  answer:
+                      'हाँ, आप एक साथ कई नौकरियों के लिए आवेदन कर सकते हैं।',
+                  isExpanded: false,
+                ),
+
+                _buildFaqItem(
+                  question:
+                      'क्या मैं आवेदन सबमिट करने के बाद उसे अपडेट कर सकता हूँ?',
+                  answer:
+                      'हाँ, आप अपना आवेदन सबमिट करने के बाद भी अपडेट कर सकते हैं।',
+                  isExpanded: false,
+                ),
+
+                _buildFaqItem(
+                  question:
+                      'मुझे कैसे पता चलेगा कि मेरा आवेदन सफल रहा या नहीं?',
+                  answer:
+                      'आपको ईमेल या SMS के माध्यम से अपने आवेदन की स्थिति के बारे में सूचित किया जाएगा।',
+                  isExpanded: false,
+                ),
+
+                _buildFaqItem(
+                  question:
+                      'अगर मुझे किसी कंपनी से जवाब नहीं मिले तो क्या करूँ?',
+                  answer:
+                      'अगर आपको जवाब नहीं मिलता है, तो आप कंपनी से सीधे संपर्क कर सकते हैं या हमारी सहायता टीम से संपर्क कर सकते हैं।',
+                  isExpanded: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Fixed bottom button
+        Container(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          decoration: BoxDecoration(
+            color: AppConstants.cardBackgroundColor,
+            border: Border(top: BorderSide(color: Colors.grey.shade200)),
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                // Handle FAQ action
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.secondaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
+                ),
+                elevation: 2,
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.defaultPadding,
-                vertical: AppConstants.smallPadding,
+              child: const Text(
+                'Need More Help?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
-            onChanged: (value) {
-              // Handle search functionality
-              setState(() {});
-            },
           ),
-
-          const SizedBox(height: AppConstants.largePadding),
-
-          // FAQ List
-          _buildFaqItem(
-            question: 'मैं नौकरी के लिए आवेदन कैसे करूँ?',
-            answer:
-                'नौकरी के लिए आवेदन करने के लिए आपको पहले अपना अकाउंट बनाना होगा और फिर अपना प्रोफाइल पूरा करना होगा।',
-            isExpanded: false,
-          ),
-
-          _buildFaqItem(
-            question: 'क्या आवेदन करने के लिए अकाउंट बनाना ज़रूरी है?',
-            answer:
-                'हाँ, अधिकतर जॉब पोर्टल्स पर आवेदन करने के लिए अकाउंट बनाना ज़रूरी होता है इससे आप अपनी एप्लिकेशन की स्थिति ट्रैक कर सकते हैं और कई पदों के लिए आवेदन कर सकते हैं',
-            isExpanded: true,
-          ),
-
-          _buildFaqItem(
-            question: 'आवेदन करने के लिए कौन-कौन से दस्तावेज़ चाहिए होते हैं?',
-            answer:
-                'आवेदन के लिए आपको अपना रिज्यूमे, फोटो, और आवश्यक प्रमाणपत्र अपलोड करने होंगे।',
-            isExpanded: false,
-          ),
-
-          _buildFaqItem(
-            question: 'क्या मैं एक साथ कई नौकरियों के लिए आवेदन कर सकता हूँ?',
-            answer: 'हाँ, आप एक साथ कई नौकरियों के लिए आवेदन कर सकते हैं।',
-            isExpanded: false,
-          ),
-
-          _buildFaqItem(
-            question: 'क्या मैं आवेदन सबमिट करने के बाद उसे अपडेट कर सकता हूँ?',
-            answer:
-                'हाँ, आप अपना आवेदन सबमिट करने के बाद भी अपडेट कर सकते हैं।',
-            isExpanded: false,
-          ),
-
-          _buildFaqItem(
-            question: 'मुझे कैसे पता चलेगा कि मेरा आवेदन सफल रहा या नहीं?',
-            answer:
-                'आपको ईमेल या SMS के माध्यम से अपने आवेदन की स्थिति के बारे में सूचित किया जाएगा।',
-            isExpanded: false,
-          ),
-
-          _buildFaqItem(
-            question: 'अगर मुझे किसी कंपनी से जवाब नहीं मिले तो क्या करूँ?',
-            answer:
-                'अगर आपको जवाब नहीं मिलता है, तो आप कंपनी से सीधे संपर्क कर सकते हैं या हमारी सहायता टीम से संपर्क कर सकते हैं।',
-            isExpanded: false,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

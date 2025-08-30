@@ -58,9 +58,26 @@ class _JobStepScreenState extends State<JobStepScreen> {
         showBackButton: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: _buildMainCard(),
+        child: Column(
+          children: [
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: _buildMainCard(),
+              ),
+            ),
+
+            // Fixed bottom button
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.cardBackgroundColor,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: _buildSubmitButton(),
+            ),
+          ],
         ),
       ),
     );
@@ -1007,10 +1024,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
             // Form section
             _buildFormSection(),
 
-            const SizedBox(height: AppConstants.largePadding),
-
-            // Submit button
-            _buildSubmitButton(),
+            // Submit button removed - now fixed at bottom
           ],
         ),
       ),
