@@ -11,14 +11,13 @@ import '../auth/create_account.dart';
 import '../auth/forgot_password.dart';
 import '../auth/set_password_code.dart';
 import '../auth/set_new_password.dart';
-import '../pages/profile/job_status.dart';
 import '../auth/change_password.dart';
 // Main app screens (organized by feature in pages folder)
 import '../pages/home/home.dart';
 import '../pages/jobs/search_job.dart';
 import '../pages/jobs/search_result.dart';
 import '../pages/jobs/job_details.dart';
-import '../pages/jobs/job_step.dart';
+
 // import '../pages/jobs/job_application_success.dart';
 import '../pages/skill_test/skill_test_details.dart';
 import '../pages/skill_test/skill_test_instructions.dart';
@@ -32,7 +31,6 @@ import '../pages/profile_builder/your_location.dart';
 import '../pages/profile_builder/location_permission.dart';
 import '../pages/profile_builder/profile_builder_steps.dart';
 import '../pages/profile/profile.dart';
-import '../pages/profile/user_profile.dart';
 import '../pages/profile/profile_details.dart';
 import '../pages/profile/job_status.dart';
 import '../pages/profile/personalize_jobfeed.dart';
@@ -224,13 +222,12 @@ class NavigationService {
         return RouteNames.profileBuilderStep3;
       case 'ProfileScreen':
         return RouteNames.profile;
-      case 'UserProfileScreen':
-        return RouteNames.userProfile;
+
       case 'ProfileDetailsScreen':
         return RouteNames.profileDetails;
       case 'PersonalizeJobfeedScreen':
         return RouteNames.personalizeJobfeed;
-    
+
       case 'SettingsPage':
         return RouteNames.settings;
       case 'AboutPage':
@@ -455,7 +452,7 @@ class RouteNames {
   static const String profileBuilderStep2 = '/profile-builder-step2';
   static const String profileBuilderStep3 = '/profile-builder-step3';
   static const String profile = '/profile';
-  static const String userProfile = '/user-profile';
+
   static const String profileDetails = '/profile-details';
   static const String personalizeJobfeed = '/personalize-jobfeed';
   // static const String resume = '/resume';
@@ -586,12 +583,16 @@ class RouteGenerator {
         );
       case RouteNames.profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
-      case RouteNames.userProfile:
-        return MaterialPageRoute(builder: (_) => const UserProfileScreen());
+
       case RouteNames.profileDetails:
-        return MaterialPageRoute(builder: (_) => const ProfileDetailsScreen());
+        return MaterialPageRoute(
+          builder: (_) =>
+              const ProfileDetailsScreen(isFromBottomNavigation: false),
+        );
       case RouteNames.personalizeJobfeed:
-        return MaterialPageRoute(builder: (_) => const PersonalizeJobfeedScreen());
+        return MaterialPageRoute(
+          builder: (_) => const PersonalizeJobfeedScreen(),
+        );
       case RouteNames.jobStatus:
         return MaterialPageRoute(builder: (_) => const JobStatusScreen());
       case RouteNames.settings:

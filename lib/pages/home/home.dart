@@ -9,9 +9,9 @@ import '../../widgets/feature_specific/job_card.dart';
 import '../../widgets/feature_specific/filter_chip.dart';
 import '../jobs/job_details.dart';
 import '../jobs/search_job.dart';
-import '../jobs/saved_jobs.dart';
+
 import '../jobs/application_tracker.dart';
-import '../profile/user_profile.dart';
+import '../profile/profile_details.dart';
 import '../courses/learning_center.dart';
 import '../messages/inbox_screen.dart';
 
@@ -78,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 4:
         // Profile tab - show heading with back icon
         return TabAppBar(
-          title: 'Edit Profile',
+          title: 'Profile Details',
           onBackPressed: _navigateToHomeTab, // Navigate to home tab
         );
       default:
@@ -98,8 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return InboxScreen(isFromProfile: false);
       case 4:
-        // Profile tab - navigate directly to edit profile
-        return const UserProfileScreen();
+        // Profile tab - navigate directly to profile details
+        return const ProfileDetailsScreen(isFromBottomNavigation: true);
       default:
         return const HomePage();
     }

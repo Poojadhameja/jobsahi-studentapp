@@ -12,7 +12,9 @@ import 'profile_details/certificates_edit.dart';
 
 /// ---------------- PROFILE DETAILS SCREEN ----------------
 class ProfileDetailsScreen extends StatefulWidget {
-  const ProfileDetailsScreen({super.key});
+  final bool isFromBottomNavigation;
+
+  const ProfileDetailsScreen({super.key, this.isFromBottomNavigation = false});
 
   @override
   State<ProfileDetailsScreen> createState() => _ProfileDetailsScreenState();
@@ -30,7 +32,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
 
   /// State variables for certificates
   final List<Map<String, dynamic>> _uploadedCertificates = [];
-  
+
   /// State variables for resume
   String? _uploadedResumeFileName;
   String? _lastResumeUpdatedDate;
@@ -67,13 +69,13 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         'extension': 'jpg',
       },
     ]);
-    
+
     // Load resume data
     _loadResumeData();
-    
+
     // Load profile image data
     _loadProfileImageData();
-    
+
     // Set all sections to be collapsed by default (showing down arrows)
     _isProfileExpanded = false;
     _isSummaryExpanded = false;
@@ -114,23 +116,29 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
 
-      /// AppBar with back button & title
-      appBar: AppBar(
-        backgroundColor: AppConstants.backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppConstants.textPrimaryColor),
-          onPressed: () => NavigationService.goBack(), // Go back to previous screen
-        ),
-        title: const Text(
-          'Profile Details',
-          style: TextStyle(
-            color: AppConstants.textPrimaryColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
+      /// AppBar with back button & title (only when not from bottom navigation)
+      appBar: widget.isFromBottomNavigation
+          ? null
+          : AppBar(
+              backgroundColor: AppConstants.backgroundColor,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppConstants.textPrimaryColor,
+                ),
+                onPressed: () =>
+                    NavigationService.goBack(), // Go back to previous screen
+              ),
+              title: const Text(
+                'Profile Details',
+                style: TextStyle(
+                  color: AppConstants.textPrimaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              centerTitle: true,
+            ),
 
       /// Main body wrapped with scroll view
       body: SafeArea(
@@ -191,7 +199,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       child: Column(
         children: [
           const SizedBox(height: AppConstants.defaultPadding),
-          
+
           // Profile Image Display
           Center(
             child: Stack(
@@ -215,7 +223,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     ],
                   ),
                   child: ClipOval(
-                    child: _profileImagePath != null && _profileImagePath!.isNotEmpty
+                    child:
+                        _profileImagePath != null &&
+                            _profileImagePath!.isNotEmpty
                         ? Image.asset(
                             _profileImagePath!,
                             fit: BoxFit.cover,
@@ -226,7 +236,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                         : _buildDefaultProfileImage(),
                   ),
                 ),
-                
+
                 // Edit Button Overlay
                 Positioned(
                   bottom: 0,
@@ -243,7 +253,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppConstants.primaryColor.withValues(alpha: 0.3),
+                          color: AppConstants.primaryColor.withValues(
+                            alpha: 0.3,
+                          ),
                           blurRadius: 8,
                           spreadRadius: 1,
                         ),
@@ -264,9 +276,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: AppConstants.smallPadding),
-          
+
           // Profile Image Info
           if (_profileImageName != null && _profileImageName!.isNotEmpty) ...[
             Text(
@@ -302,7 +314,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               ),
             ),
           ],
-          
+
           const SizedBox(height: AppConstants.defaultPadding),
         ],
       ),
@@ -345,7 +357,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 ),
               ),
               const SizedBox(height: AppConstants.defaultPadding),
-              
+
               // Title
               const Text(
                 'Profile Image',
@@ -356,7 +368,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                 ),
               ),
               const SizedBox(height: AppConstants.defaultPadding),
-              
+
               // Upload option
               ListTile(
                 leading: Icon(Icons.upload, color: AppConstants.primaryColor),
@@ -367,7 +379,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                   _uploadProfileImage();
                 },
               ),
-              
+
               // Remove option (only if image exists)
               if (_profileImagePath != null && _profileImagePath!.isNotEmpty)
                 ListTile(
@@ -379,7 +391,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                     _removeProfileImage();
                   },
                 ),
-              
+
               const SizedBox(height: AppConstants.smallPadding),
             ],
           ),
@@ -396,7 +408,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       _profileImagePath = 'assets/images/profile/sample_profile.jpg';
       _profileImageName = 'profile_photo.jpg';
     });
-    
+
     _showMessage('Profile image uploaded successfully!');
   }
 
@@ -407,7 +419,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Remove Profile Image'),
-          content: const Text('Are you sure you want to remove your profile image?'),
+          content: const Text(
+            'Are you sure you want to remove your profile image?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -437,7 +451,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// Shows user details like Email, Location, Phone, Experience
   Widget _buildProfileSection() {
     final user = UserData.currentUser; // Get current user data
-    
+
     return _buildSectionCard(
       title: 'Profile',
       icon: Icons.person_outline,
@@ -445,10 +459,26 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       onEditTap: () => _toggleSection('profile'),
       child: Column(
         children: [
-          _buildInfoRow(Icons.email_outlined, 'Email', user['email'] ?? 'info@example.com'),
-          _buildInfoRow(Icons.location_on_outlined, 'Location', user['location'] ?? 'Noida, India'),
-          _buildInfoRow(Icons.phone_outlined, 'Phone', user['phone'] ?? '+01 987 654 3210'),
-          _buildInfoRow(Icons.work_outline, 'Experience', user['experience'] ?? '8 Year'),
+          _buildInfoRow(
+            Icons.email_outlined,
+            'Email',
+            user['email'] ?? 'info@example.com',
+          ),
+          _buildInfoRow(
+            Icons.location_on_outlined,
+            'Location',
+            user['location'] ?? 'Noida, India',
+          ),
+          _buildInfoRow(
+            Icons.phone_outlined,
+            'Phone',
+            user['phone'] ?? '+01 987 654 3210',
+          ),
+          _buildInfoRow(
+            Icons.work_outline,
+            'Experience',
+            user['experience'] ?? '8 Year',
+          ),
         ],
       ),
     );
@@ -458,9 +488,10 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// Shows a short description about the user with "Read More" option
   Widget _buildProfileSummarySection() {
     final user = UserData.currentUser;
-    final summary = user['summary'] ??
+    final summary =
+        user['summary'] ??
         'I design visually engaging, user-focused websites, specializing in UX/UI, responsive design, and creating seamless digital experiences.';
-    
+
     return _buildSectionCard(
       title: 'Profile summary ',
       icon: Icons.book_outlined,
@@ -503,7 +534,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     final user = UserData.currentUser;
     final qualification = user['education_qualification'] ?? '';
     final course = user['education_course'] ?? '';
-    
+
     return _buildSectionCard(
       title: 'Education',
       icon: Icons.school_outlined,
@@ -511,36 +542,83 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       onEditTap: () => _toggleSection('education'),
       child: Column(
         children: [
-          _buildEducationField('Highest Qualification', qualification.isNotEmpty ? qualification : 'Select', Icons.school_outlined),
-          _buildEducationField('Institute name', user['education_institute'] ?? 'Not specified', Icons.business_outlined),
-          _buildEducationField('Course Name', course.isNotEmpty ? course : 'Not specified', Icons.description_outlined),
-          
+          _buildEducationField(
+            'Highest Qualification',
+            qualification.isNotEmpty ? qualification : 'Select',
+            Icons.school_outlined,
+          ),
+          _buildEducationField(
+            'Institute name',
+            user['education_institute'] ?? 'Not specified',
+            Icons.business_outlined,
+          ),
+          _buildEducationField(
+            'Course Name',
+            course.isNotEmpty ? course : 'Not specified',
+            Icons.description_outlined,
+          ),
+
           // Show year and percentage for completed education
           if (qualification.isNotEmpty && qualification != 'Select') ...[
             const SizedBox(height: AppConstants.smallPadding),
-            _buildEducationField('Year of Completion', user['education_year'] ?? 'Not specified', Icons.calendar_today_outlined),
-            _buildEducationField('Percentage/CGPA', user['education_percentage'] ?? 'Not specified', Icons.grade_outlined),
+            _buildEducationField(
+              'Year of Completion',
+              user['education_year'] ?? 'Not specified',
+              Icons.calendar_today_outlined,
+            ),
+            _buildEducationField(
+              'Percentage/CGPA',
+              user['education_percentage'] ?? 'Not specified',
+              Icons.grade_outlined,
+            ),
           ],
-          
+
           // Show additional fields based on qualification type
-          if (qualification.contains('ITI') || qualification.contains('Diploma')) ...[
+          if (qualification.contains('ITI') ||
+              qualification.contains('Diploma')) ...[
             const SizedBox(height: AppConstants.smallPadding),
-            _buildEducationField('Trade/Specialization', course.isNotEmpty ? course : 'Not specified', Icons.work_outline),
-            _buildEducationField('Practical Training', 'Completed', Icons.build_outlined),
+            _buildEducationField(
+              'Trade/Specialization',
+              course.isNotEmpty ? course : 'Not specified',
+              Icons.work_outline,
+            ),
+            _buildEducationField(
+              'Practical Training',
+              'Completed',
+              Icons.build_outlined,
+            ),
           ],
-          
+
           // Show additional fields for degree courses
-          if (qualification.contains('Bachelor') || qualification.contains('Master')) ...[
+          if (qualification.contains('Bachelor') ||
+              qualification.contains('Master')) ...[
             const SizedBox(height: AppConstants.smallPadding),
-            _buildEducationField('Major/Subject', course.isNotEmpty ? course : 'Not specified', Icons.book_outlined),
-            _buildEducationField('University', user['education_institute'] ?? 'Not specified', Icons.account_balance_outlined),
+            _buildEducationField(
+              'Major/Subject',
+              course.isNotEmpty ? course : 'Not specified',
+              Icons.book_outlined,
+            ),
+            _buildEducationField(
+              'University',
+              user['education_institute'] ?? 'Not specified',
+              Icons.account_balance_outlined,
+            ),
           ],
-          
+
           // Show additional fields for school education
-          if (qualification.contains('10th') || qualification.contains('12th')) ...[
+          if (qualification.contains('10th') ||
+              qualification.contains('12th')) ...[
             const SizedBox(height: AppConstants.smallPadding),
-            _buildEducationField('Board', user['education_institute'] ?? 'Not specified', Icons.school_outlined),
-            _buildEducationField('Stream', course.isNotEmpty ? course : 'Not specified', Icons.trending_up_outlined),
+            _buildEducationField(
+              'Board',
+              user['education_institute'] ?? 'Not specified',
+              Icons.school_outlined,
+            ),
+            _buildEducationField(
+              'Stream',
+              course.isNotEmpty ? course : 'Not specified',
+              Icons.trending_up_outlined,
+            ),
           ],
         ],
       ),
@@ -551,7 +629,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// Displays list of user's skills in chip format
   Widget _buildKeySkillsSection() {
     final user = UserData.currentUser;
-    
+
     List<String> userSkills = [];
     try {
       final skillsData = user['skills'];
@@ -561,12 +639,18 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     } catch (e) {
       userSkills = []; // Handle errors safely
     }
-    
+
     // Default fallback skills if none found (ITI relevant)
     if (userSkills.isEmpty) {
-      userSkills = ['Electrical Wiring', 'Safety Procedures', 'Basic Hand Tools', 'Quality Awareness', 'Teamwork'];
+      userSkills = [
+        'Electrical Wiring',
+        'Safety Procedures',
+        'Basic Hand Tools',
+        'Quality Awareness',
+        'Teamwork',
+      ];
     }
-    
+
     return _buildSectionCard(
       title: 'Key Skills',
       icon: Icons.grid_view_outlined,
@@ -585,24 +669,36 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   Widget _buildExperienceSection() {
     final user = UserData.currentUser;
     List<Map<String, dynamic>> experiences = [];
-    
+
     try {
       final experiencesData = user['experiences'];
       if (experiencesData is List) {
-        experiences = experiencesData.whereType<Map<String, dynamic>>().toList();
+        experiences = experiencesData
+            .whereType<Map<String, dynamic>>()
+            .toList();
       }
     } catch (e) {
       experiences = []; // Handle errors safely
     }
-    
+
     // Default fallback experiences if none found
     if (experiences.isEmpty) {
       experiences = [
-        {'company': 'E-commerce Websites', 'position': 'example.com', 'startDate': 'July 2016', 'endDate': 'July 2019'},
-        {'company': 'Custom Web Applications', 'position': 'example.com', 'startDate': 'April 2019', 'endDate': 'Oct 2021'},
+        {
+          'company': 'E-commerce Websites',
+          'position': 'example.com',
+          'startDate': 'July 2016',
+          'endDate': 'July 2019',
+        },
+        {
+          'company': 'Custom Web Applications',
+          'position': 'example.com',
+          'startDate': 'April 2019',
+          'endDate': 'Oct 2021',
+        },
       ];
     }
-    
+
     return _buildSectionCard(
       title: 'Experience',
       icon: Icons.work_outline,
@@ -610,11 +706,13 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       onEditTap: () => _toggleSection('experience'),
       child: Column(
         children: [
-          ...experiences.map((exp) => _buildExperienceItem(
-            exp['company'] ?? '',
-            exp['position'] ?? '',
-            '${exp['startDate'] ?? ''} - ${exp['endDate'] ?? ''}',
-          )),
+          ...experiences.map(
+            (exp) => _buildExperienceItem(
+              exp['company'] ?? '',
+              exp['position'] ?? '',
+              '${exp['startDate'] ?? ''} - ${exp['endDate'] ?? ''}',
+            ),
+          ),
         ],
       ),
     );
@@ -631,8 +729,6 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       child: _buildCertificateUploadArea(),
     );
   }
-
-
 
   /// ---------------- RESUME/CV SECTION ----------------
   /// Displays resume/CV section with file management
@@ -651,7 +747,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     return Column(
       children: [
         // Display Uploaded File
-        if (_uploadedResumeFileName != null && _uploadedResumeFileName!.isNotEmpty) ...[
+        if (_uploadedResumeFileName != null &&
+            _uploadedResumeFileName!.isNotEmpty) ...[
           _buildResumeTile(),
         ] else ...[
           // No resume uploaded yet
@@ -659,14 +756,20 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             decoration: BoxDecoration(
               color: AppConstants.cardBackgroundColor,
-              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
+              ),
               border: Border.all(
                 color: AppConstants.borderColor.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: AppConstants.textSecondaryColor, size: 20),
+                Icon(
+                  Icons.info_outline,
+                  color: AppConstants.textSecondaryColor,
+                  size: 20,
+                ),
                 const SizedBox(width: AppConstants.smallPadding),
                 Expanded(
                   child: Text(
@@ -722,13 +825,20 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               children: [
                 // Edit Button
                 IconButton(
-                  icon: const Icon(Icons.edit, color: AppConstants.primaryColor, size: 20),
-                  onPressed: () => _navigateToEditPage(title), // Navigate to edit page
+                  icon: const Icon(
+                    Icons.edit,
+                    color: AppConstants.primaryColor,
+                    size: 20,
+                  ),
+                  onPressed: () =>
+                      _navigateToEditPage(title), // Navigate to edit page
                 ),
                 // Toggle Arrow Button
                 IconButton(
                   icon: Icon(
-                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
                     color: AppConstants.primaryColor,
                     size: 24,
                   ),
@@ -767,18 +877,22 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                      color: AppConstants.textSecondaryColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    )),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppConstants.textSecondaryColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(value,
-                    style: const TextStyle(
-                      color: AppConstants.textPrimaryColor,
-                      fontSize: 14,
-                    )),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: AppConstants.textPrimaryColor,
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
           ),
@@ -801,11 +915,13 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                      color: AppConstants.textSecondaryColor,
-                      fontSize: 12,
-                    )),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppConstants.textSecondaryColor,
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -814,7 +930,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: AppConstants.cardBackgroundColor,
-                    borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.smallBorderRadius,
+                    ),
                     border: Border.all(
                       color: AppConstants.borderColor.withValues(alpha: 0.3),
                     ),
@@ -822,7 +940,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                   child: Text(
                     placeholder,
                     style: TextStyle(
-                      color: AppConstants.textSecondaryColor.withValues(alpha: 0.7),
+                      color: AppConstants.textSecondaryColor.withValues(
+                        alpha: 0.7,
+                      ),
                       fontSize: 14,
                     ),
                   ),
@@ -861,7 +981,11 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   }
 
   /// Experience item with company, position, and duration
-  Widget _buildExperienceItem(String company, String position, String duration) {
+  Widget _buildExperienceItem(
+    String company,
+    String position,
+    String duration,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppConstants.smallPadding),
       child: Row(
@@ -915,14 +1039,20 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
             decoration: BoxDecoration(
               color: AppConstants.cardBackgroundColor,
-              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
+              ),
               border: Border.all(
                 color: AppConstants.borderColor.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: AppConstants.textSecondaryColor, size: 20),
+                Icon(
+                  Icons.info_outline,
+                  color: AppConstants.textSecondaryColor,
+                  size: 20,
+                ),
                 const SizedBox(width: AppConstants.smallPadding),
                 Text(
                   'No certificates uploaded yet.',
@@ -946,9 +1076,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     switch (sectionTitle) {
       case 'Profile':
         // Navigate to Profile Edit Page
-        NavigationService.smartNavigate(
-          destination: const ProfileEditScreen(),
-        );
+        NavigationService.smartNavigate(destination: const ProfileEditScreen());
         break;
       case 'Profile summary ':
         // Navigate to Summary Edit Page
@@ -964,9 +1092,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         break;
       case 'Key Skills':
         // Navigate to Skills Edit Page
-        NavigationService.smartNavigate(
-          destination: const SkillsEditScreen(),
-        );
+        NavigationService.smartNavigate(destination: const SkillsEditScreen());
         break;
       case 'Experience':
         // Navigate to Experience Edit Page
@@ -982,11 +1108,8 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         break;
       case 'Resume/CV':
         // Navigate to Resume Edit Page
-        NavigationService.smartNavigate(
-          destination: const ResumeEditScreen(),
-        );
+        NavigationService.smartNavigate(destination: const ResumeEditScreen());
         break;
-
     }
   }
 
@@ -1039,7 +1162,6 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
         case 'resume':
           _isResumeExpanded = !_isResumeExpanded;
           break;
-
       }
     });
   }
@@ -1099,7 +1221,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// Gets the appropriate icon for the resume file type
   IconData _getResumeIcon() {
     if (_uploadedResumeFileName == null) return Icons.description_outlined;
-    
+
     String extension = _uploadedResumeFileName!.split('.').last.toLowerCase();
     switch (extension) {
       case 'pdf':
@@ -1115,7 +1237,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
   /// Gets the appropriate color for the resume file type
   Color _getResumeColor() {
     if (_uploadedResumeFileName == null) return AppConstants.primaryColor;
-    
+
     String extension = _uploadedResumeFileName!.split('.').last.toLowerCase();
     switch (extension) {
       case 'pdf':
@@ -1134,8 +1256,6 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
-
-
 
   /// Builds a certificate tile for display
   Widget _buildCertificateTile(Map<String, dynamic> certificate) {
@@ -1157,7 +1277,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: _getCertificateColor(certificate['type']),
-              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
+              ),
             ),
             child: Icon(
               _getCertificateIcon(certificate['type']),
@@ -1166,7 +1288,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             ),
           ),
           const SizedBox(width: AppConstants.smallPadding),
-          
+
           // Certificate details
           Expanded(
             child: Column(
@@ -1191,7 +1313,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
               ],
             ),
           ),
-          
+
           // Delete button
           IconButton(
             onPressed: () => _deleteCertificate(certificate),
@@ -1215,7 +1337,9 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Delete Certificate'),
-          content: Text('Are you sure you want to delete "${certificate['name']}"? This action cannot be undone.'),
+          content: Text(
+            'Are you sure you want to delete "${certificate['name']}"? This action cannot be undone.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -1273,16 +1397,14 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: _getResumeColor(),
-              borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
+              ),
             ),
-            child: Icon(
-              _getResumeIcon(),
-              color: Colors.white,
-              size: 20,
-            ),
+            child: Icon(_getResumeIcon(), color: Colors.white, size: 20),
           ),
           const SizedBox(width: AppConstants.smallPadding),
-          
+
           // Resume details
           Expanded(
             child: Column(
@@ -1321,6 +1443,4 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
       ),
     );
   }
-
 }
-

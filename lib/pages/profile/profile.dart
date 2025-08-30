@@ -44,7 +44,9 @@ class ProfileScreen extends StatelessWidget {
       onTap: () {
         // Navigate to profile details when profile header is tapped
         NavigationService.smartNavigate(
-          destination: const ProfileDetailsScreen(),
+          destination: const ProfileDetailsScreen(
+            isFromBottomNavigation: false,
+          ),
         );
       },
       child: Container(
