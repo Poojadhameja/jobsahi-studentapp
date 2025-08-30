@@ -131,14 +131,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       padding: const EdgeInsets.all(20.0),
       child: Align(
         alignment: Alignment.topRight,
-        child: TextButton(
-          onPressed: _skipOnboarding,
-          child: const Text(
-            "SKIP →",
-            style: TextStyle(
+        child: GestureDetector(
+          onTap: _skipOnboarding,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
               color: Colors.green,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "SKIP",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+              ],
             ),
           ),
         ),
@@ -262,26 +276,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 30),
 
-          // Get Started button (only show on last page)
-          if (_currentPage == _onboardingPages.length - 1)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _completeOnboarding,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: const Text(
-                  "Let's Get Started",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
-              ),
-            ),
+          // Always reserve space for the button to prevent layout shift
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: _currentPage == _onboardingPages.length - 1
+                ? ElevatedButton(
+                    onPressed: _completeOnboarding,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
+                    child: const Text(
+                      "Let's Get Started",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  )
+                : const SizedBox.shrink(), // Invisible placeholder when not on last page
+          ),
         ],
       ),
     );
