@@ -339,6 +339,17 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               horizontal: 18,
               vertical: 16,
             ),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      passwordVisible ?? false
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.grey[600],
+                    ),
+                    onPressed: onPasswordToggle,
+                  )
+                : null,
           ),
           validator: validator,
         ),
