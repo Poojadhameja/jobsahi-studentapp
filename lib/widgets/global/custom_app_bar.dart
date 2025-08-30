@@ -221,12 +221,13 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
 /// Tab App Bar Widget
 /// A simple app bar for tabs with heading and back icon
 /// Used for courses, applications, messages, and profile tabs
+/// Note: onBackPressed callback is required for proper navigation
 class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Title to be displayed in the app bar
   final String title;
 
-  /// Callback function when back button is pressed
-  final VoidCallback? onBackPressed;
+  /// Callback function when back button is pressed (required)
+  final VoidCallback onBackPressed;
 
   /// Background color of the app bar
   final Color backgroundColor;
@@ -237,7 +238,7 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
   const TabAppBar({
     super.key,
     required this.title,
-    this.onBackPressed,
+    required this.onBackPressed,
     this.backgroundColor = AppConstants.cardBackgroundColor,
     this.textColor = AppConstants.textPrimaryColor,
   });
@@ -249,13 +250,7 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       leading: IconButton(
         icon: Icon(Icons.arrow_back, color: textColor),
-        onPressed:
-            onBackPressed ??
-            () {
-              // Navigate back to home tab (index 0)
-              // This will be handled by the parent HomeScreen
-              Navigator.of(context).pop();
-            },
+        onPressed: onBackPressed,
       ),
       title: Text(
         title,

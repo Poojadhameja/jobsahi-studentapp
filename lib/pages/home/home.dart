@@ -28,13 +28,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: _buildAppBar(),
-      body: _buildCurrentScreen(),
-      bottomNavigationBar: CustomBottomNavigation(
-        currentIndex: _selectedIndex,
-        onTap: _onTabSelected,
+    return PopScope(
+      canPop: _selectedIndex == 0, // Only allow popping when on home tab
+      onPopInvoked: (didPop) {
+        if (!didPop && _selectedIndex != 0) {
+          // If we can't pop and we're not on home tab, navigate to home tab
+          _navigateToHomeTab();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
+        appBar: _buildAppBar(),
+        body: _buildCurrentScreen(),
+        bottomNavigationBar: CustomBottomNavigation(
+          currentIndex: _selectedIndex,
+          onTap: _onTabSelected,
+        ),
       ),
     );
   }
