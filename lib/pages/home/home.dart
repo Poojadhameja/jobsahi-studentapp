@@ -144,9 +144,7 @@ class _HomePageState extends State<HomePage> {
           _buildGreetingSection(),
           const SizedBox(height: AppConstants.smallPadding),
 
-          // Action buttons
-          _buildActionButtons(),
-          const SizedBox(height: AppConstants.smallPadding),
+          // Action buttons section removed
 
           // Banner image
           _buildBannerImage(),
@@ -168,56 +166,6 @@ class _HomePageState extends State<HomePage> {
     final userName = UserData.currentUser['name'] as String? ?? 'User';
 
     return Text('Hi $userName,', style: AppConstants.headingStyle);
-  }
-
-  /// Builds the action buttons (saved jobs and applied jobs)
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        // Saved jobs button
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              NavigationService.smartNavigate(
-                destination: const SavedJobsScreen(),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.cardBackgroundColor,
-              side: const BorderSide(color: AppConstants.accentColor),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-              ),
-            ),
-            child: Text(
-              AppConstants.savedJobsText,
-              style: const TextStyle(color: AppConstants.textPrimaryColor),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppConstants.smallPadding),
-
-        // Applied jobs button
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              // TODO: Navigate to applied jobs screen
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.cardBackgroundColor,
-              side: const BorderSide(color: AppConstants.accentColor),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-              ),
-            ),
-            child: Text(
-              AppConstants.appliedJobsText,
-              style: const TextStyle(color: AppConstants.textPrimaryColor),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   /// Builds the banner image
