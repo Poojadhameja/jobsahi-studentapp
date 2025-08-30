@@ -35,6 +35,7 @@ import '../pages/profile/profile.dart';
 import '../pages/profile/user_profile.dart';
 import '../pages/profile/profile_details.dart';
 import '../pages/profile/job_status.dart';
+import '../pages/profile/personalize_jobfeed.dart';
 import '../pages/setting/settings.dart'; // Course screens
 import '../pages/courses/learning_center.dart';
 import '../pages/courses/course_details.dart';
@@ -227,6 +228,8 @@ class NavigationService {
         return RouteNames.userProfile;
       case 'ProfileDetailsScreen':
         return RouteNames.profileDetails;
+      case 'PersonalizeJobfeedScreen':
+        return RouteNames.personalizeJobfeed;
     
       case 'SettingsPage':
         return RouteNames.settings;
@@ -454,6 +457,7 @@ class RouteNames {
   static const String profile = '/profile';
   static const String userProfile = '/user-profile';
   static const String profileDetails = '/profile-details';
+  static const String personalizeJobfeed = '/personalize-jobfeed';
   // static const String resume = '/resume';
   static const String jobStatus = '/job-status';
   static const String settings = '/settings';
@@ -586,6 +590,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const UserProfileScreen());
       case RouteNames.profileDetails:
         return MaterialPageRoute(builder: (_) => const ProfileDetailsScreen());
+      case RouteNames.personalizeJobfeed:
+        return MaterialPageRoute(builder: (_) => const PersonalizeJobfeedScreen());
       case RouteNames.jobStatus:
         return MaterialPageRoute(builder: (_) => const JobStatusScreen());
       case RouteNames.settings:

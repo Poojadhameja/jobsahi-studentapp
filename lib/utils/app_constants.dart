@@ -146,6 +146,30 @@ class AppConstants {
   static const String passwordReset = 'Password reset successfully';
   static const String jobSaved = 'Job saved successfully';
   static const String jobApplied = 'Job application submitted successfully';
+  static const String preferencesSaved = 'Preferences saved successfully!';
+  static const String preferencesSavedHindi = 'प्राथमिकताएं सफलतापूर्वक सहेजी गईं!';
+  
+  /// Personalize Jobfeed Section Titles
+  static const String selectTradeTitle = 'Select your trade:';
+  static const String selectTradeTitleHindi = 'अपना व्यापार चुनें:';
+  static const String preferredLocationTitle = 'Preferred Job location:';
+  static const String preferredLocationTitleHindi = 'पसंदीदा नौकरी का स्थान:';
+  static const String jobSectorTitle = 'Preferred job sector:';
+  static const String jobSectorTitleHindi = 'पसंदीदा नौकरी क्षेत्र:';
+  static const String jobTypeTitle = 'Job type:';
+  static const String jobTypeTitleHindi = 'नौकरी का प्रकार:';
+  static const String availabilityTitle = 'Availability:';
+  static const String availabilityTitleHindi = 'उपलब्धता:';
+  static const String skillsTitle = 'Skills keyword:';
+  static const String skillsTitleHindi = 'कौशल कीवर्ड:';
+  static const String salaryRangeTitle = 'Expected salary range:';
+  static const String salaryRangeTitleHindi = 'अपेक्षित वेतन सीमा:';
+  static const String addSkillsHint = 'Add skills...';
+  static const String addSkillsHintHindi = 'कौशल जोड़ें...';
+  
+  /// Availability Options
+  static const String immediatelyAvailable = 'Immediately available';
+  static const String withinOneMonth = 'Within 1 month';
 
   /// Loading Messages
   static const String loadingText = 'Loading...';

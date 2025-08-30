@@ -7,6 +7,7 @@ import 'job_status.dart';
 import '../../auth/login_otp_email.dart';
 import '../jobs/application_tracker.dart';
 import '../setting/settings.dart';
+import 'personalize_jobfeed.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -132,7 +133,9 @@ class ProfileScreen extends StatelessWidget {
           icon: Icons.favorite_outline,
           title: 'Personalize Jobfeed / पसंद की नौकरी',
           onTap: () {
-            // TODO: Navigate to jobfeed personalization screen
+            NavigationService.smartNavigate(
+              destination: const PersonalizeJobfeedScreen(),
+            );
           },
         ),
         _buildOptionTile(
@@ -226,3 +229,4 @@ class ProfileScreen extends StatelessWidget {
     NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
   }
 }
+
