@@ -185,7 +185,8 @@ class _LearningCenterPageState extends State<LearningCenterPage>
             itemBuilder: (context, index) {
               final course = CourseData.featuredCourses[index];
               return Container(
-                width: 288.8,
+                width:
+                    315, // Increased width from 288.8 to 350 for bigger cards
                 margin: const EdgeInsets.only(right: AppConstants.smallPadding),
                 child: CourseCard(
                   course: course,
