@@ -8,6 +8,8 @@ import '../../auth/login_otp_email.dart';
 import '../jobs/application_tracker.dart';
 import '../setting/settings.dart';
 import 'personalize_jobfeed.dart';
+import '../messages/inbox_screen.dart';
+import '../setting/help_center.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -115,10 +117,8 @@ class ProfileScreen extends StatelessWidget {
           icon: Icons.timeline,
           title: 'Track Application / आवेदन ट्रैक करें',
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const ApplicationTrackerScreen(),
-              ),
+            NavigationService.smartNavigate(
+              destination: const ApplicationTrackerScreen(isFromProfile: true),
             );
           },
         ),
@@ -126,7 +126,9 @@ class ProfileScreen extends StatelessWidget {
           icon: Icons.chat_outlined,
           title: 'My Chats / आपकी बातचीत',
           onTap: () {
-            // TODO: Navigate to chats screen
+            NavigationService.smartNavigate(
+              destination: InboxScreen(isFromProfile: true),
+            );
           },
         ),
         _buildOptionTile(
@@ -142,7 +144,9 @@ class ProfileScreen extends StatelessWidget {
           icon: Icons.feedback_outlined,
           title: 'Feedback / प्रतिक्रिया',
           onTap: () {
-            // TODO: Navigate to feedback screen
+            NavigationService.smartNavigate(
+              destination: const HelpCenterPage(),
+            );
           },
         ),
         _buildOptionTile(
@@ -231,4 +235,3 @@ class ProfileScreen extends StatelessWidget {
     NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
   }
 }
-

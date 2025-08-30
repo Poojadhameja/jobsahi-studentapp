@@ -94,9 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return const LearningCenterPage();
       case 2:
-        return const ApplicationTrackerScreen();
+        return const ApplicationTrackerScreen(isFromProfile: false);
       case 3:
-        return InboxScreen();
+        return InboxScreen(isFromProfile: false);
       case 4:
         // Profile tab - navigate directly to edit profile
         return const UserProfileScreen();

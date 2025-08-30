@@ -35,7 +35,7 @@ class SettingsPage extends StatelessWidget {
                   // Title
                   Expanded(
                     child: Text(
-                      'Settings / सेटिंग्स',
+                      'Settings',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,

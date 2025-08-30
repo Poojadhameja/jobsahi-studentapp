@@ -1,32 +1,26 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
+import '../../widgets/global/profile_navigation_app_bar.dart';
 import 'chat_screen.dart';
 
-class InboxScreen extends StatelessWidget {
-  InboxScreen({super.key});
+class InboxScreen extends StatefulWidget {
+  /// Whether this screen is opened from profile navigation
+  final bool isFromProfile;
 
+  const InboxScreen({super.key, this.isFromProfile = false});
+
+  @override
+  State<InboxScreen> createState() => _InboxScreenState();
+}
+
+class _InboxScreenState extends State<InboxScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      // appBar: AppBar(
-      //   backgroundColor: AppConstants.cardBackgroundColor,
-      //   elevation: 0,
-      //   title: const Text(
-      //     'Messages',
-      //     style: TextStyle(
-      //       color: AppConstants.textPrimaryColor,
-      //       fontWeight: FontWeight.bold,
-      //     ),
-      //   ),
-      //   // leading: IconButton(
-      //   //   icon: const Icon(
-      //   //     Icons.arrow_back,
-      //   //     color: AppConstants.textPrimaryColor,
-      //   //   ),
-      //   //   onPressed: () => Navigator.of(context).pop(),
-      //   // ),
-      // ),
+      appBar: widget.isFromProfile
+          ? ProfileNavigationAppBar(title: 'Messages')
+          : null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),

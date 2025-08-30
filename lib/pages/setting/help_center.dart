@@ -54,7 +54,7 @@ class _HelpCenterPageState extends State<HelpCenterPage>
                   // Icon and title
                   Center(
                     child: Column(
-        children: [
+                      children: [
                         const CircleAvatar(
                           radius: 40,
                           backgroundColor: Color(0xFFE0E7EF),
@@ -90,36 +90,36 @@ class _HelpCenterPageState extends State<HelpCenterPage>
               ),
             ),
 
-          // Tab Bar
-          Container(
-            color: AppConstants.cardBackgroundColor,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppConstants.primaryColor,
-              unselectedLabelColor: AppConstants.textSecondaryColor,
-              indicatorColor: AppConstants.primaryColor,
-              indicatorWeight: 3,
-              tabs: const [
-                Tab(text: 'Feedback'),
-                Tab(text: 'FAQs'),
-              ],
+            // Tab Bar
+            Container(
+              color: AppConstants.cardBackgroundColor,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: AppConstants.primaryColor,
+                unselectedLabelColor: AppConstants.textSecondaryColor,
+                indicatorColor: AppConstants.primaryColor,
+                indicatorWeight: 3,
+                tabs: const [
+                  Tab(text: 'Feedback'),
+                  Tab(text: 'FAQs'),
+                ],
+              ),
             ),
-          ),
 
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                // Feedback Tab
-                _buildFeedbackTab(),
+            // Tab Content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Feedback Tab
+                  _buildFeedbackTab(),
 
-                // FAQs Tab
-                _buildFaqsTab(),
-              ],
+                  // FAQs Tab
+                  _buildFaqsTab(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );

@@ -1,26 +1,33 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
+import '../../widgets/global/profile_navigation_app_bar.dart';
 import 'calendar_view.dart';
 
 class ApplicationTrackerScreen extends StatefulWidget {
-  const ApplicationTrackerScreen({super.key});
+  /// Whether this screen is opened from profile navigation
+  final bool isFromProfile;
+
+  const ApplicationTrackerScreen({super.key, this.isFromProfile = false});
 
   @override
-  State<ApplicationTrackerScreen> createState() => _ApplicationTrackerScreenState();
+  State<ApplicationTrackerScreen> createState() =>
+      _ApplicationTrackerScreenState();
 }
 
 class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         backgroundColor: AppConstants.backgroundColor,
+        appBar: widget.isFromProfile
+            ? ProfileNavigationAppBar(title: 'Application Tracker')
+            : null,
         body: Column(
           children: [
-            _buildTabBar(),
+            if (!widget.isFromProfile) _buildTabBar(),
             Expanded(
               child: TabBarView(
                 children: [
