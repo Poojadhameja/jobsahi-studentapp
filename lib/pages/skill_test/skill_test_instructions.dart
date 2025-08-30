@@ -1,4 +1,4 @@
-/// Skills Test Info Screen
+/// Skills Test Instructions Screen
 /// Displays test information and instructions before starting the test
 
 library;
@@ -9,20 +9,26 @@ import '../../utils/navigation_service.dart';
 import '../../widgets/global/simple_app_bar.dart';
 import 'skills_test_faq.dart';
 
-class SkillTestInfoScreen extends StatefulWidget {
+class SkillTestInstructionsScreen extends StatefulWidget {
   /// Job data for context
   final Map<String, dynamic> job;
 
   /// Test data to display information
   final Map<String, dynamic> test;
 
-  const SkillTestInfoScreen({super.key, required this.job, required this.test});
+  const SkillTestInstructionsScreen({
+    super.key,
+    required this.job,
+    required this.test,
+  });
 
   @override
-  State<SkillTestInfoScreen> createState() => _SkillTestInfoScreenState();
+  State<SkillTestInstructionsScreen> createState() =>
+      _SkillTestInstructionsScreenState();
 }
 
-class _SkillTestInfoScreenState extends State<SkillTestInfoScreen> {
+class _SkillTestInstructionsScreenState
+    extends State<SkillTestInstructionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -222,6 +228,27 @@ class _SkillTestInfoScreenState extends State<SkillTestInfoScreen> {
 
   /// Builds a single instruction item
   Widget _buildInstructionItem(String instruction) {
+    // Define icons for each instruction type
+    IconData getIconForInstruction(String instruction) {
+      if (instruction.contains('समय सीमा') || instruction.contains('time')) {
+        return Icons.access_time;
+      } else if (instruction.contains('इंटरनेट') ||
+          instruction.contains('internet')) {
+        return Icons.wifi;
+      } else if (instruction.contains('Attempt Test') ||
+          instruction.contains('बटन')) {
+        return Icons.play_circle_outline;
+      } else if (instruction.contains('प्रश्न') ||
+          instruction.contains('questions')) {
+        return Icons.question_answer;
+      } else if (instruction.contains('परिणाम') ||
+          instruction.contains('result')) {
+        return Icons.assessment;
+      } else {
+        return Icons.info_outline; // Default icon
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -233,15 +260,20 @@ class _SkillTestInfoScreenState extends State<SkillTestInfoScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Icon container
           Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 6, right: 12),
-            decoration: const BoxDecoration(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppConstants.successColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              getIconForInstruction(instruction),
               color: AppConstants.successColor,
-              shape: BoxShape.circle,
+              size: 18,
             ),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               instruction,

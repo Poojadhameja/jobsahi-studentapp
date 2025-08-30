@@ -18,6 +18,14 @@ class AppConstants {
   static const Color warningColor = Colors.orange;
   static const Color errorColor = Colors.red;
 
+  /// Bottom Navigation Colors
+  static const Color bottomNavActiveColor = Color(
+    0xFF0B537D,
+  ); // Dark blue for active tab
+  static const Color bottomNavInactiveColor = Color(
+    0xFF6680B5,
+  ); // Light blue-grey for inactive tab
+
   /// App Text Styles
   static const TextStyle headingStyle = TextStyle(
     fontSize: 22,

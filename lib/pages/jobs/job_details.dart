@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/global/simple_app_bar.dart';
 import '../../data/job_data.dart';
-import 'job_step1.dart';
+
+import 'job_step.dart';
+
 import 'write_review.dart';
 import 'about_company.dart';
 
@@ -727,12 +729,8 @@ class JobDetailsScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             onPressed: () {
-              // Navigate to job application step 1
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => JobStep1Screen(job: job),
-                ),
-              );
+              // Navigate directly to job application step
+              _navigateToJobStep(context);
             },
             child: const Text(
               AppConstants.applyJobText,
@@ -746,5 +744,12 @@ class JobDetailsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Navigates to job step screen
+  void _navigateToJobStep(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => JobStepScreen(job: job)));
   }
 }

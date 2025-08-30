@@ -11,16 +11,17 @@ import '../auth/create_account.dart';
 import '../auth/forgot_password.dart';
 import '../auth/set_password_code.dart';
 import '../auth/set_new_password.dart';
+import '../pages/profile/job_status.dart';
+import '../auth/change_password.dart';
 // Main app screens (organized by feature in pages folder)
 import '../pages/home/home.dart';
 import '../pages/jobs/search_job.dart';
 import '../pages/jobs/search_result.dart';
 import '../pages/jobs/job_details.dart';
-import '../pages/jobs/job_step1.dart';
-import '../pages/jobs/job_step2.dart';
-import '../pages/jobs/job_step3.dart';
-import '../pages/skill_test/skill_test.dart';
-import '../pages/skill_test/skill_test_info.dart';
+import '../pages/jobs/job_step.dart';
+import '../pages/jobs/job_application_success.dart';
+import '../pages/skill_test/skill_test_details.dart';
+import '../pages/skill_test/skill_test_instructions.dart';
 import '../pages/skill_test/skills_test_faq.dart';
 import '../pages/jobs/app_tracker1.dart';
 import '../pages/jobs/calendar_view.dart';
@@ -190,16 +191,10 @@ class NavigationService {
         return RouteNames.searchResult;
       case 'JobDetailsScreen':
         return RouteNames.jobDetails;
-      case 'JobStep1Screen':
-        return RouteNames.jobStep1;
-      case 'JobStep2Screen':
-        return RouteNames.jobStep2;
-      case 'JobStep3Screen':
-        return RouteNames.jobStep3;
-      case 'SkillTestScreen':
-        return RouteNames.skillTest;
-      case 'SkillTestInfoScreen':
-        return RouteNames.skillTestInfo;
+      case 'SkillTestDetailsScreen':
+        return RouteNames.skillTestDetails;
+      case 'SkillTestInstructionsScreen':
+        return RouteNames.skillTestInstructions;
       case 'SkillsTestFAQScreen':
         return RouteNames.skillsTestFAQ;
 
@@ -237,6 +232,8 @@ class NavigationService {
         return RouteNames.settings;
       case 'AboutPage':
         return RouteNames.about;
+      case 'ChangePasswordPage':
+        return RouteNames.changePassword;
 
       case 'LearningCenterPage':
         return RouteNames.learningCenter;
@@ -334,11 +331,7 @@ class NavigationService {
 
   static bool _isJobApplicationFlow(String currentRoute, String targetRoute) {
     final jobFlowSequences = [
-      [RouteNames.jobStep1, RouteNames.jobStep2],
-      [RouteNames.jobStep2, RouteNames.jobStep3],
-      [RouteNames.jobStep3, RouteNames.skillTest],
-      [RouteNames.skillTest, RouteNames.skillTestInfo],
-      [RouteNames.jobStep3, RouteNames.appTracker1],
+      [RouteNames.skillTestDetails, RouteNames.skillTestInstructions],
     ];
 
     return jobFlowSequences.any(
@@ -445,11 +438,8 @@ class RouteNames {
   static const String searchJob = '/search-job';
   static const String searchResult = '/search-result';
   static const String jobDetails = '/job-details';
-  static const String jobStep1 = '/job-step1';
-  static const String jobStep2 = '/job-step2';
-  static const String jobStep3 = '/job-step3';
-  static const String skillTest = '/skill-test';
-  static const String skillTestInfo = '/skill-test-info';
+  static const String skillTestDetails = '/skill-test-details';
+  static const String skillTestInstructions = '/skill-test-instructions';
   static const String skillsTestFAQ = '/skills-test-faq';
   static const String appTracker1 = '/app-tracker1';
   static const String calendarView = '/calendar-view';
@@ -468,6 +458,7 @@ class RouteNames {
   static const String jobStatus = '/job-status';
   static const String settings = '/settings';
   static const String about = '/about';
+  static const String changePassword = '/change-password';
 
   // Course screens
   static const String learningCenter = '/learning-center';
@@ -515,31 +506,18 @@ class RouteGenerator {
         final job =
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
         return MaterialPageRoute(builder: (_) => JobDetailsScreen(job: job));
-      case RouteNames.jobStep1:
-        // Pass a default job object for now - in real app, this would come from arguments
+      case RouteNames.skillTestDetails:
         final job =
             args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
-        return MaterialPageRoute(builder: (_) => JobStep1Screen(job: job));
-      case RouteNames.jobStep2:
-        // Pass a default job object for now - in real app, this would come from arguments
-        final job =
-            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
-        return MaterialPageRoute(builder: (_) => JobStep2Screen(job: job));
-      case RouteNames.jobStep3:
-        // Pass a default job object for now - in real app, this would come from arguments
-        final job =
-            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
-        return MaterialPageRoute(builder: (_) => JobStep3Screen(job: job));
-      case RouteNames.skillTest:
-        final job =
-            args as Map<String, dynamic>? ?? JobData.recommendedJobs.first;
-        return MaterialPageRoute(builder: (_) => SkillTestScreen(job: job));
-      case RouteNames.skillTestInfo:
+        return MaterialPageRoute(
+          builder: (_) => SkillTestDetailsScreen(job: job),
+        );
+      case RouteNames.skillTestInstructions:
         final skillTestArgs = args as Map<String, dynamic>? ?? {};
         final job = skillTestArgs['job'] ?? JobData.recommendedJobs.first;
         final test = skillTestArgs['test'] ?? {};
         return MaterialPageRoute(
-          builder: (_) => SkillTestInfoScreen(job: job, test: test),
+          builder: (_) => SkillTestInstructionsScreen(job: job, test: test),
         );
       case RouteNames.skillsTestFAQ:
         final skillTestArgs = args as Map<String, dynamic>? ?? {};
@@ -612,6 +590,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SettingsPage());
       case RouteNames.about:
         return MaterialPageRoute(builder: (_) => const AboutPage());
+      case RouteNames.changePassword:
+        return MaterialPageRoute(builder: (_) => const ChangePasswordPage());
 
       case RouteNames.learningCenter:
         return MaterialPageRoute(builder: (_) => const LearningCenterPage());

@@ -3,6 +3,11 @@ import '../../utils/navigation_service.dart';
 import '../../utils/app_constants.dart';
 import '../../widgets/global/custom_app_bar.dart';
 import 'about_page.dart';
+import 'privacy_policy.dart';
+import 'terms_conditions.dart';
+import 'help_center.dart';
+import 'notification_permission.dart';
+import '../../auth/change_password.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -15,72 +20,67 @@ class SettingsPage extends StatelessWidget {
         title: 'Setting/सेटिंग्स',
         showBackButton: true,
       ),
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
         children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-              children: [
-                _buildSettingItem(
-                  context,
-                  icon: Icons.person_outline,
-                  title: 'Account Setting / खाता सेटिंग',
-                  onTap: () {
-                    // TODO: Navigate to Account Setting Page
-                  },
-                ),
-                _buildSettingItem(
-                  context,
-                  icon: Icons.lock_outline,
-                  title: 'Password Change / पासवर्ड बदलें',
-                  onTap: () {
 
-                  },
-                ),
-                _buildSettingItem(
-                  context,
-                  icon: Icons.notifications_outlined,
-                  title: 'Notification / नोटिफिकेशन',
-                  onTap: () {
-                    // TODO: Navigate to Notification Page
-                  },
-                ),
-                _buildSettingItem(
-                  context,
-                  icon: Icons.info_outline,
-                  title: 'About / हमारे बारे में',
-                  onTap: () {
-                    NavigationService.smartNavigate(
-                      destination: const AboutPage(),
-                    );
-                  },
-                ),
-                _buildSettingItem(
-                  context,
-                  icon: Icons.help_outline,
-                  title: 'FAQs / सामान्य प्रश्न',
-                  onTap: () {
-                    // TODO: Navigate to FAQs Page
-                  },
-                ),
-                _buildSettingItem(
-                  context,
-                  icon: Icons.article_outlined,
-                  title: 'Terms & Conditions / नियम और शर्तें',
-                  onTap: () {
-                    // TODO: Navigate to Terms Page
-                  },
-                ),
-                _buildSettingItem(
-                  context,
-                  icon: Icons.privacy_tip_outlined,
-                  title: 'Privacy Policy / गोपनीयता नीति',
-                  onTap: () {
-                    // TODO: Navigate to Privacy Page
-                  },
-                ),
-              ],
-            ),
+          _buildSettingItem(
+            context,
+            icon: Icons.lock_outline,
+            title: 'Password Change / पासवर्ड बदलें',
+            onTap: () {
+              NavigationService.smartNavigate(
+                destination: const ChangePasswordPage(),
+              );
+            },
+          ),
+          _buildSettingItem(
+            context,
+            icon: Icons.notifications_outlined,
+            title: 'Notification / नोटिफिकेशन',
+            onTap: () {
+              NavigationService.smartNavigate(
+                destination: const NotificationPermissionPage(),
+              );
+            },
+          ),
+          _buildSettingItem(
+            context,
+            icon: Icons.info_outline,
+            title: 'About / हमारे बारे में',
+            onTap: () {
+              NavigationService.smartNavigate(destination: const AboutPage());
+            },
+          ),
+          _buildSettingItem(
+            context,
+            icon: Icons.help_outline,
+            title: 'FAQs / सामान्य प्रश्न',
+            onTap: () {
+              NavigationService.smartNavigate(
+                destination: const HelpCenterPage(),
+              );
+            },
+          ),
+          _buildSettingItem(
+            context,
+            icon: Icons.article_outlined,
+            title: 'Terms & Conditions / नियम और शर्तें',
+            onTap: () {
+              NavigationService.smartNavigate(
+                destination: const TermsConditionsPage(),
+              );
+            },
+          ),
+          _buildSettingItem(
+            context,
+            icon: Icons.privacy_tip_outlined,
+            title: 'Privacy Policy / गोपनीयता नीति',
+            onTap: () {
+              NavigationService.smartNavigate(
+                destination: const PrivacyPolicyPage(),
+              );
+            },
           ),
         ],
       ),
@@ -99,25 +99,21 @@ class SettingsPage extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 4.0),
         child: Row(
           children: [
-            Icon(
-              icon, 
-              color: AppConstants.primaryColor, 
-              size: 24,
-            ),
+            Icon(icon, color: AppConstants.primaryColor, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                title, 
+                title,
                 style: TextStyle(
-                  fontSize: 16, 
+                  fontSize: 16,
                   color: AppConstants.primaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             Icon(
-              Icons.arrow_forward_ios, 
-              size: 16, 
+              Icons.arrow_forward_ios,
+              size: 16,
               color: AppConstants.primaryColor,
             ),
           ],

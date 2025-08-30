@@ -1,4 +1,4 @@
-/// Skills Test Screen
+/// Skills Test Details Screen
 /// Displays available skill tests for job-related skills with filtering options
 
 library;
@@ -7,19 +7,19 @@ import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
 import '../../widgets/global/simple_app_bar.dart';
-import 'skill_test_info.dart';
+import 'skill_test_instructions.dart';
 
-class SkillTestScreen extends StatefulWidget {
+class SkillTestDetailsScreen extends StatefulWidget {
   /// Job data to filter relevant skill tests
   final Map<String, dynamic> job;
 
-  const SkillTestScreen({super.key, required this.job});
+  const SkillTestDetailsScreen({super.key, required this.job});
 
   @override
-  State<SkillTestScreen> createState() => _SkillTestScreenState();
+  State<SkillTestDetailsScreen> createState() => _SkillTestDetailsScreenState();
 }
 
-class _SkillTestScreenState extends State<SkillTestScreen> {
+class _SkillTestDetailsScreenState extends State<SkillTestDetailsScreen> {
   /// Mock skill test data based on job category
   Map<String, dynamic> get _skillTest {
     final jobCategory = widget.job['category'] ?? 'Electrician';
@@ -221,6 +221,21 @@ class _SkillTestScreenState extends State<SkillTestScreen> {
 
   /// Builds a test detail item
   Widget _buildTestDetailItem(String title, String subtitle) {
+    // Define icons for each detail type
+    IconData getIconForDetail(String title) {
+      if (title.contains('MCQs') || title.contains('Mins')) {
+        return Icons.quiz;
+      } else if (title.contains('marks') || title.contains('pass')) {
+        return Icons.grade;
+      } else if (title.contains('attempt')) {
+        return Icons.repeat;
+      } else if (title.contains('private') || title.contains('Results')) {
+        return Icons.privacy_tip;
+      } else {
+        return Icons.info_outline; // Default icon
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -231,6 +246,20 @@ class _SkillTestScreenState extends State<SkillTestScreen> {
       ),
       child: Row(
         children: [
+          // Icon container
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppConstants.successColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              getIconForDetail(title),
+              color: AppConstants.successColor,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,14 +281,6 @@ class _SkillTestScreenState extends State<SkillTestScreen> {
                   ),
                 ),
               ],
-            ),
-          ),
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade300, width: 2),
             ),
           ),
         ],
@@ -302,7 +323,7 @@ class _SkillTestScreenState extends State<SkillTestScreen> {
   /// Navigate to test info screen
   void _navigateToTestInfo(Map<String, dynamic> test) {
     NavigationService.navigateTo(
-      SkillTestInfoScreen(job: widget.job, test: test),
+      SkillTestInstructionsScreen(job: widget.job, test: test),
     );
   }
 }
