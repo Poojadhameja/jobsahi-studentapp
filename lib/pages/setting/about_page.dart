@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
 import '../../utils/navigation_service.dart';
-import '../../widgets/global/custom_app_bar.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -9,142 +8,134 @@ class AboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
-      appBar: const CustomAppBar(
-        title: 'About/हमारे बारे में',
-        showBackButton: true,
-      ),
-      body: Column(
-        children: [
-          // Scrollable content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Main title section
-                  _buildMainTitle(),
-                  const SizedBox(height: AppConstants.largePadding),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.largePadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 2),
 
-                  // Content sections
-                  _buildContentSection(),
-                  const SizedBox(height: AppConstants.largePadding),
+                    /// Back button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(height: 4),
 
-                  // Company info section
-                  _buildCompanyInfo(),
-                  const SizedBox(height: AppConstants.largePadding),
+                    /// Profile avatar & title
+                    Center(
+                      child: Column(
+                        children: [
+                          const CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Color(0xFFE0E7EF),
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 45,
+                              color: AppConstants.textPrimaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "About JOBSAHI",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: AppConstants.textPrimaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "Satpuda Group's Jobsahi.com",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF4F789B),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-                  // Contact section
-                  _buildContactSection(),
-                  const SizedBox(height: AppConstants.largePadding),
-                ],
+                    /// Mission section
+                    _buildMissionSection(),
+                    const SizedBox(height: 20),
+
+                    /// Company info section
+                    _buildCompanyInfoSection(),
+                    const SizedBox(height: 20),
+
+                    /// Contact section
+                    _buildContactSection(),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
-          ),
-
-          // Fixed bottom button
-          Container(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            decoration: BoxDecoration(
-              color: AppConstants.backgroundColor,
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
-            ),
-            child: _buildBackButton(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMainTitle() {
+  /// Builds the mission section with modern styling
+  Widget _buildMissionSection() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.largePadding),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Info icon
-          Icon(Icons.info_outline, size: 48, color: AppConstants.primaryColor),
-          const SizedBox(height: AppConstants.defaultPadding),
-
-          // Main title
-          Text(
-            'About JOBSAHI',
-            style: AppConstants.headingStyle.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: AppConstants.smallPadding),
-
-          // Subtitle
-          Text(
-            'Satpuda Group\'s Jobsahi.com',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppConstants.secondaryColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContentSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.largePadding),
-      decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Our Mission',
-            style: AppConstants.subheadingStyle.copyWith(
-              color: AppConstants.primaryColor,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.flag_outlined,
+                size: 20,
+                color: AppConstants.primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Our Mission',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppConstants.textPrimaryColor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AppConstants.defaultPadding),
+          const SizedBox(height: 16),
 
-          // Mission content in Hindi
           _buildMissionParagraph(
             'JOBSAHI शिक्षा और रोजगार के बीच की खाई को पाटने के लिए प्रतिबद्ध है, '
             'विशेष रूप से IT और Polytechnic छात्रों के लिए।',
           ),
 
-          const SizedBox(height: AppConstants.defaultPadding),
+          const SizedBox(height: 12),
 
           _buildMissionParagraph(
             'हमारा प्लेटफॉर्म कुशल व्यक्तियों को प्रमुख उद्योगों से जोड़ने के लिए '
             'डिज़ाइन किया गया है, जो पूर्णकालिक नौकरियां, प्रशिक्षुता और अनुबंध भूमिकाएं प्रदान करता है।',
           ),
 
-          const SizedBox(height: AppConstants.defaultPadding),
+          const SizedBox(height: 12),
 
           _buildMissionParagraph(
             'हमारा मिशन तकनीकी प्रतिभा को सशक्त बनाना है, '
@@ -152,7 +143,7 @@ class AboutPage extends StatelessWidget {
             'स्किल-अप प्रोग्राम प्रदान करके।',
           ),
 
-          const SizedBox(height: AppConstants.defaultPadding),
+          const SizedBox(height: 12),
 
           _buildMissionParagraph(
             'JOBSAHI एक पारदर्शी और कुशल पारिस्थितिकी तंत्र बनाने का प्रयास करता है, '
@@ -168,111 +159,124 @@ class AboutPage extends StatelessWidget {
   Widget _buildMissionParagraph(String text) {
     return Text(
       text,
-      style: AppConstants.bodyStyle.copyWith(
+      style: const TextStyle(
+        fontSize: 14,
         height: 1.6,
-        color: AppConstants.textPrimaryColor,
+        color: Color(0xFF4F789B),
       ),
     );
   }
 
-  Widget _buildCompanyInfo() {
+  /// Builds the company info section with modern styling
+  Widget _buildCompanyInfoSection() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.largePadding),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Company Information',
-            style: AppConstants.subheadingStyle.copyWith(
-              color: AppConstants.primaryColor,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
             ),
           ),
-          const SizedBox(height: AppConstants.defaultPadding),
+          const SizedBox(height: 16),
 
-          _buildInfoRow('Company', 'Satpuda Group'),
-          _buildInfoRow('Founded', '2004'),
-          _buildInfoRow('Industry', 'Technical Education & Job Placement'),
-          _buildInfoRow('Headquarters', 'Central India'),
-          _buildInfoRow('Specialization', 'IT, Polytechnic, Skill Development'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppConstants.smallPadding),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: AppConstants.bodyStyle.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppConstants.textSecondaryColor,
-              ),
-            ),
+          _buildInfoRow(Icons.business, 'Company', 'Satpuda Group'),
+          const SizedBox(height: 8),
+          _buildInfoRow(Icons.calendar_today, 'Founded', '2004'),
+          const SizedBox(height: 8),
+          _buildInfoRow(
+            Icons.work,
+            'Industry',
+            'Technical Education & Job Placement',
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: AppConstants.bodyStyle.copyWith(
-                color: AppConstants.textPrimaryColor,
-              ),
-            ),
+          const SizedBox(height: 8),
+          _buildInfoRow(Icons.location_on, 'Headquarters', 'Central India'),
+          const SizedBox(height: 8),
+          _buildInfoRow(
+            Icons.school,
+            'Specialization',
+            'IT, Polytechnic, Skill Development',
           ),
         ],
       ),
     );
   }
 
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF58B248)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppConstants.textPrimaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the contact section with modern styling
   Widget _buildContactSection() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.largePadding),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Contact Information',
-            style: AppConstants.subheadingStyle.copyWith(
-              color: AppConstants.primaryColor,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
             ),
           ),
-          const SizedBox(height: AppConstants.defaultPadding),
+          const SizedBox(height: 16),
 
           _buildContactRow(Icons.email_outlined, 'Email', 'info@jobsahi.com'),
+          const SizedBox(height: 8),
           _buildContactRow(Icons.phone_outlined, 'Phone', '+91 12345 67890'),
+          const SizedBox(height: 8),
           _buildContactRow(
             Icons.location_on_outlined,
             'Address',
             'Central India',
           ),
+          const SizedBox(height: 8),
           _buildContactRow(
             Icons.language_outlined,
             'Website',
@@ -284,58 +288,34 @@ class AboutPage extends StatelessWidget {
   }
 
   Widget _buildContactRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppConstants.smallPadding),
-      child: Row(
-        children: [
-          Icon(icon, color: AppConstants.secondaryColor, size: 20),
-          const SizedBox(width: AppConstants.smallPadding),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: AppConstants.captionStyle.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppConstants.textSecondaryColor,
-                  ),
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF58B248)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
                 ),
-                Text(
-                  value,
-                  style: AppConstants.bodyStyle.copyWith(
-                    color: AppConstants.textPrimaryColor,
-                  ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppConstants.textPrimaryColor,
                 ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackButton() {
-    return Center(
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () => NavigationService.goBack(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppConstants.secondaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            elevation: 2,
-          ),
-          child: Text(
-            'BACK',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ),
-      ),
+      ],
     );
   }
 }
