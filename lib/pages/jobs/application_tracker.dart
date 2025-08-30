@@ -85,117 +85,62 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
     );
   }
 
-  /// Builds the applied job card
+  /// Builds the applied job cards
   Widget _buildAppliedCard() {
-    return Column(
+    return ListView(
       children: [
-        // Job application card
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Job title and status
-              Row(
-                children: [
-                  Expanded(
-                    child: const Text(
-                      'Full Stack Developer',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0B537D), // Dark blue color
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0B537D),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: const Text(
-                      'Applied',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
+        // ITI Electrician Apprentice - Card 1
+        _buildAppliedJobCard(
+          jobTitle: 'इलेक्ट्रीशियन अप्रेंटिस',
+          companyName: 'Bharat Heavy Electricals Ltd.',
+          location: 'Bhopal, Madhya Pradesh',
+          experience: 'Fresher',
+          appliedDate: '15 July 2025',
+          positions: '8 positions',
+        ),
+        const SizedBox(height: 16),
 
-              // Company name
-              const Text(
-                'Bharat Electrician Pvt. Ltd.',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF0B537D),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 12),
+        // ITI Fitter - Card 2
+        _buildAppliedJobCard(
+          jobTitle: 'ITI Fitter',
+          companyName: 'Maruti Suzuki India Ltd.',
+          location: 'Gurgaon, Haryana',
+          experience: '1-2 years',
+          appliedDate: '12 July 2025',
+          positions: '12 positions',
+        ),
+        const SizedBox(height: 16),
 
-              // Job details
-              _buildJobDetail(Icons.location_on, 'Lunknow, Uttar Pradesh'),
-              const SizedBox(height: 6),
-              _buildJobDetail(Icons.work, '2 years'),
-              const SizedBox(height: 12),
+        // ITI Welder - Card 3
+        _buildAppliedJobCard(
+          jobTitle: 'ITI Welder',
+          companyName: 'Tata Motors Ltd.',
+          location: 'Pune, Maharashtra',
+          experience: 'Fresher',
+          appliedDate: '10 July 2025',
+          positions: '6 positions',
+        ),
+        const SizedBox(height: 16),
 
-              // Application date
-              const Text(
-                'Applied on 10 july 2025',
-                style: TextStyle(fontSize: 13, color: Color(0xFF0B537D)),
-              ),
-              const SizedBox(height: 6),
+        // ITI Machinist - Card 4
+        _buildAppliedJobCard(
+          jobTitle: 'ITI Machinist',
+          companyName: 'Mahindra & Mahindra Ltd.',
+          location: 'Mumbai, Maharashtra',
+          experience: '1-3 years',
+          appliedDate: '8 July 2025',
+          positions: '10 positions',
+        ),
+        const SizedBox(height: 16),
 
-              // Number of positions
-              const Text(
-                '5 position',
-                style: TextStyle(fontSize: 13, color: Color(0xFF0B537D)),
-              ),
-              const SizedBox(height: 16),
-
-              // View Application button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _viewApplication,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5C9A24),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'View Application',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        // ITI Turner - Card 5
+        _buildAppliedJobCard(
+          jobTitle: 'ITI Turner',
+          companyName: 'Hero MotoCorp Ltd.',
+          location: 'Gurgaon, Haryana',
+          experience: 'Fresher',
+          appliedDate: '5 July 2025',
+          positions: '15 positions',
         ),
       ],
     );
@@ -212,6 +157,124 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
           style: const TextStyle(fontSize: 14, color: Color(0xFF0B537D)),
         ),
       ],
+    );
+  }
+
+  /// Builds an individual applied job card
+  Widget _buildAppliedJobCard({
+    required String jobTitle,
+    required String companyName,
+    required String location,
+    required String experience,
+    required String appliedDate,
+    required String positions,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Job title and status
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  jobTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0B537D), // Dark blue color
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B537D),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: const Text(
+                  'Applied',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          // Company name
+          Text(
+            companyName,
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF0B537D),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Job details
+          _buildJobDetail(Icons.location_on, location),
+          const SizedBox(height: 6),
+          _buildJobDetail(Icons.work, experience),
+          const SizedBox(height: 12),
+
+          // Application date
+          Text(
+            'Applied on $appliedDate',
+            style: const TextStyle(fontSize: 13, color: Color(0xFF0B537D)),
+          ),
+          const SizedBox(height: 6),
+
+          // Number of positions
+          Text(
+            positions,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF0B537D)),
+          ),
+          const SizedBox(height: 16),
+
+          // View Application button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _viewApplication,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5C9A24),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'View Application',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -147,8 +147,9 @@ class AppConstants {
   static const String jobSaved = 'Job saved successfully';
   static const String jobApplied = 'Job application submitted successfully';
   static const String preferencesSaved = 'Preferences saved successfully!';
-  static const String preferencesSavedHindi = 'प्राथमिकताएं सफलतापूर्वक सहेजी गईं!';
-  
+  static const String preferencesSavedHindi =
+      'प्राथमिकताएं सफलतापूर्वक सहेजी गईं!';
+
   /// Personalize Jobfeed Section Titles
   static const String selectTradeTitle = 'Select your trade:';
   static const String selectTradeTitleHindi = 'अपना व्यापार चुनें:';
@@ -166,7 +167,7 @@ class AppConstants {
   static const String salaryRangeTitleHindi = 'अपेक्षित वेतन सीमा:';
   static const String addSkillsHint = 'Add skills...';
   static const String addSkillsHintHindi = 'कौशल जोड़ें...';
-  
+
   /// Availability Options
   static const String immediatelyAvailable = 'Immediately available';
   static const String withinOneMonth = 'Within 1 month';
@@ -192,11 +193,14 @@ class AppConstants {
   /// Course Categories
   static const List<String> courseCategories = [
     'All',
-    'Technology',
-    'Business',
-    'Design',
-    'Marketing',
-    'Value', // For your electrician courses
+    'Electrical',
+    'Mechanical',
+    'Welding',
+    'Machining',
+    'Turning',
+    'Woodwork',
+    'Plumbing',
+    'Drafting',
   ];
 
   /// Course Levels

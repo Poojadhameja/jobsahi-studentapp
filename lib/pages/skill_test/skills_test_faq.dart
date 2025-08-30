@@ -458,7 +458,7 @@ class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
         child: ElevatedButton(
           onPressed: _submitTest,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: const Color(0xFF5C9A24),
             foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
