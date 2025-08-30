@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
-import '../../widgets/global/custom_app_bar.dart';
 
 class NotificationPermissionPage extends StatelessWidget {
   const NotificationPermissionPage({super.key});
@@ -9,13 +8,8 @@ class NotificationPermissionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(
-        title: 'Notifications / नोटिफिकेशन',
-        showBackButton: true,
-      ),
       body: Column(
         children: [
-
           // Main content
           Expanded(
             child: Padding(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_constants.dart';
-import '../../widgets/global/custom_app_bar.dart';
 
 class HelpCenterPage extends StatefulWidget {
   const HelpCenterPage({super.key});
@@ -33,17 +32,64 @@ class _HelpCenterPageState extends State<HelpCenterPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
-      appBar: CustomAppBar(
-        title: 'Help Center/हेल्प सेंटर',
-        showBackButton: true,
-        showSearchBar: false,
-        onBackPressed: () {
-          // Navigate back to settings page
-          Navigator.of(context).pop();
-        },
-      ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header section with icon, title, description and back button
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Back button
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Icon and title
+                  Center(
+                    child: Column(
         children: [
+                        const CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Color(0xFFE0E7EF),
+                          child: Icon(
+                            Icons.help_outline,
+                            size: 45,
+                            color: AppConstants.textPrimaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Help Center",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppConstants.textPrimaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Get help and find answers to your questions",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF4F789B),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+
           // Tab Bar
           Container(
             color: AppConstants.cardBackgroundColor,
@@ -74,6 +120,7 @@ class _HelpCenterPageState extends State<HelpCenterPage>
             ),
           ),
         ],
+        ),
       ),
     );
   }

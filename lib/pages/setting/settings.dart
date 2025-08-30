@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../utils/navigation_service.dart';
 import '../../utils/app_constants.dart';
-import '../../widgets/global/custom_app_bar.dart';
 import 'about_page.dart';
 import 'privacy_policy.dart';
 import 'terms_conditions.dart';
@@ -16,73 +15,123 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppConstants.backgroundColor,
-      appBar: const CustomAppBar(
-        title: 'Setting/सेटिंग्स',
-        showBackButton: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header section with back icon, title, and notification icon
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Row(
+                children: [
+                  // Back button
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
 
-          _buildSettingItem(
-            context,
-            icon: Icons.lock_outline,
-            title: 'Password Change / पासवर्ड बदलें',
-            onTap: () {
-              NavigationService.smartNavigate(
-                destination: const ChangePasswordPage(),
-              );
-            },
-          ),
-          _buildSettingItem(
-            context,
-            icon: Icons.notifications_outlined,
-            title: 'Notification / नोटिफिकेशन',
-            onTap: () {
-              NavigationService.smartNavigate(
-                destination: const NotificationPermissionPage(),
-              );
-            },
-          ),
-          _buildSettingItem(
-            context,
-            icon: Icons.info_outline,
-            title: 'About / हमारे बारे में',
-            onTap: () {
-              NavigationService.smartNavigate(destination: const AboutPage());
-            },
-          ),
-          _buildSettingItem(
-            context,
-            icon: Icons.help_outline,
-            title: 'FAQs / सामान्य प्रश्न',
-            onTap: () {
-              NavigationService.smartNavigate(
-                destination: const HelpCenterPage(),
-              );
-            },
-          ),
-          _buildSettingItem(
-            context,
-            icon: Icons.article_outlined,
-            title: 'Terms & Conditions / नियम और शर्तें',
-            onTap: () {
-              NavigationService.smartNavigate(
-                destination: const TermsConditionsPage(),
-              );
-            },
-          ),
-          _buildSettingItem(
-            context,
-            icon: Icons.privacy_tip_outlined,
-            title: 'Privacy Policy / गोपनीयता नीति',
-            onTap: () {
-              NavigationService.smartNavigate(
-                destination: const PrivacyPolicyPage(),
-              );
-            },
-          ),
-        ],
+                  // Title
+                  Expanded(
+                    child: Text(
+                      'Settings / सेटिंग्स',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  // Notification icon
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                    onPressed: () {
+                      // Handle notification tap
+                      NavigationService.smartNavigate(
+                        destination: const NotificationPermissionPage(),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Settings list
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.lock_outline,
+                    title: 'Password Change / पासवर्ड बदलें',
+                    onTap: () {
+                      NavigationService.smartNavigate(
+                        destination: const ChangePasswordPage(),
+                      );
+                    },
+                  ),
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.notifications_outlined,
+                    title: 'Notification / नोटिफिकेशन',
+                    onTap: () {
+                      NavigationService.smartNavigate(
+                        destination: const NotificationPermissionPage(),
+                      );
+                    },
+                  ),
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.info_outline,
+                    title: 'About / हमारे बारे में',
+                    onTap: () {
+                      NavigationService.smartNavigate(
+                        destination: const AboutPage(),
+                      );
+                    },
+                  ),
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.help_outline,
+                    title: 'FAQs / सामान्य प्रश्न',
+                    onTap: () {
+                      NavigationService.smartNavigate(
+                        destination: const HelpCenterPage(),
+                      );
+                    },
+                  ),
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.article_outlined,
+                    title: 'Terms & Conditions / नियम और शर्तें',
+                    onTap: () {
+                      NavigationService.smartNavigate(
+                        destination: const TermsConditionsPage(),
+                      );
+                    },
+                  ),
+                  _buildSettingItem(
+                    context,
+                    icon: Icons.privacy_tip_outlined,
+                    title: 'Privacy Policy / गोपनीयता नीति',
+                    onTap: () {
+                      NavigationService.smartNavigate(
+                        destination: const PrivacyPolicyPage(),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
