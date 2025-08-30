@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../utils/app_constants.dart';
-import '../../utils/navigation_service.dart';
+import '../utils/app_constants.dart';
+import '../utils/navigation_service.dart';
 import '../../widgets/global/custom_app_bar.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -32,282 +32,248 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
-      appBar: CustomAppBar(
-        title: 'Change Password/पासवर्ड बदलें',
-        showBackButton: true,
-        onBackPressed: () {
-          // Navigate back to settings page
-          Navigator.of(context).pop();
-        },
-      ),
-      body: Column(
-        children: [
-          // Scrollable content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Form(
-                key: _formKey,
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Scrollable content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.largePadding,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header section
-                    _buildHeader(),
-                    const SizedBox(height: AppConstants.largePadding),
+                    const SizedBox(height: 2),
 
-                    // Password form
-                    _buildPasswordForm(),
-                    const SizedBox(height: AppConstants.largePadding),
+                    /// Back button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(height: 4),
 
-                    // Password requirements
+                    /// Profile avatar & title
+                    Center(
+                      child: Column(
+                        children: [
+                          const CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Color(0xFFE0E7EF),
+                            child: Icon(
+                              Icons.lock_outline,
+                              size: 45,
+                              color: AppConstants.textPrimaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "Change your password",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: AppConstants.textPrimaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "अपना पासवर्ड सुरक्षित रखें और नियमित रूप से बदलें",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF4F789B),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    /// Form fields
+                    Form(key: _formKey, child: _buildFormFields()),
+                    const SizedBox(height: 24),
+
+                    /// Password requirements
                     _buildPasswordRequirements(),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
-          ),
 
-          // Fixed bottom button
-          Container(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            decoration: BoxDecoration(
-              color: AppConstants.backgroundColor,
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            // Fixed bottom button
+            Container(
+              padding: const EdgeInsets.all(AppConstants.largePadding),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: _buildSubmitButton(),
             ),
-            child: _buildSubmitButton(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.largePadding),
-      decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.lock_outline, size: 48, color: AppConstants.primaryColor),
-          const SizedBox(height: AppConstants.defaultPadding),
-
-          Text(
-            'Change Your Password',
-            style: AppConstants.headingStyle.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: AppConstants.smallPadding),
-
-          Text(
-            'Enter your current password and choose a new one',
-            style: AppConstants.captionStyle.copyWith(
-              color: AppConstants.textSecondaryColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPasswordForm() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.largePadding),
-      decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Password Details',
-            style: AppConstants.subheadingStyle.copyWith(
-              color: AppConstants.primaryColor,
-            ),
-          ),
-          const SizedBox(height: AppConstants.defaultPadding),
-
-          // Old Password Field
-          _buildPasswordField(
-            controller: _oldPasswordController,
-            label: 'Current Password / वर्तमान पासवर्ड',
-            hint: 'Enter your current password',
-            isVisible: _isOldPasswordVisible,
-            onVisibilityChanged: (value) {
-              setState(() {
-                _isOldPasswordVisible = value;
-              });
-            },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Current password is required';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: AppConstants.defaultPadding),
-
-          // New Password Field
-          _buildPasswordField(
-            controller: _newPasswordController,
-            label: 'New Password / नया पासवर्ड',
-            hint: 'Enter your new password',
-            isVisible: _isNewPasswordVisible,
-            onVisibilityChanged: (value) {
-              setState(() {
-                _isNewPasswordVisible = value;
-              });
-            },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'New password is required';
-              }
-              if (value.length < 6) {
-                return 'Password must be at least 6 characters';
-              }
-              return null;
-            },
-          ),
-
-          const SizedBox(height: AppConstants.defaultPadding),
-
-          // Confirm Password Field
-          _buildPasswordField(
-            controller: _confirmPasswordController,
-            label: 'Confirm Password / पासवर्ड की पुष्टि करें',
-            hint: 'Confirm your new password',
-            isVisible: _isConfirmPasswordVisible,
-            onVisibilityChanged: (value) {
-              setState(() {
-                _isConfirmPasswordVisible = value;
-              });
-            },
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please confirm your password';
-              }
-              if (value != _newPasswordController.text) {
-                return 'Passwords do not match';
-              }
-              return null;
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    required bool isVisible,
-    required Function(bool) onVisibilityChanged,
-    required String? Function(String?) validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppConstants.bodyStyle.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppConstants.textPrimaryColor,
-          ),
+          ],
         ),
-        const SizedBox(height: AppConstants.smallPadding),
+      ),
+    );
+  }
 
-        TextFormField(
-          controller: controller,
-          obscureText: !isVisible,
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: AppConstants.textSecondaryColor),
-            filled: true,
-            fillColor: AppConstants.backgroundColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppConstants.smallBorderRadius,
-              ),
-              borderSide: BorderSide(color: AppConstants.borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppConstants.smallBorderRadius,
-              ),
-              borderSide: BorderSide(color: AppConstants.borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppConstants.smallBorderRadius,
-              ),
-              borderSide: BorderSide(
-                color: AppConstants.primaryColor,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(
-                AppConstants.smallBorderRadius,
-              ),
-              borderSide: BorderSide(color: AppConstants.errorColor),
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                isVisible ? Icons.visibility_off : Icons.visibility,
-                color: AppConstants.textSecondaryColor,
-              ),
-              onPressed: () => onVisibilityChanged(!isVisible),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.defaultPadding,
-              vertical: AppConstants.defaultPadding,
-            ),
-          ),
+  /// Builds the form fields with modern styling
+  Widget _buildFormFields() {
+    return Column(
+      children: [
+        // Current Password
+        _buildFormField(
+          controller: _oldPasswordController,
+          label: "Current Password*",
+          hint: "वर्तमान पासवर्ड",
+          prefixIcon: Icons.lock,
+          isPassword: true,
+          passwordVisible: _isOldPasswordVisible,
+          onPasswordToggle: () {
+            setState(() {
+              _isOldPasswordVisible = !_isOldPasswordVisible;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Current password is required';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 20),
+
+        // New Password
+        _buildFormField(
+          controller: _newPasswordController,
+          label: "New Password*",
+          hint: "नया पासवर्ड",
+          prefixIcon: Icons.lock_outline,
+          isPassword: true,
+          passwordVisible: _isNewPasswordVisible,
+          onPasswordToggle: () {
+            setState(() {
+              _isNewPasswordVisible = !_isNewPasswordVisible;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'New password is required';
+            }
+            if (value.length < 6) {
+              return 'Password must be at least 6 characters';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 20),
+
+        // Confirm Password
+        _buildFormField(
+          controller: _confirmPasswordController,
+          label: "Confirm Password*",
+          hint: "पासवर्ड की पुष्टि करें",
+          prefixIcon: Icons.lock_outline,
+          isPassword: true,
+          passwordVisible: _isConfirmPasswordVisible,
+          onPasswordToggle: () {
+            setState(() {
+              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+            });
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please confirm your password';
+            }
+            if (value != _newPasswordController.text) {
+              return 'Passwords do not match';
+            }
+            return null;
+          },
         ),
       ],
     );
   }
 
+  /// Helper method for form fields with modern styling
+  Widget _buildFormField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData prefixIcon,
+    required String? Function(String?) validator,
+    bool isPassword = false,
+    bool? passwordVisible,
+    VoidCallback? onPasswordToggle,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: label.replaceAll('*', ''),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF144B75)),
+            children: [
+              if (label.contains('*'))
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword ? !(passwordVisible ?? false) : false,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.grey),
+            filled: true,
+            fillColor: const Color(0xFFF1F5F9),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 16,
+            ),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      passwordVisible ?? false
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: onPasswordToggle,
+                  )
+                : null,
+          ),
+          validator: validator,
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  /// Builds the submit button with modern styling
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handlePasswordChange,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.secondaryColor,
+          backgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 2,
         ),
         child: _isLoading
             ? const SizedBox(
@@ -318,70 +284,94 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : Text(
-                'Change Password / पासवर्ड बदलें',
+            : const Text(
+                "Change Password",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
       ),
     );
   }
 
+  /// Builds password requirements section
   Widget _buildPasswordRequirements() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        border: Border.all(color: AppConstants.borderColor.withOpacity(0.3)),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Password Requirements / पासवर्ड आवश्यकताएं',
-            style: AppConstants.bodyStyle.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppConstants.primaryColor,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 20,
+                color: AppConstants.primaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Password Requirements',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppConstants.textPrimaryColor,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: AppConstants.smallPadding),
+          const SizedBox(height: 16),
 
-          _buildRequirementItem('At least 6 characters long', true),
-          _buildRequirementItem('Should not be same as current password', true),
           _buildRequirementItem(
-            'Use a combination of letters and numbers',
-            false,
+            'At least 6 characters long',
+            Icons.check_circle_outline,
+            Colors.green,
           ),
-          _buildRequirementItem('Avoid common passwords', false),
+          const SizedBox(height: 8),
+
+          _buildRequirementItem(
+            'Include uppercase and lowercase letters',
+            Icons.check_circle_outline,
+            Colors.green,
+          ),
+          const SizedBox(height: 8),
+
+          _buildRequirementItem(
+            'Include numbers and special characters',
+            Icons.check_circle_outline,
+            Colors.green,
+          ),
+          const SizedBox(height: 8),
+
+          _buildRequirementItem(
+            'Avoid common passwords',
+            Icons.check_circle_outline,
+            Colors.green,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRequirementItem(String text, bool isRequired) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Icon(
-            isRequired ? Icons.check_circle : Icons.info_outline,
-            size: 16,
-            color: isRequired
-                ? AppConstants.successColor
-                : AppConstants.textSecondaryColor,
-          ),
-          const SizedBox(width: AppConstants.smallPadding),
-          Expanded(
-            child: Text(
-              text,
-              style: AppConstants.captionStyle.copyWith(
-                color: AppConstants.textSecondaryColor,
-              ),
+  /// Builds individual requirement item
+  Widget _buildRequirementItem(String text, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppConstants.textSecondaryColor,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -443,7 +433,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              NavigationService.goBack();
+              Navigator.of(context).pop();
             },
             child: Text(
               'OK',
