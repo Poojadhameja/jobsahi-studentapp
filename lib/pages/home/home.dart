@@ -14,6 +14,7 @@ import '../jobs/application_tracker.dart';
 import '../profile/profile_details.dart';
 import '../courses/learning_center.dart';
 import '../messages/inbox_screen.dart';
+import '../setting/notification_permission.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,11 +61,12 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (_selectedIndex) {
       case 0:
         // Home tab - show hamburger menu, search, and notification
-        return const CustomAppBar(
+        return CustomAppBar(
           showSearchBar: true,
           showMenuButton: true,
           showNotificationIcon: true,
           onSearch: _onSearch,
+          onNotificationPressed: _onNotificationPressed,
         );
       case 1:
         // Courses tab - show heading with back icon
@@ -126,6 +128,14 @@ class _HomeScreenState extends State<HomeScreen> {
     // Navigate to search results screen
     NavigationService.smartNavigate(
       destination: SearchJobScreen(searchQuery: query),
+    );
+  }
+
+  /// Handles notification icon tap
+  void _onNotificationPressed() {
+    // Navigate to notification permission page
+    NavigationService.smartNavigate(
+      destination: const NotificationPermissionPage(),
     );
   }
 }

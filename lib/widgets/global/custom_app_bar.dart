@@ -154,64 +154,20 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     // Add notification icon if needed
     if (showNotificationIcon) {
       actions.add(
-        const Padding(
-          padding: EdgeInsets.only(right: 12),
-          child: Icon(
-            Icons.notifications_none,
-            color: AppConstants.textPrimaryColor,
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: IconButton(
+            icon: const Icon(
+              Icons.notifications_none,
+              color: AppConstants.textPrimaryColor,
+            ),
+            onPressed: onNotificationPressed,
           ),
         ),
       );
     }
 
     return actions;
-  }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-/// Simple App Bar Widget
-/// A basic app bar with just a title and optional back button
-class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
-  /// Title to be displayed
-  final String title;
-
-  /// Whether to show the back button (default: true)
-  final bool showBackButton;
-
-  /// Callback function when back button is pressed
-  final VoidCallback? onBackPressed;
-
-  /// Background color of the app bar
-  final Color backgroundColor;
-
-  /// Text color of the title
-  final Color textColor;
-
-  const SimpleAppBar({
-    super.key,
-    required this.title,
-    this.showBackButton = true,
-    this.onBackPressed,
-    this.backgroundColor = AppConstants.backgroundColor,
-    this.textColor = AppConstants.textPrimaryColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: backgroundColor,
-      elevation: 0,
-      leading: showBackButton
-          ? IconButton(
-              icon: Icon(Icons.arrow_back, color: textColor),
-              onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-            )
-          : null,
-      title: Text(title, style: TextStyle(color: textColor)),
-      centerTitle: true,
-    );
   }
 
   @override

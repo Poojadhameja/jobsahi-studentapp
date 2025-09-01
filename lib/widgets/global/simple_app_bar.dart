@@ -1,4 +1,4 @@
-export 'custom_app_bar.dart' show CustomAppBar, SimpleAppBar;
+export 'custom_app_bar.dart' show CustomAppBar;
 
 /// Simple App Bar Widget
 /// A basic app bar with title and optional back button
