@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'utils/navigation_service.dart';
+import 'core/utils/navigation_service.dart';
 
 /// The main function - this is where the Flutter app starts
 /// It calls runApp() which inflates the given widget and attaches it to the screen
