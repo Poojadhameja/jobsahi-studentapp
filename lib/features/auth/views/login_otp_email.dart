@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
-import 'login_otp_code.dart';
-import 'login_verified_popup.dart';
-import 'create_account.dart';
-import 'forgot_password.dart';
+import '../../../core/constants/app_routes.dart';
 
 class LoginOtpEmailScreen extends StatefulWidget {
   const LoginOtpEmailScreen({super.key});
@@ -54,7 +51,7 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
                   color: AppConstants.textPrimaryColor,
                 ),
                 onPressed: () {
-                  NavigationService.goBack();
+                  context.pop();
                 },
               ),
               const SizedBox(height: 4),
@@ -247,9 +244,7 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
                   behavior: SnackBarBehavior.floating,
                 ),
               );
-              NavigationService.smartNavigate(
-                destination: const LoginOtpCodeScreen(),
-              );
+              context.go(AppRoutes.loginOtpCode);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF5C9A24),
@@ -366,9 +361,7 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           alignment: Alignment.centerRight,
           child: GestureDetector(
             onTap: () {
-              NavigationService.smartNavigate(
-                destination: const ForgotPasswordScreen(),
-              );
+              context.go(AppRoutes.forgotPassword);
             },
             child: const Text(
               "Forgot Password?",
@@ -384,9 +377,7 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              NavigationService.smartNavigate(
-                destination: const LoginVerifiedPopupScreen(),
-              );
+              context.go(AppRoutes.loginVerifiedPopup);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.secondaryColor,
@@ -437,9 +428,7 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
         const Text("Not a member? "),
         GestureDetector(
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const CreateAccountScreen(),
-            );
+            context.go(AppRoutes.createAccount);
           },
           child: const Text(
             "Create an account",

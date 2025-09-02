@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/app_constants.dart';
-import 'about_page.dart';
-import 'privacy_policy.dart';
-import 'terms_conditions.dart';
-import 'help_center.dart';
-import 'notification_permission.dart';
-import '../../auth/views/change_password.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -53,9 +48,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                     onPressed: () {
                       // Handle notification tap
-                      NavigationService.smartNavigate(
-                        destination: const NotificationPermissionPage(),
-                      );
+                      context.go(AppRoutes.notificationPermission);
                     },
                   ),
                 ],
@@ -72,9 +65,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.lock_outline,
                     title: 'Password Change / पासवर्ड बदलें',
                     onTap: () {
-                      NavigationService.smartNavigate(
-                        destination: const ChangePasswordPage(),
-                      );
+                      context.go(AppRoutes.changePassword);
                     },
                   ),
                   _buildSettingItem(
@@ -82,9 +73,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.notifications_outlined,
                     title: 'Notification / नोटिफिकेशन',
                     onTap: () {
-                      NavigationService.smartNavigate(
-                        destination: const NotificationPermissionPage(),
-                      );
+                      context.go(AppRoutes.notificationPermission);
                     },
                   ),
                   _buildSettingItem(
@@ -92,9 +81,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.info_outline,
                     title: 'About / हमारे बारे में',
                     onTap: () {
-                      NavigationService.smartNavigate(
-                        destination: const AboutPage(),
-                      );
+                      context.go(AppRoutes.about);
                     },
                   ),
                   _buildSettingItem(
@@ -102,9 +89,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.help_outline,
                     title: 'FAQs / सामान्य प्रश्न',
                     onTap: () {
-                      NavigationService.smartNavigate(
-                        destination: const HelpCenterPage(),
-                      );
+                      context.go(AppRoutes.helpCenter);
                     },
                   ),
                   _buildSettingItem(
@@ -112,9 +97,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.article_outlined,
                     title: 'Terms & Conditions / नियम और शर्तें',
                     onTap: () {
-                      NavigationService.smartNavigate(
-                        destination: const TermsConditionsPage(),
-                      );
+                      context.go(AppRoutes.termsConditions);
                     },
                   ),
                   _buildSettingItem(
@@ -122,9 +105,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy / गोपनीयता नीति',
                     onTap: () {
-                      NavigationService.smartNavigate(
-                        destination: const PrivacyPolicyPage(),
-                      );
+                      context.go(AppRoutes.privacyPolicy);
                     },
                   ),
                 ],

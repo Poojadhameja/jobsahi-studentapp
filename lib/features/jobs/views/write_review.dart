@@ -4,7 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 
 class WriteReviewScreen extends StatefulWidget {
@@ -209,7 +210,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               ),
             );
             Future.delayed(const Duration(milliseconds: 1200), () {
-              if (mounted) NavigationService.goBack();
+              if (mounted) context.pop();
             });
           },
           child: const Text(

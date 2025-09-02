@@ -4,7 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/data/job_data.dart';
@@ -28,10 +29,7 @@ class SavedJobsScreen extends StatelessWidget {
           return JobCard(
             job: job,
             isInitiallySaved: true,
-            onTap: () => NavigationService.smartNavigate(
-              routeName: RouteNames.jobDetails,
-              arguments: job,
-            ),
+            onTap: () => context.go(AppRoutes.jobDetailsWithId(job['id'])),
           );
         },
       ),

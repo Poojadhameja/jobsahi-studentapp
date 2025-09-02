@@ -4,7 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 class LocationPermissionScreen extends StatefulWidget {
   final bool isFromCurrentLocation;
@@ -35,7 +36,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
             Icons.arrow_back,
             color: AppConstants.textPrimaryColor,
           ),
-          onPressed: () => NavigationService.goBack(),
+          onPressed: () => context.pop(),
         ),
       ),
       body: SafeArea(
@@ -194,7 +195,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
       await Future.delayed(const Duration(seconds: 2));
 
       // Navigate to home screen after successful location access using smart navigation
-      NavigationService.smartNavigate(routeName: RouteNames.home);
+      context.go(AppRoutes.home);
     } catch (e) {
       // Handle location permission denied
       setState(() {
@@ -216,6 +217,6 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
   /// Handles manual location entry
   void _enterLocationManually() {
     // Navigate back to location1 screen for manual selection
-    NavigationService.goBack();
+    context.pop();
   }
 }

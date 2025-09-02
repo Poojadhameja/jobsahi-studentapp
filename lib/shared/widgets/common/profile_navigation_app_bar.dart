@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 /// Profile Navigation App Bar Widget
 /// A custom app bar for pages opened from profile navigation
@@ -41,7 +42,7 @@ class ProfileNavigationAppBar extends StatelessWidget
               icon: Icon(Icons.arrow_back, color: textColor),
               onPressed: () {
                 // Navigate back to profile screen
-                NavigationService.goBack();
+                context.pop();
               },
             )
           : null,

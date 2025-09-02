@@ -1,15 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/user_data.dart';
-import '../../../core/utils/navigation_service.dart';
-import 'profile_details.dart';
-import 'job_status.dart';
-import '../../auth/views/login_otp_email.dart';
-import '../../jobs/views/application_tracker.dart';
-import '../../settings/views/settings.dart';
-import 'personalize_jobfeed.dart';
-import '../../messages/views/inbox_screen.dart';
-import '../../settings/views/help_center.dart';
+import '../../../core/constants/app_routes.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -24,7 +17,7 @@ class ProfileScreen extends StatelessWidget {
           child: Column(
             children: [
               // Profile header
-              _buildProfileHeader(),
+              _buildProfileHeader(context),
               const SizedBox(height: AppConstants.largePadding),
 
               // Profile options
@@ -37,17 +30,13 @@ class ProfileScreen extends StatelessWidget {
   }
 
   /// Builds the profile header section
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
     final user = UserData.currentUser;
 
     return GestureDetector(
       onTap: () {
         // Navigate to profile details when profile header is tapped
-        NavigationService.smartNavigate(
-          destination: const ProfileDetailsScreen(
-            isFromBottomNavigation: false,
-          ),
-        );
+        context.go(AppRoutes.profileDetails);
       },
       child: Container(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -110,52 +99,42 @@ class ProfileScreen extends StatelessWidget {
           icon: Icons.track_changes,
           title: 'Job Status / नौकरी की स्थिति',
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const JobStatusScreen(),
-            );
+            context.go(AppRoutes.jobStatus);
           },
         ),
         _buildOptionTile(
           icon: Icons.timeline,
           title: 'Track Application / आवेदन ट्रैक करें',
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const ApplicationTrackerScreen(isFromProfile: true),
-            );
+            context.go(AppRoutes.applicationTracker);
           },
         ),
         _buildOptionTile(
           icon: Icons.chat_outlined,
           title: 'My Chats / आपकी बातचीत',
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: InboxScreen(isFromProfile: true),
-            );
+            context.go(AppRoutes.inbox);
           },
         ),
         _buildOptionTile(
           icon: Icons.favorite_outline,
           title: 'Personalize Jobfeed / पसंद की नौकरी',
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const PersonalizeJobfeedScreen(),
-            );
+            context.go(AppRoutes.personalizeJobfeed);
           },
         ),
         _buildOptionTile(
           icon: Icons.feedback_outlined,
           title: 'Feedback / प्रतिक्रिया',
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const HelpCenterPage(),
-            );
+            context.go(AppRoutes.helpCenter);
           },
         ),
         _buildOptionTile(
           icon: Icons.settings_outlined,
           title: 'Settings / सेटिंग्स',
           onTap: () {
-            NavigationService.smartNavigate(destination: const SettingsPage());
+            context.go(AppRoutes.settings);
           },
         ),
         _buildOptionTile(
@@ -219,7 +198,7 @@ class ProfileScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
-              _logout();
+              _logout(dialogContext);
             },
             child: const Text(
               'Logout',
@@ -232,8 +211,8 @@ class ProfileScreen extends StatelessWidget {
   }
 
   /// Handles logout
-  void _logout() {
+  void _logout(BuildContext context) {
     // TODO: Clear user data and navigate to login screen
-    NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
+    context.go(AppRoutes.loginOtpEmail);
   }
 }

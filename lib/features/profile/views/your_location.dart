@@ -4,7 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 class YourLocationScreen extends StatefulWidget {
   const YourLocationScreen({super.key});
@@ -76,7 +77,7 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
             Icons.arrow_back,
             color: AppConstants.textPrimaryColor,
           ),
-          onPressed: () => NavigationService.goBack(),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           AppConstants.yourLocationTitle,
@@ -192,9 +193,8 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
           TextButton(
             onPressed: () {
               // Navigate directly to location2 (permission page) when using current location
-              NavigationService.smartNavigate(
-                routeName: RouteNames.location2,
-                arguments: {'isFromCurrentLocation': true},
+              context.go(
+                '${AppRoutes.locationPermission}?isFromCurrentLocation=true',
               );
             },
             style: TextButton.styleFrom(
@@ -311,7 +311,7 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
     if (_selectedLocation != null) {
       // TODO: Save selected location
       // When selecting from search results, go directly to home (skip location permission page)
-      NavigationService.smartNavigate(routeName: RouteNames.home);
+      context.go(AppRoutes.home);
     }
   }
 }

@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/course_data.dart';
 import '../../../shared/widgets/cards/course_card.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 import 'course_details.dart';
 import 'saved_courses.dart';
@@ -360,9 +361,7 @@ class _LearningCenterPageState extends State<LearningCenterPage>
   }
 
   void _navigateToCourseDetails(Map<String, dynamic> course) {
-    NavigationService.smartNavigate(
-      destination: CourseDetailsPage(course: course),
-    );
+    context.go(AppRoutes.courseDetailsWithId(course['id']));
   }
 
   void _toggleCourseSaved(String courseId) {

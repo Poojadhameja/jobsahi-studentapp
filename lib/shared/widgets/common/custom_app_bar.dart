@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../features/profile/views/profile.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -62,14 +63,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: AppConstants.cardBackgroundColor,
       elevation: 1,
       titleSpacing: 0,
-      leading: _buildLeadingWidget(),
+      leading: _buildLeadingWidget(context),
       title: _buildTitleWidget(),
       actions: _buildActionWidgets(),
     );
   }
 
   /// Builds the leading widget (back button or menu button)
-  Widget? _buildLeadingWidget() {
+  Widget? _buildLeadingWidget(BuildContext context) {
     if (showBackButton) {
       return IconButton(
         icon: const Icon(
@@ -85,9 +86,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             onMenuPressed ??
             () {
               // Navigate to profile page when hamburger menu is tapped
-              NavigationService.smartNavigate(
-                destination: const ProfileScreen(),
-              );
+              context.go(AppRoutes.profile);
             },
       );
     }

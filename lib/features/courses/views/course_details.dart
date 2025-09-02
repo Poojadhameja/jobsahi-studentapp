@@ -6,7 +6,8 @@ library;
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/course_data.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 class CourseDetailsPage extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -62,7 +63,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
         ),
       ),
       leading: IconButton(
-        onPressed: () => NavigationService.goBack(),
+        onPressed: () => context.pop(),
         icon: const Icon(Icons.arrow_back, color: AppConstants.primaryColor),
       ),
       actions: [

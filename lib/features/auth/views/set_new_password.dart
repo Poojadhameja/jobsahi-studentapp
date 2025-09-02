@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import 'login_otp_email.dart';
 
 class SetNewPasswordScreen extends StatefulWidget {
@@ -54,7 +55,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
                     Icons.arrow_back,
                     color: AppConstants.textPrimaryColor,
                   ),
-                  onPressed: () => NavigationService.goBack(),
+                  onPressed: () => context.pop(),
                 ),
                 const SizedBox(height: 4),
 
@@ -274,9 +275,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
         // Show success message and navigate to login
         _showSuccessSnackBar('Password reset successfully');
         Future.delayed(const Duration(seconds: 1), () {
-          NavigationService.smartNavigate(
-            destination: const LoginOtpEmailScreen(),
-          );
+          context.go(AppRoutes.loginOtpEmail);
         });
       });
     }

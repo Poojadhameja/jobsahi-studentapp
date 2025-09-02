@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/user_data.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import 'profile_details/resume_edit.dart';
 import 'profile_details/profile_edit.dart';
 import 'profile_details/profile_summary_edit.dart';
@@ -127,8 +128,7 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
                   Icons.arrow_back,
                   color: AppConstants.textPrimaryColor,
                 ),
-                onPressed: () =>
-                    NavigationService.goBack(), // Go back to previous screen
+                onPressed: () => context.pop(), // Go back to previous screen
               ),
               title: const Text(
                 'Profile Details',
@@ -1076,39 +1076,31 @@ class _ProfileDetailsScreenState extends State<ProfileDetailsScreen> {
     switch (sectionTitle) {
       case 'Profile':
         // Navigate to Profile Edit Page
-        NavigationService.smartNavigate(destination: const ProfileEditScreen());
+        context.go(AppRoutes.profileEdit);
         break;
       case 'Profile summary ':
         // Navigate to Summary Edit Page
-        NavigationService.smartNavigate(
-          destination: const ProfileSummaryEditScreen(),
-        );
+        context.go(AppRoutes.profileSummaryEdit);
         break;
       case 'Education':
         // Navigate to Education Edit Page
-        NavigationService.smartNavigate(
-          destination: const EducationEditScreen(),
-        );
+        context.go(AppRoutes.profileEducationEdit);
         break;
       case 'Key Skills':
         // Navigate to Skills Edit Page
-        NavigationService.smartNavigate(destination: const SkillsEditScreen());
+        context.go(AppRoutes.profileSkillsEdit);
         break;
       case 'Experience':
         // Navigate to Experience Edit Page
-        NavigationService.smartNavigate(
-          destination: const ExperienceEditScreen(),
-        );
+        context.go(AppRoutes.profileExperienceEdit);
         break;
       case 'Certificates':
         // Navigate to Certificates Edit Page
-        NavigationService.smartNavigate(
-          destination: const CertificatesEditScreen(),
-        );
+        context.go(AppRoutes.profileCertificatesEdit);
         break;
       case 'Resume/CV':
         // Navigate to Resume Edit Page
-        NavigationService.smartNavigate(destination: const ResumeEditScreen());
+        context.go(AppRoutes.profileResumeEdit);
         break;
     }
   }

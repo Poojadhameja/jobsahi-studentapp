@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/navigation_service.dart';
-import 'onboarding.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 /// SplashScreen - The initial splash screen that users see when opening the app
 /// Shows the Job Sahi logo with a loading indicator and automatically
@@ -21,9 +21,9 @@ class _SplashScreenState extends State<SplashScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       // Check if the widget is still mounted to avoid navigation errors
       if (!mounted) return;
-      // Use NavigationService to navigate to onboarding screen
+      // Use go_router to navigate to onboarding screen
       // This replaces the current screen so users can't go back to splash
-      NavigationService.smartNavigate(destination: const OnboardingScreen());
+      context.go(AppRoutes.onboarding);
     });
   }
 

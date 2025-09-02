@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
-import 'set_password_code.dart';
+import '../../../core/constants/app_routes.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -46,7 +46,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   Icons.arrow_back,
                   color: AppConstants.textPrimaryColor,
                 ),
-                onPressed: () => NavigationService.goBack(),
+                onPressed: () => context.pop(),
               ),
               const SizedBox(height: 4),
 
@@ -214,7 +214,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       children: [
         const Text("Remember your password? "),
         GestureDetector(
-          onTap: () => NavigationService.goBack(),
+          onTap: () => context.pop(),
           child: const Text(
             "Sign In",
             style: TextStyle(
@@ -243,9 +243,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         // Show success message and navigate to enter code screen
         _showSuccessSnackBar('Verification code sent to your email');
         Future.delayed(const Duration(seconds: 1), () {
-          NavigationService.smartNavigate(
-            destination: const SetPasswordCodeScreen(),
-          );
+          context.go(AppRoutes.setPasswordCode);
         });
       });
     }

@@ -6,7 +6,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 /// Reusable Background Layer Components
 class BackgroundLayers extends StatelessWidget {
@@ -77,7 +78,7 @@ class ProfileBuilderHeader extends StatelessWidget {
           // Back button
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-            onPressed: () => NavigationService.goBack(),
+            onPressed: () => context.pop(),
           ),
           const Spacer(),
 
@@ -322,10 +323,8 @@ class _ProfileBuilderStep1ScreenState extends State<ProfileBuilderStep1Screen> {
                     actions: NextButton(
                       onPressed: selectedOption != null
                           ? () {
-                              NavigationService.smartNavigate(
-                                destination: ProfileBuilderStep2Screen(
-                                  selectedJobType: selectedOption!,
-                                ),
+                              context.go(
+                                '${AppRoutes.profileBuilderStep2}?selectedJobType=${Uri.encodeComponent(selectedOption!)}',
                               );
                             }
                           : null,
@@ -411,11 +410,8 @@ class _ProfileBuilderStep2ScreenState extends State<ProfileBuilderStep2Screen> {
                     actions: NextButton(
                       onPressed: selectedOption != null
                           ? () {
-                              NavigationService.smartNavigate(
-                                destination: ProfileBuilderStep3Screen(
-                                  selectedJobType: widget.selectedJobType,
-                                  selectedExperienceLevel: selectedOption!,
-                                ),
+                              context.go(
+                                '${AppRoutes.profileBuilderStep3}?selectedJobType=${Uri.encodeComponent(widget.selectedJobType)}&selectedExperienceLevel=${Uri.encodeComponent(selectedOption!)}',
                               );
                             }
                           : null,
@@ -542,9 +538,7 @@ class _ProfileBuilderStep3ScreenState extends State<ProfileBuilderStep3Screen> {
                     actions: NextButton(
                       onPressed: selectedOption != null
                           ? () {
-                              NavigationService.smartNavigate(
-                                routeName: RouteNames.location1,
-                              );
+                              context.go(AppRoutes.yourLocation);
                             }
                           : null,
                     ),

@@ -5,7 +5,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import 'skills_test_faq.dart';
 
@@ -375,8 +376,6 @@ class _SkillTestInstructionsScreenState
   /// Proceeds to the actual test
   void _proceedToTest() {
     // Navigate to the skills test FAQ screen
-    NavigationService.navigateTo(
-      SkillsTestFAQScreen(job: widget.job, test: widget.test),
-    );
+    context.go(AppRoutes.skillTestFAQWithId(widget.test['id']));
   }
 }

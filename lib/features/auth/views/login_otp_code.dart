@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
-import 'login_verified_popup.dart';
+import '../../../core/constants/app_routes.dart';
 
 class LoginOtpCodeScreen extends StatefulWidget {
   const LoginOtpCodeScreen({super.key});
@@ -59,7 +59,7 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
                   Icons.arrow_back,
                   color: AppConstants.textPrimaryColor,
                 ),
-                onPressed: () => NavigationService.goBack(),
+                onPressed: () => context.pop(),
               ),
               const SizedBox(height: 4),
 
@@ -276,9 +276,7 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
       // For demo purposes, accept any 4-digit OTP
       if (otp.length == 4) {
         // Navigate to login verified popup screen
-        NavigationService.smartNavigate(
-          destination: const LoginVerifiedPopupScreen(),
-        );
+        context.go(AppRoutes.loginVerifiedPopup);
       } else {
         // Show error message
         _showErrorSnackBar('Please enter a valid 4-digit OTP');

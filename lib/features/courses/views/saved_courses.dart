@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/course_data.dart';
 import '../../../shared/widgets/cards/course_card.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import 'course_details.dart';
 
 class SavedCoursesPage extends StatefulWidget {
@@ -122,9 +123,7 @@ class _SavedCoursesPageState extends State<SavedCoursesPage> {
   }
 
   void _navigateToCourseDetails(Map<String, dynamic> course) {
-    NavigationService.smartNavigate(
-      destination: CourseDetailsPage(course: course),
-    );
+    context.go(AppRoutes.courseDetailsWithId(course['id']));
   }
 
   void _toggleCourseSaved(String courseId) {
@@ -175,7 +174,7 @@ class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
           ),
         ),
         leading: IconButton(
-          onPressed: () => NavigationService.goBack(),
+          onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back, color: AppConstants.primaryColor),
         ),
       ),
@@ -219,7 +218,7 @@ class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
             const SizedBox(height: AppConstants.largePadding),
             ElevatedButton(
               onPressed: () {
-                NavigationService.goBack();
+                context.pop();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppConstants.primaryColor,
@@ -264,9 +263,7 @@ class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
   }
 
   void _navigateToCourseDetails(Map<String, dynamic> course) {
-    NavigationService.smartNavigate(
-      destination: CourseDetailsPage(course: course),
-    );
+    context.go(AppRoutes.courseDetailsWithId(course['id']));
   }
 
   void _toggleCourseSaved(String courseId) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import '../../../core/constants/app_routes.dart';
 
 class LoginVerifiedPopupScreen extends StatefulWidget {
   const LoginVerifiedPopupScreen({super.key});
@@ -86,7 +87,7 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen>
             Icons.arrow_back,
             color: AppConstants.textPrimaryColor,
           ),
-          onPressed: () => NavigationService.goBack(),
+          onPressed: () => context.pop(),
         ),
       ),
       body: SafeArea(
@@ -220,9 +221,7 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen>
       });
 
       // Navigate to profile builder step 1
-      NavigationService.smartNavigate(
-        routeName: RouteNames.profileBuilderStep1,
-      );
+      context.go(AppRoutes.profileBuilderStep1);
     });
   }
 }

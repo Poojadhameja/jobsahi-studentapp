@@ -37,6 +37,9 @@ dependencies:
   
   # File picker for resume upload functionality
   file_picker: ^8.0.0+1
+  
+  # Modern routing with deep linking support
+  go_router: ^14.2.7
 
 dev_dependencies:
   flutter_test:

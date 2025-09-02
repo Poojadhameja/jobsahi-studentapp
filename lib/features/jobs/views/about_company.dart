@@ -4,7 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import 'write_review.dart';
 
@@ -579,15 +580,7 @@ class _AboutCompanyScreenState extends State<AboutCompanyScreen>
               onPressed: () {
                 // Navigate to write review page
                 try {
-                  NavigationService.navigateTo(
-                    WriteReviewScreen(
-                      job: {
-                        'title': 'Company Review',
-                        'company': widget.company['name'],
-                        'location': widget.company['headquarters'],
-                      },
-                    ),
-                  );
+                  context.go(AppRoutes.writeReviewWithId(widget.company['id']));
                 } catch (e) {
                   // Fallback navigation
                   Navigator.of(context).push(

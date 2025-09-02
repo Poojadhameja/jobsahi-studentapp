@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import 'set_new_password.dart';
 
 class SetPasswordCodeScreen extends StatefulWidget {
@@ -58,7 +59,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
                   Icons.arrow_back,
                   color: AppConstants.textPrimaryColor,
                 ),
-                onPressed: () => NavigationService.goBack(),
+                onPressed: () => context.pop(),
               ),
               const SizedBox(height: 4),
 
@@ -279,9 +280,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
       // For demo purposes, accept any 4-digit code
       if (code.length == 4) {
         // Navigate to set new password screen
-        NavigationService.smartNavigate(
-          destination: const SetNewPasswordScreen(),
-        );
+        context.go(AppRoutes.setNewPassword);
       } else {
         _showErrorSnackBar('Invalid verification code');
       }

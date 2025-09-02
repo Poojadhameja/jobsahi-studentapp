@@ -6,7 +6,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import 'job_application_success.dart';
 
@@ -972,9 +973,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
         });
 
         // Navigate to job application success screen
-        NavigationService.smartNavigate(
-          destination: JobApplicationSuccessScreen(job: widget.job),
-        );
+        context.go(AppRoutes.jobApplicationSuccess);
       });
     } else {
       if (_resumeCVFile == null) {

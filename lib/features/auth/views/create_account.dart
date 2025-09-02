@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
-import 'login_otp_email.dart';
+import '../../../core/constants/app_routes.dart';
 
 class CreateAccountScreen extends StatefulWidget {
   const CreateAccountScreen({super.key});
@@ -61,9 +61,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                         Icons.arrow_back,
                         color: AppConstants.textPrimaryColor,
                       ),
-                      onPressed: () => NavigationService.smartNavigate(
-                        routeName: RouteNames.loginOtpEmail,
-                      ),
+                      onPressed: () => context.go(AppRoutes.loginOtpEmail),
                     ),
                     const SizedBox(height: 4),
 
@@ -420,9 +418,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         const Text("Already have an account? "),
         GestureDetector(
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: const LoginOtpEmailScreen(),
-            );
+            context.go(AppRoutes.loginOtpEmail);
           },
           child: const Text(
             "Sign In",
@@ -463,9 +459,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Show success message and navigate to login
         _showSuccessSnackBar(AppConstants.signupSuccess);
         Future.delayed(const Duration(seconds: 1), () {
-          NavigationService.smartNavigate(
-            destination: const LoginOtpEmailScreen(),
-          );
+          context.go(AppRoutes.loginOtpEmail);
         });
       });
     }

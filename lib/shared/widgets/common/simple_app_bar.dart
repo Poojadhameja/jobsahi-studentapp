@@ -6,7 +6,8 @@ export 'custom_app_bar.dart' show CustomAppBar;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 /// Simple app bar with title and optional back button
 class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -56,7 +57,7 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: centerTitle,
       backgroundColor: backgroundColor ?? AppConstants.backgroundColor,
       elevation: 0,
-      leading: _buildLeadingButton(),
+      leading: _buildLeadingButton(context),
       actions: actions,
       iconTheme: IconThemeData(
         color: titleColor ?? AppConstants.textPrimaryColor,
@@ -70,16 +71,16 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   /// Builds the leading button (back or close)
-  Widget? _buildLeadingButton() {
+  Widget? _buildLeadingButton(BuildContext context) {
     if (showBackButton) {
       return IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () => NavigationService.goBack(),
+        onPressed: () => context.pop(),
       );
     } else if (showCloseButton) {
       return IconButton(
         icon: const Icon(Icons.close),
-        onPressed: () => NavigationService.goBack(),
+        onPressed: () => context.pop(),
       );
     }
     return null;
@@ -123,7 +124,7 @@ class SearchAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => NavigationService.goBack(),
+              onPressed: () => context.pop(),
             )
           : null,
       title: Container(

@@ -5,7 +5,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/utils/navigation_service.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import 'skill_test_instructions.dart';
 
@@ -338,8 +339,6 @@ class _SkillTestDetailsScreenState extends State<SkillTestDetailsScreen> {
 
   /// Navigate to test info screen
   void _navigateToTestInfo(Map<String, dynamic> test) {
-    NavigationService.navigateTo(
-      SkillTestInstructionsScreen(job: widget.job, test: test),
-    );
+    context.go(AppRoutes.skillTestInstructionsWithId(test['id']));
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/navigation_service.dart';
-import 'login_otp_email.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -83,12 +83,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   /// Complete onboarding and navigate to login
   void _completeOnboarding() {
-    NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
+    context.go(AppRoutes.loginOtpEmail);
   }
 
   /// Skip onboarding and go directly to login
   void _skipOnboarding() {
-    NavigationService.smartNavigate(destination: const LoginOtpEmailScreen());
+    context.go(AppRoutes.loginOtpEmail);
   }
 
   @override

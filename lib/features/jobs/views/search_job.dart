@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/job_data.dart';
-import '../../../core/utils/navigation_service.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
@@ -183,9 +184,7 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
         return JobCard(
           job: job,
           onTap: () {
-            NavigationService.smartNavigate(
-              destination: JobDetailsScreen(job: job),
-            );
+            context.go(AppRoutes.jobDetailsWithId(job['id']));
           },
         );
       },

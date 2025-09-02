@@ -45,5 +45,34 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Deep linking configuration -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<!-- Custom scheme for deep linking -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>jobsahi.custom.scheme</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>jobsahi</string>
+			</array>
+		</dict>
+		<!-- Universal links for deep linking -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>jobsahi.universal.links</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>https</string>
+			</array>
+		</dict>
+	</array>
+	
+	<!-- Associated domains for universal links -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:jobsahi.com</string>
+	</array>
 </dict>
 </plist>
