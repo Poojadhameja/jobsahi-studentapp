@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
 
 /// Profile Navigation App Bar Widget
 /// A custom app bar for pages opened from profile navigation

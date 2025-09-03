@@ -8,7 +8,6 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
-import 'skills_test_faq.dart';
 
 class SkillTestInstructionsScreen extends StatefulWidget {
   /// Job data for context

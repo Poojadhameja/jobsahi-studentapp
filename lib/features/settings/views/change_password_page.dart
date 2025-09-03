@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});

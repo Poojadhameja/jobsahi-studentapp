@@ -459,7 +459,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         // Show success message and navigate to login
         _showSuccessSnackBar(AppConstants.signupSuccess);
         Future.delayed(const Duration(seconds: 1), () {
-          context.go(AppRoutes.loginOtpEmail);
+          if (mounted) {
+            context.go(AppRoutes.loginOtpEmail);
+          }
         });
       });
     }

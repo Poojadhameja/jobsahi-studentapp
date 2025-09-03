@@ -276,7 +276,9 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
       // For demo purposes, accept any 4-digit OTP
       if (otp.length == 4) {
         // Navigate to login verified popup screen
-        context.go(AppRoutes.loginVerifiedPopup);
+        if (mounted) {
+          context.go(AppRoutes.loginVerifiedPopup);
+        }
       } else {
         // Show error message
         _showErrorSnackBar('Please enter a valid 4-digit OTP');

@@ -9,13 +9,11 @@ import '../../../shared/widgets/common/custom_app_bar.dart';
 import '../../../shared/widgets/common/bottom_navigation.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
-import '../../jobs/views/job_details.dart';
-import '../../jobs/views/search_job.dart';
+
 import '../../jobs/views/application_tracker.dart';
 import '../../profile/views/profile_details.dart';
 import '../../courses/views/learning_center.dart';
 import '../../messages/views/inbox_screen.dart';
-import '../../settings/views/notification_permission.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

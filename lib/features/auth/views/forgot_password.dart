@@ -243,7 +243,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         // Show success message and navigate to enter code screen
         _showSuccessSnackBar('Verification code sent to your email');
         Future.delayed(const Duration(seconds: 1), () {
-          context.go(AppRoutes.setPasswordCode);
+          if (mounted) {
+            context.go(AppRoutes.setPasswordCode);
+          }
         });
       });
     }

@@ -9,7 +9,6 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
-import 'job_application_success.dart';
 
 class JobStepScreen extends StatefulWidget {
   /// Job data for the application
@@ -973,7 +972,9 @@ class _JobStepScreenState extends State<JobStepScreen> {
         });
 
         // Navigate to job application success screen
-        context.go(AppRoutes.jobApplicationSuccess);
+        if (mounted) {
+          context.go(AppRoutes.jobApplicationSuccess);
+        }
       });
     } else {
       if (_resumeCVFile == null) {

@@ -7,7 +7,6 @@ export 'custom_app_bar.dart' show CustomAppBar;
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
 
 /// Simple app bar with title and optional back button
 class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {

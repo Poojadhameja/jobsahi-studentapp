@@ -195,7 +195,9 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
       await Future.delayed(const Duration(seconds: 2));
 
       // Navigate to home screen after successful location access using smart navigation
-      context.go(AppRoutes.home);
+      if (mounted) {
+        context.go(AppRoutes.home);
+      }
     } catch (e) {
       // Handle location permission denied
       setState(() {

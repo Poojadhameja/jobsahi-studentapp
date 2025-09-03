@@ -3,13 +3,6 @@ import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/user_data.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
-import 'profile_details/resume_edit.dart';
-import 'profile_details/profile_edit.dart';
-import 'profile_details/profile_summary_edit.dart';
-import 'profile_details/education_edit.dart';
-import 'profile_details/skills_edit.dart';
-import 'profile_details/experience_edit.dart';
-import 'profile_details/certificates_edit.dart';
 
 /// ---------------- PROFILE DETAILS SCREEN ----------------
 class ProfileDetailsScreen extends StatefulWidget {

@@ -10,7 +10,6 @@ import '../../../shared/widgets/cards/course_card.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 
-import 'course_details.dart';
 import 'saved_courses.dart';
 
 class LearningCenterPage extends StatefulWidget {

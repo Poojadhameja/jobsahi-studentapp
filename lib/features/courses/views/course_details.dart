@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/course_data.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
 
 class CourseDetailsPage extends StatefulWidget {
   final Map<String, dynamic> course;

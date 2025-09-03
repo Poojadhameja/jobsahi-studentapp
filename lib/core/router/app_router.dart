@@ -313,7 +313,6 @@ class AppRouter {
         path: AppRoutes.jobDetails,
         name: 'jobDetails',
         builder: (context, state) {
-          final jobId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch job data by ID
           // For now, using default job data
           final job = JobData.recommendedJobs.first;
@@ -343,7 +342,6 @@ class AppRouter {
         path: AppRoutes.writeReview,
         name: 'writeReview',
         builder: (context, state) {
-          final jobId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch job data by ID
           final job = JobData.recommendedJobs.first;
           return WriteReviewScreen(job: job);
@@ -354,7 +352,6 @@ class AppRouter {
         path: AppRoutes.aboutCompany,
         name: 'aboutCompany',
         builder: (context, state) {
-          final companyId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch company data by ID
           final company = JobData.companies.values.first;
           return AboutCompanyScreen(company: company);
@@ -375,7 +372,6 @@ class AppRouter {
         path: AppRoutes.jobStep,
         name: 'jobStep',
         builder: (context, state) {
-          final stepId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch job data by ID
           final job = JobData.recommendedJobs.first;
           return JobStepScreen(job: job);
@@ -393,7 +389,6 @@ class AppRouter {
         path: AppRoutes.courseDetails,
         name: 'courseDetails',
         builder: (context, state) {
-          final courseId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch course data by ID
           final course = <String, dynamic>{}; // Default empty course
           return CourseDetailsPage(course: course);
@@ -417,7 +412,6 @@ class AppRouter {
         path: AppRoutes.chat,
         name: 'chat',
         builder: (context, state) {
-          final chatId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch company data by ID
           final company = JobData.companies.values.first;
           return ChatScreen(company: company);
@@ -429,7 +423,6 @@ class AppRouter {
         path: AppRoutes.skillTestDetails,
         name: 'skillTestDetails',
         builder: (context, state) {
-          final testId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch test data by ID
           final job = JobData.recommendedJobs.first;
           return SkillTestDetailsScreen(job: job);
@@ -440,7 +433,6 @@ class AppRouter {
         path: AppRoutes.skillTestInstructions,
         name: 'skillTestInstructions',
         builder: (context, state) {
-          final testId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch test data by ID
           final job = JobData.recommendedJobs.first;
           final test = <String, dynamic>{}; // Default empty test
@@ -452,7 +444,6 @@ class AppRouter {
         path: AppRoutes.skillsTestFAQ,
         name: 'skillsTestFAQ',
         builder: (context, state) {
-          final testId = state.pathParameters['id'] ?? '';
           // In a real app, you would fetch test data by ID
           final job = JobData.recommendedJobs.first;
           final test = <String, dynamic>{}; // Default empty test

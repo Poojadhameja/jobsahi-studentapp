@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../features/profile/views/profile.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Title to be displayed in the app bar
