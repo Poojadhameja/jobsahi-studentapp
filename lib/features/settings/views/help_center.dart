@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
+import '../bloc/settings_bloc.dart';
+// Removed unused event/state imports as this screen uses local handlers
 
-class HelpCenterPage extends StatefulWidget {
+class HelpCenterPage extends StatelessWidget {
   const HelpCenterPage({super.key});
 
   @override
-  State<HelpCenterPage> createState() => _HelpCenterPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => SettingsBloc(),
+      child: _HelpCenterPageView(),
+    );
+  }
 }
 
-class _HelpCenterPageState extends State<HelpCenterPage>
+class _HelpCenterPageView extends StatefulWidget {
+  @override
+  State<_HelpCenterPageView> createState() => _HelpCenterPageViewState();
+}
+
+class _HelpCenterPageViewState extends State<_HelpCenterPageView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _feedbackController = TextEditingController();
@@ -212,7 +225,6 @@ class _HelpCenterPageState extends State<HelpCenterPage>
             child: ElevatedButton(
               onPressed: _feedbackController.text.trim().isNotEmpty
                   ? () {
-                      // Handle feedback submission
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Feedback submitted successfully!'),
@@ -220,6 +232,7 @@ class _HelpCenterPageState extends State<HelpCenterPage>
                         ),
                       );
                       _feedbackController.clear();
+                      setState(() {});
                     }
                   : null,
               style: ElevatedButton.styleFrom(
@@ -316,7 +329,7 @@ class _HelpCenterPageState extends State<HelpCenterPage>
                     ),
                   ),
                   onChanged: (value) {
-                    // Handle search functionality
+                    // Local search only (no backend yet)
                     setState(() {});
                   },
                 ),

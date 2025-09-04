@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
 class LoginOtpCodeScreen extends StatefulWidget {
   const LoginOtpCodeScreen({super.key});
@@ -24,9 +28,6 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
     (index) => FocusNode(),
   );
 
-  /// Whether the OTP is being verified
-  bool _isVerifying = false;
-
   @override
   void dispose() {
     // Dispose controllers and focus nodes
@@ -41,72 +42,99 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.largePadding,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 2),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              duration: const Duration(seconds: 3),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else if (state is OtpVerificationSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('OTP verified successfully'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.push(AppRoutes.loginVerifiedPopup);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.largePadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 2),
 
-              /// Back button
-              IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppConstants.textPrimaryColor,
+                /// Back button
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                  onPressed: () => context.pop(),
                 ),
-                onPressed: () => context.pop(),
-              ),
-              const SizedBox(height: 4),
+                const SizedBox(height: 4),
 
-              /// Profile avatar & title
-              Center(
-                child: Column(
-                  children: [
-                    const CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Color(0xFFE0E7EF),
-                      child: Icon(
-                        Icons.verified_user,
-                        size: 45,
-                        color: AppConstants.textPrimaryColor,
+                /// Profile avatar & title
+                Center(
+                  child: Column(
+                    children: [
+                      const CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Color(0xFFE0E7EF),
+                        child: Icon(
+                          Icons.verified_user,
+                          size: 45,
+                          color: AppConstants.textPrimaryColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Enter Verification Code",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.textPrimaryColor,
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Enter Verification Code",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "हमने आपके मोबाइल पर 4 अंकों का OTP भेजा है",
-                      style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      const Text(
+                        "हमने आपके मोबाइल पर 4 अंकों का OTP भेजा है",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF4F789B),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // OTP input section
-              _buildOTPInputSection(),
-              const SizedBox(height: 24),
+                // OTP input section
+                _buildOTPInputSection(),
+                const SizedBox(height: 24),
 
-              // Verify button
-              _buildVerifyButton(),
-              const SizedBox(height: 24),
+                // Verify button
+                _buildVerifyButton(),
+                const SizedBox(height: 24),
 
-              // Resend OTP section
-              _buildResendOTPSection(),
-            ],
+                // Resend OTP section
+                _buildResendOTPSection(),
+              ],
+            ),
           ),
         ),
       ),
@@ -229,86 +257,57 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
   /// Builds the verify button
   Widget _buildVerifyButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isVerifying ? null : _verifyOTP,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5C9A24),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: _isVerifying
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Text(
-                "Verify Code",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        final isLoading = state is OtpVerificationLoading;
+
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: isLoading ? null : _verifyOTP,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF5C9A24),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-      ),
+            ),
+            child: isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Text(
+                    "Verify Code",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+          ),
+        );
+      },
     );
   }
 
   /// Verifies the entered OTP
   void _verifyOTP() {
-    setState(() {
-      _isVerifying = true;
-    });
-
     // Get the complete OTP
     final otp = _otpControllers.map((controller) => controller.text).join();
 
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _isVerifying = false;
-      });
-
-      // For demo purposes, accept any 4-digit OTP
-      if (otp.length == 4) {
-        // Navigate to login verified popup screen
-        if (mounted) {
-          context.go(AppRoutes.loginVerifiedPopup);
-        }
-      } else {
-        // Show error message
-        _showErrorSnackBar('Please enter a valid 4-digit OTP');
-      }
-    });
+    // Dispatch OTP verification event to BLoC
+    context.read<AuthBloc>().add(VerifyOtpEvent(otp: otp));
   }
 
   /// Resends OTP to the user
   void _resendOTP() {
-    // TODO: Implement resend OTP functionality
-    _showSuccessSnackBar('OTP resent successfully');
-  }
-
-  /// Shows error snackbar
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-      ),
-    );
-  }
-
-  /// Shows success snackbar
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-      ),
+    // Dispatch resend OTP event to BLoC
+    context.read<AuthBloc>().add(
+      const LoginWithOtpEvent(
+        phoneNumber: '9876543210',
+      ), // TODO: Get from previous screen
     );
   }
 }

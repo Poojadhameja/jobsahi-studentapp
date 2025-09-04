@@ -3,9 +3,13 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/data/job_data.dart';
+import '../bloc/jobs_bloc.dart';
+import '../bloc/jobs_event.dart';
+import '../bloc/jobs_state.dart';
 
 import 'job_step.dart';
 
@@ -20,30 +24,53 @@ class JobDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(title: 'Job Details', showBackButton: true),
-      bottomNavigationBar: _buildApplyButton(),
-      body: DefaultTabController(
-        length: 3,
-        child: Column(
-          children: [
-            // Job header section
-            _buildJobHeader(context),
+    return BlocProvider(
+      create: (context) =>
+          JobsBloc()..add(LoadJobDetailsEvent(jobId: job['id'] ?? '')),
+      child: BlocBuilder<JobsBloc, JobsState>(
+        builder: (context, state) {
+          Map<String, dynamic> currentJob = job;
+          bool isBookmarked = false;
 
-            // Tab bar
-            _buildTabBar(),
+          if (state is JobDetailsLoaded) {
+            currentJob = state.job;
+            isBookmarked = state.isBookmarked;
+          }
 
-            // Tab content
-            Expanded(child: _buildTabContent()),
-          ],
-        ),
+          return Scaffold(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            appBar: const SimpleAppBar(
+              title: 'Job Details',
+              showBackButton: true,
+            ),
+            bottomNavigationBar: _buildApplyButton(context),
+            body: DefaultTabController(
+              length: 3,
+              child: Column(
+                children: [
+                  // Job header section
+                  _buildJobHeader(context, currentJob, isBookmarked),
+
+                  // Tab bar
+                  _buildTabBar(),
+
+                  // Tab content
+                  Expanded(child: _buildTabContent(currentJob)),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
   /// Builds the job header section
-  Widget _buildJobHeader(BuildContext context) {
+  Widget _buildJobHeader(
+    BuildContext context,
+    Map<String, dynamic> currentJob,
+    bool isBookmarked,
+  ) {
     return Container(
       color: AppConstants.backgroundColor,
       padding: const EdgeInsets.symmetric(
@@ -71,7 +98,7 @@ class JobDetailsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      job['title'] ?? 'Job Title',
+                      currentJob['title'] ?? 'Job Title',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -84,7 +111,7 @@ class JobDetailsScreen extends StatelessWidget {
                       child: GestureDetector(
                         onTap: () {
                           // Navigate to company details page
-                          final companyName = job['company'];
+                          final companyName = currentJob['company'];
 
                           if (companyName != null &&
                               JobData.companies.containsKey(companyName)) {
@@ -112,7 +139,7 @@ class JobDetailsScreen extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              job['company'] ?? 'Company Name',
+                              currentJob['company'] ?? 'Company Name',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: AppConstants.successColor,
@@ -132,15 +159,27 @@ class JobDetailsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              // Bookmark button
+              IconButton(
+                onPressed: () {
+                  context.read<JobsBloc>().add(
+                    ToggleJobBookmarkEvent(jobId: currentJob['id'] ?? ''),
+                  );
+                },
+                icon: Icon(
+                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: isBookmarked ? AppConstants.warningColor : Colors.grey,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppConstants.defaultPadding),
           // Chips (Full-Time, Apprenticeship, On-site, etc.)
-          _buildJobTags(),
+          _buildJobTags(currentJob),
 
           const SizedBox(height: AppConstants.defaultPadding),
           // Salary and time row (to match screenshot)
-          _buildSalaryAndTimeRow(),
+          _buildSalaryAndTimeRow(currentJob),
         ],
       ),
     );
@@ -164,23 +203,23 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   /// Builds the tab content
-  Widget _buildTabContent() {
+  Widget _buildTabContent(Map<String, dynamic> currentJob) {
     return TabBarView(
       children: [
         // Description tab
-        _buildAboutTab(),
+        _buildAboutTab(currentJob),
 
         // Requirements tab
-        _buildCompanyTab(),
+        _buildCompanyTab(currentJob),
 
         // Benefits tab
-        _buildReviewsTab(),
+        _buildReviewsTab(currentJob),
       ],
     );
   }
 
   /// Builds the description tab
-  Widget _buildAboutTab() {
+  Widget _buildAboutTab(Map<String, dynamic> currentJob) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
@@ -196,8 +235,8 @@ class JobDetailsScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppConstants.smallPadding),
           Text(
-            job['about'] ??
-                (job['description'] ??
+            currentJob['about'] ??
+                (currentJob['description'] ??
                     'An Electrician Apprentice assists in installing, maintaining, and repairing electrical systems. This is an apprenticeship or training role with exposure to on-field work under supervision.'),
             style: const TextStyle(
               fontSize: 16,
@@ -217,22 +256,23 @@ class JobDetailsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.smallPadding),
-          _buildKeyResponsibilities(),
+          _buildKeyResponsibilities(currentJob),
         ],
       ),
     );
   }
 
   /// Builds the Company tab
-  Widget _buildCompanyTab() {
+  Widget _buildCompanyTab(Map<String, dynamic> currentJob) {
     final String aboutCompany =
-        job['company_about'] ??
+        currentJob['company_about'] ??
         'जब किसी कंपनी का विवरण लिखा जाता है, तब उसमें कंपनी का मिशन, विज़न, और संस्कृति की जानकारी दी जाती है…';
-    final String website = job['company_website'] ?? 'www.google.com';
-    final String headquarters = job['company_headquarters'] ?? 'Noida, India';
-    final String founded = job['company_founded'] ?? '14 July 2005';
-    final String size = (job['company_size']?.toString()) ?? '2500';
-    final String revenue = job['company_revenue'] ?? '10,000 Millions';
+    final String website = currentJob['company_website'] ?? 'www.google.com';
+    final String headquarters =
+        currentJob['company_headquarters'] ?? 'Noida, India';
+    final String founded = currentJob['company_founded'] ?? '14 July 2005';
+    final String size = (currentJob['company_size']?.toString()) ?? '2500';
+    final String revenue = currentJob['company_revenue'] ?? '10,000 Millions';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -307,15 +347,15 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   /// Builds the Review tab
-  Widget _buildReviewsTab() {
-    final double rating = (job['rating'] is num)
-        ? (job['rating'] as num).toDouble()
+  Widget _buildReviewsTab(Map<String, dynamic> currentJob) {
+    final double rating = (currentJob['rating'] is num)
+        ? (currentJob['rating'] as num).toDouble()
         : 4.5;
-    final int reviewsCount = job['reviews_count'] is num
-        ? (job['reviews_count'] as num).toInt()
+    final int reviewsCount = currentJob['reviews_count'] is num
+        ? (currentJob['reviews_count'] as num).toInt()
         : 2700;
-    final Map<int, double> breakdown = (job['rating_breakdown'] is Map)
-        ? (job['rating_breakdown'] as Map).map<int, double>(
+    final Map<int, double> breakdown = (currentJob['rating_breakdown'] is Map)
+        ? (currentJob['rating_breakdown'] as Map).map<int, double>(
             (key, value) => MapEntry(
               int.parse(key.toString()),
               (value is num) ? value.toDouble() : 0.0,
@@ -323,7 +363,8 @@ class JobDetailsScreen extends StatelessWidget {
           )
         : {5: 0.9, 4: 0.8, 3: 0.5, 2: 0.3, 1: 0.2};
     final List<Map<String, dynamic>> reviews =
-        (job['reviews'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
+        (currentJob['reviews'] as List<dynamic>?)
+            ?.cast<Map<String, dynamic>>() ??
         [
           {
             'rating': 5.0,
@@ -371,7 +412,8 @@ class JobDetailsScreen extends StatelessWidget {
                     // Navigate to write review screen
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => WriteReviewScreen(job: job),
+                        builder: (context) =>
+                            WriteReviewScreen(job: currentJob),
                       ),
                     );
                   },
@@ -594,8 +636,8 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   /// Builds the job tags section
-  Widget _buildJobTags() {
-    final tags = job['tags'] as List<dynamic>? ?? [];
+  Widget _buildJobTags(Map<String, dynamic> currentJob) {
+    final tags = currentJob['tags'] as List<dynamic>? ?? [];
 
     return Wrap(
       spacing: 8,
@@ -629,12 +671,12 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   /// Builds the salary and time row (matches screenshot layout)
-  Widget _buildSalaryAndTimeRow() {
+  Widget _buildSalaryAndTimeRow(Map<String, dynamic> currentJob) {
     return Row(
       children: [
         Expanded(
           child: Text(
-            job['salary'] ?? 'Salary not specified',
+            currentJob['salary'] ?? 'Salary not specified',
             style: const TextStyle(
               fontSize: 14,
               color: AppConstants.textSecondaryColor,
@@ -643,7 +685,7 @@ class JobDetailsScreen extends StatelessWidget {
           ),
         ),
         Text(
-          job['time'] ?? '',
+          currentJob['time'] ?? '',
           style: const TextStyle(
             fontSize: 12,
             color: AppConstants.textSecondaryColor,
@@ -656,11 +698,11 @@ class JobDetailsScreen extends StatelessWidget {
   // Location/time row from previous design is intentionally removed to match screenshot
 
   /// Key responsibilities list (falls back to available lists)
-  Widget _buildKeyResponsibilities() {
+  Widget _buildKeyResponsibilities(Map<String, dynamic> currentJob) {
     final List<dynamic> responsibilities =
-        (job['responsibilities'] as List<dynamic>?) ??
-        (job['requirements'] as List<dynamic>?) ??
-        (job['benefits'] as List<dynamic>?) ??
+        (currentJob['responsibilities'] as List<dynamic>?) ??
+        (currentJob['requirements'] as List<dynamic>?) ??
+        (currentJob['benefits'] as List<dynamic>?) ??
         [];
 
     if (responsibilities.isEmpty) {
@@ -706,7 +748,7 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   /// Builds the apply button at the bottom
-  Widget _buildApplyButton() {
+  Widget _buildApplyButton(BuildContext context) {
     return SafeArea(
       minimum: const EdgeInsets.only(bottom: 20),
       child: Container(
@@ -748,8 +790,16 @@ class JobDetailsScreen extends StatelessWidget {
 
   /// Navigates to job step screen
   void _navigateToJobStep(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => JobStepScreen(job: job)));
+    // Get current job from BLoC state
+    final currentState = context.read<JobsBloc>().state;
+    Map<String, dynamic> currentJob = job;
+
+    if (currentState is JobDetailsLoaded) {
+      currentJob = currentState.job;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => JobStepScreen(job: currentJob)),
+    );
   }
 }

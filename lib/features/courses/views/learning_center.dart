@@ -4,41 +4,47 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/course_data.dart';
 import '../../../shared/widgets/cards/course_card.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/courses_bloc.dart';
+import '../bloc/courses_event.dart';
+import '../bloc/courses_state.dart';
 
 import 'saved_courses.dart';
 
-class LearningCenterPage extends StatefulWidget {
+class LearningCenterPage extends StatelessWidget {
   const LearningCenterPage({super.key});
 
   @override
-  State<LearningCenterPage> createState() => _LearningCenterPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => CoursesBloc()..add(LoadCoursesEvent()),
+      child: _LearningCenterPageView(),
+    );
+  }
 }
 
-class _LearningCenterPageState extends State<LearningCenterPage>
+class _LearningCenterPageView extends StatefulWidget {
+  @override
+  State<_LearningCenterPageView> createState() =>
+      _LearningCenterPageViewState();
+}
+
+class _LearningCenterPageViewState extends State<_LearningCenterPageView>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
-
-  // Filter states
+  bool _showFilters = false;
   String? _selectedCategory;
-  String? _selectedLevel;
-  bool _showFilters = false; // Toggle state for filter visibility
-
-  // Course lists
-  List<Map<String, dynamic>> _filteredCourses = [];
-  List<Map<String, dynamic>> _searchResults = [];
-  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _filteredCourses = CourseData.featuredCourses;
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -51,50 +57,36 @@ class _LearningCenterPageState extends State<LearningCenterPage>
 
   void _onSearchChanged() {
     final query = _searchController.text;
-    setState(() {
-      if (query.isEmpty) {
-        _isSearching = false;
-        _searchResults.clear();
-      } else {
-        _isSearching = true;
-        _searchResults = CourseData.searchCourses(query);
-      }
-    });
-  }
-
-  void _applyFilters() {
-    setState(() {
-      if (_selectedCategory == null || _selectedCategory == 'All') {
-        _filteredCourses = CourseData.featuredCourses;
-      } else {
-        _filteredCourses = CourseData.getCoursesByCategory(_selectedCategory!);
-      }
-
-      if (_selectedLevel != null && _selectedLevel != 'All') {
-        _filteredCourses = _filteredCourses
-            .where((course) => course['level'] == _selectedLevel)
-            .toList();
-      }
-    });
+    if (query.isEmpty) {
+      context.read<CoursesBloc>().add(ClearSearchEvent());
+    } else {
+      context.read<CoursesBloc>().add(SearchCoursesEvent(query: query));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor:
-          AppConstants.backgroundColor, // Changed to white background
-      body: Column(
-        children: [
-          _buildSearchBar(),
-          _buildTabBar(),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [_buildLearningCenterTab(), const SavedCoursesPage()],
-            ),
+    return BlocBuilder<CoursesBloc, CoursesState>(
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: AppConstants.backgroundColor,
+          body: Column(
+            children: [
+              _buildSearchBar(),
+              _buildTabBar(),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildLearningCenterTab(context, state),
+                    const SavedCoursesPage(),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -149,22 +141,34 @@ class _LearningCenterPageState extends State<LearningCenterPage>
     );
   }
 
-  Widget _buildLearningCenterTab() {
+  Widget _buildLearningCenterTab(BuildContext context, CoursesState state) {
+    bool isSearching = false;
+    if (state is CoursesLoaded) {
+      isSearching = state.searchQuery.isNotEmpty;
+    }
+
     return ListView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       children: [
-        if (!_isSearching) ...[
-          _buildFeaturedSection(),
+        if (!isSearching) ...[
+          _buildFeaturedSection(context, state),
           const SizedBox(height: AppConstants.defaultPadding),
-          _buildFiltersSection(),
+          _buildFiltersSection(context, state),
           const SizedBox(height: AppConstants.defaultPadding),
         ],
-        _buildCoursesSection(),
+        _buildCoursesSection(context, state),
       ],
     );
   }
 
-  Widget _buildFeaturedSection() {
+  Widget _buildFeaturedSection(BuildContext context, CoursesState state) {
+    List<Map<String, dynamic>> featuredCourses = [];
+    if (state is CoursesLoaded) {
+      featuredCourses = state.allCourses;
+    } else {
+      featuredCourses = CourseData.featuredCourses;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -178,20 +182,20 @@ class _LearningCenterPageState extends State<LearningCenterPage>
         ),
         const SizedBox(height: AppConstants.smallPadding),
         SizedBox(
-          height: 240, // Increased height to prevent overflow with CourseCard
+          height: 240,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: CourseData.featuredCourses.length,
+            itemCount: featuredCourses.length,
             itemBuilder: (context, index) {
-              final course = CourseData.featuredCourses[index];
+              final course = featuredCourses[index];
               return Container(
-                width:
-                    315, // Increased width from 288.8 to 350 for bigger cards
+                width: 315,
                 margin: const EdgeInsets.only(right: AppConstants.smallPadding),
                 child: CourseCard(
                   course: course,
                   onTap: () => _navigateToCourseDetails(course),
-                  onSaveToggle: () => _toggleCourseSaved(course['id']),
+                  onSaveToggle: () =>
+                      _onSaveToggle(context, state, course['id']),
                 ),
               );
             },
@@ -201,17 +205,17 @@ class _LearningCenterPageState extends State<LearningCenterPage>
     );
   }
 
-  Widget _buildFiltersSection() {
+  Widget _buildFiltersSection(BuildContext context, CoursesState state) {
+    final bool showFilters = _showFilters;
+
     return Column(
       children: [
         Row(
           children: [
-            _buildFilterButton(),
-            if (_showFilters) ...[
+            _buildFilterButton(context),
+            if (showFilters) ...[
               const SizedBox(width: AppConstants.smallPadding),
-              _buildCategoryFilter(),
-              const SizedBox(width: AppConstants.smallPadding),
-              _buildLevelFilter(),
+              _buildCategoryFilter(context, state),
             ],
           ],
         ),
@@ -219,15 +223,16 @@ class _LearningCenterPageState extends State<LearningCenterPage>
     );
   }
 
-  Widget _buildFilterButton() {
+  Widget _buildFilterButton(BuildContext context) {
+    final showFilters = _showFilters;
     return Container(
-      height: 48, // Fixed height to match dropdowns
+      height: 48,
       padding: const EdgeInsets.symmetric(
         horizontal: AppConstants.defaultPadding,
         vertical: AppConstants.smallPadding,
       ),
       decoration: BoxDecoration(
-        color: _showFilters ? AppConstants.primaryColor : Colors.transparent,
+        color: showFilters ? AppConstants.primaryColor : Colors.transparent,
         border: Border.all(color: AppConstants.primaryColor),
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       ),
@@ -236,10 +241,10 @@ class _LearningCenterPageState extends State<LearningCenterPage>
           setState(() {
             _showFilters = !_showFilters;
             if (!_showFilters) {
-              // Clear filters when hiding
-              _selectedCategory = null;
-              _selectedLevel = null;
-              _filteredCourses = CourseData.featuredCourses;
+              _selectedCategory = 'All';
+              context.read<CoursesBloc>().add(
+                FilterCoursesEvent(category: 'All'),
+              );
             }
           });
         },
@@ -249,15 +254,15 @@ class _LearningCenterPageState extends State<LearningCenterPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              _showFilters ? Icons.clear : Icons.tune,
-              color: _showFilters ? Colors.white : AppConstants.primaryColor,
+              showFilters ? Icons.clear : Icons.tune,
+              color: showFilters ? Colors.white : AppConstants.primaryColor,
               size: 20,
             ),
             const SizedBox(width: 4),
             Text(
-              _showFilters ? 'Clear' : 'Filter',
+              showFilters ? 'Clear' : 'Filter',
               style: TextStyle(
-                color: _showFilters ? Colors.white : AppConstants.primaryColor,
+                color: showFilters ? Colors.white : AppConstants.primaryColor,
               ),
             ),
           ],
@@ -266,10 +271,12 @@ class _LearningCenterPageState extends State<LearningCenterPage>
     );
   }
 
-  Widget _buildCategoryFilter() {
+  Widget _buildCategoryFilter(BuildContext context, CoursesState state) {
+    String? selectedCategory = _selectedCategory;
+
     return Expanded(
       child: Container(
-        height: 48, // Fixed height to match filter button
+        height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           border: Border.all(color: AppConstants.borderColor),
@@ -277,7 +284,7 @@ class _LearningCenterPageState extends State<LearningCenterPage>
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
-            value: _selectedCategory,
+            value: selectedCategory,
             hint: const Text('Categories'),
             isExpanded: true,
             items: CourseData.categories.map((category) {
@@ -288,9 +295,11 @@ class _LearningCenterPageState extends State<LearningCenterPage>
             }).toList(),
             onChanged: (value) {
               setState(() {
-                _selectedCategory = value;
+                _selectedCategory = value ?? 'All';
               });
-              _applyFilters();
+              context.read<CoursesBloc>().add(
+                FilterCoursesEvent(category: _selectedCategory ?? 'All'),
+              );
             },
           ),
         ),
@@ -298,37 +307,13 @@ class _LearningCenterPageState extends State<LearningCenterPage>
     );
   }
 
-  Widget _buildLevelFilter() {
-    return Expanded(
-      child: Container(
-        height: 48, // Fixed height to match filter button
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppConstants.borderColor),
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: _selectedLevel,
-            hint: const Text('Levels'),
-            isExpanded: true,
-            items: CourseData.levels.map((level) {
-              return DropdownMenuItem<String>(value: level, child: Text(level));
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedLevel = value;
-              });
-              _applyFilters();
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCoursesSection() {
-    final courses = _isSearching ? _searchResults : _filteredCourses;
+  Widget _buildCoursesSection(BuildContext context, CoursesState state) {
+    List<Map<String, dynamic>> courses = [];
+    if (state is CoursesLoaded) {
+      courses = state.filteredCourses;
+    } else {
+      courses = CourseData.featuredCourses;
+    }
 
     if (courses.isEmpty) {
       return const Center(
@@ -352,7 +337,7 @@ class _LearningCenterPageState extends State<LearningCenterPage>
           child: CourseCard(
             course: course,
             onTap: () => _navigateToCourseDetails(course),
-            onSaveToggle: () => _toggleCourseSaved(course['id']),
+            onSaveToggle: () => _onSaveToggle(context, state, course['id']),
           ),
         );
       }).toList(),
@@ -363,9 +348,19 @@ class _LearningCenterPageState extends State<LearningCenterPage>
     context.go(AppRoutes.courseDetailsWithId(course['id']));
   }
 
-  void _toggleCourseSaved(String courseId) {
-    setState(() {
-      CourseData.toggleCourseSaved(courseId);
-    });
+  void _onSaveToggle(
+    BuildContext context,
+    CoursesState state,
+    String courseId,
+  ) {
+    final bloc = context.read<CoursesBloc>();
+    if (state is CoursesLoaded) {
+      final isSaved = state.savedCourseIds.contains(courseId);
+      if (isSaved) {
+        bloc.add(UnsaveCourseEvent(courseId: courseId));
+      } else {
+        bloc.add(SaveCourseEvent(courseId: courseId));
+      }
+    }
   }
 }

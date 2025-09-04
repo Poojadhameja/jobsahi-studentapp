@@ -222,7 +222,7 @@ class _LoginVerifiedPopupScreenState extends State<LoginVerifiedPopupScreen>
 
       // Navigate to profile builder step 1
       if (mounted) {
-        context.go(AppRoutes.profileBuilderStep1);
+        context.push(AppRoutes.profileBuilderStep1);
       }
     });
   }

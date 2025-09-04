@@ -4,7 +4,6 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 
-
 class SetPasswordCodeScreen extends StatefulWidget {
   const SetPasswordCodeScreen({super.key});
 
@@ -281,7 +280,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
       if (code.length == 4) {
         // Navigate to set new password screen
         if (mounted) {
-          context.go(AppRoutes.setNewPassword);
+          context.push(AppRoutes.setNewPassword);
         }
       } else {
         _showErrorSnackBar('Invalid verification code');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/job_data.dart';
@@ -9,6 +10,9 @@ import '../../../shared/widgets/common/custom_app_bar.dart';
 import '../../../shared/widgets/common/bottom_navigation.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
+import '../bloc/home_bloc.dart';
+import '../bloc/home_event.dart';
+import '../bloc/home_state.dart';
 
 import '../../jobs/views/application_tracker.dart';
 import '../../profile/views/profile_details.dart';
@@ -23,41 +27,51 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  /// Currently selected tab index
-  int _selectedIndex = 0;
+  @override
+  void initState() {
+    super.initState();
+    // Load home data when screen initializes
+    context.read<HomeBloc>().add(const LoadHomeDataEvent());
+  }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: _selectedIndex == 0, // Only allow popping when on home tab
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _selectedIndex != 0) {
-          // If we can't pop and we're not on home tab, navigate to home tab
-          _navigateToHomeTab();
-        }
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        final selectedIndex = state is HomeLoaded ? state.selectedTabIndex : 0;
+
+        return PopScope(
+          canPop: false, // Intercept back to avoid accidental app exit
+          onPopInvokedWithResult: (didPop, result) {
+            if (selectedIndex != 0) {
+              // If not on home tab, navigate to home tab instead of exiting
+              _navigateToHomeTab();
+            } else {
+              // On home tab: ignore back to prevent exiting the app
+            }
+          },
+          child: Scaffold(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            appBar: _buildAppBar(selectedIndex),
+            body: _buildCurrentScreen(selectedIndex),
+            bottomNavigationBar: CustomBottomNavigation(
+              currentIndex: selectedIndex,
+              onTap: _onTabSelected,
+            ),
+          ),
+        );
       },
-      child: Scaffold(
-        backgroundColor: AppConstants.cardBackgroundColor,
-        appBar: _buildAppBar(),
-        body: _buildCurrentScreen(),
-        bottomNavigationBar: CustomBottomNavigation(
-          currentIndex: _selectedIndex,
-          onTap: _onTabSelected,
-        ),
-      ),
     );
   }
 
   /// Navigates back to home tab
   void _navigateToHomeTab() {
-    setState(() {
-      _selectedIndex = 0;
-    });
+    context.read<HomeBloc>().add(const ChangeTabEvent(tabIndex: 0));
   }
 
   /// Builds the appropriate app bar based on selected tab
-  PreferredSizeWidget? _buildAppBar() {
-    switch (_selectedIndex) {
+  PreferredSizeWidget? _buildAppBar(int selectedIndex) {
+    switch (selectedIndex) {
       case 0:
         // Home tab - show hamburger menu, search, and notification
         return CustomAppBar(
@@ -97,8 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Builds the current screen based on selected tab
-  Widget _buildCurrentScreen() {
-    switch (_selectedIndex) {
+  Widget _buildCurrentScreen(int selectedIndex) {
+    switch (selectedIndex) {
       case 0:
         return const HomePage();
       case 1:
@@ -117,9 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Handles tab selection
   void _onTabSelected(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    context.read<HomeBloc>().add(ChangeTabEvent(tabIndex: index));
   }
 
   /// Handles search functionality
@@ -148,33 +160,60 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  /// Currently selected filter index
-  int _selectedFilterIndex = 0;
-
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        children: [
-          // Greeting section
-          _buildGreetingSection(),
-          const SizedBox(height: AppConstants.smallPadding),
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        if (state is HomeLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          // Action buttons section removed
+        if (state is HomeError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(state.message, style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<HomeBloc>().add(const LoadHomeDataEvent());
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
 
-          // Banner image
-          _buildBannerImage(),
-          const SizedBox(height: AppConstants.smallPadding),
+        if (state is HomeLoaded) {
+          return SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              children: [
+                // Greeting section
+                _buildGreetingSection(),
+                const SizedBox(height: AppConstants.smallPadding),
 
-          // Filter chips
-          _buildFilterChips(),
-          const SizedBox(height: AppConstants.smallPadding),
+                // Action buttons section removed
 
-          // Recommended jobs section
-          _buildRecommendedJobsSection(),
-        ],
-      ),
+                // Banner image
+                _buildBannerImage(),
+                const SizedBox(height: AppConstants.smallPadding),
+
+                // Filter chips
+                _buildFilterChips(state.selectedFilterIndex),
+                const SizedBox(height: AppConstants.smallPadding),
+
+                // Recommended jobs section
+                _buildRecommendedJobsSection(state.filteredJobs),
+              ],
+            ),
+          );
+        }
+
+        return const Center(child: CircularProgressIndicator());
+      },
     );
   }
 
@@ -194,21 +233,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   /// Builds the filter chips section
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips(int selectedFilterIndex) {
     return HorizontalFilterChips(
       filterOptions: JobData.filterOptions,
-      selectedIndex: _selectedFilterIndex,
+      selectedIndex: selectedFilterIndex,
       onFilterSelected: (index) {
-        setState(() {
-          _selectedFilterIndex = index;
-        });
-        // TODO: Apply filter logic
+        context.read<HomeBloc>().add(FilterJobsEvent(filterIndex: index));
       },
     );
   }
 
   /// Builds the recommended jobs section
-  Widget _buildRecommendedJobsSection() {
+  Widget _buildRecommendedJobsSection(List<Map<String, dynamic>> jobs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -224,7 +260,7 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(height: AppConstants.smallPadding),
 
         // Job list
-        JobList(jobs: JobData.recommendedJobs),
+        JobList(jobs: jobs),
       ],
     );
   }

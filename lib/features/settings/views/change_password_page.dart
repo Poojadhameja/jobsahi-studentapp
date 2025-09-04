@@ -1,24 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
+import '../bloc/settings_bloc.dart';
+import '../bloc/settings_event.dart';
+import '../bloc/settings_state.dart';
 
-class ChangePasswordPage extends StatefulWidget {
+class ChangePasswordPage extends StatelessWidget {
   const ChangePasswordPage({super.key});
 
   @override
-  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) =>
+          SettingsBloc()..add(const LoadChangePasswordFormEvent()),
+      child: const _ChangePasswordPageView(),
+    );
+  }
 }
 
-class _ChangePasswordPageState extends State<ChangePasswordPage> {
+class _ChangePasswordPageView extends StatefulWidget {
+  const _ChangePasswordPageView();
+
+  @override
+  State<_ChangePasswordPageView> createState() =>
+      _ChangePasswordPageViewState();
+}
+
+class _ChangePasswordPageViewState extends State<_ChangePasswordPageView> {
   final _formKey = GlobalKey<FormState>();
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
-  bool _isOldPasswordVisible = false;
-  bool _isNewPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -30,32 +43,74 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header section
-              _buildHeader(),
-              const SizedBox(height: AppConstants.largePadding),
+    return BlocListener<SettingsBloc, SettingsState>(
+      listener: (context, state) {
+        if (state is PasswordChangedSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Password changed successfully'),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+          context.pop();
+        } else if (state is SettingsError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppConstants.errorColor,
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<SettingsBloc, SettingsState>(
+        builder: (context, state) {
+          bool isOldPasswordVisible = false;
+          bool isNewPasswordVisible = false;
+          bool isConfirmPasswordVisible = false;
+          bool isLoading = false;
 
-              // Password form
-              _buildPasswordForm(),
-              const SizedBox(height: AppConstants.largePadding),
+          if (state is ChangePasswordFormLoaded) {
+            isOldPasswordVisible = state.isOldPasswordVisible;
+            isNewPasswordVisible = state.isNewPasswordVisible;
+            isConfirmPasswordVisible = state.isConfirmPasswordVisible;
+          } else if (state is PasswordChanging) {
+            isLoading = true;
+          }
 
-              // Submit button
-              _buildSubmitButton(),
-              const SizedBox(height: AppConstants.defaultPadding),
+          return Scaffold(
+            backgroundColor: AppConstants.backgroundColor,
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header section
+                    _buildHeader(),
+                    const SizedBox(height: AppConstants.largePadding),
 
-              // Password requirements
-              _buildPasswordRequirements(),
-            ],
-          ),
-        ),
+                    // Password form
+                    _buildPasswordForm(
+                      context,
+                      isOldPasswordVisible,
+                      isNewPasswordVisible,
+                      isConfirmPasswordVisible,
+                    ),
+                    const SizedBox(height: AppConstants.largePadding),
+
+                    // Submit button
+                    _buildSubmitButton(context, isLoading),
+                    const SizedBox(height: AppConstants.defaultPadding),
+
+                    // Password requirements
+                    _buildPasswordRequirements(),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -104,7 +159,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
-  Widget _buildPasswordForm() {
+  Widget _buildPasswordForm(
+    BuildContext context,
+    bool isOldPasswordVisible,
+    bool isNewPasswordVisible,
+    bool isConfirmPasswordVisible,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.largePadding),
@@ -135,11 +195,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             controller: _oldPasswordController,
             label: 'Current Password / वर्तमान पासवर्ड',
             hint: 'Enter your current password',
-            isVisible: _isOldPasswordVisible,
+            isVisible: isOldPasswordVisible,
             onVisibilityChanged: (value) {
-              setState(() {
-                _isOldPasswordVisible = value;
-              });
+              context.read<SettingsBloc>().add(
+                UpdatePasswordVisibilityEvent(field: 'old', isVisible: value),
+              );
             },
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -156,11 +216,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             controller: _newPasswordController,
             label: 'New Password / नया पासवर्ड',
             hint: 'Enter your new password',
-            isVisible: _isNewPasswordVisible,
+            isVisible: isNewPasswordVisible,
             onVisibilityChanged: (value) {
-              setState(() {
-                _isNewPasswordVisible = value;
-              });
+              context.read<SettingsBloc>().add(
+                UpdatePasswordVisibilityEvent(field: 'new', isVisible: value),
+              );
             },
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -180,11 +240,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             controller: _confirmPasswordController,
             label: 'Confirm Password / पासवर्ड की पुष्टि करें',
             hint: 'Confirm your new password',
-            isVisible: _isConfirmPasswordVisible,
+            isVisible: isConfirmPasswordVisible,
             onVisibilityChanged: (value) {
-              setState(() {
-                _isConfirmPasswordVisible = value;
-              });
+              context.read<SettingsBloc>().add(
+                UpdatePasswordVisibilityEvent(
+                  field: 'confirm',
+                  isVisible: value,
+                ),
+              );
             },
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -274,11 +337,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(BuildContext context, bool isLoading) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _handlePasswordChange,
+        onPressed: isLoading ? null : () => _handlePasswordChange(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.primaryColor,
           padding: const EdgeInsets.symmetric(
@@ -289,7 +352,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           ),
           elevation: 2,
         ),
-        child: _isLoading
+        child: isLoading
             ? const SizedBox(
                 height: 20,
                 width: 20,
@@ -367,97 +430,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 
-  Future<void> _handlePasswordChange() async {
+  Future<void> _handlePasswordChange(BuildContext context) async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 2));
-
-      // TODO: Implement actual password change API call here
-      // await ApiService.changePassword(
-      //   oldPassword: _oldPasswordController.text,
-      //   newPassword: _newPasswordController.text,
-      // );
-
-      // Show success message
-      if (mounted) {
-        _showSuccessDialog();
-      }
-    } catch (e) {
-      // Show error message
-      if (mounted) {
-        _showErrorDialog(e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: AppConstants.successColor,
-              size: 24,
-            ),
-            const SizedBox(width: AppConstants.smallPadding),
-            const Text('Success'),
-          ],
-        ),
-        content: const Text('Your password has been changed successfully!'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.pop();
-            },
-            child: Text(
-              'OK',
-              style: TextStyle(color: AppConstants.primaryColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showErrorDialog(String error) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.error_outline, color: AppConstants.errorColor, size: 24),
-            const SizedBox(width: AppConstants.smallPadding),
-            const Text('Error'),
-          ],
-        ),
-        content: Text('Failed to change password: $error'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'OK',
-              style: TextStyle(color: AppConstants.primaryColor),
-            ),
-          ),
-        ],
+    context.read<SettingsBloc>().add(
+      ChangePasswordEvent(
+        oldPassword: _oldPasswordController.text,
+        newPassword: _newPasswordController.text,
+        confirmPassword: _confirmPasswordController.text,
       ),
     );
   }

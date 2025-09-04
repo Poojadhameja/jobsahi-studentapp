@@ -1,16 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
+import '../bloc/messages_bloc.dart';
+import '../bloc/messages_event.dart';
+import '../bloc/messages_state.dart';
 
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends StatelessWidget {
   final Map<String, dynamic> company;
 
   const ChatScreen({super.key, required this.company});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => MessagesBloc()
+        ..add(LoadChatMessagesEvent(chatId: company['id']?.toString() ?? '')),
+      child: _ChatScreenView(company: company),
+    );
+  }
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenView extends StatefulWidget {
+  final Map<String, dynamic> company;
+
+  const _ChatScreenView({required this.company});
+
+  @override
+  State<_ChatScreenView> createState() => _ChatScreenViewState();
+}
+
+class _ChatScreenViewState extends State<_ChatScreenView> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -23,18 +42,27 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          // Chat messages area
-          Expanded(child: _buildChatArea()),
+    return BlocBuilder<MessagesBloc, MessagesState>(
+      builder: (context, state) {
+        List<Map<String, dynamic>> chatMessages = [];
+        if (state is ChatMessagesLoaded) {
+          chatMessages = state.chatMessages;
+        }
 
-          // Input area
-          _buildInputArea(),
-        ],
-      ),
+        return Scaffold(
+          backgroundColor: AppConstants.cardBackgroundColor,
+          appBar: _buildAppBar(),
+          body: Column(
+            children: [
+              // Chat messages area
+              Expanded(child: _buildChatArea(chatMessages)),
+
+              // Input area
+              _buildInputArea(),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -117,18 +145,18 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildChatArea() {
+  Widget _buildChatArea(List<Map<String, dynamic>> chatMessages) {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      itemCount: _chatMessages.length,
+      itemCount: chatMessages.length,
       itemBuilder: (context, index) {
-        final message = _chatMessages[index];
+        final message = chatMessages[index];
 
         if (message['type'] == 'date') {
           return _buildDateSeparator(message['text']);
         } else {
-          return _buildMessageBubble(message);
+          return _buildMessageBubble(message, chatMessages);
         }
       },
     );
@@ -167,7 +195,10 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> message) {
+  Widget _buildMessageBubble(
+    Map<String, dynamic> message,
+    List<Map<String, dynamic>> chatMessages,
+  ) {
     final isUser = message['isUser'];
     // final showAvatar = message['showAvatar'];
 
@@ -200,7 +231,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // Message bubble
           GestureDetector(
             onLongPress: () =>
-                _showDeleteDialog(_chatMessages.indexOf(message)),
+                _showDeleteDialog(context, chatMessages.indexOf(message)),
             child: Container(
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
@@ -345,14 +376,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() {
     if (_messageController.text.trim().isNotEmpty) {
-      setState(() {
-        _chatMessages.add({
-          'text': _messageController.text.trim(),
-          'isUser': true,
-          'showAvatar': true,
-          'timestamp': DateTime.now(),
-        });
-      });
+      context.read<MessagesBloc>().add(
+        SendMessageEvent(
+          recipientId: widget.company['id']?.toString() ?? '',
+          message: _messageController.text.trim(),
+        ),
+      );
 
       _messageController.clear();
 
@@ -369,7 +398,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _showDeleteDialog(int messageIndex) {
+  void _showDeleteDialog(BuildContext context, int messageIndex) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -384,7 +413,7 @@ class _ChatScreenState extends State<ChatScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _deleteMessage(messageIndex);
+                _deleteMessage(context, messageIndex);
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Delete'),
@@ -395,67 +424,9 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _deleteMessage(int messageIndex) {
-    if (messageIndex >= 0 && messageIndex < _chatMessages.length) {
-      setState(() {
-        _chatMessages.removeAt(messageIndex);
-      });
-    }
+  void _deleteMessage(BuildContext context, int messageIndex) {
+    context.read<MessagesBloc>().add(
+      DeleteMessageEvent(messageId: messageIndex.toString()),
+    );
   }
-
-  // Sample chat data based on the screenshot
-  static final List<Map<String, dynamic>> _chatMessages = [
-    {'type': 'date', 'text': '27 Feb 2024'},
-    {
-      'text': 'Good Morning!',
-      'isUser': true,
-      'showAvatar': true,
-      'timestamp': DateTime.now(),
-    },
-    {
-      'text': 'Good Morning!',
-      'isUser': false,
-      'showAvatar': true,
-      'timestamp': DateTime.now(),
-    },
-    {
-      'text': 'Of course, we have a great selection of laptops.',
-      'isUser': false,
-      'showAvatar': false,
-      'timestamp': DateTime.now(),
-    },
-    {
-      'text': 'I\'m looking for a new laptop',
-      'isUser': true,
-      'showAvatar': false,
-      'timestamp': DateTime.now(),
-    },
-    {
-      'text': 'Got It!',
-      'isUser': false,
-      'showAvatar': false,
-      'timestamp': DateTime.now(),
-    },
-    {
-      'text':
-          'I\'ll mainly use it for work, so something with good processing power and a comfortable keyboard is essential.',
-      'isUser': true,
-      'showAvatar': false,
-      'timestamp': DateTime.now(),
-    },
-    {
-      'text':
-          'we have several options that would suit your needs. let me show you a few models that match your criteria.',
-      'isUser': false,
-      'showAvatar': false,
-      'timestamp': DateTime.now(),
-    },
-    {
-      'text': 'I\'m looking to spend around \$800 to \$1,000.',
-      'isUser': true,
-      'showAvatar': false,
-      'timestamp': DateTime.now(),
-    },
-    {'type': 'date', 'text': 'Today'},
-  ];
 }

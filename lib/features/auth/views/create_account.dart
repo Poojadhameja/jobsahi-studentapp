@@ -1,16 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
-class CreateAccountScreen extends StatefulWidget {
+class CreateAccountScreen extends StatelessWidget {
   const CreateAccountScreen({super.key});
 
   @override
-  State<CreateAccountScreen> createState() => _CreateAccountScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => AuthBloc(),
+      child: const _CreateAccountScreenView(),
+    );
+  }
 }
 
-class _CreateAccountScreenState extends State<CreateAccountScreen> {
+class _CreateAccountScreenView extends StatefulWidget {
+  const _CreateAccountScreenView();
+
+  @override
+  State<_CreateAccountScreenView> createState() =>
+      _CreateAccountScreenViewState();
+}
+
+class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
 
@@ -20,12 +37,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
-  /// Whether the form is being submitted
-  bool _isSubmitting = false;
-  bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
-  bool _isTermsAccepted = false;
 
   @override
   void dispose() {
@@ -39,125 +50,158 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Scrollable content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.largePadding,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 2),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        bool isPasswordVisible = false;
+        bool isConfirmPasswordVisible = false;
+        bool isTermsAccepted = false;
+        bool isSubmitting = false;
 
-                    /// Back button
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: AppConstants.textPrimaryColor,
-                      ),
-                      onPressed: () => context.go(AppRoutes.loginOtpEmail),
+        if (state is CreateAccountFormState) {
+          isPasswordVisible = state.isPasswordVisible;
+          isConfirmPasswordVisible = state.isConfirmPasswordVisible;
+          isTermsAccepted = state.isTermsAccepted;
+          isSubmitting = state.isSubmitting;
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.largePadding,
                     ),
-                    const SizedBox(height: 4),
-
-                    /// Profile avatar & title
-                    Center(
-                      child: Column(
-                        children: [
-                          const CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Color(0xFFE0E7EF),
-                            child: Icon(
-                              Icons.person,
-                              size: 45,
-                              color: AppConstants.textPrimaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            "Create your account",
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppConstants.textPrimaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            "वापसी का स्वागत है! कृपया अपनी जानकारी दर्ज करें",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF4F789B),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    /// Form fields
-                    Form(key: _formKey, child: _buildFormFields()),
-                    const SizedBox(height: 24),
-
-                    /// Or divider
-                    Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Expanded(
-                          child: Divider(color: Color(0xFF58B248)),
+                        const SizedBox(height: 2),
+
+                        /// Back button
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: AppConstants.textPrimaryColor,
+                          ),
+                          onPressed: () => context.pop(),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            "Or Sign up with",
-                            style: const TextStyle(
-                              color: Color(0xFF58B248),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        const SizedBox(height: 4),
+
+                        /// Profile avatar & title
+                        Center(
+                          child: Column(
+                            children: [
+                              const CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Color(0xFFE0E7EF),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 45,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                "Create your account",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                "वापसी का स्वागत है! कृपया अपनी जानकारी दर्ज करें",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF4F789B),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
-                        const Expanded(
-                          child: Divider(color: Color(0xFF58B248)),
+                        const SizedBox(height: 20),
+
+                        /// Form fields
+                        Form(
+                          key: _formKey,
+                          child: _buildFormFields(
+                            context,
+                            isPasswordVisible,
+                            isConfirmPasswordVisible,
+                            isTermsAccepted,
+                          ),
                         ),
+                        const SizedBox(height: 24),
+
+                        /// Or divider
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Divider(color: Color(0xFF58B248)),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Text(
+                                "Or Sign up with",
+                                style: const TextStyle(
+                                  color: Color(0xFF58B248),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Expanded(
+                              child: Divider(color: Color(0xFF58B248)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        /// Social buttons
+                        _buildSocialLoginButtons(),
+                        const SizedBox(height: 24),
+
+                        /// Sign in link
+                        _buildSignInLink(),
+                        const SizedBox(height: 40),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    /// Social buttons
-                    _buildSocialLoginButtons(),
-                    const SizedBox(height: 24),
-
-                    /// Sign in link
-                    _buildSignInLink(),
-                    const SizedBox(height: 40),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
-            // Fixed bottom button
-            Container(
-              padding: const EdgeInsets.all(AppConstants.largePadding),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: _buildSubmitButton(),
+                // Fixed bottom button
+                Container(
+                  padding: const EdgeInsets.all(AppConstants.largePadding),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: _buildSubmitButton(context, isSubmitting),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   /// Builds the form fields with modern styling
-  Widget _buildFormFields() {
+  Widget _buildFormFields(
+    BuildContext context,
+    bool isPasswordVisible,
+    bool isConfirmPasswordVisible,
+    bool isTermsAccepted,
+  ) {
     return Column(
       children: [
         // Full Name
@@ -220,11 +264,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           hint: "पासवर्ड",
           prefixIcon: Icons.lock,
           isPassword: true,
-          passwordVisible: _isPasswordVisible,
+          passwordVisible: isPasswordVisible,
           onPasswordToggle: () {
-            setState(() {
-              _isPasswordVisible = !_isPasswordVisible;
-            });
+            context.read<AuthBloc>().add(
+              TogglePasswordVisibilityEvent(
+                isPassword: true,
+                isVisible: !isPasswordVisible,
+              ),
+            );
           },
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -245,11 +292,14 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           hint: "पासवर्ड की पुष्टि करें",
           prefixIcon: Icons.lock,
           isPassword: true,
-          passwordVisible: _isConfirmPasswordVisible,
+          passwordVisible: isConfirmPasswordVisible,
           onPasswordToggle: () {
-            setState(() {
-              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-            });
+            context.read<AuthBloc>().add(
+              TogglePasswordVisibilityEvent(
+                isPassword: false,
+                isVisible: !isConfirmPasswordVisible,
+              ),
+            );
           },
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -267,11 +317,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         Row(
           children: [
             Checkbox(
-              value: _isTermsAccepted,
+              value: isTermsAccepted,
               onChanged: (value) {
-                setState(() {
-                  _isTermsAccepted = value ?? false;
-                });
+                context.read<AuthBloc>().add(
+                  ToggleTermsAcceptanceEvent(isAccepted: value ?? false),
+                );
               },
               activeColor: const Color(0xFF144B75),
             ),
@@ -357,11 +407,11 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   /// Builds the submit button with modern styling
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(BuildContext context, bool isSubmitting) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isSubmitting ? null : _submitForm,
+        onPressed: isSubmitting ? null : () => _submitForm(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
@@ -370,7 +420,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: _isSubmitting
+        child: isSubmitting
             ? const SizedBox(
                 height: 20,
                 width: 20,
@@ -418,7 +468,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         const Text("Already have an account? "),
         GestureDetector(
           onTap: () {
-            context.go(AppRoutes.loginOtpEmail);
+            context.push(AppRoutes.loginOtpEmail);
           },
           child: const Text(
             "Sign In",
@@ -433,10 +483,18 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   /// Submits the form
-  void _submitForm() {
+  void _submitForm(BuildContext context) {
     if (_formKey.currentState!.validate()) {
+      // Get current state to check terms acceptance
+      final currentState = context.read<AuthBloc>().state;
+      bool isTermsAccepted = false;
+
+      if (currentState is CreateAccountFormState) {
+        isTermsAccepted = currentState.isTermsAccepted;
+      }
+
       // Check if terms are accepted
-      if (!_isTermsAccepted) {
+      if (!isTermsAccepted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('कृपया नियम, प्राइवेसी और शुल्क से सहमत हों'),
@@ -446,20 +504,32 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         return;
       }
 
-      setState(() {
-        _isSubmitting = true;
-      });
+      // Set submitting state
+      context.read<AuthBloc>().add(
+        const SetFormSubmittingEvent(isSubmitting: true),
+      );
 
-      // Simulate API call
+      // Create account using existing CreateAccountEvent
+      context.read<AuthBloc>().add(
+        CreateAccountEvent(
+          name: _nameController.text,
+          email: _emailController.text,
+          phone: _phoneController.text,
+          password: _passwordController.text,
+        ),
+      );
+
+      // Simulate API call delay
       Future.delayed(const Duration(seconds: 2), () {
-        setState(() {
-          _isSubmitting = false;
-        });
+        // Reset submitting state
+        context.read<AuthBloc>().add(
+          const SetFormSubmittingEvent(isSubmitting: false),
+        );
 
         // Show success message and navigate to login
-        _showSuccessSnackBar(AppConstants.signupSuccess);
+        _showSuccessSnackBar(context, AppConstants.signupSuccess);
         Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
+          if (context.mounted) {
             context.go(AppRoutes.loginOtpEmail);
           }
         });
@@ -468,7 +538,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   /// Shows success snackbar
-  void _showSuccessSnackBar(String message) {
+  void _showSuccessSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),

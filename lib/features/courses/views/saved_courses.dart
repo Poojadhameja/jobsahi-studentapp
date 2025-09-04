@@ -4,45 +4,50 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../shared/data/course_data.dart';
 import '../../../shared/widgets/cards/course_card.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/courses_bloc.dart';
+import '../bloc/courses_event.dart';
+import '../bloc/courses_state.dart';
 
-class SavedCoursesPage extends StatefulWidget {
+class SavedCoursesPage extends StatelessWidget {
   const SavedCoursesPage({super.key});
 
   @override
-  State<SavedCoursesPage> createState() => _SavedCoursesPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => CoursesBloc()..add(LoadSavedCoursesEvent()),
+      child: const _SavedCoursesPageView(),
+    );
+  }
 }
 
-class _SavedCoursesPageState extends State<SavedCoursesPage> {
-  List<Map<String, dynamic>> _savedCourses = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedCourses();
-  }
-
-  void _loadSavedCourses() {
-    setState(() {
-      _savedCourses = CourseData.getSavedCourses();
-    });
-  }
+class _SavedCoursesPageView extends StatelessWidget {
+  const _SavedCoursesPageView();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
-      body: _savedCourses.isEmpty
-          ? _buildEmptyState()
-          : _buildSavedCoursesList(),
+    return BlocBuilder<CoursesBloc, CoursesState>(
+      builder: (context, state) {
+        List<Map<String, dynamic>> savedCourses = [];
+        if (state is CoursesLoaded) {
+          savedCourses = state.savedCourses;
+        }
+
+        return Scaffold(
+          backgroundColor: AppConstants.backgroundColor,
+          body: savedCourses.isEmpty
+              ? _buildEmptyState(context)
+              : _buildSavedCoursesList(context, savedCourses),
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.largePadding),
@@ -103,87 +108,103 @@ class _SavedCoursesPageState extends State<SavedCoursesPage> {
     );
   }
 
-  Widget _buildSavedCoursesList() {
+  Widget _buildSavedCoursesList(
+    BuildContext context,
+    List<Map<String, dynamic>> savedCourses,
+  ) {
     return ListView.builder(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      itemCount: _savedCourses.length,
+      itemCount: savedCourses.length,
       itemBuilder: (context, index) {
-        final course = _savedCourses[index];
+        final course = savedCourses[index];
         return Container(
           margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
           child: CourseCard(
             course: course,
-            onTap: () => _navigateToCourseDetails(course),
-            onSaveToggle: () => _toggleCourseSaved(course['id']),
+            onTap: () => _navigateToCourseDetails(context, course),
+            onSaveToggle: () => _toggleCourseSaved(context, course['id']),
           ),
         );
       },
     );
   }
 
-  void _navigateToCourseDetails(Map<String, dynamic> course) {
+  void _navigateToCourseDetails(
+    BuildContext context,
+    Map<String, dynamic> course,
+  ) {
     context.go(AppRoutes.courseDetailsWithId(course['id']));
   }
 
-  void _toggleCourseSaved(String courseId) {
-    setState(() {
-      CourseData.toggleCourseSaved(courseId);
-      _loadSavedCourses(); // Refresh the saved courses list
-    });
+  void _toggleCourseSaved(BuildContext context, String courseId) {
+    final state = context.read<CoursesBloc>().state;
+    if (state is CoursesLoaded) {
+      final isSaved = state.savedCourseIds.contains(courseId);
+      if (isSaved) {
+        context.read<CoursesBloc>().add(UnsaveCourseEvent(courseId: courseId));
+      } else {
+        context.read<CoursesBloc>().add(SaveCourseEvent(courseId: courseId));
+      }
+    }
   }
 }
 
 /// Standalone Saved Courses Screen
 /// Can be used as a separate screen outside of tabs
-class SavedCoursesScreen extends StatefulWidget {
+class SavedCoursesScreen extends StatelessWidget {
   const SavedCoursesScreen({super.key});
 
   @override
-  State<SavedCoursesScreen> createState() => _SavedCoursesScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => CoursesBloc()..add(LoadSavedCoursesEvent()),
+      child: const _SavedCoursesScreenView(),
+    );
+  }
 }
 
-class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
-  List<Map<String, dynamic>> _savedCourses = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedCourses();
-  }
-
-  void _loadSavedCourses() {
-    setState(() {
-      _savedCourses = CourseData.getSavedCourses();
-    });
-  }
+class _SavedCoursesScreenView extends StatelessWidget {
+  const _SavedCoursesScreenView();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: AppConstants.cardBackgroundColor,
-        elevation: 0,
-        title: const Text(
-          'Saved Courses',
-          style: TextStyle(
-            color: AppConstants.primaryColor,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+    return BlocBuilder<CoursesBloc, CoursesState>(
+      builder: (context, state) {
+        List<Map<String, dynamic>> savedCourses = [];
+        if (state is CoursesLoaded) {
+          savedCourses = state.savedCourses;
+        }
+
+        return Scaffold(
+          backgroundColor: AppConstants.backgroundColor,
+          appBar: AppBar(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            elevation: 0,
+            title: const Text(
+              'Saved Courses',
+              style: TextStyle(
+                color: AppConstants.primaryColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            leading: IconButton(
+              onPressed: () => context.pop(),
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppConstants.primaryColor,
+              ),
+            ),
           ),
-        ),
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: AppConstants.primaryColor),
-        ),
-      ),
-      body: _savedCourses.isEmpty
-          ? _buildEmptyState()
-          : _buildSavedCoursesList(),
+          body: savedCourses.isEmpty
+              ? _buildEmptyState(context)
+              : _buildSavedCoursesList(context, savedCourses),
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.largePadding),
@@ -243,32 +264,43 @@ class _SavedCoursesScreenState extends State<SavedCoursesScreen> {
     );
   }
 
-  Widget _buildSavedCoursesList() {
+  Widget _buildSavedCoursesList(
+    BuildContext context,
+    List<Map<String, dynamic>> savedCourses,
+  ) {
     return ListView.builder(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      itemCount: _savedCourses.length,
+      itemCount: savedCourses.length,
       itemBuilder: (context, index) {
-        final course = _savedCourses[index];
+        final course = savedCourses[index];
         return Container(
           margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
           child: CourseCard(
             course: course,
-            onTap: () => _navigateToCourseDetails(course),
-            onSaveToggle: () => _toggleCourseSaved(course['id']),
+            onTap: () => _navigateToCourseDetails(context, course),
+            onSaveToggle: () => _toggleCourseSaved(context, course['id']),
           ),
         );
       },
     );
   }
 
-  void _navigateToCourseDetails(Map<String, dynamic> course) {
+  void _navigateToCourseDetails(
+    BuildContext context,
+    Map<String, dynamic> course,
+  ) {
     context.go(AppRoutes.courseDetailsWithId(course['id']));
   }
 
-  void _toggleCourseSaved(String courseId) {
-    setState(() {
-      CourseData.toggleCourseSaved(courseId);
-      _loadSavedCourses(); // Refresh the saved courses list
-    });
+  void _toggleCourseSaved(BuildContext context, String courseId) {
+    final state = context.read<CoursesBloc>().state;
+    if (state is CoursesLoaded) {
+      final isSaved = state.savedCourseIds.contains(courseId);
+      if (isSaved) {
+        context.read<CoursesBloc>().add(UnsaveCourseEvent(courseId: courseId));
+      } else {
+        context.read<CoursesBloc>().add(SaveCourseEvent(courseId: courseId));
+      }
+    }
   }
 }

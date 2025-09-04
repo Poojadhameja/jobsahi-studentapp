@@ -3,17 +3,34 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/job_data.dart';
+import '../bloc/profile_bloc.dart';
+import '../bloc/profile_event.dart';
+import '../bloc/profile_state.dart';
 
-class JobStatusScreen extends StatefulWidget {
+class JobStatusScreen extends StatelessWidget {
   const JobStatusScreen({super.key});
 
   @override
-  State<JobStatusScreen> createState() => _JobStatusScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) =>
+          ProfileBloc()..add(const ChangeJobStatusTabEvent(tabIndex: 0)),
+      child: const _JobStatusScreenView(),
+    );
+  }
 }
 
-class _JobStatusScreenState extends State<JobStatusScreen>
+class _JobStatusScreenView extends StatefulWidget {
+  const _JobStatusScreenView();
+
+  @override
+  State<_JobStatusScreenView> createState() => _JobStatusScreenViewState();
+}
+
+class _JobStatusScreenViewState extends State<_JobStatusScreenView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -31,31 +48,40 @@ class _JobStatusScreenState extends State<JobStatusScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Custom App Bar
-            _buildCustomAppBar(),
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        int selectedTabIndex = 0;
+        if (state is JobStatusTabState) {
+          selectedTabIndex = state.selectedTabIndex;
+        }
 
-            // Tab Bar
-            _buildTabBar(),
+        return Scaffold(
+          backgroundColor: AppConstants.cardBackgroundColor,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Custom App Bar
+                _buildCustomAppBar(),
 
-            // Tab Content
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildAppliedJobsTab(),
-                  _buildSavedJobsTab(),
-                  _buildInterviewsTab(),
-                ],
-              ),
+                // Tab Bar
+                _buildTabBar(context, selectedTabIndex),
+
+                // Tab Content
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildAppliedJobsTab(),
+                      _buildSavedJobsTab(),
+                      _buildInterviewsTab(),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -95,7 +121,7 @@ class _JobStatusScreenState extends State<JobStatusScreen>
   }
 
   /// Builds the tab bar with three tabs
-  Widget _buildTabBar() {
+  Widget _buildTabBar(BuildContext context, int selectedTabIndex) {
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: AppConstants.defaultPadding,
@@ -113,6 +139,11 @@ class _JobStatusScreenState extends State<JobStatusScreen>
       ),
       child: TabBar(
         controller: _tabController,
+        onTap: (index) {
+          context.read<ProfileBloc>().add(
+            ChangeJobStatusTabEvent(tabIndex: index),
+          );
+        },
         indicator: BoxDecoration(
           border: Border(
             bottom: BorderSide(color: AppConstants.primaryColor, width: 3.0),

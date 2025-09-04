@@ -4,23 +4,42 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../bloc/jobs_bloc.dart';
+import '../bloc/jobs_event.dart';
+import '../bloc/jobs_state.dart';
 
-class JobStepScreen extends StatefulWidget {
+class JobStepScreen extends StatelessWidget {
   /// Job data for the application
   final Map<String, dynamic> job;
 
   const JobStepScreen({super.key, required this.job});
 
   @override
-  State<JobStepScreen> createState() => _JobStepScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) =>
+          JobsBloc()..add(LoadJobApplicationFormEvent(job: job)),
+      child: _JobStepScreenView(job: job),
+    );
+  }
 }
 
-class _JobStepScreenState extends State<JobStepScreen> {
+class _JobStepScreenView extends StatefulWidget {
+  final Map<String, dynamic> job;
+
+  const _JobStepScreenView({required this.job});
+
+  @override
+  State<_JobStepScreenView> createState() => _JobStepScreenViewState();
+}
+
+class _JobStepScreenViewState extends State<_JobStepScreenView> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
 
@@ -29,16 +48,10 @@ class _JobStepScreenState extends State<JobStepScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  /// File picker result for resume/CV
-  PlatformFile? _resumeCVFile;
-
-  /// Whether the form is being submitted
-  bool _isSubmitting = false;
-
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _initializeControllers();
   }
 
   @override
@@ -49,66 +62,107 @@ class _JobStepScreenState extends State<JobStepScreen> {
     super.dispose();
   }
 
+  /// Initialize controllers with BLoC state data
+  void _initializeControllers() {
+    final state = context.read<JobsBloc>().state;
+    if (state is JobApplicationFormLoaded) {
+      _nameController.text = state.formData['name'] ?? '';
+      _emailController.text = state.formData['email'] ?? '';
+      _phoneController.text = state.formData['phone'] ?? '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Job Application / नौकरी आवेदन',
-        showBackButton: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Scrollable content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: _buildMainCard(),
+    return BlocListener<JobsBloc, JobsState>(
+      listener: (context, state) {
+        if (state is JobApplicationSubmitted) {
+          context.go(AppRoutes.jobApplicationSuccess);
+        } else if (state is ResumeFilePicked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Resume file picked: ${state.resumeFile.name}'),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+        } else if (state is ResumeFileRemoved) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Resume file removed'),
+              backgroundColor: AppConstants.warningColor,
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<JobsBloc, JobsState>(
+        builder: (context, state) {
+          Map<String, dynamic> job = widget.job;
+          Map<String, String> formData = {};
+          PlatformFile? resumeFile;
+          bool isSubmitting = false;
+
+          if (state is JobApplicationFormLoaded) {
+            job = state.job;
+            formData = state.formData;
+            resumeFile = state.resumeFile;
+          } else if (state is JobApplicationSubmitting) {
+            isSubmitting = true;
+            // Keep previous state data
+            if (context.read<JobsBloc>().state is JobApplicationFormLoaded) {
+              final prevState =
+                  context.read<JobsBloc>().state as JobApplicationFormLoaded;
+              job = prevState.job;
+              formData = prevState.formData;
+              resumeFile = prevState.resumeFile;
+            }
+          }
+
+          return Scaffold(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            appBar: const SimpleAppBar(
+              title: 'Job Application / नौकरी आवेदन',
+              showBackButton: true,
+            ),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // Scrollable content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(
+                        AppConstants.defaultPadding,
+                      ),
+                      child: _buildMainCard(context, job, formData, resumeFile),
+                    ),
+                  ),
+
+                  // Fixed bottom button
+                  Container(
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    decoration: BoxDecoration(
+                      color: AppConstants.cardBackgroundColor,
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: _buildSubmitButton(
+                      context,
+                      isSubmitting,
+                      formData,
+                      resumeFile,
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            // Fixed bottom button
-            Container(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              decoration: BoxDecoration(
-                color: AppConstants.cardBackgroundColor,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: _buildSubmitButton(),
-            ),
-          ],
-        ),
+          );
+        },
       ),
-    );
-  }
-
-  /// Loads user data into form fields
-  void _loadUserData() {
-    // TODO: Load from user data service
-    _nameController.text = 'Rahul Kumar';
-    _emailController.text = 'rahul.kumar@email.com';
-    _phoneController.text = '+91 98765 43210';
-
-    // Load existing resume and CV files
-    _loadExistingDocuments();
-  }
-
-  /// Loads existing resume/CV file
-  void _loadExistingDocuments() {
-    // TODO: Load from user profile or storage service
-    // For now, creating mock file to demonstrate the functionality
-
-    // Mock existing resume/CV file
-    _resumeCVFile = PlatformFile(
-      name: 'Rahul_Kumar_Resume_CV.pdf',
-      size: 398336, // 389 KB
-      path: '/path/to/existing/resume_cv.pdf',
     );
   }
 
   /// Builds the job overview section
-  Widget _buildJobOverviewSection() {
+  Widget _buildJobOverviewSection(Map<String, dynamic> job) {
     return Row(
       children: [
         // Left side - Job icon
@@ -128,7 +182,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.job['title'] ?? 'Job Title',
+                job['title'] ?? 'Job Title',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -137,7 +191,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                widget.job['company'] ?? 'Company Name',
+                job['company'] ?? 'Company Name',
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppConstants.successColor,
@@ -146,7 +200,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                widget.job['location'] ?? 'Location',
+                job['location'] ?? 'Location',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
@@ -228,7 +282,11 @@ class _JobStepScreenState extends State<JobStepScreen> {
   }
 
   /// Builds the form section
-  Widget _buildFormSection() {
+  Widget _buildFormSection(
+    BuildContext context,
+    Map<String, String> formData,
+    PlatformFile? resumeFile,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -243,37 +301,39 @@ class _JobStepScreenState extends State<JobStepScreen> {
         const SizedBox(height: AppConstants.smallPadding),
 
         // Info about existing documents
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppConstants.successColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppConstants.successColor.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: AppConstants.successColor,
-                size: 20,
+        if (resumeFile != null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppConstants.successColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppConstants.successColor.withValues(alpha: 0.3),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Your existing Resume/CV is already loaded. You can keep it or replace with a new file.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppConstants.successColor,
-                    fontWeight: FontWeight.w500,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: AppConstants.successColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Your existing Resume/CV is already loaded. You can keep it or replace with a new file.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppConstants.successColor,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: AppConstants.defaultPadding),
+        if (resumeFile != null)
+          const SizedBox(height: AppConstants.defaultPadding),
 
         // Full Name
         _buildFormField(
@@ -281,6 +341,11 @@ class _JobStepScreenState extends State<JobStepScreen> {
           label: 'Full Name* / पूरा नाम*',
           hint: 'नाम',
           prefixIcon: Icons.person,
+          onChanged: (value) {
+            context.read<JobsBloc>().add(
+              UpdateJobApplicationFormEvent(field: 'name', value: value),
+            );
+          },
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Name is required / नाम आवश्यक है';
@@ -297,6 +362,11 @@ class _JobStepScreenState extends State<JobStepScreen> {
           hint: 'ईमेल पता',
           prefixIcon: Icons.email,
           keyboardType: TextInputType.emailAddress,
+          onChanged: (value) {
+            context.read<JobsBloc>().add(
+              UpdateJobApplicationFormEvent(field: 'email', value: value),
+            );
+          },
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Email is required / ईमेल आवश्यक है';
@@ -316,6 +386,11 @@ class _JobStepScreenState extends State<JobStepScreen> {
           hint: 'मोबाइल नंबर',
           prefixIcon: Icons.phone,
           keyboardType: TextInputType.phone,
+          onChanged: (value) {
+            context.read<JobsBloc>().add(
+              UpdateJobApplicationFormEvent(field: 'phone', value: value),
+            );
+          },
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Phone number is required / फोन नंबर आवश्यक है';
@@ -329,13 +404,16 @@ class _JobStepScreenState extends State<JobStepScreen> {
         const SizedBox(height: 20),
 
         // Resume/CV Upload Section
-        _buildResumeCVUploadSection(),
+        _buildResumeCVUploadSection(context, resumeFile),
       ],
     );
   }
 
   /// Builds the resume/CV upload section
-  Widget _buildResumeCVUploadSection() {
+  Widget _buildResumeCVUploadSection(
+    BuildContext context,
+    PlatformFile? resumeFile,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -362,7 +440,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
           ),
           child: Column(
             children: [
-              if (_resumeCVFile != null) ...[
+              if (resumeFile != null) ...[
                 // Show selected file with preview
                 Column(
                   children: [
@@ -383,7 +461,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      _resumeCVFile!.name,
+                                      resumeFile.name,
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -416,7 +494,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
                                 ],
                               ),
                               Text(
-                                '${(_resumeCVFile!.size / 1024).toStringAsFixed(1)} KB',
+                                '${(resumeFile.size / 1024).toStringAsFixed(1)} KB',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
@@ -435,7 +513,11 @@ class _JobStepScreenState extends State<JobStepScreen> {
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          onPressed: () => _editResumeCV(),
+                          onPressed: () {
+                            context.read<JobsBloc>().add(
+                              const PickResumeFileEvent(),
+                            );
+                          },
                           icon: const Icon(
                             Icons.edit,
                             color: AppConstants.primaryColor,
@@ -447,7 +529,11 @@ class _JobStepScreenState extends State<JobStepScreen> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => _removeResumeCV(),
+                          onPressed: () {
+                            context.read<JobsBloc>().add(
+                              const RemoveResumeFileEvent(),
+                            );
+                          },
                           icon: const Icon(Icons.delete, color: Colors.red),
                           tooltip: 'Remove Resume/CV',
                           constraints: const BoxConstraints(
@@ -501,7 +587,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(6),
-                                child: _buildDocumentPreview(),
+                                child: _buildDocumentPreview(resumeFile),
                               ),
                             ),
                           ),
@@ -513,7 +599,9 @@ class _JobStepScreenState extends State<JobStepScreen> {
               ] else ...[
                 // Show upload button
                 InkWell(
-                  onTap: _pickResumeCV,
+                  onTap: () {
+                    context.read<JobsBloc>().add(const PickResumeFileEvent());
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -558,7 +646,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
             ],
           ),
         ),
-        if (_resumeCVFile == null)
+        if (resumeFile == null)
           Padding(
             padding: const EdgeInsets.only(top: 7),
             child: Text(
@@ -578,6 +666,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
     required IconData prefixIcon,
     String? Function(String?)? validator,
     TextInputType? keyboardType,
+    void Function(String)? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -600,6 +689,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
           controller: controller,
           keyboardType: keyboardType,
           style: const TextStyle(fontSize: 14),
+          onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -622,11 +712,18 @@ class _JobStepScreenState extends State<JobStepScreen> {
   }
 
   /// Builds the submit button
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(
+    BuildContext context,
+    bool isSubmitting,
+    Map<String, String> formData,
+    PlatformFile? resumeFile,
+  ) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isSubmitting ? null : _submitApplication,
+        onPressed: isSubmitting
+            ? null
+            : () => _submitApplication(context, formData, resumeFile),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.secondaryColor,
           foregroundColor: Colors.white,
@@ -636,7 +733,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
           ),
           elevation: 2,
         ),
-        child: _isSubmitting
+        child: isSubmitting
             ? const SizedBox(
                 height: 20,
                 width: 20,
@@ -653,46 +750,9 @@ class _JobStepScreenState extends State<JobStepScreen> {
     );
   }
 
-  /// Picks resume/CV file
-  Future<void> _pickResumeCV() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx'],
-        allowMultiple: false,
-      );
-
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.size <= 5 * 1024 * 1024) {
-          // 5MB limit
-          setState(() {
-            _resumeCVFile = file;
-          });
-        } else {
-          _showErrorSnackBar('File size should be less than 5MB');
-        }
-      }
-    } catch (e) {
-      _showErrorSnackBar('Error picking file: $e');
-    }
-  }
-
-  /// Edits resume/CV file
-  void _editResumeCV() {
-    _pickResumeCV();
-  }
-
-  /// Removes resume/CV file
-  void _removeResumeCV() {
-    setState(() {
-      _resumeCVFile = null;
-    });
-  }
-
   /// Builds the document preview content
-  Widget _buildDocumentPreview() {
-    final fileName = _resumeCVFile!.name;
+  Widget _buildDocumentPreview(PlatformFile resumeFile) {
+    final fileName = resumeFile.name;
     final extension = fileName.split('.').last.toLowerCase();
 
     // For PDF files, show a more realistic preview
@@ -956,35 +1016,32 @@ class _JobStepScreenState extends State<JobStepScreen> {
   }
 
   /// Submits the application
-  void _submitApplication() {
+  void _submitApplication(
+    BuildContext context,
+    Map<String, String> formData,
+    PlatformFile? resumeFile,
+  ) {
     // Close keyboard first
     _closeKeyboard(context);
 
-    if (_formKey.currentState!.validate() && _resumeCVFile != null) {
-      setState(() {
-        _isSubmitting = true;
-      });
-
-      // Simulate processing
-      Future.delayed(const Duration(seconds: 1), () {
-        setState(() {
-          _isSubmitting = false;
-        });
-
-        // Navigate to job application success screen
-        if (mounted) {
-          context.go(AppRoutes.jobApplicationSuccess);
-        }
-      });
+    if (_formKey.currentState!.validate() && resumeFile != null) {
+      context.read<JobsBloc>().add(
+        SubmitJobApplicationEvent(formData: formData, resumeFile: resumeFile),
+      );
     } else {
-      if (_resumeCVFile == null) {
+      if (resumeFile == null) {
         _showErrorSnackBar('Please upload your Resume/CV');
       }
     }
   }
 
   /// Builds the main card containing all content
-  Widget _buildMainCard() {
+  Widget _buildMainCard(
+    BuildContext context,
+    Map<String, dynamic> job,
+    Map<String, String> formData,
+    PlatformFile? resumeFile,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -998,7 +1055,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Job overview section
-            _buildJobOverviewSection(),
+            _buildJobOverviewSection(job),
 
             // Divider
             Container(
@@ -1022,7 +1079,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
             ),
 
             // Form section
-            _buildFormSection(),
+            _buildFormSection(context, formData, resumeFile),
 
             // Submit button removed - now fixed at bottom
           ],

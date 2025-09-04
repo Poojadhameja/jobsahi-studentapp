@@ -1,42 +1,88 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/profile_navigation_app_bar.dart';
+import '../bloc/jobs_bloc.dart';
+import '../bloc/jobs_event.dart';
+import '../bloc/jobs_state.dart';
 
-class ApplicationTrackerScreen extends StatefulWidget {
+class ApplicationTrackerScreen extends StatelessWidget {
   /// Whether this screen is opened from profile navigation
   final bool isFromProfile;
 
   const ApplicationTrackerScreen({super.key, this.isFromProfile = false});
 
   @override
-  State<ApplicationTrackerScreen> createState() =>
-      _ApplicationTrackerScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => JobsBloc()..add(const LoadApplicationTrackerEvent()),
+      child: _ApplicationTrackerScreenView(isFromProfile: isFromProfile),
+    );
+  }
 }
 
-class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
+class _ApplicationTrackerScreenView extends StatelessWidget {
+  final bool isFromProfile;
+
+  const _ApplicationTrackerScreenView({required this.isFromProfile});
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: AppConstants.backgroundColor,
-        appBar: widget.isFromProfile
-            ? ProfileNavigationAppBar(title: 'Application Tracker')
-            : null,
-        body: Column(
-          children: [
-            if (!widget.isFromProfile) _buildTabBar(),
-            Expanded(
-              child: TabBarView(
+    return BlocListener<JobsBloc, JobsState>(
+      listener: (context, state) {
+        if (state is ApplicationViewed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Viewing application: ${state.applicationId}'),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+        } else if (state is ApplyForMoreJobsState) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Apply for more jobs functionality will be implemented here',
+              ),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<JobsBloc, JobsState>(
+        builder: (context, state) {
+          List<Map<String, dynamic>> appliedJobs = [];
+          List<Map<String, dynamic>> interviewJobs = [];
+          List<Map<String, dynamic>> offerJobs = [];
+
+          if (state is ApplicationTrackerLoaded) {
+            appliedJobs = state.appliedJobs;
+            interviewJobs = state.interviewJobs;
+            offerJobs = state.offerJobs;
+          }
+
+          return DefaultTabController(
+            length: 3,
+            child: Scaffold(
+              backgroundColor: AppConstants.backgroundColor,
+              appBar: isFromProfile
+                  ? ProfileNavigationAppBar(title: 'Application Tracker')
+                  : null,
+              body: Column(
                 children: [
-                  _buildAppliedTab(),
-                  _buildInterviewTab(),
-                  _buildOffersTab(),
+                  if (!isFromProfile) _buildTabBar(),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildAppliedTab(context, appliedJobs),
+                        _buildInterviewTab(context, interviewJobs),
+                        _buildOffersTab(context, offerJobs),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -60,87 +106,73 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
   }
 
   /// Builds the applied tab content
-  Widget _buildAppliedTab() {
+  Widget _buildAppliedTab(
+    BuildContext context,
+    List<Map<String, dynamic>> appliedJobs,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: _buildAppliedCard(),
+      child: _buildAppliedCard(context, appliedJobs),
     );
   }
 
   /// Builds the interview tab content
-  Widget _buildInterviewTab() {
+  Widget _buildInterviewTab(
+    BuildContext context,
+    List<Map<String, dynamic>> interviewJobs,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: _buildInterviewCards(),
+      child: _buildInterviewCards(context, interviewJobs),
     );
   }
 
   /// Builds the offers tab content
-  Widget _buildOffersTab() {
+  Widget _buildOffersTab(
+    BuildContext context,
+    List<Map<String, dynamic>> offerJobs,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: _buildOffersCard(),
+      child: _buildOffersCard(context, offerJobs),
     );
   }
 
   /// Builds the applied job cards
-  Widget _buildAppliedCard() {
-    return ListView(
-      children: [
-        // ITI Electrician Apprentice - Card 1
-        _buildAppliedJobCard(
-          jobTitle: 'इलेक्ट्रीशियन अप्रेंटिस',
-          companyName: 'Bharat Heavy Electricals Ltd.',
-          location: 'Bhopal, Madhya Pradesh',
-          experience: 'Fresher',
-          appliedDate: '15 July 2025',
-          positions: '8 positions',
+  Widget _buildAppliedCard(
+    BuildContext context,
+    List<Map<String, dynamic>> appliedJobs,
+  ) {
+    if (appliedJobs.isEmpty) {
+      return const Center(
+        child: Text(
+          'No applied jobs found',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppConstants.textSecondaryColor,
+          ),
         ),
-        const SizedBox(height: 16),
+      );
+    }
 
-        // ITI Fitter - Card 2
-        _buildAppliedJobCard(
-          jobTitle: 'ITI Fitter',
-          companyName: 'Maruti Suzuki India Ltd.',
-          location: 'Gurgaon, Haryana',
-          experience: '1-2 years',
-          appliedDate: '12 July 2025',
-          positions: '12 positions',
-        ),
-        const SizedBox(height: 16),
-
-        // ITI Welder - Card 3
-        _buildAppliedJobCard(
-          jobTitle: 'ITI Welder',
-          companyName: 'Tata Motors Ltd.',
-          location: 'Pune, Maharashtra',
-          experience: 'Fresher',
-          appliedDate: '10 July 2025',
-          positions: '6 positions',
-        ),
-        const SizedBox(height: 16),
-
-        // ITI Machinist - Card 4
-        _buildAppliedJobCard(
-          jobTitle: 'ITI Machinist',
-          companyName: 'Mahindra & Mahindra Ltd.',
-          location: 'Mumbai, Maharashtra',
-          experience: '1-3 years',
-          appliedDate: '8 July 2025',
-          positions: '10 positions',
-        ),
-        const SizedBox(height: 16),
-
-        // ITI Turner - Card 5
-        _buildAppliedJobCard(
-          jobTitle: 'ITI Turner',
-          companyName: 'Hero MotoCorp Ltd.',
-          location: 'Gurgaon, Haryana',
-          experience: 'Fresher',
-          appliedDate: '5 July 2025',
-          positions: '15 positions',
-        ),
-      ],
+    return ListView.builder(
+      itemCount: appliedJobs.length,
+      itemBuilder: (context, index) {
+        final job = appliedJobs[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: _buildAppliedJobCard(
+            context: context,
+            jobTitle: job['title'] ?? 'Job Title',
+            companyName: job['company'] ?? 'Company Name',
+            location: job['location'] ?? 'Location',
+            experience: job['experience'] ?? 'Fresher',
+            appliedDate: job['appliedDate'] ?? 'Applied Date',
+            positions: job['positions'] ?? 'Positions',
+            applicationId: job['id'] ?? '${index}',
+          ),
+        );
+      },
     );
   }
 
@@ -160,12 +192,14 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
 
   /// Builds an individual applied job card
   Widget _buildAppliedJobCard({
+    required BuildContext context,
     required String jobTitle,
     required String companyName,
     required String location,
     required String experience,
     required String appliedDate,
     required String positions,
+    required String applicationId,
   }) {
     return Container(
       width: double.infinity,
@@ -255,7 +289,11 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _viewApplication,
+              onPressed: () {
+                context.read<JobsBloc>().add(
+                  ViewApplicationEvent(applicationId: applicationId),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5C9A24),
                 foregroundColor: Colors.white,
@@ -277,14 +315,30 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
   }
 
   /// Builds the interview cards
-  Widget _buildInterviewCards() {
+  Widget _buildInterviewCards(
+    BuildContext context,
+    List<Map<String, dynamic>> interviewJobs,
+  ) {
+    if (interviewJobs.isEmpty) {
+      return const Center(
+        child: Text(
+          'No interview scheduled',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppConstants.textSecondaryColor,
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
         // Interview cards list
         Expanded(
           child: ListView.builder(
-            itemCount: 3, // Show 3 identical cards as in the image
+            itemCount: interviewJobs.length,
             itemBuilder: (context, index) {
+              final job = interviewJobs[index];
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
@@ -329,9 +383,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Job Title
-                          const Text(
-                            'इलेक्ट्रीशियन अप्रेंटिस',
-                            style: TextStyle(
+                          Text(
+                            job['title'] ?? 'इलेक्ट्रीशियन अप्रेंटिस',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF0B537D), // Dark blue color
@@ -340,9 +394,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                           const SizedBox(height: 3),
 
                           // Company Name
-                          const Text(
-                            'Ashok Leyland',
-                            style: TextStyle(
+                          Text(
+                            job['company'] ?? 'Ashok Leyland',
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF5C9A24), // Light green color
                               fontWeight: FontWeight.w500,
@@ -351,9 +405,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                           const SizedBox(height: 6),
 
                           // Location
-                          const Text(
-                            'Location Bhopal',
-                            style: TextStyle(
+                          Text(
+                            job['location'] ?? 'Location Bhopal',
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF0B537D), // Dark grey color
                             ),
@@ -361,9 +415,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                           const SizedBox(height: 3),
 
                           // Interview Date
-                          const Text(
-                            'Interview: 25 July 2025',
-                            style: TextStyle(
+                          Text(
+                            'Interview: ${job['interviewDate'] ?? '25 July 2025'}',
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF0B537D), // Dark grey color
                             ),
@@ -393,15 +447,31 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
   }
 
   /// Builds the offers card
-  Widget _buildOffersCard() {
+  Widget _buildOffersCard(
+    BuildContext context,
+    List<Map<String, dynamic>> offerJobs,
+  ) {
+    if (offerJobs.isEmpty) {
+      return const Center(
+        child: Text(
+          'No job offers received',
+          style: TextStyle(
+            fontSize: 16,
+            color: AppConstants.textSecondaryColor,
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
         // Job offer cards
         Expanded(
-          child: ListView(
-            children: [
-              // First job offer card
-              Container(
+          child: ListView.builder(
+            itemCount: offerJobs.length,
+            itemBuilder: (context, index) {
+              final job = offerJobs[index];
+              return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -426,10 +496,10 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                         color: const Color.fromARGB(255, 0, 59, 153),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
-                          'W',
-                          style: TextStyle(
+                          (job['company'] ?? 'W').substring(0, 1).toUpperCase(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -445,9 +515,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Job Title
-                          const Text(
-                            'इलेक्ट्रीशियन अप्रेंटिस',
-                            style: TextStyle(
+                          Text(
+                            job['title'] ?? 'इलेक्ट्रीशियन अप्रेंटिस',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF0B537D), // Dark blue color
@@ -456,9 +526,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                           const SizedBox(height: 3),
 
                           // Company Name
-                          const Text(
-                            'Ashok Leyland',
-                            style: TextStyle(
+                          Text(
+                            job['company'] ?? 'Ashok Leyland',
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF5C9A24), // Light green color
                               fontWeight: FontWeight.w500,
@@ -467,9 +537,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                           const SizedBox(height: 6),
 
                           // Job Type
-                          const Text(
-                            'Full Time',
-                            style: TextStyle(
+                          Text(
+                            job['type'] ?? 'Full Time',
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF0B537D), // Dark grey color
                             ),
@@ -477,9 +547,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                           const SizedBox(height: 3),
 
                           // Skills
-                          const Text(
-                            'Skills: Drilling, Measuring',
-                            style: TextStyle(
+                          Text(
+                            'Skills: ${job['skills'] ?? 'Drilling, Measuring'}',
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF0B537D), // Dark grey color
                             ),
@@ -492,19 +562,21 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // Offer Accepted badge
+                        // Offer status badge
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF5C9A24),
+                            color: job['status'] == 'Offer Accepted'
+                                ? const Color(0xFF5C9A24)
+                                : const Color(0xFF0B537D),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'Offer Accepted',
-                            style: TextStyle(
+                          child: Text(
+                            job['status'] ?? 'Offer Received',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
@@ -514,9 +586,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                         const SizedBox(height: 8),
 
                         // Salary
-                        const Text(
-                          '₹18,000',
-                          style: TextStyle(
+                        Text(
+                          job['salary'] ?? '₹18,000',
+                          style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF0B537D), // Dark grey color
                             fontWeight: FontWeight.w600,
@@ -526,119 +598,8 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
                     ),
                   ],
                 ),
-              ),
-
-              // Second job offer card
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.1),
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Company Logo
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'W',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Job Details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Job Title
-                          const Text(
-                            'इलेक्ट्रीशियन अप्रेंटिस',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0B537D), // Dark blue color
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-
-                          // Company Name
-                          const Text(
-                            'Ashok Leyland',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF5C9A24), // Light green color
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-
-                          // Job Type
-                          const Text(
-                            'Full Time',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF0B537D), // Dark grey color
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-
-                          // Skills
-                          const Text(
-                            'Skills: Drilling, Measuring',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF0B537D), // Dark grey color
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // View Offer button
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0B537D), // Dark blue
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'View Offer',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              );
+            },
           ),
         ),
 
@@ -647,7 +608,9 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
           width: double.infinity,
           margin: const EdgeInsets.only(top: 16),
           child: ElevatedButton(
-            onPressed: _applyForMoreJobs,
+            onPressed: () {
+              context.read<JobsBloc>().add(const ApplyForMoreJobsEvent());
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.successColor,
               foregroundColor: Colors.white,
@@ -664,32 +627,6 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  /// Handles view application button press
-  void _viewApplication() {
-    // TODO: Implement view application functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'View application functionality will be implemented here',
-        ),
-        backgroundColor: AppConstants.successColor,
-      ),
-    );
-  }
-
-  /// Handles apply for more jobs button press
-  void _applyForMoreJobs() {
-    // TODO: Implement apply for more jobs functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Apply for more jobs functionality will be implemented here',
-        ),
-        backgroundColor: AppConstants.successColor,
-      ),
     );
   }
 }

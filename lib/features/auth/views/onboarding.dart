@@ -1,17 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) =>
+          AuthBloc()..add(const OnboardingPageChangeEvent(pageIndex: 0)),
+      child: const _OnboardingScreenView(),
+    );
+  }
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenView extends StatefulWidget {
+  const _OnboardingScreenView();
+
+  @override
+  State<_OnboardingScreenView> createState() => _OnboardingScreenViewState();
+}
+
+class _OnboardingScreenViewState extends State<_OnboardingScreenView> {
   final PageController _pageController = PageController();
-  int _currentPage = 0;
 
   // Onboarding data
   final List<OnboardingData> _onboardingPages = [
@@ -60,20 +76,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   /// Navigate to the next page or complete onboarding
-  void _nextPage() {
-    if (_currentPage < _onboardingPages.length - 1) {
+  void _nextPage(BuildContext context, int currentPage) {
+    if (currentPage < _onboardingPages.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
-      _completeOnboarding();
+      _completeOnboarding(context);
     }
   }
 
   /// Navigate to the previous page
-  void _previousPage() {
-    if (_currentPage > 0) {
+  void _previousPage(BuildContext context, int currentPage) {
+    if (currentPage > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -82,57 +98,73 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   /// Complete onboarding and navigate to login
-  void _completeOnboarding() {
-    context.go(AppRoutes.loginOtpEmail);
+  void _completeOnboarding(BuildContext context) {
+    context.read<AuthBloc>().add(const CompleteOnboardingEvent());
   }
 
   /// Skip onboarding and go directly to login
-  void _skipOnboarding() {
-    context.go(AppRoutes.loginOtpEmail);
+  void _skipOnboarding(BuildContext context) {
+    context.read<AuthBloc>().add(const SkipOnboardingEvent());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Skip button at the top
-            _buildSkipButton(),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is OnboardingCompleted || state is OnboardingSkipped) {
+          context.push(AppRoutes.loginOtpEmail);
+        }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          int currentPage = 0;
+          if (state is OnboardingState) {
+            currentPage = state.currentPage;
+          }
 
-            // PageView with onboarding content
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemCount: _onboardingPages.length,
-                itemBuilder: (context, index) {
-                  return _buildOnboardingPage(_onboardingPages[index]);
-                },
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // Skip button at the top
+                  _buildSkipButton(context),
+
+                  // PageView with onboarding content
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        context.read<AuthBloc>().add(
+                          OnboardingPageChangeEvent(pageIndex: index),
+                        );
+                      },
+                      itemCount: _onboardingPages.length,
+                      itemBuilder: (context, index) {
+                        return _buildOnboardingPage(_onboardingPages[index]);
+                      },
+                    ),
+                  ),
+
+                  // Bottom section with navigation
+                  _buildBottomSection(context, currentPage),
+                ],
               ),
             ),
-
-            // Bottom section with navigation
-            _buildBottomSection(),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
   /// Builds the skip button at the top
-  Widget _buildSkipButton() {
+  Widget _buildSkipButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Align(
         alignment: Alignment.topRight,
         child: GestureDetector(
-          onTap: _skipOnboarding,
+          onTap: () => _skipOnboarding(context),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -238,22 +270,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   /// Builds the bottom section with navigation
-  Widget _buildBottomSection() {
+  Widget _buildBottomSection(BuildContext context, int currentPage) {
     return Padding(
       padding: const EdgeInsets.all(30.0),
       child: Column(
         children: [
           // Page indicators
-          _buildPageIndicators(),
+          _buildPageIndicators(currentPage),
           const SizedBox(height: 30),
 
           // Navigation buttons
           Row(
             children: [
               // Previous button (only show if not on first page)
-              if (_currentPage > 0)
+              if (currentPage > 0)
                 GestureDetector(
-                  onTap: _previousPage,
+                  onTap: () => _previousPage(context, currentPage),
                   child: const CircleAvatar(
                     radius: 20,
                     backgroundColor: Colors.green,
@@ -265,7 +297,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
               // Next/Get Started button
               GestureDetector(
-                onTap: _nextPage,
+                onTap: () => _nextPage(context, currentPage),
                 child: const CircleAvatar(
                   radius: 20,
                   backgroundColor: Colors.green,
@@ -280,9 +312,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           SizedBox(
             width: double.infinity,
             height: 50,
-            child: _currentPage == _onboardingPages.length - 1
+            child: currentPage == _onboardingPages.length - 1
                 ? ElevatedButton(
-                    onPressed: _completeOnboarding,
+                    onPressed: () => _completeOnboarding(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -304,17 +336,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   /// Builds page indicators
-  Widget _buildPageIndicators() {
+  Widget _buildPageIndicators(int currentPage) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
         _onboardingPages.length,
         (index) => Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: _currentPage == index ? 24 : 8,
+          width: currentPage == index ? 24 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: _currentPage == index ? Colors.green : Colors.grey.shade300,
+            color: currentPage == index ? Colors.green : Colors.grey.shade300,
             borderRadius: BorderRadius.circular(4),
           ),
         ),

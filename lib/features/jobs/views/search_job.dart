@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/job_data.dart';
@@ -6,6 +7,9 @@ import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
+import '../bloc/jobs_bloc.dart';
+import '../bloc/jobs_event.dart';
+import '../bloc/jobs_state.dart';
 
 class SearchJobScreen extends StatefulWidget {
   /// Initial search query
@@ -21,20 +25,18 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
   /// Search controller
   final _searchController = TextEditingController();
 
-  /// Currently selected filter index
-  int _selectedFilterIndex = 0;
-
-  /// Currently selected category index
-  int _selectedCategoryIndex = 0;
-
-  /// List of filtered jobs
-  List<Map<String, dynamic>> _filteredJobs = [];
-
   @override
   void initState() {
     super.initState();
     _searchController.text = widget.searchQuery ?? '';
-    _filterJobs();
+
+    // Load jobs when screen initializes
+    context.read<JobsBloc>().add(const LoadJobsEvent());
+
+    // If there's an initial search query, search for it
+    if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
+      context.read<JobsBloc>().add(SearchJobsEvent(query: widget.searchQuery!));
+    }
   }
 
   @override
@@ -45,17 +47,31 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(title: 'Search Jobs', showBackButton: true),
-      body: Column(
-        children: [
-          // Search and filter section
-          _buildSearchAndFilterSection(),
+    return BlocListener<JobsBloc, JobsState>(
+      listener: (context, state) {
+        if (state is JobsError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              duration: const Duration(seconds: 3),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
+        appBar: const SimpleAppBar(title: 'Search Jobs', showBackButton: true),
+        body: Column(
+          children: [
+            // Search and filter section
+            _buildSearchAndFilterSection(),
 
-          // Job results
-          Expanded(child: _buildJobResults()),
-        ],
+            // Job results
+            Expanded(child: _buildJobResults()),
+          ],
+        ),
       ),
     );
   }
@@ -95,7 +111,7 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
           icon: const Icon(Icons.clear),
           onPressed: () {
             _searchController.clear();
-            _filterJobs();
+            context.read<JobsBloc>().add(const ClearSearchEvent());
           },
         ),
         filled: true,
@@ -106,7 +122,7 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
         ),
       ),
       onChanged: (value) {
-        _filterJobs();
+        context.read<JobsBloc>().add(SearchJobsEvent(query: value));
       },
     );
   }
@@ -125,14 +141,25 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
           ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        HorizontalFilterChips(
-          filterOptions: JobData.jobCategories,
-          selectedIndex: _selectedCategoryIndex,
-          onFilterSelected: (index) {
-            setState(() {
-              _selectedCategoryIndex = index;
-            });
-            _filterJobs();
+        BlocBuilder<JobsBloc, JobsState>(
+          builder: (context, state) {
+            final selectedCategoryIndex = state is JobsLoaded
+                ? state.selectedCategoryIndex
+                : 0;
+
+            return HorizontalFilterChips(
+              filterOptions: JobData.jobCategories,
+              selectedIndex: selectedCategoryIndex,
+              onFilterSelected: (index) {
+                final currentState = state as JobsLoaded;
+                context.read<JobsBloc>().add(
+                  FilterJobsEvent(
+                    categoryIndex: index,
+                    filterIndex: currentState.selectedFilterIndex,
+                  ),
+                );
+              },
+            );
           },
         ),
       ],
@@ -153,14 +180,25 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
           ),
         ),
         const SizedBox(height: AppConstants.smallPadding),
-        HorizontalFilterChips(
-          filterOptions: JobData.filterOptions,
-          selectedIndex: _selectedFilterIndex,
-          onFilterSelected: (index) {
-            setState(() {
-              _selectedFilterIndex = index;
-            });
-            _filterJobs();
+        BlocBuilder<JobsBloc, JobsState>(
+          builder: (context, state) {
+            final selectedFilterIndex = state is JobsLoaded
+                ? state.selectedFilterIndex
+                : 0;
+
+            return HorizontalFilterChips(
+              filterOptions: JobData.filterOptions,
+              selectedIndex: selectedFilterIndex,
+              onFilterSelected: (index) {
+                final currentState = state as JobsLoaded;
+                context.read<JobsBloc>().add(
+                  FilterJobsEvent(
+                    categoryIndex: currentState.selectedCategoryIndex,
+                    filterIndex: index,
+                  ),
+                );
+              },
+            );
           },
         ),
       ],
@@ -169,23 +207,56 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
 
   /// Builds the job results section
   Widget _buildJobResults() {
-    if (_filteredJobs.isEmpty) {
-      return _buildEmptyState();
-    }
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        if (state is JobsLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding,
-      ),
-      itemCount: _filteredJobs.length,
-      itemBuilder: (context, index) {
-        final job = _filteredJobs[index];
-        return JobCard(
-          job: job,
-          onTap: () {
-            context.go(AppRoutes.jobDetailsWithId(job['id']));
-          },
-        );
+        if (state is JobsError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(state.message, style: const TextStyle(color: Colors.red)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<JobsBloc>().add(const LoadJobsEvent());
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (state is JobsLoaded) {
+          final filteredJobs = state.filteredJobs;
+
+          if (filteredJobs.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.defaultPadding,
+            ),
+            itemCount: filteredJobs.length,
+            itemBuilder: (context, index) {
+              final job = filteredJobs[index];
+              return JobCard(
+                job: job,
+                onTap: () {
+                  context.go(AppRoutes.jobDetailsWithId(job['id']));
+                },
+                isInitiallySaved: state.savedJobIds.contains(job['id']),
+              );
+            },
+          );
+        }
+
+        return const Center(child: CircularProgressIndicator());
       },
     );
   }
@@ -219,31 +290,5 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
         ],
       ),
     );
-  }
-
-  /// Filters jobs based on search query and selected filters
-  void _filterJobs() {
-    final query = _searchController.text.toLowerCase();
-    final selectedCategory = JobData.jobCategories[_selectedCategoryIndex];
-
-    setState(() {
-      _filteredJobs = JobData.recommendedJobs.where((job) {
-        // Filter by search query
-        final matchesQuery =
-            query.isEmpty ||
-            job['title'].toString().toLowerCase().contains(query) ||
-            job['company'].toString().toLowerCase().contains(query) ||
-            job['location'].toString().toLowerCase().contains(query);
-
-        // Filter by category
-        final matchesCategory =
-            selectedCategory == 'All Jobs' ||
-            job['title'].toString().toLowerCase().contains(
-              selectedCategory.toLowerCase(),
-            );
-
-        return matchesQuery && matchesCategory;
-      }).toList();
-    });
   }
 }

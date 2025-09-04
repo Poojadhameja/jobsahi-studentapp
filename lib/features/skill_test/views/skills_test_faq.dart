@@ -4,10 +4,14 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
 import '../../../shared/data/skills_test_data.dart';
+import '../bloc/skill_test_bloc.dart';
+import '../bloc/skill_test_event.dart';
+import '../bloc/skill_test_state.dart';
 
-class SkillsTestFAQScreen extends StatefulWidget {
+class SkillsTestFAQScreen extends StatelessWidget {
   /// Job data for context
   final Map<String, dynamic> job;
 
@@ -17,18 +21,30 @@ class SkillsTestFAQScreen extends StatefulWidget {
   const SkillsTestFAQScreen({super.key, required this.job, required this.test});
 
   @override
-  State<SkillsTestFAQScreen> createState() => _SkillsTestFAQScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) =>
+          SkillTestBloc()
+            ..add(StartTestEvent(testId: test['id']?.toString() ?? 'test_1')),
+      child: _SkillsTestFAQScreenView(job: job, test: test),
+    );
+  }
 }
 
-class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
+class _SkillsTestFAQScreenView extends StatefulWidget {
+  final Map<String, dynamic> job;
+  final Map<String, dynamic> test;
+
+  const _SkillsTestFAQScreenView({required this.job, required this.test});
+
+  @override
+  State<_SkillsTestFAQScreenView> createState() =>
+      _SkillsTestFAQScreenViewState();
+}
+
+class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
   /// Timer for the test
   Timer? _timer;
-
-  /// Remaining time in seconds
-  int _remainingTime = 15 * 60; // 15 minutes
-
-  /// Selected answers for each question (optionId -> questionId)
-  final Map<String, String> _selectedAnswers = {};
 
   /// Test data from API-compatible data source
   late final Map<String, dynamic> _testData;
@@ -43,31 +59,12 @@ class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
     // Initialize test data from API-compatible data source
     _testData = SkillsTestData.electricianTest;
     _questions = SkillsTestData.electricianQuestions;
-
-    // Set timer based on test data
-    _remainingTime = (_testData['duration'] as int) * 60;
-
-    _startTimer();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
-  }
-
-  /// Starts the countdown timer
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_remainingTime > 0) {
-        setState(() {
-          _remainingTime--;
-        });
-      } else {
-        _timer?.cancel();
-        _submitTest();
-      }
-    });
   }
 
   /// Formats time as MM:SS
@@ -78,35 +75,26 @@ class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
   }
 
   /// Handles answer selection
-  void _selectAnswer(String questionId, String optionId) {
-    setState(() {
-      _selectedAnswers[questionId] = optionId;
-    });
+  void _selectAnswer(String questionId, String answerText) {
+    context.read<SkillTestBloc>().add(
+      SubmitAnswerEvent(
+        questionId: questionId,
+        answer: answerText,
+        timeSpent: 0,
+      ),
+    );
   }
 
   /// Submits the test
-  void _submitTest() async {
-    _timer?.cancel();
-
-    // Show completion message
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text('Test Completed!'),
-          content: Text(
-            'You have completed the test with ${_selectedAnswers.length} questions answered.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(); // Go back to previous screen
-              },
-              child: const Text('OK'),
-            ),
-          ],
+  void _submitTest() {
+    final bloc = context.read<SkillTestBloc>();
+    final state = bloc.state;
+    if (state is TestInProgressState) {
+      bloc.add(
+        SubmitTestEvent(
+          testId: state.testId,
+          answers: state.answers,
+          totalTimeSpent: 0,
         ),
       );
     }
@@ -114,63 +102,105 @@ class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return BlocListener<SkillTestBloc, SkillTestState>(
+      listener: (context, state) {
+        if (state is TestResultsLoadedState) {
+          // Show completion message
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text('Test Completed!'),
+              content: Text(
+                'You have completed the test. Score: ${state.score}%',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close dialog
+                    Navigator.of(context).pop(); // Go back to previous screen
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<SkillTestBloc, SkillTestState>(
+        builder: (context, state) {
+          int remainingTime = 15 * 60; // Default 15 minutes
+          Map<String, String> selectedAnswers = {};
 
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Skills Test/टेस्ट FAQ',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: false,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Course/Test Information Section with Timer
-            _buildCourseInfoSection(),
+          if (state is TestInProgressState) {
+            remainingTime = state.timeRemaining;
+            selectedAnswers = state.answers;
+          }
 
-            // Progress indicator
-            _buildProgressIndicator(),
-
-            // Questions list
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // Questions
-                    ..._questions.map((question) {
-                      return _buildQuestionCard(question);
-                    }),
-
-                    const SizedBox(height: 100), // Space for submit button
-                  ],
+          return Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: const Text(
+                'Skills Test/टेस्ट FAQ',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
+              centerTitle: false,
             ),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // Course/Test Information Section with Timer
+                  _buildCourseInfoSection(remainingTime),
 
-            // Submit button
-            _buildSubmitButton(),
-          ],
-        ),
+                  // Progress indicator
+                  _buildProgressIndicator(selectedAnswers),
+
+                  // Questions list
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          // Questions
+                          ..._questions.map((question) {
+                            return _buildQuestionCard(
+                              question,
+                              selectedAnswers,
+                            );
+                          }),
+
+                          const SizedBox(
+                            height: 100,
+                          ), // Space for submit button
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Submit button
+                  _buildSubmitButton(),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
   /// Builds the progress indicator
-  Widget _buildProgressIndicator() {
-    final answeredCount = _selectedAnswers.length;
+  Widget _buildProgressIndicator(Map<String, String> selectedAnswers) {
+    final answeredCount = selectedAnswers.length;
     final totalQuestions = _questions.length;
     final progress = totalQuestions > 0 ? answeredCount / totalQuestions : 0.0;
 
@@ -220,7 +250,7 @@ class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
   }
 
   /// Builds the course information section with timer
-  Widget _buildCourseInfoSection() {
+  Widget _buildCourseInfoSection(int remainingTime) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -285,7 +315,7 @@ class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              _formatTime(_remainingTime),
+              _formatTime(remainingTime),
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -299,10 +329,13 @@ class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
   }
 
   /// Builds a single question card
-  Widget _buildQuestionCard(Map<String, dynamic> question) {
+  Widget _buildQuestionCard(
+    Map<String, dynamic> question,
+    Map<String, String> selectedAnswers,
+  ) {
     final questionId = question['id'] as String;
     final options = question['options'] as List<Map<String, dynamic>>;
-    final isAnswered = _selectedAnswers.containsKey(questionId);
+    final isAnswered = selectedAnswers.containsKey(questionId);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -379,11 +412,11 @@ class _SkillsTestFAQScreenState extends State<SkillsTestFAQScreen> {
             itemCount: options.length,
             itemBuilder: (context, optionIndex) {
               final option = options[optionIndex];
-              final optionId = option['id'] as String;
-              final isSelected = _selectedAnswers[questionId] == optionId;
+              final optionText = option['text'] as String;
+              final isSelected = selectedAnswers[questionId] == optionText;
 
               return GestureDetector(
-                onTap: () => _selectAnswer(questionId, optionId),
+                onTap: () => _selectAnswer(questionId, optionText),
                 child: Container(
                   decoration: BoxDecoration(
                     color: isSelected

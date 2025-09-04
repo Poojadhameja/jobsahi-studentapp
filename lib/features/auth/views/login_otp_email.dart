@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
 class LoginOtpEmailScreen extends StatefulWidget {
   const LoginOtpEmailScreen({super.key});
@@ -32,115 +36,149 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.largePadding,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 2),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              duration: const Duration(seconds: 3),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else if (state is OtpSentState) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('OTP sent successfully'),
+              duration: Duration(seconds: 2),
+              backgroundColor: AppConstants.textPrimaryColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.push(AppRoutes.loginOtpCode);
+        } else if (state is AuthSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              duration: const Duration(seconds: 2),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          context.push(AppRoutes.loginVerifiedPopup);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.largePadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 2),
 
-              /// Back button
-              IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppConstants.textPrimaryColor,
+                /// Back button
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                  onPressed: () {
+                    context.pop();
+                  },
                 ),
-                onPressed: () {
-                  context.pop();
-                },
-              ),
-              const SizedBox(height: 4),
+                const SizedBox(height: 4),
 
-              /// Profile avatar & title
-              Center(
-                child: Column(
+                /// Profile avatar & title
+                Center(
+                  child: Column(
+                    children: [
+                      const CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Color(0xFFE0E7EF),
+                        child: Icon(
+                          Icons.person,
+                          size: 45,
+                          color: AppConstants.textPrimaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Sign In With",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                /// OTP / Mail toggle
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Color(0xFFE0E7EF),
-                      child: Icon(
-                        Icons.person,
-                        size: 45,
-                        color: AppConstants.textPrimaryColor,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Sign In With",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.textPrimaryColor,
-                      ),
-                    ),
+                    _buildToggleButton("OTP", isOTPSelected, () {
+                      setState(() => isOTPSelected = true);
+                    }),
+                    _buildToggleButton("MAIL", !isOTPSelected, () {
+                      setState(() => isOTPSelected = false);
+                    }),
                   ],
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              /// OTP / Mail toggle
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildToggleButton("OTP", isOTPSelected, () {
-                    setState(() => isOTPSelected = true);
-                  }),
-                  _buildToggleButton("MAIL", !isOTPSelected, () {
-                    setState(() => isOTPSelected = false);
-                  }),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              /// Hindi welcome text
-              const Center(
-                child: Text(
-                  "स्वागत है! आपने लॉग इन नहीं किया कुछ समय से",
-                  style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
-                  textAlign: TextAlign.center,
+                /// Hindi welcome text
+                const Center(
+                  child: Text(
+                    "स्वागत है! आपने लॉग इन नहीं किया कुछ समय से",
+                    style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              /// Login input section
-              isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
+                /// Login input section
+                isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              /// Or divider
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: Color(0xFF58B248))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      "Or Login with",
-                      style: const TextStyle(
-                        color: Color(0xFF58B248),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                /// Or divider
+                Row(
+                  children: [
+                    const Expanded(child: Divider(color: Color(0xFF58B248))),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        "Or Login with",
+                        style: const TextStyle(
+                          color: Color(0xFF58B248),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                  const Expanded(child: Divider(color: Color(0xFF58B248))),
-                ],
-              ),
-              const SizedBox(height: 20),
+                    const Expanded(child: Divider(color: Color(0xFF58B248))),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
-              /// Social login buttons
-              _buildSocialLoginButtons(),
+                /// Social login buttons
+                _buildSocialLoginButtons(),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              /// Create account link
-              _buildCreateAccountLink(),
-            ],
+                /// Create account link
+                _buildCreateAccountLink(),
+              ],
+            ),
           ),
         ),
       ),
@@ -232,33 +270,51 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
         const SizedBox(height: 20),
 
         /// Send OTP
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('OTP sent successfully'),
-                  duration: Duration(seconds: 2),
-                  backgroundColor: AppConstants.textPrimaryColor,
-                  behavior: SnackBarBehavior.floating,
+        BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            return SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: state is AuthLoading
+                    ? null
+                    : () {
+                        context.read<AuthBloc>().add(
+                          LoginWithOtpEvent(
+                            phoneNumber: _mobileController.text,
+                          ),
+                        );
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF5C9A24),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
+                  ),
                 ),
-              );
-              context.go(AppRoutes.loginOtpCode);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF5C9A24),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                child: state is AuthLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : const Text(
+                        "Send OTP",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
-            ),
-            child: const Text(
-              "Send OTP",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );
@@ -373,25 +429,52 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Sign In Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              context.go(AppRoutes.loginVerifiedPopup);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.secondaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            return SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: state is AuthLoading
+                    ? null
+                    : () {
+                        context.read<AuthBloc>().add(
+                          LoginWithEmailEvent(
+                            email: _emailController.text,
+                            password: _passwordController.text,
+                          ),
+                        );
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.secondaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
+                  ),
+                ),
+                child: state is AuthLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : const Text(
+                        AppConstants.loginText,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
-            ),
-            child: const Text(
-              AppConstants.loginText,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );
@@ -401,19 +484,35 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   Widget _buildSocialLoginButtons() {
     return Column(
       children: [
-        SignInButton(
-          logoPath: AppConstants.googleLogoAsset,
-          text: 'Sign in with Google',
-          onPressed: () {
-            debugPrint("Redirect to Google login API");
+        BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            return SignInButton(
+              logoPath: AppConstants.googleLogoAsset,
+              text: 'Sign in with Google',
+              onPressed: state is AuthLoading
+                  ? () {}
+                  : () {
+                      context.read<AuthBloc>().add(
+                        const SocialLoginEvent(provider: 'google'),
+                      );
+                    },
+            );
           },
         ),
         const SizedBox(height: 16),
-        SignInButton(
-          logoPath: AppConstants.linkedinLogoAsset,
-          text: 'Sign in with Linkedin',
-          onPressed: () {
-            debugPrint("Redirect to LinkedIn login API");
+        BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            return SignInButton(
+              logoPath: AppConstants.linkedinLogoAsset,
+              text: 'Sign in with Linkedin',
+              onPressed: state is AuthLoading
+                  ? () {}
+                  : () {
+                      context.read<AuthBloc>().add(
+                        const SocialLoginEvent(provider: 'linkedin'),
+                      );
+                    },
+            );
           },
         ),
       ],

@@ -5,9 +5,13 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/profile_bloc.dart';
+import '../bloc/profile_event.dart';
+import '../bloc/profile_state.dart';
 
 /// Reusable Background Layer Components
 class BackgroundLayers extends StatelessWidget {
@@ -261,174 +265,198 @@ class NextButton extends StatelessWidget {
 }
 
 /// Step 1: Job Type Selection
-class ProfileBuilderStep1Screen extends StatefulWidget {
+class ProfileBuilderStep1Screen extends StatelessWidget {
   const ProfileBuilderStep1Screen({super.key});
 
   @override
-  State<ProfileBuilderStep1Screen> createState() =>
-      _ProfileBuilderStep1ScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => ProfileBloc(),
+      child: const _ProfileBuilderStep1View(),
+    );
+  }
 }
 
-class _ProfileBuilderStep1ScreenState extends State<ProfileBuilderStep1Screen> {
-  String? selectedOption;
+class _ProfileBuilderStep1View extends StatelessWidget {
+  const _ProfileBuilderStep1View();
 
-  void onOptionSelected(String value) {
-    setState(() {
-      selectedOption = value;
-    });
+  void onOptionSelected(BuildContext context, String value) {
+    context.read<ProfileBloc>().add(UpdateJobTypeEvent(jobType: value));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B537D), Colors.white, Colors.white],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: AppConstants.smallPadding + 4),
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        String? selectedOption;
+        if (state is ProfileBuilderState) {
+          selectedOption = state.selectedJobType;
+        }
 
-              // Header
-              const ProfileBuilderHeader(currentStep: 1, totalSteps: 3),
+        return Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF0B537D), Colors.white, Colors.white],
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: AppConstants.smallPadding + 4),
 
-              const SizedBox(height: AppConstants.defaultPadding + 4),
+                  // Header
+                  const ProfileBuilderHeader(currentStep: 1, totalSteps: 3),
 
-              // Main content
-              Expanded(
-                child: BackgroundLayers(
-                  child: MainCardContainer(
-                    title: "Which type of job are you\nlooking for?",
-                    subtitle: "नीचे से एक विकल्प चुनें",
-                    content: Column(
-                      children: [
-                        OptionBuilder(
-                          value: "Full Time",
-                          isSelected: selectedOption == "Full Time",
-                          onTap: () => onOptionSelected("Full Time"),
+                  const SizedBox(height: AppConstants.defaultPadding + 4),
+
+                  // Main content
+                  Expanded(
+                    child: BackgroundLayers(
+                      child: MainCardContainer(
+                        title: "Which type of job are you\nlooking for?",
+                        subtitle: "नीचे से एक विकल्प चुनें",
+                        content: Column(
+                          children: [
+                            OptionBuilder(
+                              value: "Full Time",
+                              isSelected: selectedOption == "Full Time",
+                              onTap: () => onOptionSelected(context, "Full Time"),
+                            ),
+                            OptionBuilder(
+                              value: "Apprenticeship",
+                              isSelected: selectedOption == "Apprenticeship",
+                              onTap: () => onOptionSelected(context, "Apprenticeship"),
+                            ),
+                            const Spacer(),
+                          ],
                         ),
-                        OptionBuilder(
-                          value: "Apprenticeship",
-                          isSelected: selectedOption == "Apprenticeship",
-                          onTap: () => onOptionSelected("Apprenticeship"),
+                        actions: NextButton(
+                          onPressed: selectedOption != null
+                              ? () {
+                                  context.go(
+                                    '${AppRoutes.profileBuilderStep2}?selectedJobType=${Uri.encodeComponent(selectedOption!)}',
+                                  );
+                                }
+                              : null,
                         ),
-                        const Spacer(),
-                      ],
-                    ),
-                    actions: NextButton(
-                      onPressed: selectedOption != null
-                          ? () {
-                              context.go(
-                                '${AppRoutes.profileBuilderStep2}?selectedJobType=${Uri.encodeComponent(selectedOption!)}',
-                              );
-                            }
-                          : null,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
 /// Step 2: Experience Level Selection
-class ProfileBuilderStep2Screen extends StatefulWidget {
+class ProfileBuilderStep2Screen extends StatelessWidget {
   final String selectedJobType;
 
   const ProfileBuilderStep2Screen({super.key, required this.selectedJobType});
 
   @override
-  State<ProfileBuilderStep2Screen> createState() =>
-      _ProfileBuilderStep2ScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => ProfileBloc()..add(UpdateJobTypeEvent(jobType: selectedJobType)),
+      child: _ProfileBuilderStep2View(selectedJobType: selectedJobType),
+    );
+  }
 }
 
-class _ProfileBuilderStep2ScreenState extends State<ProfileBuilderStep2Screen> {
-  String? selectedOption;
+class _ProfileBuilderStep2View extends StatelessWidget {
+  final String selectedJobType;
 
-  void onOptionSelected(String value) {
-    setState(() {
-      selectedOption = value;
-    });
+  const _ProfileBuilderStep2View({required this.selectedJobType});
+
+  void onOptionSelected(BuildContext context, String value) {
+    context.read<ProfileBloc>().add(UpdateExperienceLevelEvent(experienceLevel: value));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B537D), Colors.white, Colors.white],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: AppConstants.smallPadding + 4),
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        String? selectedOption;
+        if (state is ProfileBuilderState) {
+          selectedOption = state.selectedExperienceLevel;
+        }
 
-              // Header
-              const ProfileBuilderHeader(currentStep: 2, totalSteps: 3),
+        return Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF0B537D), Colors.white, Colors.white],
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: AppConstants.smallPadding + 4),
 
-              const SizedBox(height: AppConstants.defaultPadding + 4),
+                  // Header
+                  const ProfileBuilderHeader(currentStep: 2, totalSteps: 3),
 
-              // Main content
-              Expanded(
-                child: BackgroundLayers(
-                  child: MainCardContainer(
-                    title: "What is your current\nexperience level?",
-                    subtitle: "नीचे से सही विकल्प चुनें",
-                    content: Column(
-                      children: [
-                        OptionBuilder(
-                          value: "Fresher",
-                          isSelected: selectedOption == "Fresher",
-                          onTap: () => onOptionSelected("Fresher"),
+                  const SizedBox(height: AppConstants.defaultPadding + 4),
+
+                  // Main content
+                  Expanded(
+                    child: BackgroundLayers(
+                      child: MainCardContainer(
+                        title: "What is your current\nexperience level?",
+                        subtitle: "नीचे से सही विकल्प चुनें",
+                        content: Column(
+                          children: [
+                            OptionBuilder(
+                              value: "Fresher",
+                              isSelected: selectedOption == "Fresher",
+                              onTap: () => onOptionSelected(context, "Fresher"),
+                            ),
+                            OptionBuilder(
+                              value: "Experienced",
+                              isSelected: selectedOption == "Experienced",
+                              onTap: () => onOptionSelected(context, "Experienced"),
+                            ),
+                            OptionBuilder(
+                              value: "Other",
+                              isSelected: selectedOption == "Other",
+                              onTap: () => onOptionSelected(context, "Other"),
+                            ),
+                            const Spacer(),
+                          ],
                         ),
-                        OptionBuilder(
-                          value: "Experienced",
-                          isSelected: selectedOption == "Experienced",
-                          onTap: () => onOptionSelected("Experienced"),
+                        actions: NextButton(
+                          onPressed: selectedOption != null
+                              ? () {
+                                  context.go(
+                                    '${AppRoutes.profileBuilderStep3}?selectedJobType=${Uri.encodeComponent(selectedJobType)}&selectedExperienceLevel=${Uri.encodeComponent(selectedOption!)}',
+                                  );
+                                }
+                              : null,
                         ),
-                        OptionBuilder(
-                          value: "Other",
-                          isSelected: selectedOption == "Other",
-                          onTap: () => onOptionSelected("Other"),
-                        ),
-                        const Spacer(),
-                      ],
-                    ),
-                    actions: NextButton(
-                      onPressed: selectedOption != null
-                          ? () {
-                              context.go(
-                                '${AppRoutes.profileBuilderStep3}?selectedJobType=${Uri.encodeComponent(widget.selectedJobType)}&selectedExperienceLevel=${Uri.encodeComponent(selectedOption!)}',
-                              );
-                            }
-                          : null,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
 /// Step 3: Trade Selection
-class ProfileBuilderStep3Screen extends StatefulWidget {
+class ProfileBuilderStep3Screen extends StatelessWidget {
   final String selectedJobType;
   final String selectedExperienceLevel;
 
@@ -439,116 +467,138 @@ class ProfileBuilderStep3Screen extends StatefulWidget {
   });
 
   @override
-  State<ProfileBuilderStep3Screen> createState() =>
-      _ProfileBuilderStep3ScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => ProfileBloc()
+        ..add(UpdateJobTypeEvent(jobType: selectedJobType))
+        ..add(UpdateExperienceLevelEvent(experienceLevel: selectedExperienceLevel)),
+      child: _ProfileBuilderStep3View(
+        selectedJobType: selectedJobType,
+        selectedExperienceLevel: selectedExperienceLevel,
+      ),
+    );
+  }
 }
 
-class _ProfileBuilderStep3ScreenState extends State<ProfileBuilderStep3Screen> {
-  String? selectedOption;
+class _ProfileBuilderStep3View extends StatelessWidget {
+  final String selectedJobType;
+  final String selectedExperienceLevel;
 
-  void onOptionSelected(String value) {
-    setState(() {
-      selectedOption = value;
-    });
+  const _ProfileBuilderStep3View({
+    required this.selectedJobType,
+    required this.selectedExperienceLevel,
+  });
+
+  void onOptionSelected(BuildContext context, String value) {
+    context.read<ProfileBloc>().add(UpdatePreferredLocationEvent(preferredLocation: value));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B537D), Colors.white, Colors.white],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: AppConstants.smallPadding + 4),
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        String? selectedOption;
+        if (state is ProfileBuilderState) {
+          selectedOption = state.selectedPreferredLocation;
+        }
 
-              // Header
-              const ProfileBuilderHeader(currentStep: 3, totalSteps: 3),
+        return Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF0B537D), Colors.white, Colors.white],
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: AppConstants.smallPadding + 4),
 
-              const SizedBox(height: AppConstants.defaultPadding + 4),
+                  // Header
+                  const ProfileBuilderHeader(currentStep: 3, totalSteps: 3),
 
-              // Main content
-              Expanded(
-                child: BackgroundLayers(
-                  child: MainCardContainer(
-                    title: "What trade are you\nlooking to obtain?",
-                    subtitle: "नीचे से सही विकल्प चुनें",
-                    content: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          OptionBuilder(
-                            value: "Computer Science",
-                            isSelected: selectedOption == "Computer Science",
-                            onTap: () => onOptionSelected("Computer Science"),
+                  const SizedBox(height: AppConstants.defaultPadding + 4),
+
+                  // Main content
+                  Expanded(
+                    child: BackgroundLayers(
+                      child: MainCardContainer(
+                        title: "What trade are you\nlooking to obtain?",
+                        subtitle: "नीचे से सही विकल्प चुनें",
+                        content: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              OptionBuilder(
+                                value: "Computer Science",
+                                isSelected: selectedOption == "Computer Science",
+                                onTap: () => onOptionSelected(context, "Computer Science"),
+                              ),
+                              OptionBuilder(
+                                value: "COPA",
+                                isSelected: selectedOption == "COPA",
+                                onTap: () => onOptionSelected(context, "COPA"),
+                              ),
+                              OptionBuilder(
+                                value: "Diesel Mechanic",
+                                isSelected: selectedOption == "Diesel Mechanic",
+                                onTap: () => onOptionSelected(context, "Diesel Mechanic"),
+                              ),
+                              OptionBuilder(
+                                value: "Mining",
+                                isSelected: selectedOption == "Mining",
+                                onTap: () => onOptionSelected(context, "Mining"),
+                              ),
+                              OptionBuilder(
+                                value: "Mechanical",
+                                isSelected: selectedOption == "Mechanical",
+                                onTap: () => onOptionSelected(context, "Mechanical"),
+                              ),
+                              OptionBuilder(
+                                value: "Fitter",
+                                isSelected: selectedOption == "Fitter",
+                                onTap: () => onOptionSelected(context, "Fitter"),
+                              ),
+                              OptionBuilder(
+                                value: "Electrical",
+                                isSelected: selectedOption == "Electrical",
+                                onTap: () => onOptionSelected(context, "Electrical"),
+                              ),
+                              OptionBuilder(
+                                value: "Electrician",
+                                isSelected: selectedOption == "Electrician",
+                                onTap: () => onOptionSelected(context, "Electrician"),
+                              ),
+                              OptionBuilder(
+                                value: "Civil",
+                                isSelected: selectedOption == "Civil",
+                                onTap: () => onOptionSelected(context, "Civil"),
+                              ),
+                              OptionBuilder(
+                                value: "On Demand",
+                                isSelected: selectedOption == "On Demand",
+                                onTap: () => onOptionSelected(context, "On Demand"),
+                              ),
+                            ],
                           ),
-                          OptionBuilder(
-                            value: "COPA",
-                            isSelected: selectedOption == "COPA",
-                            onTap: () => onOptionSelected("COPA"),
-                          ),
-                          OptionBuilder(
-                            value: "Diesel Mechanic",
-                            isSelected: selectedOption == "Diesel Mechanic",
-                            onTap: () => onOptionSelected("Diesel Mechanic"),
-                          ),
-                          OptionBuilder(
-                            value: "Mining",
-                            isSelected: selectedOption == "Mining",
-                            onTap: () => onOptionSelected("Mining"),
-                          ),
-                          OptionBuilder(
-                            value: "Mechanical",
-                            isSelected: selectedOption == "Mechanical",
-                            onTap: () => onOptionSelected("Mechanical"),
-                          ),
-                          OptionBuilder(
-                            value: "Fitter",
-                            isSelected: selectedOption == "Fitter",
-                            onTap: () => onOptionSelected("Fitter"),
-                          ),
-                          OptionBuilder(
-                            value: "Electrical",
-                            isSelected: selectedOption == "Electrical",
-                            onTap: () => onOptionSelected("Electrical"),
-                          ),
-                          OptionBuilder(
-                            value: "Electrician",
-                            isSelected: selectedOption == "Electrician",
-                            onTap: () => onOptionSelected("Electrician"),
-                          ),
-                          OptionBuilder(
-                            value: "Civil",
-                            isSelected: selectedOption == "Civil",
-                            onTap: () => onOptionSelected("Civil"),
-                          ),
-                          OptionBuilder(
-                            value: "On Demand",
-                            isSelected: selectedOption == "On Demand",
-                            onTap: () => onOptionSelected("On Demand"),
-                          ),
-                        ],
+                        ),
+                        actions: NextButton(
+                          onPressed: selectedOption != null
+                              ? () {
+                                  context.go(AppRoutes.yourLocation);
+                                }
+                              : null,
+                        ),
                       ),
                     ),
-                    actions: NextButton(
-                      onPressed: selectedOption != null
-                          ? () {
-                              context.go(AppRoutes.yourLocation);
-                            }
-                          : null,
-                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

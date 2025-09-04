@@ -3,22 +3,41 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import 'write_review.dart';
+import '../bloc/jobs_bloc.dart';
+import '../bloc/jobs_event.dart';
+import '../bloc/jobs_state.dart';
 
-class AboutCompanyScreen extends StatefulWidget {
+class AboutCompanyScreen extends StatelessWidget {
   final Map<String, dynamic> company;
 
   const AboutCompanyScreen({super.key, required this.company});
 
   @override
-  State<AboutCompanyScreen> createState() => _AboutCompanyScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => JobsBloc(),
+      child: _AboutCompanyScreenView(company: company),
+    );
+  }
 }
 
-class _AboutCompanyScreenState extends State<AboutCompanyScreen>
+class _AboutCompanyScreenView extends StatefulWidget {
+  final Map<String, dynamic> company;
+
+  const _AboutCompanyScreenView({required this.company});
+
+  @override
+  State<_AboutCompanyScreenView> createState() =>
+      _AboutCompanyScreenViewState();
+}
+
+class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 

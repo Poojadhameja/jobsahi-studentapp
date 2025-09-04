@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/job_data.dart';
 import 'package:go_router/go_router.dart';
@@ -6,74 +7,104 @@ import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
+import '../bloc/jobs_bloc.dart';
+import '../bloc/jobs_event.dart';
+import '../bloc/jobs_state.dart';
 
-class SearchResultScreen extends StatefulWidget {
+class SearchResultScreen extends StatelessWidget {
   /// Search query
   final String? searchQuery;
 
   const SearchResultScreen({super.key, this.searchQuery});
 
   @override
-  State<SearchResultScreen> createState() => _SearchResultScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) =>
+          JobsBloc()
+            ..add(LoadSearchResultsEvent(searchQuery: searchQuery ?? '')),
+      child: const _SearchResultScreenView(),
+    );
+  }
 }
 
-class _SearchResultScreenState extends State<SearchResultScreen> {
-  /// Currently selected filter index
-  int _selectedFilterIndex = 0;
-
-  /// List of filtered jobs
-  List<Map<String, dynamic>> _filteredJobs = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _filterJobs();
-  }
+class _SearchResultScreenView extends StatelessWidget {
+  const _SearchResultScreenView();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(title: 'Search Results', showBackButton: true),
-      body: Column(
-        children: [
-          // Search info and filters
-          _buildSearchInfoAndFilters(),
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        String searchQuery = '';
+        List<Map<String, dynamic>> filteredJobs = [];
+        int selectedFilterIndex = 0;
 
-          // Results
-          Expanded(child: _buildResults()),
-        ],
-      ),
+        if (state is SearchResultsLoaded) {
+          searchQuery = state.searchQuery;
+          filteredJobs = state.filteredJobs;
+          selectedFilterIndex = state.selectedFilterIndex;
+        }
+
+        return Scaffold(
+          backgroundColor: AppConstants.cardBackgroundColor,
+          appBar: const SimpleAppBar(
+            title: 'Search Results',
+            showBackButton: true,
+          ),
+          body: Column(
+            children: [
+              // Search info and filters
+              _buildSearchInfoAndFilters(
+                context,
+                searchQuery,
+                filteredJobs,
+                selectedFilterIndex,
+              ),
+
+              // Results
+              Expanded(child: _buildResults(context, filteredJobs)),
+            ],
+          ),
+        );
+      },
     );
   }
 
   /// Builds the search info and filters section
-  Widget _buildSearchInfoAndFilters() {
+  Widget _buildSearchInfoAndFilters(
+    BuildContext context,
+    String searchQuery,
+    List<Map<String, dynamic>> filteredJobs,
+    int selectedFilterIndex,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Search info
-          _buildSearchInfo(),
+          _buildSearchInfo(searchQuery, filteredJobs),
           const SizedBox(height: AppConstants.defaultPadding),
 
           // Filter chips
-          _buildFilterChips(),
+          _buildFilterChips(context, selectedFilterIndex),
         ],
       ),
     );
   }
 
   /// Builds the search info section
-  Widget _buildSearchInfo() {
+  Widget _buildSearchInfo(
+    String searchQuery,
+    List<Map<String, dynamic>> filteredJobs,
+  ) {
     return Row(
       children: [
         const Icon(Icons.search, color: AppConstants.textSecondaryColor),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            'Results for "${widget.searchQuery ?? "jobs"}"',
+            'Results for "${searchQuery.isEmpty ? "jobs" : searchQuery}"',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -82,7 +113,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
           ),
         ),
         Text(
-          '${_filteredJobs.length} jobs found',
+          '${filteredJobs.length} jobs found',
           style: const TextStyle(color: AppConstants.textSecondaryColor),
         ),
       ],
@@ -90,32 +121,34 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   }
 
   /// Builds the filter chips section
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips(BuildContext context, int selectedFilterIndex) {
     return HorizontalFilterChips(
       filterOptions: JobData.filterOptions,
-      selectedIndex: _selectedFilterIndex,
+      selectedIndex: selectedFilterIndex,
       onFilterSelected: (index) {
-        setState(() {
-          _selectedFilterIndex = index;
-        });
-        _filterJobs();
+        context.read<JobsBloc>().add(
+          UpdateSearchResultsFilterEvent(filterIndex: index),
+        );
       },
     );
   }
 
   /// Builds the results section
-  Widget _buildResults() {
-    if (_filteredJobs.isEmpty) {
-      return _buildEmptyState();
+  Widget _buildResults(
+    BuildContext context,
+    List<Map<String, dynamic>> filteredJobs,
+  ) {
+    if (filteredJobs.isEmpty) {
+      return _buildEmptyState(context);
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(
         horizontal: AppConstants.defaultPadding,
       ),
-      itemCount: _filteredJobs.length,
+      itemCount: filteredJobs.length,
       itemBuilder: (context, index) {
-        final job = _filteredJobs[index];
+        final job = filteredJobs[index];
         return JobCard(
           job: job,
           onTap: () {
@@ -127,7 +160,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   }
 
   /// Builds the empty state
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -170,23 +203,5 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
         ],
       ),
     );
-  }
-
-  /// Filters jobs based on search query and selected filters
-  void _filterJobs() {
-    final query = widget.searchQuery?.toLowerCase() ?? '';
-
-    setState(() {
-      _filteredJobs = JobData.recommendedJobs.where((job) {
-        // Filter by search query
-        final matchesQuery =
-            query.isEmpty ||
-            job['title'].toString().toLowerCase().contains(query) ||
-            job['company'].toString().toLowerCase().contains(query) ||
-            job['location'].toString().toLowerCase().contains(query);
-
-        return matchesQuery;
-      }).toList();
-    });
   }
 }

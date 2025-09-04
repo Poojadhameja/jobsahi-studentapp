@@ -4,12 +4,16 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../bloc/skill_test_bloc.dart';
+import '../bloc/skill_test_event.dart';
+import '../bloc/skill_test_state.dart';
 
-class SkillTestInstructionsScreen extends StatefulWidget {
+class SkillTestInstructionsScreen extends StatelessWidget {
   /// Job data for context
   final Map<String, dynamic> job;
 
@@ -23,41 +27,58 @@ class SkillTestInstructionsScreen extends StatefulWidget {
   });
 
   @override
-  State<SkillTestInstructionsScreen> createState() =>
-      _SkillTestInstructionsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => SkillTestBloc(),
+      child: _SkillTestInstructionsScreenView(job: job, test: test),
+    );
+  }
 }
 
-class _SkillTestInstructionsScreenState
-    extends State<SkillTestInstructionsScreen> {
+class _SkillTestInstructionsScreenView extends StatelessWidget {
+  final Map<String, dynamic> job;
+  final Map<String, dynamic> test;
+
+  const _SkillTestInstructionsScreenView({
+    required this.job,
+    required this.test,
+  });
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Skills Test Info / स्किल्स टेस्ट जानकारी',
-        showBackButton: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Scrollable content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: _buildMainCard(),
+    return BlocListener<SkillTestBloc, SkillTestState>(
+      listener: (context, state) {
+        if (state is NavigateToFAQState) {
+          context.go(AppRoutes.skillTestFAQWithId(state.testId));
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
+        appBar: const SimpleAppBar(
+          title: 'Skills Test Info / स्किल्स टेस्ट जानकारी',
+          showBackButton: true,
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Scrollable content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: _buildMainCard(),
+                ),
               ),
-            ),
 
-            // Fixed bottom button
-            Container(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              decoration: BoxDecoration(
-                color: AppConstants.cardBackgroundColor,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              // Fixed bottom button
+              Container(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardBackgroundColor,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: _buildStartTestButton(context),
               ),
-              child: _buildStartTestButton(),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -116,12 +137,12 @@ class _SkillTestInstructionsScreenState
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: (widget.test['color'] as Color).withValues(alpha: 0.1),
+            color: (test['color'] as Color).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            widget.test['icon'] as IconData,
-            color: widget.test['color'] as Color,
+            test['icon'] as IconData,
+            color: test['color'] as Color,
             size: 24,
           ),
         ),
@@ -133,7 +154,7 @@ class _SkillTestInstructionsScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.test['title'] as String,
+                test['title'] as String,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -142,7 +163,7 @@ class _SkillTestInstructionsScreenState
               ),
               const SizedBox(height: 4),
               Text(
-                'By ${widget.test['provider']}',
+                'By ${test['provider']}',
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppConstants.successColor,
@@ -169,7 +190,7 @@ class _SkillTestInstructionsScreenState
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${widget.test['time']} Mins',
+                      '${test['time']} Mins',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppConstants.successColor,
@@ -191,7 +212,7 @@ class _SkillTestInstructionsScreenState
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${widget.test['mcqs']} MCQs',
+                      '${test['mcqs']} MCQs',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppConstants.successColor,
@@ -322,11 +343,11 @@ class _SkillTestInstructionsScreenState
   }
 
   /// Builds the start test button
-  Widget _buildStartTestButton() {
+  Widget _buildStartTestButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () => _startTest(),
+        onPressed: () => _startTest(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.secondaryColor,
           foregroundColor: Colors.white,
@@ -345,7 +366,7 @@ class _SkillTestInstructionsScreenState
   }
 
   /// Handles starting the test
-  void _startTest() {
+  void _startTest(BuildContext context) {
     // Show confirmation dialog
     showDialog(
       context: context,
@@ -363,7 +384,7 @@ class _SkillTestInstructionsScreenState
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              _proceedToTest();
+              _proceedToTest(context);
             },
             child: const Text('Start Test'),
           ),
@@ -373,8 +394,10 @@ class _SkillTestInstructionsScreenState
   }
 
   /// Proceeds to the actual test
-  void _proceedToTest() {
+  void _proceedToTest(BuildContext context) {
     // Navigate to the skills test FAQ screen
-    context.go(AppRoutes.skillTestFAQWithId(widget.test['id']));
+    context.read<SkillTestBloc>().add(
+      ViewTestFAQEvent(testId: test['id']?.toString() ?? 'test_1'),
+    );
   }
 }

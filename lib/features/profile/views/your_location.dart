@@ -3,60 +3,44 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/profile_bloc.dart';
+import '../bloc/profile_event.dart';
+import '../bloc/profile_state.dart';
 
-class YourLocationScreen extends StatefulWidget {
+class YourLocationScreen extends StatelessWidget {
   const YourLocationScreen({super.key});
 
   @override
-  State<YourLocationScreen> createState() => _YourLocationScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => ProfileBloc()..add(const LoadProfileDataEvent()),
+      child: const _YourLocationView(),
+    );
+  }
 }
 
-class _YourLocationScreenState extends State<YourLocationScreen> {
-  /// Selected location
-  String? _selectedLocation;
+class _YourLocationView extends StatefulWidget {
+  const _YourLocationView();
 
+  @override
+  State<_YourLocationView> createState() => _YourLocationViewState();
+}
+
+class _YourLocationViewState extends State<_YourLocationView> {
   /// Search controller
   final TextEditingController _searchController = TextEditingController();
 
-  /// Search query
-  String _searchQuery = '';
-
-  /// List of available locations
-  final List<Map<String, String>> _locations = [
-    {
-      'name': 'Baker Street Library',
-      'address': '221B Baker Street London, NW1 6XE United Kingdom',
-    },
-    {
-      'name': 'The Greenfield Mall',
-      'address': '45 High Street Greenfield, Manchester, M1 2AB United Kingdom',
-    },
-    {
-      'name': 'Riverbank Business Park',
-      'address': 'Unit 12, Riverside Drive Bristol, BS1 5RT United Kingdom',
-    },
-    {
-      'name': 'Elmwood Community Centre',
-      'address': '78 Elmwood Avenue Birmingham, B12 3DF United Kingdom',
-    },
-  ];
-
-  /// Filtered locations based on search
-  List<Map<String, String>> get _filteredLocations {
-    if (_searchQuery.isEmpty) {
-      return _locations;
-    }
-    return _locations.where((location) {
-      return location['name']!.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          location['address']!.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          );
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with empty search query
+    context.read<ProfileBloc>().add(
+      const UpdateSearchQueryEvent(searchQuery: ''),
+    );
   }
 
   @override
@@ -67,68 +51,86 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppConstants.textPrimaryColor,
-          ),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          AppConstants.yourLocationTitle,
-          style: TextStyle(
-            color: AppConstants.textPrimaryColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search bar
-              _buildSearchBar(),
-              const SizedBox(height: AppConstants.defaultPadding),
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        String? selectedLocation;
+        List<Map<String, String>> filteredLocations = [];
 
-              // Use current location option
-              _buildCurrentLocationOption(),
-              const SizedBox(height: AppConstants.defaultPadding),
+        if (state is LocationState) {
+          selectedLocation = state.selectedLocation;
+          filteredLocations = state.filteredLocations;
+        }
 
-              // Search results header
-              if (_filteredLocations.isNotEmpty) ...[
-                Text(
-                  AppConstants.searchResultLabel,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppConstants.textPrimaryColor,
+        return Scaffold(
+          backgroundColor: AppConstants.cardBackgroundColor,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppConstants.textPrimaryColor,
+              ),
+              onPressed: () => context.pop(),
+            ),
+            title: Text(
+              AppConstants.yourLocationTitle,
+              style: TextStyle(
+                color: AppConstants.textPrimaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            centerTitle: true,
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Search bar
+                  _buildSearchBar(context),
+                  const SizedBox(height: AppConstants.defaultPadding),
+
+                  // Use current location option
+                  _buildCurrentLocationOption(),
+                  const SizedBox(height: AppConstants.defaultPadding),
+
+                  // Search results header
+                  if (filteredLocations.isNotEmpty) ...[
+                    Text(
+                      AppConstants.searchResultLabel,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                  ],
+
+                  // Location list
+                  Expanded(
+                    child: _buildLocationList(
+                      context,
+                      filteredLocations,
+                      selectedLocation,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppConstants.smallPadding),
-              ],
 
-              // Location list
-              Expanded(child: _buildLocationList()),
-
-              // Next button
-              _buildNextButton(),
-            ],
+                  // Next button
+                  _buildNextButton(context, selectedLocation),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   /// Builds the search bar
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
@@ -138,9 +140,9 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
       child: TextField(
         controller: _searchController,
         onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-          });
+          context.read<ProfileBloc>().add(
+            UpdateSearchQueryEvent(searchQuery: value),
+          );
         },
         decoration: InputDecoration(
           hintText: AppConstants.searchAreaHint,
@@ -220,8 +222,12 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
   }
 
   /// Builds the location list
-  Widget _buildLocationList() {
-    if (_filteredLocations.isEmpty) {
+  Widget _buildLocationList(
+    BuildContext context,
+    List<Map<String, String>> filteredLocations,
+    String? selectedLocation,
+  ) {
+    if (filteredLocations.isEmpty) {
       return const Center(
         child: Text(
           'No locations found',
@@ -234,10 +240,10 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
     }
 
     return ListView.builder(
-      itemCount: _filteredLocations.length,
+      itemCount: filteredLocations.length,
       itemBuilder: (context, index) {
-        final location = _filteredLocations[index];
-        final isSelected = _selectedLocation == location['name'];
+        final location = filteredLocations[index];
+        final isSelected = selectedLocation == location['name'];
 
         return Container(
           margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
@@ -269,9 +275,9 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
               ),
             ),
             onTap: () {
-              setState(() {
-                _selectedLocation = location['name'];
-              });
+              context.read<ProfileBloc>().add(
+                SelectLocationEvent(locationName: location['name']!),
+              );
             },
           ),
         );
@@ -280,11 +286,13 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
   }
 
   /// Builds the next button
-  Widget _buildNextButton() {
+  Widget _buildNextButton(BuildContext context, String? selectedLocation) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _selectedLocation != null ? _continueToNext : null,
+        onPressed: selectedLocation != null
+            ? () => _continueToNext(context)
+            : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.secondaryColor,
           foregroundColor: Colors.white,
@@ -307,11 +315,9 @@ class _YourLocationScreenState extends State<YourLocationScreen> {
   }
 
   /// Continues to the next screen
-  void _continueToNext() {
-    if (_selectedLocation != null) {
-      // TODO: Save selected location
-      // When selecting from search results, go directly to home (skip location permission page)
-      context.go(AppRoutes.home);
-    }
+  void _continueToNext(BuildContext context) {
+    // TODO: Save selected location
+    // When selecting from search results, go directly to home (skip location permission page)
+    context.go(AppRoutes.home);
   }
 }

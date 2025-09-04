@@ -1,48 +1,77 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../bloc/jobs_bloc.dart';
+import '../bloc/jobs_event.dart';
+import '../bloc/jobs_state.dart';
 
-class CalendarViewScreen extends StatefulWidget {
+class CalendarViewScreen extends StatelessWidget {
   const CalendarViewScreen({super.key});
 
   @override
-  State<CalendarViewScreen> createState() => _CalendarViewScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => JobsBloc()..add(const LoadCalendarViewEvent()),
+      child: const _CalendarViewScreenView(),
+    );
+  }
 }
 
-class _CalendarViewScreenState extends State<CalendarViewScreen> {
-  DateTime _selectedDate = DateTime(2025, 7, 25); // July 25, 2025
-  DateTime _focusedDate = DateTime(2025, 7, 1); // July 1, 2025
+class _CalendarViewScreenView extends StatelessWidget {
+  const _CalendarViewScreenView();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFCFF), // Light grey background
-      appBar: const SimpleAppBar(
-        title: 'Interview Calendar / इंटरव्यू कैलेंडर',
-        showBackButton: true,
-        backgroundColor: Color(0xFFFAFCFF), // Dark grey background
-        titleColor: Color.fromARGB(255, 11, 83, 125), // White text and icons
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // Calendar Section
-              _buildCalendarSection(),
-              const SizedBox(height: 24),
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        DateTime selectedDate = DateTime(2025, 7, 25);
+        DateTime focusedDate = DateTime(2025, 7, 1);
 
-              // Interview Tip Section
-              _buildInterviewTipSection(),
-            ],
+        if (state is CalendarViewLoaded) {
+          selectedDate = state.selectedDate;
+          focusedDate = state.focusedDate;
+        }
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFFAFCFF), // Light grey background
+          appBar: const SimpleAppBar(
+            title: 'Interview Calendar / इंटरव्यू कैलेंडर',
+            showBackButton: true,
+            backgroundColor: Color(0xFFFAFCFF), // Dark grey background
+            titleColor: Color.fromARGB(
+              255,
+              11,
+              83,
+              125,
+            ), // White text and icons
           ),
-        ),
-      ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Calendar Section
+                  _buildCalendarSection(context, selectedDate, focusedDate),
+                  const SizedBox(height: 24),
+
+                  // Interview Tip Section
+                  _buildInterviewTipSection(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
   /// Builds the calendar section
-  Widget _buildCalendarSection() {
+  Widget _buildCalendarSection(
+    BuildContext context,
+    DateTime selectedDate,
+    DateTime focusedDate,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -65,19 +94,20 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
             children: [
               IconButton(
                 onPressed: () {
-                  setState(() {
-                    _focusedDate = DateTime(
-                      _focusedDate.year,
-                      _focusedDate.month - 1,
-                      1,
-                    );
-                  });
+                  final newFocusedDate = DateTime(
+                    focusedDate.year,
+                    focusedDate.month - 1,
+                    1,
+                  );
+                  context.read<JobsBloc>().add(
+                    ChangeCalendarMonthEvent(newFocusedDate: newFocusedDate),
+                  );
                 },
                 icon: const Icon(Icons.chevron_left, color: Color(0xFF64748B)),
               ),
               Text(
-                'July 2025',
-                style: TextStyle(
+                '${_getMonthName(focusedDate.month)} ${focusedDate.year}',
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF0B537D),
@@ -85,13 +115,14 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
               ),
               IconButton(
                 onPressed: () {
-                  setState(() {
-                    _focusedDate = DateTime(
-                      _focusedDate.year,
-                      _focusedDate.month + 1,
-                      1,
-                    );
-                  });
+                  final newFocusedDate = DateTime(
+                    focusedDate.year,
+                    focusedDate.month + 1,
+                    1,
+                  );
+                  context.read<JobsBloc>().add(
+                    ChangeCalendarMonthEvent(newFocusedDate: newFocusedDate),
+                  );
                 },
                 icon: const Icon(Icons.chevron_right, color: Color(0xFF64748B)),
               ),
@@ -120,20 +151,20 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
           const SizedBox(height: 16),
 
           // Calendar Grid
-          _buildCalendarGrid(),
+          _buildCalendarGrid(context, selectedDate, focusedDate),
         ],
       ),
     );
   }
 
   /// Builds the calendar grid
-  Widget _buildCalendarGrid() {
-    final firstDayOfMonth = DateTime(_focusedDate.year, _focusedDate.month, 1);
-    final lastDayOfMonth = DateTime(
-      _focusedDate.year,
-      _focusedDate.month + 1,
-      0,
-    );
+  Widget _buildCalendarGrid(
+    BuildContext context,
+    DateTime selectedDate,
+    DateTime focusedDate,
+  ) {
+    final firstDayOfMonth = DateTime(focusedDate.year, focusedDate.month, 1);
+    final lastDayOfMonth = DateTime(focusedDate.year, focusedDate.month + 1, 0);
     final firstWeekday = firstDayOfMonth.weekday;
     final daysInMonth = lastDayOfMonth.day;
 
@@ -149,11 +180,11 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
 
     // Add days of the month
     for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime(_focusedDate.year, _focusedDate.month, day);
+      final date = DateTime(focusedDate.year, focusedDate.month, day);
       final isSelected =
-          date.day == _selectedDate.day &&
-          date.month == _selectedDate.month &&
-          date.year == _selectedDate.year;
+          date.day == selectedDate.day &&
+          date.month == selectedDate.month &&
+          date.year == selectedDate.year;
       final isToday =
           date.day == DateTime.now().day &&
           date.month == DateTime.now().month &&
@@ -163,9 +194,9 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
         Expanded(
           child: GestureDetector(
             onTap: () {
-              setState(() {
-                _selectedDate = date;
-              });
+              context.read<JobsBloc>().add(
+                SelectCalendarDateEvent(selectedDate: date),
+              );
             },
             child: Container(
               height: 40,
@@ -276,5 +307,25 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
         ],
       ),
     );
+  }
+
+  /// Helper method to get month name
+  String _getMonthName(int month) {
+    const monthNames = [
+      '',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return monthNames[month];
   }
 }

@@ -4,52 +4,60 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../shared/data/course_data.dart';
+// Removed unused CourseData import
 import 'package:go_router/go_router.dart';
+import '../bloc/courses_bloc.dart';
+import '../bloc/courses_event.dart';
+import '../bloc/courses_state.dart';
 
-class CourseDetailsPage extends StatefulWidget {
+class CourseDetailsPage extends StatelessWidget {
   final Map<String, dynamic> course;
 
   const CourseDetailsPage({super.key, required this.course});
 
   @override
-  State<CourseDetailsPage> createState() => _CourseDetailsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => CoursesBloc(),
+      child: _CourseDetailsPageView(course: course),
+    );
+  }
 }
 
-class _CourseDetailsPageState extends State<CourseDetailsPage> {
-  late Map<String, dynamic> course;
+class _CourseDetailsPageView extends StatelessWidget {
+  final Map<String, dynamic> course;
 
-  @override
-  void initState() {
-    super.initState();
-    course = widget.course;
-  }
+  const _CourseDetailsPageView({required this.course});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor:
-          AppConstants.backgroundColor, // Changed to white background
-      appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCourseHeader(),
-            _buildCourseInfo(),
-            _buildFeesAndRatings(),
-            _buildAboutCourse(),
-            _buildOfflineBenefits(),
-            const SizedBox(height: AppConstants.largePadding),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildContactButton(),
+    return BlocBuilder<CoursesBloc, CoursesState>(
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: AppConstants.backgroundColor,
+          appBar: _buildAppBar(context),
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCourseHeader(),
+                _buildCourseInfo(),
+                _buildFeesAndRatings(),
+                _buildAboutCourse(),
+                _buildOfflineBenefits(),
+                const SizedBox(height: AppConstants.largePadding),
+              ],
+            ),
+          ),
+          bottomNavigationBar: _buildContactButton(context),
+        );
+      },
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: AppConstants.cardBackgroundColor,
       elevation: 0,
@@ -67,7 +75,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       ),
       actions: [
         IconButton(
-          onPressed: _toggleCourseSaved,
+          onPressed: () => _toggleCourseSaved(context),
           icon: Icon(
             course['isSaved'] == true ? Icons.bookmark : Icons.bookmark_border,
             color: course['isSaved'] == true
@@ -399,7 +407,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     );
   }
 
-  Widget _buildContactButton() {
+  Widget _buildContactButton(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: const BoxDecoration(
@@ -415,7 +423,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: _contactNow,
+          onPressed: () => _contactNow(context),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppConstants.successColor,
             foregroundColor: Colors.white,
@@ -435,16 +443,20 @@ class _CourseDetailsPageState extends State<CourseDetailsPage> {
     );
   }
 
-  void _toggleCourseSaved() {
-    setState(() {
-      CourseData.toggleCourseSaved(course['id']);
-      // Update local course data instead of mutating widget.course
-      course = Map<String, dynamic>.from(course);
-      course['isSaved'] = !course['isSaved'];
-    });
+  void _toggleCourseSaved(BuildContext context) {
+    final state = context.read<CoursesBloc>().state;
+    if (state is CoursesLoaded) {
+      final courseId = course['id'] as String;
+      final isSaved = state.savedCourseIds.contains(courseId);
+      if (isSaved) {
+        context.read<CoursesBloc>().add(UnsaveCourseEvent(courseId: courseId));
+      } else {
+        context.read<CoursesBloc>().add(SaveCourseEvent(courseId: courseId));
+      }
+    }
   }
 
-  void _contactNow() {
+  void _contactNow(BuildContext context) {
     // TODO: Implement contact functionality
     // This could open a phone dialer, email client, or contact form
     ScaffoldMessenger.of(context).showSnackBar(

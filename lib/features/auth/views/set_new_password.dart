@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
-
 
 class SetNewPasswordScreen extends StatefulWidget {
   const SetNewPasswordScreen({super.key});
@@ -276,7 +274,8 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
         _showSuccessSnackBar('Password reset successfully');
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
-            context.go(AppRoutes.loginOtpEmail);
+            context.pop();
+            context.pop();
           }
         });
       });

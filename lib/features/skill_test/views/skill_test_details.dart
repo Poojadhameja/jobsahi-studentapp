@@ -4,108 +4,112 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../bloc/skill_test_bloc.dart';
+import '../bloc/skill_test_event.dart';
+import '../bloc/skill_test_state.dart';
 
-class SkillTestDetailsScreen extends StatefulWidget {
+class SkillTestDetailsScreen extends StatelessWidget {
   /// Job data to filter relevant skill tests
   final Map<String, dynamic> job;
 
   const SkillTestDetailsScreen({super.key, required this.job});
 
   @override
-  State<SkillTestDetailsScreen> createState() => _SkillTestDetailsScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) =>
+          SkillTestBloc()..add(LoadSkillTestDetailsEvent(job: job)),
+      child: _SkillTestDetailsScreenView(job: job),
+    );
+  }
 }
 
-class _SkillTestDetailsScreenState extends State<SkillTestDetailsScreen> {
-  /// Mock skill test data based on job category
-  Map<String, dynamic> get _skillTest {
-    final jobCategory = widget.job['category'] ?? 'Electrician';
+class _SkillTestDetailsScreenView extends StatelessWidget {
+  final Map<String, dynamic> job;
 
-    // Return test related to the job category
-    switch (jobCategory.toLowerCase()) {
-      case 'electrician':
-        return {
-          'title': 'इलेक्ट्रीशियन स्किल टेस्ट',
-          'subtitle': 'Comprehensive Test',
-          'icon': Icons.electrical_services,
-          'color': Colors.blue,
-          'mcqs': 20,
-          'time': 25,
-          'passingMarks': 50,
-          'attempts': 1,
-          'isPrivate': true,
-          'provider': 'Satpuda ITI',
-        };
-      case 'fitter':
-        return {
-          'title': 'फिटर स्किल टेस्ट',
-          'subtitle': 'Comprehensive Test',
-          'icon': Icons.handyman,
-          'color': Colors.green,
-          'mcqs': 18,
-          'time': 20,
-          'passingMarks': 50,
-          'attempts': 1,
-          'isPrivate': true,
-          'provider': 'Mechanical ITI',
-        };
-      default:
-        return {
-          'title': 'बेसिक स्किल टेस्ट',
-          'subtitle': 'Comprehensive Test',
-          'icon': Icons.quiz,
-          'color': Colors.blue,
-          'mcqs': 15,
-          'time': 20,
-          'passingMarks': 50,
-          'attempts': 1,
-          'isPrivate': true,
-          'provider': 'General Training',
-        };
-    }
-  }
+  const _SkillTestDetailsScreenView({required this.job});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Skills Test/स्किल्स टेस्ट',
-        showBackButton: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Scrollable content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: _buildMainCard(),
-              ),
-            ),
+    return BlocListener<SkillTestBloc, SkillTestState>(
+      listener: (context, state) {
+        if (state is NavigateToInstructionsState) {
+          context.go(AppRoutes.skillTestInstructionsWithId(state.testId));
+        } else if (state is NavigateToFAQState) {
+          context.go(AppRoutes.skillTestFAQWithId(state.testId));
+        }
+      },
+      child: BlocBuilder<SkillTestBloc, SkillTestState>(
+        builder: (context, state) {
+          Map<String, dynamic> skillTest = {};
+          bool isBookmarked = false;
 
-            // Fixed bottom button
-            Container(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              decoration: BoxDecoration(
-                color: AppConstants.cardBackgroundColor,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: _buildBottomSection(_skillTest),
+          if (state is SkillTestDetailsLoaded) {
+            skillTest = state.skillTest;
+            isBookmarked = state.isBookmarked;
+          }
+
+          return Scaffold(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            appBar: SimpleAppBar(
+              title: 'Skills Test/स्किल्स टेस्ट',
+              showBackButton: true,
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    context.read<SkillTestBloc>().add(
+                      ToggleTestBookmarkEvent(testId: 'test_1'),
+                    );
+                  },
+                  icon: Icon(
+                    isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    color: isBookmarked
+                        ? AppConstants.warningColor
+                        : AppConstants.textSecondaryColor,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // Scrollable content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(
+                        AppConstants.defaultPadding,
+                      ),
+                      child: _buildMainCard(context, skillTest),
+                    ),
+                  ),
+
+                  // Fixed bottom button
+                  Container(
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    decoration: BoxDecoration(
+                      color: AppConstants.cardBackgroundColor,
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: _buildBottomSection(context, skillTest),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
   /// Builds the main card containing all content
-  Widget _buildMainCard() {
-    final test = _skillTest;
-
+  Widget _buildMainCard(BuildContext context, Map<String, dynamic> test) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -305,7 +309,7 @@ class _SkillTestDetailsScreenState extends State<SkillTestDetailsScreen> {
   }
 
   /// Builds the bottom section with provider and button
-  Widget _buildBottomSection(Map<String, dynamic> test) {
+  Widget _buildBottomSection(BuildContext context, Map<String, dynamic> test) {
     return Column(
       children: [
         Text(
@@ -317,7 +321,11 @@ class _SkillTestDetailsScreenState extends State<SkillTestDetailsScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () => _navigateToTestInfo(test),
+            onPressed: () {
+              context.read<SkillTestBloc>().add(
+                ViewTestInstructionsEvent(testId: 'test_1'),
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.secondaryColor,
               foregroundColor: Colors.white,
@@ -334,10 +342,5 @@ class _SkillTestDetailsScreenState extends State<SkillTestDetailsScreen> {
         ),
       ],
     );
-  }
-
-  /// Navigate to test info screen
-  void _navigateToTestInfo(Map<String, dynamic> test) {
-    context.go(AppRoutes.skillTestInstructionsWithId(test['id']));
   }
 }

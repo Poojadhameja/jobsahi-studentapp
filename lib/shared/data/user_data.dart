@@ -108,4 +108,53 @@ class UserData {
       "isRead": true,
     },
   ];
+
+  /// Available skill tests
+  static const List<Map<String, dynamic>> availableSkillTests = [
+    {
+      "id": "test_001",
+      "title": "Basic Electrical Safety Test",
+      "description": "Test your knowledge of electrical safety protocols",
+      "duration": 15, // minutes
+      "questions": 10,
+      "difficulty": "Beginner",
+      "category": "Electrical",
+      "isCompleted": false,
+    },
+    {
+      "id": "test_002",
+      "title": "Welding Fundamentals Assessment",
+      "description": "Assess your understanding of welding basics",
+      "duration": 20,
+      "questions": 15,
+      "difficulty": "Intermediate",
+      "category": "Welding",
+      "isCompleted": true,
+    },
+    {
+      "id": "test_003",
+      "title": "Mechanical Aptitude Test",
+      "description": "Test your mechanical reasoning skills",
+      "duration": 25,
+      "questions": 20,
+      "difficulty": "Advanced",
+      "category": "Mechanical",
+      "isCompleted": false,
+    },
+  ];
+
+  /// User's test history
+  static const List<Map<String, dynamic>> userTestHistory = [
+    {
+      "testId": "test_002",
+      "testTitle": "Welding Fundamentals Assessment",
+      "score": 85,
+      "totalQuestions": 15,
+      "correctAnswers": 13,
+      "wrongAnswers": 2,
+      "timeSpent": 18, // minutes
+      "grade": "B+",
+      "completedAt": "2024-01-18T16:30:00Z",
+    },
+  ];
 }
