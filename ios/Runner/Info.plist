@@ -69,10 +69,5 @@
 		</dict>
 	</array>
 	
-	<!-- Associated domains for universal links -->
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:jobsahi.com</string>
-	</array>
 </dict>
 </plist>

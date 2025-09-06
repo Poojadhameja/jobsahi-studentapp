@@ -85,6 +85,55 @@ class AppRouter {
     // Debug logging for development
     debugLogDiagnostics: true,
 
+    // Central redirect to validate deep-link params and normalize bad paths
+    redirect: (context, state) {
+      final path = state.uri.path;
+
+      // Public routes that don't require validation
+      const publicPaths = {
+        AppRoutes.splash,
+        AppRoutes.onboarding,
+        AppRoutes.loginOtpEmail,
+        AppRoutes.loginOtpCode,
+        AppRoutes.loginVerifiedPopup,
+        AppRoutes.createAccount,
+        AppRoutes.forgotPassword,
+        AppRoutes.setPasswordCode,
+        AppRoutes.setNewPassword,
+        AppRoutes.changePassword,
+      };
+
+      if (publicPaths.contains(path)) return null;
+
+      // Validate dynamic id segments for known patterns
+      if (path.startsWith('/jobs/details/')) {
+        final id = state.pathParameters['id'];
+        if (id == null || !_isValidId(id)) return AppRoutes.notFound;
+      }
+      if (path.startsWith('/jobs/review/')) {
+        final id = state.pathParameters['id'];
+        if (id == null || !_isValidId(id)) return AppRoutes.notFound;
+      }
+      if (path.startsWith('/jobs/company/')) {
+        final id = state.pathParameters['id'];
+        if (id == null || !_isValidId(id)) return AppRoutes.notFound;
+      }
+      if (path.startsWith('/jobs/application/step/')) {
+        final id = state.pathParameters['id'];
+        if (id == null || !_isValidId(id)) return AppRoutes.notFound;
+      }
+      if (path.startsWith('/courses/')) {
+        final id = state.pathParameters['id'];
+        if (id == null || !_isValidId(id)) return AppRoutes.notFound;
+      }
+      if (path.startsWith('/skill-test/')) {
+        final id = state.pathParameters['id'];
+        if (id == null || !_isValidId(id)) return AppRoutes.notFound;
+      }
+
+      return null;
+    },
+
     // Error handling for unknown routes
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Page Not Found')),
@@ -313,9 +362,8 @@ class AppRouter {
         path: AppRoutes.jobDetails,
         name: 'jobDetails',
         builder: (context, state) {
-          // In a real app, you would fetch job data by ID
-          // For now, using default job data
-          final job = JobData.recommendedJobs.first;
+          final id = state.pathParameters['id'];
+          final job = _findJobByIdOrDefault(id);
           return JobDetailsScreen(job: job);
         },
       ),
@@ -342,8 +390,8 @@ class AppRouter {
         path: AppRoutes.writeReview,
         name: 'writeReview',
         builder: (context, state) {
-          // In a real app, you would fetch job data by ID
-          final job = JobData.recommendedJobs.first;
+          final id = state.pathParameters['id'];
+          final job = _findJobByIdOrDefault(id);
           return WriteReviewScreen(job: job);
         },
       ),
@@ -352,8 +400,8 @@ class AppRouter {
         path: AppRoutes.aboutCompany,
         name: 'aboutCompany',
         builder: (context, state) {
-          // In a real app, you would fetch company data by ID
-          final company = JobData.companies.values.first;
+          final id = state.pathParameters['id'];
+          final company = _findCompanyByIdOrDefault(id);
           return AboutCompanyScreen(company: company);
         },
       ),
@@ -362,7 +410,6 @@ class AppRouter {
         path: AppRoutes.jobApplicationSuccess,
         name: 'jobApplicationSuccess',
         builder: (context, state) {
-          // In a real app, you would fetch job data by ID
           final job = JobData.recommendedJobs.first;
           return JobApplicationSuccessScreen(job: job);
         },
@@ -372,8 +419,8 @@ class AppRouter {
         path: AppRoutes.jobStep,
         name: 'jobStep',
         builder: (context, state) {
-          // In a real app, you would fetch job data by ID
-          final job = JobData.recommendedJobs.first;
+          final id = state.pathParameters['id'];
+          final job = _findJobByIdOrDefault(id);
           return JobStepScreen(job: job);
         },
       ),
@@ -389,8 +436,8 @@ class AppRouter {
         path: AppRoutes.courseDetails,
         name: 'courseDetails',
         builder: (context, state) {
-          // In a real app, you would fetch course data by ID
-          final course = <String, dynamic>{}; // Default empty course
+          final id = state.pathParameters['id'];
+          final course = _generateCourseById(id);
           return CourseDetailsPage(course: course);
         },
       ),
@@ -412,8 +459,8 @@ class AppRouter {
         path: AppRoutes.chat,
         name: 'chat',
         builder: (context, state) {
-          // In a real app, you would fetch company data by ID
-          final company = JobData.companies.values.first;
+          final id = state.pathParameters['id'];
+          final company = _findCompanyByIdOrDefault(id);
           return ChatScreen(company: company);
         },
       ),
@@ -423,8 +470,8 @@ class AppRouter {
         path: AppRoutes.skillTestDetails,
         name: 'skillTestDetails',
         builder: (context, state) {
-          // In a real app, you would fetch test data by ID
-          final job = JobData.recommendedJobs.first;
+          final id = state.pathParameters['id'];
+          final job = _findJobByIdOrDefault(id);
           return SkillTestDetailsScreen(job: job);
         },
       ),
@@ -433,9 +480,9 @@ class AppRouter {
         path: AppRoutes.skillTestInstructions,
         name: 'skillTestInstructions',
         builder: (context, state) {
-          // In a real app, you would fetch test data by ID
-          final job = JobData.recommendedJobs.first;
-          final test = <String, dynamic>{}; // Default empty test
+          final id = state.pathParameters['id'];
+          final job = _findJobByIdOrDefault(id);
+          final test = <String, dynamic>{};
           return SkillTestInstructionsScreen(job: job, test: test);
         },
       ),
@@ -444,9 +491,9 @@ class AppRouter {
         path: AppRoutes.skillsTestFAQ,
         name: 'skillsTestFAQ',
         builder: (context, state) {
-          // In a real app, you would fetch test data by ID
-          final job = JobData.recommendedJobs.first;
-          final test = <String, dynamic>{}; // Default empty test
+          final id = state.pathParameters['id'];
+          final job = _findJobByIdOrDefault(id);
+          final test = <String, dynamic>{};
           return SkillsTestFAQScreen(job: job, test: test);
         },
       ),
@@ -487,6 +534,34 @@ class AppRouter {
         name: 'notificationPermission',
         builder: (context, state) => const NotificationPermissionPage(),
       ),
+
+      // ==================== NOT FOUND ROUTE ====================
+      GoRoute(
+        path: AppRoutes.notFound,
+        name: 'notFound',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Page Not Found')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'The page you are looking for does not exist.',
+                  style: TextStyle(fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => context.go(AppRoutes.home),
+                  child: const Text('Go to Home'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     ],
   );
 
@@ -523,4 +598,72 @@ class AppRouter {
   static bool canPop() {
     return _router.canPop();
   }
+}
+
+// ==================== ROUTER HELPERS ====================
+Map<String, dynamic> _findJobByIdOrDefault(String? id) {
+  if (id == null || id.isEmpty) {
+    return JobData.recommendedJobs.first;
+  }
+
+  final allJobs = <Map<String, dynamic>>[
+    ...JobData.recommendedJobs,
+    ...JobData.savedJobs,
+    ...JobData.appliedJobs,
+  ];
+
+  final match = allJobs.cast<Map<String, dynamic>?>().firstWhere(
+    (job) => job?['id']?.toString() == id,
+    orElse: () => null,
+  );
+  return match ?? JobData.recommendedJobs.first;
+}
+
+Map<String, dynamic> _findCompanyByIdOrDefault(String? id) {
+  // Try to resolve by job id to its company
+  if (id != null && id.isNotEmpty) {
+    final job = _findJobByIdOrDefault(id);
+    final companyName = job['company']?.toString();
+    if (companyName != null && JobData.companies.containsKey(companyName)) {
+      return JobData.companies[companyName]!;
+    }
+
+    // Try direct company name key
+    if (JobData.companies.containsKey(id)) {
+      return JobData.companies[id]!;
+    }
+
+    // Try numeric index on companies list
+    final index = int.tryParse(id);
+    if (index != null && index >= 0 && index < JobData.companies.length) {
+      return JobData.companies.values.elementAt(index);
+    }
+  }
+
+  return JobData.companies.values.first;
+}
+
+Map<String, dynamic> _generateCourseById(String? id) {
+  final safeId = id ?? 'unknown';
+  return {
+    'id': safeId,
+    'title': 'Course $safeId',
+    'category': 'General',
+    'duration': '4 weeks',
+    'fees': 0,
+    'rating': 4,
+    'totalRatings': 0,
+    'description': 'Details for course $safeId will be loaded here.',
+    'benefits': <String>[
+      'Hands-on practice',
+      'Mentor support',
+      'Certificate of completion',
+    ],
+  };
+}
+
+// ==================== VALIDATION HELPERS ====================
+bool _isValidId(String id) {
+  // Allow URL-safe ids (letters, digits, dash, underscore), up to 64 chars
+  return RegExp(r'^[A-Za-z0-9_-]{1,64}$').hasMatch(id);
 }

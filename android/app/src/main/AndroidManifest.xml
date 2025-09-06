@@ -26,20 +26,36 @@
             </intent-filter>
             
             <!-- Deep linking intent filter for custom scheme -->
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="jobsahi" />
             </intent-filter>
             
-            <!-- Deep linking intent filter for universal links -->
+            <!-- Android App Links for https://jobsahi.com and https://www.jobsahi.com -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https"
-                      android:host="jobsahi.com" />
+                <!-- Home and top-level pages -->
+                <data android:scheme="https" android:host="jobsahi.com" />
+                <data android:scheme="https" android:host="www.jobsahi.com" />
+            </intent-filter>
+
+            <!-- Specific deep links with path prefixes for validation by Play Services -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Jobs detail/review/company/step -->
+                <data android:scheme="https" android:host="jobsahi.com" android:pathPrefix="/jobs/details/" />
+                <data android:scheme="https" android:host="jobsahi.com" android:pathPrefix="/jobs/review/" />
+                <data android:scheme="https" android:host="jobsahi.com" android:pathPrefix="/jobs/company/" />
+                <data android:scheme="https" android:host="jobsahi.com" android:pathPrefix="/jobs/application/step/" />
+                <!-- Courses and skill-test -->
+                <data android:scheme="https" android:host="jobsahi.com" android:pathPrefix="/courses/" />
+                <data android:scheme="https" android:host="jobsahi.com" android:pathPrefix="/skill-test/" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

@@ -165,6 +165,10 @@ class AppRoutes {
   /// Notification permissions
   static const String notificationPermission = '/settings/notifications';
 
+  // ==================== FALLBACK/ERROR ROUTES ====================
+  /// Not found route
+  static const String notFound = '/404';
+
   // ==================== UTILITY METHODS ====================
 
   /// Generate job details route with ID
