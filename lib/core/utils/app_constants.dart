@@ -133,15 +133,33 @@ class AppConstants {
   static const String passwordTooShort =
       'Password must be at least 6 characters';
   static const String phoneRequired = 'Phone number is required';
-  static const String invalidPhone = 'Please enter a valid phone number';
+  static const String invalidPhone =
+      'Please enter a valid 10-digit phone number';
+  static const String phoneLengthError =
+      'Phone number must be exactly 10 digits';
+  static const String phoneNumbersOnly =
+      'Phone number must contain only numbers';
+  static const String phoneAlreadyExists =
+      'Phone number already exists. Please use a different number';
+  static const String emailAlreadyExists =
+      'Email already exists. Please use a different email';
+  static const String emailAlreadyExistsComprehensive =
+      'Email already exists. Please check if both email and phone number are already registered and use different values';
+  static const String bothAlreadyExists =
+      'Email and phone number both are already registered. Please use different email and phone number';
   static const String otpRequired = 'OTP is required';
   static const String invalidOtp = 'Please enter a valid OTP';
   static const String nameRequired = 'Name is required';
+  static const String nameTooShort = 'Name must be at least 3 characters';
+  static const String lastNameRequired = 'Last name is required';
+  static const String nameLettersOnly =
+      'Name must contain only letters and spaces';
   static const String passwordsDoNotMatch = 'Passwords do not match';
 
   /// Success Messages
   static const String loginSuccess = 'Login successful';
-  static const String signupSuccess = 'Account created successfully';
+  static const String signupSuccess =
+      'Account created successfully! Welcome to Job Sahi! 🎉';
   static const String otpSent = 'OTP sent successfully';
   static const String passwordReset = 'Password reset successfully';
   static const String jobSaved = 'Job saved successfully';
@@ -183,9 +201,25 @@ class AppConstants {
   static const Duration animationDuration = Duration(milliseconds: 300);
   static const Duration debounceDuration = Duration(milliseconds: 500);
 
-  /// API Endpoints (for future use)
-  static const String baseUrl = 'https://api.jobsahi.com';
-  static const String loginEndpoint = '/auth/login';
+  /// User Roles
+  static const String studentRole = 'student';
+
+  /// API Endpoints
+  /// Local development base URL
+  // static const String baseUrl = 'http://localhost:8000/api';
+
+  /// Production server base URL
+  static const String baseUrl =
+      'https://beige-jaguar-560051.hostingersite.com/api';
+
+  /// Use device-to-PC LAN IP if testing on a real device
+  static const String lanBaseUrl = 'http://10.167.188.31:8000/api';
+
+  // Auth
+  static const String createUserEndpoint = '/user/create_user.php';
+  static const String loginEndpoint = '/auth/login.php';
+
+  // Other (placeholders)
   static const String signupEndpoint = '/auth/signup';
   static const String jobsEndpoint = '/jobs';
   static const String profileEndpoint = '/user/profile';

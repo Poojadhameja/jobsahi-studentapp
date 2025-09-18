@@ -120,6 +120,11 @@ class _OnboardingScreenViewState extends State<_OnboardingScreenView> {
           int currentPage = 0;
           if (state is OnboardingState) {
             currentPage = state.currentPage;
+          } else {
+            // ✅ fallback to controller page if bloc state missing
+            currentPage = _pageController.hasClients
+                ? _pageController.page?.round() ?? 0
+                : 0;
           }
 
           return Scaffold(
@@ -173,8 +178,8 @@ class _OnboardingScreenViewState extends State<_OnboardingScreenView> {
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
+              children: const [
+                Text(
                   "SKIP",
                   style: TextStyle(
                     color: Colors.white,
@@ -182,8 +187,8 @@ class _OnboardingScreenViewState extends State<_OnboardingScreenView> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_forward, color: Colors.white, size: 16),
               ],
             ),
           ),
@@ -254,7 +259,7 @@ class _OnboardingScreenViewState extends State<_OnboardingScreenView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.1), // ✅ FIX
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -328,7 +333,7 @@ class _OnboardingScreenViewState extends State<_OnboardingScreenView> {
                       style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   )
-                : const SizedBox.shrink(), // Invisible placeholder when not on last page
+                : const SizedBox.shrink(),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import '../../features/auth/bloc/auth_bloc.dart';
+import '../../features/auth/repository/auth_repository.dart';
 import '../../features/home/bloc/home_bloc.dart';
 import '../../features/jobs/bloc/jobs_bloc.dart';
 import '../../features/profile/bloc/profile_bloc.dart';
@@ -7,6 +8,8 @@ import '../../features/courses/bloc/courses_bloc.dart';
 import '../../features/messages/bloc/messages_bloc.dart';
 import '../../features/settings/bloc/settings_bloc.dart';
 import '../../features/skill_test/bloc/skill_test_bloc.dart';
+import '../../shared/services/api_service.dart';
+import '../../shared/services/token_storage.dart';
 
 /// Global service locator instance
 final GetIt sl = GetIt.instance;
@@ -26,7 +29,9 @@ Future<void> initializeDependencies() async {
 /// Register all BLoCs
 void _registerBlocs() {
   // Auth BLoCs
-  sl.registerLazySingleton<AuthBloc>(() => AuthBloc());
+  sl.registerLazySingleton<AuthBloc>(() => AuthBloc(
+    authRepository: sl<AuthRepository>(),
+  ));
 
   // Home BLoCs
   sl.registerLazySingleton<HomeBloc>(() => HomeBloc());
@@ -53,7 +58,10 @@ void _registerBlocs() {
 /// Register all repositories
 void _registerRepositories() {
   // Auth repositories
-  // sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl());
+  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(
+    apiService: sl<ApiService>(),
+    tokenStorage: sl<TokenStorage>(),
+  ));
 
   // Job repositories
   // sl.registerLazySingleton<JobRepository>(() => JobRepositoryImpl());
@@ -76,9 +84,17 @@ void _registerRepositories() {
 
 /// Register all services
 void _registerServices() {
-  // Local storage service
-  // sl.registerLazySingleton<LocalStorageService>(() => LocalStorageServiceImpl());
+  // API Service
+  sl.registerLazySingleton<ApiService>(() {
+    final apiService = ApiService();
+    apiService.initialize();
+    return apiService;
+  });
 
-  // Network service
-  // sl.registerLazySingleton<NetworkService>(() => NetworkServiceImpl());
+  // Token Storage
+  sl.registerLazySingleton<TokenStorage>(() {
+    final tokenStorage = TokenStorage.instance;
+    tokenStorage.initialize();
+    return tokenStorage;
+  });
 }

@@ -7,6 +7,9 @@ import '../../../core/constants/app_routes.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import '../repository/auth_repository.dart';
+import '../../../shared/services/api_service.dart';
+import '../../../shared/services/token_storage.dart';
 
 class LoginOtpEmailScreen extends StatefulWidget {
   const LoginOtpEmailScreen({super.key});
@@ -38,7 +41,10 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        debugPrint("🔵 LoginScreen received state: ${state.runtimeType}");
+        
         if (state is AuthError) {
+          debugPrint("🔵 LoginScreen showing error: ${state.message}");
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -48,6 +54,7 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
             ),
           );
         } else if (state is OtpSentState) {
+          debugPrint("🔵 LoginScreen navigating to OTP code screen");
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('OTP sent successfully'),
@@ -58,6 +65,9 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           );
           context.push(AppRoutes.loginOtpCode);
         } else if (state is AuthSuccess) {
+          debugPrint("🔵 LoginScreen showing success and navigating to verified popup");
+          debugPrint("🔵 AuthSuccess message: ${state.message}");
+          debugPrint("🔵 AuthSuccess user: ${state.user}");
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -431,48 +441,88 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
         // Sign In Button
         BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
-            return SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: state is AuthLoading
-                    ? null
-                    : () {
-                        context.read<AuthBloc>().add(
-                          LoginWithEmailEvent(
-                            email: _emailController.text,
-                            password: _passwordController.text,
+            return Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: state is AuthLoading
+                        ? null
+                        : () {
+                            context.read<AuthBloc>().add(
+                              LoginWithEmailEvent(
+                                email: _emailController.text,
+                                password: _passwordController.text,
+                              ),
+                            );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.secondaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                    ),
+                    child: state is AuthLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            AppConstants.loginText,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.secondaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.borderRadius,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Test API Button (for debugging)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: state is AuthLoading
+                        ? null
+                        : () async {
+                            final authRepository = AuthRepositoryImpl(
+                              apiService: ApiService(),
+                              tokenStorage: TokenStorage.instance,
+                            );
+                            await authRepository.testLoginAPI(
+                              _emailController.text,
+                              _passwordController.text,
+                            );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                    ),
+                    child: const Text(
+                      'Test API Response',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-                child: state is AuthLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                    : const Text(
-                        AppConstants.loginText,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
+              ],
             );
           },
         ),

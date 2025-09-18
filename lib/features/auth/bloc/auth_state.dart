@@ -25,11 +25,12 @@ class AuthLoading extends AuthState {
 class AuthSuccess extends AuthState {
   final String message;
   final bool isLoggedIn;
+  final Map<String, dynamic>? user; // ✅ dynamic user data
 
-  const AuthSuccess({required this.message, this.isLoggedIn = true});
+  const AuthSuccess({required this.message, this.isLoggedIn = true, this.user});
 
   @override
-  List<Object?> get props => [message, isLoggedIn];
+  List<Object?> get props => [message, isLoggedIn, user];
 }
 
 /// Authentication error state
@@ -96,10 +97,12 @@ class PasswordChangeSuccess extends AuthState {
 
 /// Account creation success state
 class AccountCreationSuccess extends AuthState {
-  const AccountCreationSuccess();
+  final String message;
+
+  const AccountCreationSuccess({this.message = 'Account created successfully'});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [message];
 }
 
 /// Logout success state

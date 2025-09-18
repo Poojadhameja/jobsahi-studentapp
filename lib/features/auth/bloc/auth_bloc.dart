@@ -1,11 +1,18 @@
 import 'package:bloc/bloc.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+import '../repository/auth_repository.dart';
+import '../../../shared/services/api_service.dart';
+import '../../../shared/services/token_storage.dart';
 
 /// Authentication BLoC
 /// Handles all authentication-related business logic
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc() : super(const AuthInitial()) {
+  final AuthRepository _authRepository;
+
+  AuthBloc({AuthRepository? authRepository})
+    : _authRepository = authRepository ?? _createDefaultRepository(),
+      super(const AuthInitial()) {
     // Register event handlers
     on<LoginWithOtpEvent>(_onLoginWithOtp);
     on<VerifyOtpEvent>(_onVerifyOtp);
@@ -28,6 +35,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SetForgotPasswordSendingEvent>(_onSetForgotPasswordSending);
   }
 
+  /// Create default repository instance
+  static AuthRepository _createDefaultRepository() {
+    final apiService = ApiService();
+    final tokenStorage = TokenStorage.instance;
+    return AuthRepositoryImpl(
+      apiService: apiService,
+      tokenStorage: tokenStorage,
+    );
+  }
+
   /// Handle login with OTP
   Future<void> _onLoginWithOtp(
     LoginWithOtpEvent event,
@@ -36,10 +53,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Validate phone number
       if (event.phoneNumber.length != 10) {
         emit(
           const AuthError(
@@ -49,8 +62,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // Simulate successful OTP sending
-      emit(OtpSentState(phoneNumber: event.phoneNumber));
+      final response = await _authRepository.loginWithOtp(
+        phoneNumber: event.phoneNumber,
+      );
+
+      if (response.success) {
+        emit(OtpSentState(phoneNumber: event.phoneNumber));
+      } else {
+        emit(AuthError(message: response.message));
+      }
     } catch (e) {
       emit(AuthError(message: 'Failed to send OTP: ${e.toString()}'));
     }
@@ -64,27 +84,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const OtpVerificationLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Validate OTP (in real app, this would be server-side validation)
       if (event.otp.length != 6) {
         emit(const AuthError(message: 'Please enter a valid 6-digit OTP'));
         return;
       }
 
-      // Simulate successful OTP verification
-      emit(const OtpVerificationSuccess());
+      String phoneNumber = '';
+      if (state is OtpSentState) {
+        phoneNumber = (state as OtpSentState).phoneNumber;
+      }
 
-      // After successful verification, emit login success
-      await Future.delayed(const Duration(milliseconds: 500));
-      emit(const AuthSuccess(message: 'Login successful'));
+      final response = await _authRepository.verifyOtp(
+        phoneNumber: phoneNumber,
+        otp: event.otp,
+      );
+
+      if (response.success) {
+        emit(const OtpVerificationSuccess());
+        await Future.delayed(const Duration(milliseconds: 500));
+        emit(AuthSuccess(message: response.message));
+      } else {
+        emit(AuthError(message: response.message));
+      }
     } catch (e) {
       emit(AuthError(message: 'OTP verification failed: ${e.toString()}'));
     }
   }
 
-  /// Handle login with email and password
+  /// Handle login with email
   Future<void> _onLoginWithEmail(
     LoginWithEmailEvent event,
     Emitter<AuthState> emit,
@@ -92,16 +119,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Validate email format
       if (!event.email.contains('@')) {
         emit(const AuthError(message: 'Please enter a valid email address'));
         return;
       }
 
-      // Validate password
       if (event.password.length < 6) {
         emit(
           const AuthError(message: 'Password must be at least 6 characters'),
@@ -109,8 +131,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // Simulate successful login
-      emit(const AuthSuccess(message: 'Login successful'));
+      final response = await _authRepository.login(
+        email: event.email,
+        password: event.password,
+      );
+
+      if (response.success) {
+        emit(AuthSuccess(message: response.message));
+      } else {
+        emit(AuthError(message: response.message));
+      }
     } catch (e) {
       emit(AuthError(message: 'Login failed: ${e.toString()}'));
     }
@@ -124,12 +154,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      // Simulate API call delay
       await Future.delayed(const Duration(seconds: 2));
 
-      // Simulate successful social login
       emit(
-        AuthSuccess(message: '${event.provider.capitalize()} login successful'),
+        AuthSuccess(
+          message: '${event.provider.capitalize()} login successful',
+          user: {}, // social login के बाद भी user खाली Map रख दो
+        ),
       );
     } catch (e) {
       emit(
@@ -149,20 +180,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 2));
-
-      // Validate input
       if (event.name.isEmpty) {
         emit(const AuthError(message: 'Please enter your name'));
         return;
       }
-
       if (!event.email.contains('@')) {
         emit(const AuthError(message: 'Please enter a valid email address'));
         return;
       }
-
       if (event.phone.length != 10) {
         emit(
           const AuthError(
@@ -171,7 +196,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
         return;
       }
-
       if (event.password.length < 6) {
         emit(
           const AuthError(message: 'Password must be at least 6 characters'),
@@ -179,8 +203,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // Simulate successful account creation
-      emit(const AccountCreationSuccess());
+      final response = await _authRepository.createAccount(
+        name: event.name,
+        email: event.email,
+        phone: event.phone,
+        password: event.password,
+      );
+
+      if (response.success) {
+        emit(AccountCreationSuccess(message: response.message));
+      } else {
+        emit(AuthError(message: response.message));
+      }
     } catch (e) {
       emit(AuthError(message: 'Account creation failed: ${e.toString()}'));
     }
@@ -193,17 +227,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(const AuthLoading());
-
-      // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
 
-      // Validate email
       if (!event.email.contains('@')) {
         emit(const AuthError(message: 'Please enter a valid email address'));
         return;
       }
 
-      // Simulate successful password reset code sending
       emit(PasswordResetCodeSentState(email: event.email));
     } catch (e) {
       emit(AuthError(message: 'Failed to send reset code: ${e.toString()}'));
@@ -217,16 +247,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(const AuthLoading());
-
-      // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
 
-      // Validate inputs
       if (event.otp.length != 6) {
         emit(const AuthError(message: 'Please enter a valid 6-digit code'));
         return;
       }
-
       if (event.newPassword.length < 6) {
         emit(
           const AuthError(message: 'Password must be at least 6 characters'),
@@ -234,7 +260,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // Simulate successful password reset
       emit(const PasswordResetSuccess());
     } catch (e) {
       emit(AuthError(message: 'Password reset failed: ${e.toString()}'));
@@ -248,16 +273,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(const AuthLoading());
-
-      // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
 
-      // Validate inputs
       if (event.currentPassword.isEmpty) {
         emit(const AuthError(message: 'Please enter your current password'));
         return;
       }
-
       if (event.newPassword.length < 6) {
         emit(
           const AuthError(
@@ -267,7 +288,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      // Simulate successful password change
       emit(const PasswordChangeSuccess());
     } catch (e) {
       emit(AuthError(message: 'Password change failed: ${e.toString()}'));
@@ -279,11 +299,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      final success = await _authRepository.logout();
 
-      // Simulate successful logout
-      emit(const LogoutSuccess());
+      if (success) {
+        emit(const LogoutSuccess());
+      } else {
+        emit(const AuthError(message: 'Logout failed'));
+      }
     } catch (e) {
       emit(AuthError(message: 'Logout failed: ${e.toString()}'));
     }
@@ -297,12 +319,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      final isLoggedIn = await _authRepository.isLoggedIn();
 
-      // In a real app, this would check if user is logged in
-      // For now, we'll assume user is not logged in initially
-      emit(const AuthInitial());
+      if (isLoggedIn) {
+        final user = await _authRepository.getCurrentUser();
+        emit(
+          AuthSuccess(
+            message: user != null ? 'Welcome back,!' : 'Welcome back!',
+          ),
+        );
+      } else {
+        emit(const AuthInitial());
+      }
     } catch (e) {
       emit(
         AuthError(
@@ -312,22 +340,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Handle clear error
   void _onClearAuthError(ClearAuthErrorEvent event, Emitter<AuthState> emit) {
     emit(const AuthInitial());
   }
 
-  /// Handle splash screen initialization
   Future<void> _onSplashInitialization(
     SplashInitializationEvent event,
     Emitter<AuthState> emit,
   ) async {
-    // Wait for 2 seconds to show splash screen
     await Future.delayed(const Duration(seconds: 2));
     emit(const SplashReadyToNavigate());
   }
 
-  /// Handle onboarding page change
   void _onOnboardingPageChange(
     OnboardingPageChangeEvent event,
     Emitter<AuthState> emit,
@@ -335,7 +359,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(OnboardingState(currentPage: event.pageIndex));
   }
 
-  /// Handle complete onboarding
   void _onCompleteOnboarding(
     CompleteOnboardingEvent event,
     Emitter<AuthState> emit,
@@ -343,12 +366,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const OnboardingCompleted());
   }
 
-  /// Handle skip onboarding
   void _onSkipOnboarding(SkipOnboardingEvent event, Emitter<AuthState> emit) {
     emit(const OnboardingSkipped());
   }
 
-  /// Handle toggle password visibility
   void _onTogglePasswordVisibility(
     TogglePasswordVisibilityEvent event,
     Emitter<AuthState> emit,
@@ -369,7 +390,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Handle toggle terms acceptance
   void _onToggleTermsAcceptance(
     ToggleTermsAcceptanceEvent event,
     Emitter<AuthState> emit,
@@ -382,7 +402,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Handle set form submitting state
   void _onSetFormSubmitting(
     SetFormSubmittingEvent event,
     Emitter<AuthState> emit,
@@ -395,7 +414,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Handle set forgot password sending state
   void _onSetForgotPasswordSending(
     SetForgotPasswordSendingEvent event,
     Emitter<AuthState> emit,
