@@ -347,7 +347,12 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
               },
               activeColor: const Color(0xFF144B75),
             ),
-            Expanded(
+            GestureDetector(
+              onTap: () {
+                context.read<AuthBloc>().add(
+                  ToggleTermsAcceptanceEvent(isAccepted: !isTermsAccepted),
+                );
+              },
               child: const Text(
                 'मैं नियम, प्राइवेसी और शुल्क से सहमत हूँ',
                 style: TextStyle(
