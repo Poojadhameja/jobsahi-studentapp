@@ -198,3 +198,23 @@ class ForgotPasswordFormState extends AuthState {
     return ForgotPasswordFormState(isSending: isSending ?? this.isSending);
   }
 }
+
+/// Email already exists error state
+class EmailAlreadyExistsError extends AuthState {
+  final String message;
+
+  const EmailAlreadyExistsError({this.message = 'Email already exists'});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// Phone number already exists error state
+class PhoneAlreadyExistsError extends AuthState {
+  final String message;
+
+  const PhoneAlreadyExistsError({this.message = 'Phone number already exists'});
+
+  @override
+  List<Object?> get props => [message];
+}

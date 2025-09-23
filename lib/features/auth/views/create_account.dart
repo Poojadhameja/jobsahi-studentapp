@@ -51,148 +51,180 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        bool isPasswordVisible = false;
-        bool isConfirmPasswordVisible = false;
-        bool isTermsAccepted = false;
-        bool isSubmitting = false;
-
-        if (state is CreateAccountFormState) {
-          isPasswordVisible = state.isPasswordVisible;
-          isConfirmPasswordVisible = state.isConfirmPasswordVisible;
-          isTermsAccepted = state.isTermsAccepted;
-          isSubmitting = state.isSubmitting;
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        // Handle specific error states with snackbars
+        if (state is EmailAlreadyExistsError) {
+          _showErrorSnackBar(
+            context,
+            'Email already exists. Please use a different email or try signing in.',
+          );
+          // Clear email field
+          _emailController.clear();
+        } else if (state is PhoneAlreadyExistsError) {
+          _showErrorSnackBar(
+            context,
+            'Phone number already exists. Please use a different phone number or try signing in.',
+          );
+          // Clear phone field
+          _phoneController.clear();
+        } else if (state is AuthError) {
+          _showErrorSnackBar(context, state.message);
+        } else if (state is AccountCreationSuccess) {
+          _showSuccessSnackBar(
+            context,
+            'Account created successfully! Welcome to Job Sahi! 🎉',
+          );
+          Future.delayed(const Duration(seconds: 1), () {
+            if (context.mounted) {
+              context.go(AppRoutes.loginOtpEmail);
+            }
+          });
         }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          bool isPasswordVisible = false;
+          bool isConfirmPasswordVisible = false;
+          bool isTermsAccepted = false;
+          bool isSubmitting = false;
 
-        return Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Scrollable content
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.largePadding,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 2),
+          if (state is CreateAccountFormState) {
+            isPasswordVisible = state.isPasswordVisible;
+            isConfirmPasswordVisible = state.isConfirmPasswordVisible;
+            isTermsAccepted = state.isTermsAccepted;
+            isSubmitting = state.isSubmitting;
+          }
 
-                        /// Back button
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: AppConstants.textPrimaryColor,
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // Scrollable content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.largePadding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 2),
+
+                          /// Back button
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: AppConstants.textPrimaryColor,
+                            ),
+                            onPressed: () => context.pop(),
                           ),
-                          onPressed: () => context.pop(),
-                        ),
-                        const SizedBox(height: 4),
+                          const SizedBox(height: 4),
 
-                        /// Profile avatar & title
-                        Center(
-                          child: Column(
+                          /// Profile avatar & title
+                          Center(
+                            child: Column(
+                              children: [
+                                const CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Color(0xFFE0E7EF),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: AppConstants.textPrimaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  "Create your account",
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppConstants.textPrimaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  "वापसी का स्वागत है! कृपया अपनी जानकारी दर्ज करें",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF4F789B),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          /// Form fields
+                          Form(
+                            key: _formKey,
+                            child: _buildFormFields(
+                              context,
+                              isPasswordVisible,
+                              isConfirmPasswordVisible,
+                              isTermsAccepted,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          /// Or divider
+                          Row(
                             children: [
-                              const CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Color(0xFFE0E7EF),
-                                child: Icon(
-                                  Icons.person,
-                                  size: 45,
-                                  color: AppConstants.textPrimaryColor,
+                              const Expanded(
+                                child: Divider(color: Color(0xFF58B248)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Text(
+                                  "Or Sign up with",
+                                  style: const TextStyle(
+                                    color: Color(0xFF58B248),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                "Create your account",
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppConstants.textPrimaryColor,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                "वापसी का स्वागत है! कृपया अपनी जानकारी दर्ज करें",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF4F789B),
-                                ),
-                                textAlign: TextAlign.center,
+                              const Expanded(
+                                child: Divider(color: Color(0xFF58B248)),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 20),
+                          const SizedBox(height: 20),
 
-                        /// Form fields
-                        Form(
-                          key: _formKey,
-                          child: _buildFormFields(
-                            context,
-                            isPasswordVisible,
-                            isConfirmPasswordVisible,
-                            isTermsAccepted,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                          /// Social buttons
+                          _buildSocialLoginButtons(),
+                          const SizedBox(height: 24),
 
-                        /// Or divider
-                        Row(
-                          children: [
-                            const Expanded(
-                              child: Divider(color: Color(0xFF58B248)),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                "Or Sign up with",
-                                style: const TextStyle(
-                                  color: Color(0xFF58B248),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const Expanded(
-                              child: Divider(color: Color(0xFF58B248)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
-                        /// Social buttons
-                        _buildSocialLoginButtons(),
-                        const SizedBox(height: 24),
-
-                        /// Sign in link
-                        _buildSignInLink(),
-                        const SizedBox(height: 40),
-                      ],
+                          /// Sign in link
+                          _buildSignInLink(),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
                     ),
                   ),
-                ),
 
-                // Fixed bottom button
-                Container(
-                  padding: const EdgeInsets.all(AppConstants.largePadding),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      top: BorderSide(color: Colors.grey.shade200),
+                  // Fixed bottom button
+                  Container(
+                    padding: const EdgeInsets.all(AppConstants.largePadding),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade200),
+                      ),
                     ),
+                    child: _buildSubmitButton(context, isSubmitting),
                   ),
-                  child: _buildSubmitButton(context, isSubmitting),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -547,22 +579,6 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           password: _passwordController.text,
         ),
       );
-
-      // Simulate API call delay
-      Future.delayed(const Duration(seconds: 2), () {
-        // Reset submitting state
-        context.read<AuthBloc>().add(
-          const SetFormSubmittingEvent(isSubmitting: false),
-        );
-
-        // Show success message and navigate to login
-        _showSuccessSnackBar(context, AppConstants.signupSuccess);
-        Future.delayed(const Duration(seconds: 1), () {
-          if (context.mounted) {
-            context.go(AppRoutes.loginOtpEmail);
-          }
-        });
-      });
     }
   }
 
@@ -573,6 +589,13 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
         content: Text(message),
         backgroundColor: AppConstants.successColor,
       ),
+    );
+  }
+
+  /// Shows error snackbar
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 }

@@ -238,7 +238,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (response.success) {
         emit(AccountCreationSuccess(message: response.message));
       } else {
-        emit(AuthError(message: response.message));
+        // Check for specific error messages to show appropriate popups
+        final errorMessage = response.message.toLowerCase();
+
+        if (errorMessage.contains('email') &&
+            (errorMessage.contains('already') ||
+                errorMessage.contains('exists') ||
+                errorMessage.contains('duplicate'))) {
+          emit(const EmailAlreadyExistsError(message: 'Email already exists'));
+        } else if (errorMessage.contains('phone') &&
+            (errorMessage.contains('already') ||
+                errorMessage.contains('exists') ||
+                errorMessage.contains('duplicate'))) {
+          emit(
+            const PhoneAlreadyExistsError(
+              message: 'Phone number already exists',
+            ),
+          );
+        } else if (errorMessage.contains('rate limit') ||
+            errorMessage.contains('too many requests')) {
+          emit(
+            const AuthError(
+              message: 'Too many requests. Please wait a moment and try again.',
+            ),
+          );
+        } else {
+          emit(AuthError(message: response.message));
+        }
       }
     } catch (e) {
       emit(AuthError(message: 'Account creation failed: ${e.toString()}'));

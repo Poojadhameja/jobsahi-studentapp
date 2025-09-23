@@ -298,7 +298,7 @@ class LoginResponse {
     } else if (json.containsKey('result')) {
       success = json['result'] == true || json['result'] == 'success';
     }
-    
+
     // Handle different message field names
     String message = '';
     if (json.containsKey('message')) {
@@ -308,7 +308,7 @@ class LoginResponse {
     } else if (json.containsKey('response')) {
       message = json['response'] ?? '';
     }
-    
+
     // Handle different token field names
     String? token;
     if (json.containsKey('token')) {
@@ -318,7 +318,7 @@ class LoginResponse {
     } else if (json.containsKey('auth_token')) {
       token = json['auth_token'];
     }
-    
+
     // Handle different user field names
     User? user;
     if (json.containsKey('user') && json['user'] != null) {
@@ -328,7 +328,7 @@ class LoginResponse {
         user = User.fromJson(json['data']);
       }
     }
-    
+
     return LoginResponse(
       success: success,
       message: message,
