@@ -59,6 +59,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'phone_number': phone,
         'password': password,
         'role': AppConstants.studentRole,
+        'is_verified': true, // New accounts start as unverified
       };
 
       debugPrint(
@@ -114,7 +115,9 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final requestData = {"email": email, "password": password};
 
-      debugPrint("🔵 Sending login request to: ${AppConstants.baseUrl}${AppConstants.loginEndpoint}");
+      debugPrint(
+        "🔵 Sending login request to: ${AppConstants.baseUrl}${AppConstants.loginEndpoint}",
+      );
       debugPrint("🔵 Request data: $requestData");
 
       final response = await _apiService.post(
@@ -135,24 +138,37 @@ class AuthRepositoryImpl implements AuthRepository {
       } else if (response.data is String) {
         // Try to parse JSON string
         try {
-          responseData = jsonDecode(response.data as String) as Map<String, dynamic>;
+          responseData =
+              jsonDecode(response.data as String) as Map<String, dynamic>;
         } catch (e) {
           debugPrint("🔴 Failed to parse JSON string: $e");
-          responseData = {"success": false, "message": "Invalid response format"};
+          responseData = {
+            "success": false,
+            "message": "Invalid response format",
+          };
         }
       } else {
-        debugPrint("🔴 Unexpected response data type: ${response.data.runtimeType}");
-        responseData = {"success": false, "message": "Unexpected response format"};
+        debugPrint(
+          "🔴 Unexpected response data type: ${response.data.runtimeType}",
+        );
+        responseData = {
+          "success": false,
+          "message": "Unexpected response format",
+        };
       }
 
       // Handle case where API returns success but with different field names
       // Some APIs use 'status' instead of 'success', or return data directly
       if (response.statusCode == 200) {
         // If status code is 200, consider it successful even if success field is missing
-        if (!responseData.containsKey('success') && !responseData.containsKey('status')) {
-          debugPrint("🔵 API returned 200 but no success/status field, assuming success");
+        if (!responseData.containsKey('success') &&
+            !responseData.containsKey('status')) {
+          debugPrint(
+            "🔵 API returned 200 but no success/status field, assuming success",
+          );
           responseData['success'] = true;
-          responseData['message'] = responseData['message'] ?? 'Login successful';
+          responseData['message'] =
+              responseData['message'] ?? 'Login successful';
         }
       }
 
@@ -357,18 +373,25 @@ class AuthRepositoryImpl implements AuthRepository {
         responseData = response.data as Map<String, dynamic>;
       } else if (response.data is String) {
         try {
-          responseData = jsonDecode(response.data as String) as Map<String, dynamic>;
+          responseData =
+              jsonDecode(response.data as String) as Map<String, dynamic>;
         } catch (e) {
           debugPrint('Failed to parse JSON string: $e');
-          responseData = {"success": false, "message": "Invalid response format"};
+          responseData = {
+            "success": false,
+            "message": "Invalid response format",
+          };
         }
       } else {
-        responseData = {"success": false, "message": "Unexpected response format"};
+        responseData = {
+          "success": false,
+          "message": "Unexpected response format",
+        };
       }
 
       debugPrint('=== PARSED RESPONSE ===');
       debugPrint('Parsed Data: $responseData');
-      
+
       final loginResponse = LoginResponse.fromJson(responseData);
       debugPrint('LoginResponse success: ${loginResponse.success}');
       debugPrint('LoginResponse message: ${loginResponse.message}');

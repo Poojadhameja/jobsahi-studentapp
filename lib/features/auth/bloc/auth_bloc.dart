@@ -188,10 +188,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(const AuthError(message: 'Please enter a valid email address'));
         return;
       }
-      if (event.phone.length != 10) {
+      if (event.phone.length != 10 ||
+          !RegExp(r'^[0-9]{10}$').hasMatch(event.phone)) {
         emit(
           const AuthError(
-            message: 'Please enter a valid 10-digit phone number',
+            message:
+                'Please enter a valid 10-digit phone number with only numbers',
           ),
         );
         return;

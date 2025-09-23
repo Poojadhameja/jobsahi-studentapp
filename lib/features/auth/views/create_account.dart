@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
@@ -244,13 +245,20 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           label: "Phone Number*",
           hint: "मोबाइल नंबर",
           prefixIcon: Icons.phone,
-          keyboardType: TextInputType.phone,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
           validator: (value) {
             if (value == null || value.isEmpty) {
               return AppConstants.phoneRequired;
             }
-            if (value.length < 10) {
-              return AppConstants.invalidPhone;
+            if (value.length != 10) {
+              return 'Phone number must be exactly 10 digits';
+            }
+            if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+              return 'Phone number must contain only numbers';
             }
             return null;
           },
@@ -352,6 +360,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
     bool isPassword = false,
     bool? passwordVisible,
     VoidCallback? onPasswordToggle,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,6 +383,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           controller: controller,
           obscureText: isPassword ? !(passwordVisible ?? false) : false,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.grey),
