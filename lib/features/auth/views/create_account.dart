@@ -209,11 +209,25 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
         _buildFormField(
           controller: _nameController,
           label: "Full Name*",
-          hint: "नाम",
+          hint: "पूरा नाम ",
           prefixIcon: Icons.person,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return AppConstants.nameRequired;
+            }
+            if (value.trim().length < 6) {
+              return 'Name must be at least 6 letters long';
+            }
+            // Check if name contains at least 2 words (first name and surname)
+            final nameParts = value.trim().split(RegExp(r'\s+'));
+            if (nameParts.length < 2) {
+              return 'Please enter your full name with surname';
+            }
+            // Check if all parts have at least 2 characters
+            for (String part in nameParts) {
+              if (part.length < 2) {
+                return 'Each name part must be at least 2 letters';
+              }
             }
             return null;
           },
