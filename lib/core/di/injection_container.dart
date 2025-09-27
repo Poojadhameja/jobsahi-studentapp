@@ -5,6 +5,7 @@ import '../../features/home/bloc/home_bloc.dart';
 import '../../features/jobs/bloc/jobs_bloc.dart';
 import '../../features/profile/bloc/profile_bloc.dart';
 import '../../features/courses/bloc/courses_bloc.dart';
+import '../../features/courses/repository/courses_repository.dart';
 import '../../features/messages/bloc/messages_bloc.dart';
 import '../../features/settings/bloc/settings_bloc.dart';
 import '../../features/skill_test/bloc/skill_test_bloc.dart';
@@ -29,9 +30,9 @@ Future<void> initializeDependencies() async {
 /// Register all BLoCs
 void _registerBlocs() {
   // Auth BLoCs
-  sl.registerLazySingleton<AuthBloc>(() => AuthBloc(
-    authRepository: sl<AuthRepository>(),
-  ));
+  sl.registerLazySingleton<AuthBloc>(
+    () => AuthBloc(authRepository: sl<AuthRepository>()),
+  );
 
   // Home BLoCs
   sl.registerLazySingleton<HomeBloc>(() => HomeBloc());
@@ -43,7 +44,9 @@ void _registerBlocs() {
   sl.registerLazySingleton<ProfileBloc>(() => ProfileBloc());
 
   // Courses BLoCs
-  sl.registerLazySingleton<CoursesBloc>(() => CoursesBloc());
+  sl.registerFactory<CoursesBloc>(
+    () => CoursesBloc(coursesRepository: sl<CoursesRepository>()),
+  );
 
   // Messages BLoCs
   sl.registerLazySingleton<MessagesBloc>(() => MessagesBloc());
@@ -58,10 +61,12 @@ void _registerBlocs() {
 /// Register all repositories
 void _registerRepositories() {
   // Auth repositories
-  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(
-    apiService: sl<ApiService>(),
-    tokenStorage: sl<TokenStorage>(),
-  ));
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(
+      apiService: sl<ApiService>(),
+      tokenStorage: sl<TokenStorage>(),
+    ),
+  );
 
   // Job repositories
   // sl.registerLazySingleton<JobRepository>(() => JobRepositoryImpl());
@@ -70,7 +75,9 @@ void _registerRepositories() {
   // sl.registerLazySingleton<ProfileRepository>(() => ProfileRepositoryImpl());
 
   // Course repositories
-  // sl.registerLazySingleton<CourseRepository>(() => CourseRepositoryImpl());
+  sl.registerLazySingleton<CoursesRepository>(
+    () => CoursesRepositoryImpl(apiService: sl<ApiService>()),
+  );
 
   // Message repositories
   // sl.registerLazySingleton<MessageRepository>(() => MessageRepositoryImpl());

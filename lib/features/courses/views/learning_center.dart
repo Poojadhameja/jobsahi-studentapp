@@ -6,13 +6,13 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../shared/data/course_data.dart';
 import '../../../shared/widgets/cards/course_card.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
+import '../../../core/di/injection_container.dart';
 
 import 'saved_courses.dart';
 
@@ -22,7 +22,7 @@ class LearningCenterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => CoursesBloc()..add(LoadCoursesEvent()),
+      create: (context) => sl<CoursesBloc>()..add(LoadCoursesEvent()),
       child: _LearningCenterPageView(),
     );
   }
@@ -70,6 +70,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
       builder: (context, state) {
         return Scaffold(
           backgroundColor: AppConstants.backgroundColor,
+          appBar: _buildAppBar(context, state),
           body: Column(
             children: [
               _buildSearchBar(),
@@ -87,6 +88,27 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
           ),
         );
       },
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, CoursesState state) {
+    return AppBar(
+      backgroundColor: AppConstants.cardBackgroundColor,
+      elevation: 0,
+      title: const Text(
+        'Learning Center',
+        style: TextStyle(
+          color: AppConstants.primaryColor,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      actions: [
+        IconButton(
+          onPressed: () => _refreshCourses(context),
+          icon: const Icon(Icons.refresh, color: AppConstants.primaryColor),
+        ),
+      ],
     );
   }
 
@@ -147,17 +169,24 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
       isSearching = state.searchQuery.isNotEmpty;
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      children: [
-        if (!isSearching) ...[
-          _buildFeaturedSection(context, state),
-          const SizedBox(height: AppConstants.defaultPadding),
-          _buildFiltersSection(context, state),
-          const SizedBox(height: AppConstants.defaultPadding),
+    return RefreshIndicator(
+      onRefresh: () async {
+        _refreshCourses(context);
+        // Wait for the API call to complete
+        await Future.delayed(const Duration(milliseconds: 500));
+      },
+      child: ListView(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        children: [
+          if (!isSearching) ...[
+            _buildFeaturedSection(context, state),
+            const SizedBox(height: AppConstants.defaultPadding),
+            _buildFiltersSection(context, state),
+            const SizedBox(height: AppConstants.defaultPadding),
+          ],
+          _buildCoursesSection(context, state),
         ],
-        _buildCoursesSection(context, state),
-      ],
+      ),
     );
   }
 
@@ -166,7 +195,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
     if (state is CoursesLoaded) {
       featuredCourses = state.allCourses;
     } else {
-      featuredCourses = CourseData.featuredCourses;
+      featuredCourses = [];
     }
 
     return Column(
@@ -287,7 +316,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
             value: selectedCategory,
             hint: const Text('Categories'),
             isExpanded: true,
-            items: CourseData.categories.map((category) {
+            items: _getCourseCategories().map((category) {
               return DropdownMenuItem<String>(
                 value: category,
                 child: Text(category),
@@ -312,7 +341,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
     if (state is CoursesLoaded) {
       courses = state.filteredCourses;
     } else {
-      courses = CourseData.featuredCourses;
+      courses = [];
     }
 
     if (courses.isEmpty) {
@@ -362,5 +391,26 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
         bloc.add(SaveCourseEvent(courseId: courseId));
       }
     }
+  }
+
+  /// Get course categories for filtering
+  List<String> _getCourseCategories() {
+    return [
+      'All',
+      'Electrical',
+      'Mechanical',
+      'Welding',
+      'Machining',
+      'Turning',
+      'Woodwork',
+      'Plumbing',
+      'Drafting',
+      'General',
+    ];
+  }
+
+  /// Refresh courses by reloading from API
+  void _refreshCourses(BuildContext context) {
+    context.read<CoursesBloc>().add(const LoadCoursesEvent());
   }
 }

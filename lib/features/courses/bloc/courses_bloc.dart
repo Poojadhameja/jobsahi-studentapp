@@ -1,13 +1,16 @@
 import 'package:bloc/bloc.dart';
 import 'courses_event.dart';
 import 'courses_state.dart';
-import '../../../shared/data/course_data.dart';
-import '../../../shared/data/user_data.dart';
+import '../repository/courses_repository.dart';
 
 /// Courses BLoC
 /// Handles all course-related business logic
 class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
-  CoursesBloc() : super(const CoursesInitial()) {
+  final CoursesRepository _coursesRepository;
+
+  CoursesBloc({required CoursesRepository coursesRepository})
+    : _coursesRepository = coursesRepository,
+      super(const CoursesInitial()) {
     // Register event handlers
     on<LoadCoursesEvent>(_onLoadCourses);
     on<SearchCoursesEvent>(_onSearchCourses);
@@ -29,20 +32,17 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       emit(const CoursesLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Fetch courses from API
+      final courses = await _coursesRepository.getCourses();
 
-      // Load courses from mock data
-      final allCourses = CourseData.featuredCourses;
-      final savedCourses = CourseData.getSavedCourses();
-      final enrolledCourses = UserData.enrolledCourses;
-      final savedCourseIds = CourseData.featuredCourses
-          .where((course) => course['isSaved'] == true)
-          .map((course) => course['id'] as String)
-          .toSet();
-      final enrolledCourseIds = UserData.enrolledCourses
-          .map((course) => course['id'] as String)
-          .toSet();
+      // Convert API courses to UI format
+      final allCourses = courses.map((course) => course.toUIMap()).toList();
+
+      // Initialize empty saved and enrolled courses (will be managed by API when endpoints are available)
+      final savedCourses = <Map<String, dynamic>>[];
+      final enrolledCourses = <Map<String, dynamic>>[];
+      final savedCourseIds = <String>{};
+      final enrolledCourseIds = <String>{};
 
       emit(
         CoursesLoaded(
@@ -55,6 +55,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         ),
       );
     } catch (e) {
+      // Emit error if API fails - no fallback to mock data
       emit(CoursesError(message: 'Failed to load courses: ${e.toString()}'));
     }
   }
@@ -105,6 +106,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       if (state is CoursesLoaded) {
         final currentState = state as CoursesLoaded;
+
+        // Call repository to save course
+        await _coursesRepository.saveCourse(event.courseId);
+
         final updatedSavedCourseIds = Set<String>.from(
           currentState.savedCourseIds,
         );
@@ -146,6 +151,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       if (state is CoursesLoaded) {
         final currentState = state as CoursesLoaded;
+
+        // Call repository to unsave course
+        await _coursesRepository.unsaveCourse(event.courseId);
+
         final updatedSavedCourseIds = Set<String>.from(
           currentState.savedCourseIds,
         );
@@ -178,8 +187,8 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       emit(const CoursesLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 2));
+      // Call repository to enroll in course
+      await _coursesRepository.enrollInCourse(event.courseId);
 
       if (state is CoursesLoaded) {
         final currentState = state as CoursesLoaded;
@@ -231,15 +240,12 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       emit(const CoursesLoading());
 
-      // Simulate API call delay
+      // TODO: Implement saved courses API call when endpoint is available
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // Load saved courses from mock data
-      final savedCourses = CourseData.getSavedCourses();
-      final savedCourseIds = CourseData.featuredCourses
-          .where((course) => course['isSaved'] == true)
-          .map((course) => course['id'] as String)
-          .toSet();
+      // For now, return empty saved courses
+      final savedCourses = <Map<String, dynamic>>[];
+      final savedCourseIds = <String>{};
 
       emit(
         CoursesLoaded(
@@ -248,9 +254,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           savedCourses: savedCourses,
           enrolledCourses: [],
           savedCourseIds: savedCourseIds,
-          enrolledCourseIds: UserData.enrolledCourses
-              .map((course) => course['id'] as String)
-              .toSet(),
+          enrolledCourseIds: <String>{},
         ),
       );
     } catch (e) {
@@ -268,11 +272,11 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       emit(const CoursesLoading());
 
-      // Simulate API call delay
+      // TODO: Implement enrolled courses API call when endpoint is available
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // Load enrolled courses from mock data
-      final enrolledCourses = UserData.enrolledCourses;
+      // For now, return empty enrolled courses
+      final enrolledCourses = <Map<String, dynamic>>[];
 
       emit(
         CoursesLoaded(
@@ -280,13 +284,8 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           filteredCourses: enrolledCourses,
           savedCourses: [],
           enrolledCourses: enrolledCourses,
-          savedCourseIds: CourseData.featuredCourses
-              .where((course) => course['isSaved'] == true)
-              .map((course) => course['id'] as String)
-              .toSet(),
-          enrolledCourseIds: UserData.enrolledCourses
-              .map((course) => course['id'] as String)
-              .toSet(),
+          savedCourseIds: <String>{},
+          enrolledCourseIds: <String>{},
         ),
       );
     } catch (e) {

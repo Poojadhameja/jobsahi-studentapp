@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
         // Profile BLoC
         BlocProvider<ProfileBloc>(create: (context) => ProfileBloc()),
         // Courses BLoC
-        BlocProvider<CoursesBloc>(create: (context) => CoursesBloc()),
+        BlocProvider<CoursesBloc>(create: (context) => sl<CoursesBloc>()),
         // Messages BLoC
         BlocProvider<MessagesBloc>(create: (context) => MessagesBloc()),
         // Settings BLoC

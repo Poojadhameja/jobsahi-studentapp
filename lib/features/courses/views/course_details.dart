@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
+import '../../../core/di/injection_container.dart';
 
 class CourseDetailsPage extends StatelessWidget {
   final Map<String, dynamic> course;
@@ -20,7 +21,7 @@ class CourseDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => CoursesBloc(),
+      create: (context) => sl<CoursesBloc>(),
       child: _CourseDetailsPageView(course: course),
     );
   }

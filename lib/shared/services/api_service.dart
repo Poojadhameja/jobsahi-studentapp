@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/utils/app_constants.dart';
+import '../../features/courses/models/course.dart';
 
 /// API Service for making HTTP requests
 class ApiService {
@@ -359,5 +360,18 @@ class CreateAccountResponse {
       message: json['message'] ?? '',
       user: json['user'] != null ? User.fromJson(json['user']) : null,
     );
+  }
+}
+
+/// Courses API methods
+extension CoursesApi on ApiService {
+  /// Get all courses
+  Future<CoursesResponse> getCourses() async {
+    try {
+      final response = await get('/courses/courses.php');
+      return CoursesResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to fetch courses: ${e.toString()}');
+    }
   }
 }

@@ -12,6 +12,7 @@ import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
+import '../../../core/di/injection_container.dart';
 
 class SavedCoursesPage extends StatelessWidget {
   const SavedCoursesPage({super.key});
@@ -19,7 +20,7 @@ class SavedCoursesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => CoursesBloc()..add(LoadSavedCoursesEvent()),
+      create: (context) => sl<CoursesBloc>()..add(LoadSavedCoursesEvent()),
       child: const _SavedCoursesPageView(),
     );
   }
@@ -157,7 +158,7 @@ class SavedCoursesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => CoursesBloc()..add(LoadSavedCoursesEvent()),
+      create: (context) => sl<CoursesBloc>()..add(LoadSavedCoursesEvent()),
       child: const _SavedCoursesScreenView(),
     );
   }
