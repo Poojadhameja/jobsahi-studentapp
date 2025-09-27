@@ -1,6 +1,5 @@
 import 'dart:convert'; // ✅ for jsonEncode
 import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../core/utils/app_constants.dart';
@@ -54,7 +53,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       // ✅ Prepare request data as JSON
       final requestData = {
-        'name': name,
+        'user_name': name,
         'email': email,
         'phone_number': phone,
         'password': password,
@@ -84,12 +83,32 @@ class AuthRepositoryImpl implements AuthRepository {
       // If account creation is successful, store user data
       if (createAccountResponse.success && createAccountResponse.user != null) {
         final user = createAccountResponse.user!;
+
+        // ✅ Role validation - only students can access the app
+        if (user.role != null && user.role != AppConstants.studentRole) {
+          debugPrint(
+            "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
+          );
+          return CreateAccountResponse(
+            success: false,
+            message: AppConstants.userDoesNotExist,
+          );
+        }
+
+        // If role is null, we'll allow access but log a warning
+        if (user.role == null) {
+          debugPrint(
+            "⚠️ Warning: User role is null. Allowing access but this should be investigated.",
+          );
+        }
+
         await _tokenStorage.storeLoginSession(
           token: responseData['token'] ?? '',
           userId: user.id,
           email: user.email,
           name: user.name,
           phone: user.phone,
+          role: user.role,
         );
 
         if (responseData['token'] != null) {
@@ -186,29 +205,48 @@ class AuthRepositoryImpl implements AuthRepository {
         // अगर login success है तो user और token save करो
         if (loginResponse.user != null && loginResponse.token != null) {
           final user = loginResponse.user!;
+
+          // ✅ Role validation - only students can access the app
+          if (user.role != null && user.role != AppConstants.studentRole) {
+            debugPrint(
+              "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
+            );
+            throw Exception(AppConstants.userDoesNotExist);
+          }
+
+          // If role is null, we'll allow access but log a warning
+          if (user.role == null) {
+            debugPrint(
+              "⚠️ Warning: User role is null. Allowing access but this should be investigated.",
+            );
+          }
+
           await _tokenStorage.storeLoginSession(
             token: loginResponse.token!,
             userId: user.id,
             email: user.email,
             name: user.name,
             phone: user.phone,
+            role: user.role,
           );
           _apiService.setAuthToken(loginResponse.token!);
-          debugPrint("🔵 User data stored successfully");
+          debugPrint(
+            "🔵 User data stored successfully with role: ${user.role}",
+          );
         } else {
           debugPrint("🔴 User or token is null in successful response");
         }
         return loginResponse;
       } else {
-        // अगर success false है तो error throw करो
+        // अगर success false है तो generic error message दो
         debugPrint("🔴 Login failed: ${loginResponse.message}");
-        throw Exception(loginResponse.message ?? "Login failed");
+        throw Exception(AppConstants.userDoesNotExist);
       }
     } catch (e) {
       debugPrint("🔴 Login error: $e");
       return LoginResponse(
         success: false,
-        message: "Login failed: ${e.toString()}",
+        message: AppConstants.userDoesNotExist,
       );
     }
   }
@@ -238,7 +276,7 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint('Error sending OTP: $e');
       return LoginResponse(
         success: false,
-        message: 'Failed to send OTP: ${e.toString()}',
+        message: AppConstants.userDoesNotExist,
       );
     }
   }
@@ -270,12 +308,32 @@ class AuthRepositoryImpl implements AuthRepository {
           loginResponse.user != null &&
           loginResponse.token != null) {
         final user = loginResponse.user!;
+
+        // ✅ Role validation - only students can access the app
+        if (user.role != null && user.role != AppConstants.studentRole) {
+          debugPrint(
+            "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
+          );
+          return LoginResponse(
+            success: false,
+            message: AppConstants.userDoesNotExist,
+          );
+        }
+
+        // If role is null, we'll allow access but log a warning
+        if (user.role == null) {
+          debugPrint(
+            "⚠️ Warning: User role is null. Allowing access but this should be investigated.",
+          );
+        }
+
         await _tokenStorage.storeLoginSession(
           token: loginResponse.token!,
           userId: user.id,
           email: user.email,
           name: user.name,
           phone: user.phone,
+          role: user.role,
         );
 
         _apiService.setAuthToken(loginResponse.token!);
@@ -286,7 +344,7 @@ class AuthRepositoryImpl implements AuthRepository {
       debugPrint('Error verifying OTP: $e');
       return LoginResponse(
         success: false,
-        message: 'OTP verification failed: ${e.toString()}',
+        message: AppConstants.userDoesNotExist,
       );
     }
   }

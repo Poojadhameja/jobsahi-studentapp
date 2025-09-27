@@ -10,6 +10,7 @@ class TokenStorage {
   static const String _userEmailKey = 'user_email';
   static const String _userNameKey = 'user_name';
   static const String _userPhoneKey = 'user_phone';
+  static const String _userRoleKey = 'user_role';
 
   static TokenStorage? _instance;
   static TokenStorage get instance => _instance ??= TokenStorage._internal();
@@ -57,7 +58,7 @@ class TokenStorage {
     if (_prefs == null) await initialize();
     final userDataString = _prefs!.getString(_userDataKey);
     if (userDataString == null) return null;
-    
+
     // Simple parsing - in production, use proper JSON parsing
     try {
       // This is a simplified approach. In production, use jsonEncode/jsonDecode
@@ -73,16 +74,18 @@ class TokenStorage {
     required String email,
     required String name,
     required String phone,
+    String? role,
   }) async {
     if (_prefs == null) await initialize();
-    
+
     final results = await Future.wait([
       _prefs!.setString(_userIdKey, userId),
       _prefs!.setString(_userEmailKey, email),
       _prefs!.setString(_userNameKey, name),
       _prefs!.setString(_userPhoneKey, phone),
+      if (role != null) _prefs!.setString(_userRoleKey, role),
     ]);
-    
+
     return results.every((result) => result);
   }
 
@@ -110,6 +113,12 @@ class TokenStorage {
     return _prefs!.getString(_userPhoneKey);
   }
 
+  /// Get user role
+  Future<String?> getUserRole() async {
+    if (_prefs == null) await initialize();
+    return _prefs!.getString(_userRoleKey);
+  }
+
   /// Set login status
   Future<bool> setLoggedIn(bool isLoggedIn) async {
     if (_prefs == null) await initialize();
@@ -125,7 +134,7 @@ class TokenStorage {
   /// Clear all stored data (logout)
   Future<bool> clearAll() async {
     if (_prefs == null) await initialize();
-    
+
     final results = await Future.wait([
       _prefs!.remove(_tokenKey),
       _prefs!.remove(_refreshTokenKey),
@@ -135,20 +144,21 @@ class TokenStorage {
       _prefs!.remove(_userEmailKey),
       _prefs!.remove(_userNameKey),
       _prefs!.remove(_userPhoneKey),
+      _prefs!.remove(_userRoleKey),
     ]);
-    
+
     return results.every((result) => result);
   }
 
   /// Clear only tokens (keep user data)
   Future<bool> clearTokens() async {
     if (_prefs == null) await initialize();
-    
+
     final results = await Future.wait([
       _prefs!.remove(_tokenKey),
       _prefs!.remove(_refreshTokenKey),
     ]);
-    
+
     return results.every((result) => result);
   }
 
@@ -171,17 +181,24 @@ class TokenStorage {
     required String email,
     required String name,
     required String phone,
+    String? role,
     String? refreshToken,
   }) async {
     if (_prefs == null) await initialize();
-    
+
     final results = await Future.wait([
       storeToken(token),
-      storeUserFields(userId: userId, email: email, name: name, phone: phone),
+      storeUserFields(
+        userId: userId,
+        email: email,
+        name: name,
+        phone: phone,
+        role: role,
+      ),
       setLoggedIn(true),
       if (refreshToken != null) storeRefreshToken(refreshToken),
     ]);
-    
+
     return results.every((result) => result);
   }
 }

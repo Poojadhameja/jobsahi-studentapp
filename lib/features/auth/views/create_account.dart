@@ -34,6 +34,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
 
   /// Text editing controllers
   final _nameController = TextEditingController();
+  final _middleNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -42,6 +43,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
   @override
   void dispose() {
     _nameController.dispose();
+    _middleNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -69,17 +71,16 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           // Clear phone field
           _phoneController.clear();
         } else if (state is AuthError) {
-          _showErrorSnackBar(context, state.message);
+          // Check if this is a success message being treated as error
+          if (state.message.toLowerCase().contains('registered successfully') ||
+              state.message.toLowerCase().contains('account created') ||
+              state.message.toLowerCase().contains('student profile')) {
+            context.go(AppRoutes.createAccountPopup);
+          } else {
+            _showErrorSnackBar(context, state.message);
+          }
         } else if (state is AccountCreationSuccess) {
-          _showSuccessSnackBar(
-            context,
-            'Account created successfully! Welcome to Job Sahi! 🎉',
-          );
-          Future.delayed(const Duration(seconds: 1), () {
-            if (context.mounted) {
-              context.go(AppRoutes.loginOtpEmail);
-            }
-          });
+          context.go(AppRoutes.createAccountPopup);
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
@@ -237,30 +238,32 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
   ) {
     return Column(
       children: [
-        // Full Name
+        // First Name
         _buildFormField(
           controller: _nameController,
-          label: "Full Name*",
-          hint: "पूरा नाम ",
+          label: "First Name*",
+          hint: "पहला नाम",
           prefixIcon: Icons.person,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return AppConstants.nameRequired;
+              return 'First name is required';
             }
-            if (value.trim().length < 6) {
-              return 'Name must be at least 6 letters long';
+            if (value.trim().length < 2) {
+              return 'First name must be at least 2 letters long';
             }
-            // Check if name contains at least 2 words (first name and surname)
-            final nameParts = value.trim().split(RegExp(r'\s+'));
-            if (nameParts.length < 2) {
-              return 'Please enter your full name with surname';
-            }
-            // Check if all parts have at least 2 characters
-            for (String part in nameParts) {
-              if (part.length < 2) {
-                return 'Each name part must be at least 2 letters';
-              }
-            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 20),
+
+        // Middle Name (Optional)
+        _buildFormField(
+          controller: _middleNameController,
+          label: "Middle Name",
+          hint: "मध्य नाम (वैकल्पिक)",
+          prefixIcon: Icons.person_outline,
+          validator: (value) {
+            // Middle name is optional, so no validation required
             return null;
           },
         ),
@@ -571,25 +574,21 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
       );
 
       // Create account using existing CreateAccountEvent
+      // Combine first name and middle name (if provided)
+      String fullName = _nameController.text.trim();
+      if (_middleNameController.text.trim().isNotEmpty) {
+        fullName += ' ${_middleNameController.text.trim()}';
+      }
+
       context.read<AuthBloc>().add(
         CreateAccountEvent(
-          name: _nameController.text,
+          name: fullName,
           email: _emailController.text,
           phone: _phoneController.text,
           password: _passwordController.text,
         ),
       );
     }
-  }
-
-  /// Shows success snackbar
-  void _showSuccessSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-      ),
-    );
   }
 
   /// Shows error snackbar

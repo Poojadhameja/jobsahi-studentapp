@@ -100,6 +100,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (response.success) {
+        // ✅ Role validation is already handled in the repository
+        // If we reach here, the user has the correct role (student)
         emit(const OtpVerificationSuccess());
         await Future.delayed(const Duration(milliseconds: 500));
         emit(AuthSuccess(message: response.message));
@@ -107,7 +109,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthError(message: response.message));
       }
     } catch (e) {
-      emit(AuthError(message: 'OTP verification failed: ${e.toString()}'));
+      // ✅ Handle role-based access control errors
+      final errorMessage = e.toString();
+      if (errorMessage.contains('Access denied') ||
+          errorMessage.contains('Only students can access')) {
+        emit(AuthError(message: errorMessage));
+      } else {
+        emit(AuthError(message: 'OTP verification failed: ${e.toString()}'));
+      }
     }
   }
 
@@ -137,12 +146,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (response.success) {
+        // ✅ Role validation is already handled in the repository
+        // If we reach here, the user has the correct role (student)
         emit(AuthSuccess(message: response.message));
       } else {
         emit(AuthError(message: response.message));
       }
     } catch (e) {
-      emit(AuthError(message: 'Login failed: ${e.toString()}'));
+      // ✅ Handle role-based access control errors
+      final errorMessage = e.toString();
+      if (errorMessage.contains('Access denied') ||
+          errorMessage.contains('Only students can access')) {
+        emit(AuthError(message: errorMessage));
+      } else {
+        emit(AuthError(message: 'Login failed: ${e.toString()}'));
+      }
     }
   }
 
@@ -236,6 +254,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (response.success) {
+        // ✅ Role validation is already handled in the repository
+        // If we reach here, the user has the correct role (student)
         emit(AccountCreationSuccess(message: response.message));
       } else {
         // Check for specific error messages to show appropriate popups
@@ -267,7 +287,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       }
     } catch (e) {
-      emit(AuthError(message: 'Account creation failed: ${e.toString()}'));
+      // ✅ Handle role-based access control errors
+      final errorMessage = e.toString();
+      if (errorMessage.contains('Access denied') ||
+          errorMessage.contains('Only students can access')) {
+        emit(AuthError(message: errorMessage));
+      } else {
+        emit(AuthError(message: 'Account creation failed: ${e.toString()}'));
+      }
     }
   }
 

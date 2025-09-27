@@ -156,6 +156,16 @@ class AppConstants {
       'Name must contain only letters and spaces';
   static const String passwordsDoNotMatch = 'Passwords do not match';
 
+  /// Role-based Access Control Messages
+  static const String accessDeniedNonStudent =
+      'Access denied. This app is only for students.';
+  static const String invalidUserRole =
+      'Invalid user role. Only students can access this app.';
+  static const String roleVerificationFailed =
+      'Unable to verify user role. Please contact support.';
+  static const String userDoesNotExist =
+      'User does not exist, please sign up first';
+
   /// Success Messages
   static const String loginSuccess = 'Login successful';
   static const String signupSuccess =
@@ -206,11 +216,11 @@ class AppConstants {
 
   /// API Endpoints
   /// Local development base URL
-  // static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = 'http://localhost/jobsahi-API/api/';
 
   /// Production server base URL
-  static const String baseUrl =
-      'https://beige-jaguar-560051.hostingersite.com/api';
+  // static const String baseUrl =
+  //     'https://beige-jaguar-560051.hostingersite.com/api';
 
   /// Use device-to-PC LAN IP if testing on a real device
   static const String lanBaseUrl = 'http://10.167.188.31:8000/api';

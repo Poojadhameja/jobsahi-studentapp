@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:convert';
 import '../../core/utils/app_constants.dart';
 
 /// API Service for making HTTP requests
@@ -221,6 +220,7 @@ class User {
   final String? experience;
   final String? education;
   final List<String>? skills;
+  final String? role;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -234,6 +234,7 @@ class User {
     this.experience,
     this.education,
     this.skills,
+    this.role,
     this.createdAt,
     this.updatedAt,
   });
@@ -249,6 +250,7 @@ class User {
       experience: json['experience'],
       education: json['education'],
       skills: json['skills'] != null ? List<String>.from(json['skills']) : null,
+      role: json['role'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -269,6 +271,7 @@ class User {
       'experience': experience,
       'education': education,
       'skills': skills,
+      'role': role,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

@@ -10,8 +10,8 @@ import '../../features/auth/views/splash_screen.dart';
 import '../../features/auth/views/onboarding.dart';
 import '../../features/auth/views/login_otp_email.dart';
 import '../../features/auth/views/login_otp_code.dart';
-import '../../features/auth/views/login_verified_popup.dart';
 import '../../features/auth/views/create_account.dart';
+import '../../features/auth/views/success_popup.dart';
 import '../../features/auth/views/forgot_password.dart';
 import '../../features/auth/views/set_password_code.dart';
 import '../../features/auth/views/set_new_password.dart';
@@ -97,6 +97,7 @@ class AppRouter {
         AppRoutes.loginOtpCode,
         AppRoutes.loginVerifiedPopup,
         AppRoutes.createAccount,
+        AppRoutes.createAccountPopup,
         AppRoutes.forgotPassword,
         AppRoutes.setPasswordCode,
         AppRoutes.setNewPassword,
@@ -188,13 +189,33 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.loginVerifiedPopup,
         name: 'loginVerifiedPopup',
-        builder: (context, state) => const LoginVerifiedPopupScreen(),
+        builder: (context, state) => const SuccessPopupScreen(
+          title: 'Verification Successful!',
+          description:
+              'Your email has been verified successfully. You can now access all features of the app.',
+          buttonText: 'Continue to App',
+          navigationRoute: AppRoutes.profileBuilderStep1,
+          showBackButton: true,
+        ),
       ),
 
       GoRoute(
         path: AppRoutes.createAccount,
         name: 'createAccount',
         builder: (context, state) => const CreateAccountScreen(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.createAccountPopup,
+        name: 'createAccountPopup',
+        builder: (context, state) => const SuccessPopupScreen(
+          title: 'Welcome to Jobsahi!',
+          description:
+              'Your account has been created successfully. You can now log in to access all features and start your job search journey.',
+          buttonText: 'Continue',
+          navigationRoute: AppRoutes.loginOtpEmail,
+          showBackButton: true,
+        ),
       ),
 
       GoRoute(

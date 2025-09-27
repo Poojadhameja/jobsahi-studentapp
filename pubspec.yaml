@@ -54,6 +54,10 @@ dependencies:
   
   # Local storage for tokens and user data
   shared_preferences: ^2.2.2
+  
+  # Sweet Alert for beautiful popups
+  rflutter_alert: ^2.0.7
+  
 
 dev_dependencies:
   flutter_test:

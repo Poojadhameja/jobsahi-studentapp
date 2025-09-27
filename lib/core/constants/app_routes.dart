@@ -24,6 +24,9 @@ class AppRoutes {
   /// Create new account
   static const String createAccount = '/auth/create-account';
 
+  /// Create account success popup
+  static const String createAccountPopup = '/auth/create-account-popup';
+
   /// Forgot password
   static const String forgotPassword = '/auth/forgot-password';
 
