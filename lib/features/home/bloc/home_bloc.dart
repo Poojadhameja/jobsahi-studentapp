@@ -2,11 +2,18 @@ import 'package:bloc/bloc.dart';
 import 'home_event.dart';
 import 'home_state.dart';
 import '../../../shared/data/job_data.dart';
+import '../../jobs/bloc/jobs_bloc.dart';
+import '../../jobs/bloc/jobs_event.dart' as jobs_events;
+import '../../jobs/bloc/jobs_state.dart' as jobs_states;
 
 /// Home BLoC
 /// Handles all home screen related business logic
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
-  HomeBloc() : super(const HomeInitial()) {
+  final JobsBloc _jobsBloc;
+
+  HomeBloc({JobsBloc? jobsBloc})
+    : _jobsBloc = jobsBloc ?? _createDefaultJobsBloc(),
+      super(const HomeInitial()) {
     // Register event handlers
     on<LoadHomeDataEvent>(_onLoadHomeData);
     on<ChangeTabEvent>(_onChangeTab);
@@ -14,6 +21,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<FilterJobsEvent>(_onFilterJobs);
     on<RefreshHomeDataEvent>(_onRefreshHomeData);
     on<ClearSearchEvent>(_onClearSearch);
+  }
+
+  /// Create default JobsBloc instance
+  static JobsBloc _createDefaultJobsBloc() {
+    // This will be injected via dependency injection
+    throw UnimplementedError(
+      'JobsBloc must be provided via dependency injection',
+    );
   }
 
   /// Handle load home data
@@ -24,19 +39,27 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       emit(const HomeLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Load jobs using JobsBloc
+      _jobsBloc.add(const jobs_events.LoadJobsEvent());
 
-      // Load recommended jobs from mock data
-      final recommendedJobs = JobData.recommendedJobs;
-      final filteredJobs = _filterJobs(recommendedJobs, '', 0);
+      // Listen to JobsBloc state changes
+      await for (final jobsState in _jobsBloc.stream) {
+        if (jobsState is jobs_states.JobsLoaded) {
+          final recommendedJobs = jobsState.allJobs;
+          final filteredJobs = _filterJobs(recommendedJobs, '', 0);
 
-      emit(
-        HomeLoaded(
-          recommendedJobs: recommendedJobs,
-          filteredJobs: filteredJobs,
-        ),
-      );
+          emit(
+            HomeLoaded(
+              recommendedJobs: recommendedJobs,
+              filteredJobs: filteredJobs,
+            ),
+          );
+          break; // Exit the stream after getting the data
+        } else if (jobsState is jobs_states.JobsError) {
+          emit(HomeError(message: jobsState.message));
+          break;
+        }
+      }
     } catch (e) {
       emit(HomeError(message: 'Failed to load home data: ${e.toString()}'));
     }
@@ -51,21 +74,38 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   /// Handle search jobs
-  void _onSearchJobs(SearchJobsEvent event, Emitter<HomeState> emit) {
+  Future<void> _onSearchJobs(
+    SearchJobsEvent event,
+    Emitter<HomeState> emit,
+  ) async {
     if (state is HomeLoaded) {
       final currentState = state as HomeLoaded;
-      final filteredJobs = _filterJobs(
-        currentState.recommendedJobs,
-        event.query,
-        currentState.selectedFilterIndex,
-      );
 
-      emit(
-        currentState.copyWith(
-          searchQuery: event.query,
-          filteredJobs: filteredJobs,
-        ),
-      );
+      // Use JobsBloc to search jobs
+      _jobsBloc.add(jobs_events.SearchJobsEvent(query: event.query));
+
+      // Listen to JobsBloc state changes
+      await for (final jobsState in _jobsBloc.stream) {
+        if (jobsState is jobs_states.JobsLoaded) {
+          final searchResults = jobsState.filteredJobs;
+          final filteredJobs = _filterJobs(
+            searchResults,
+            event.query,
+            currentState.selectedFilterIndex,
+          );
+
+          emit(
+            currentState.copyWith(
+              searchQuery: event.query,
+              filteredJobs: filteredJobs,
+            ),
+          );
+          break; // Exit the stream after getting the data
+        } else if (jobsState is jobs_states.JobsError) {
+          emit(HomeError(message: jobsState.message));
+          break;
+        }
+      }
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/utils/app_constants.dart';
 import '../../features/courses/models/course.dart';
+import 'token_storage.dart';
 
 /// API Service for making HTTP requests
 class ApiService {
@@ -49,6 +50,18 @@ class ApiService {
   /// Clear authorization token
   void clearAuthToken() {
     _dio.options.headers.remove('Authorization');
+  }
+
+  /// Check if user is logged in (has auth token)
+  Future<bool> isLoggedIn() async {
+    try {
+      // Import TokenStorage to check if user is logged in
+      final tokenStorage = TokenStorage.instance;
+      return await tokenStorage.isLoggedIn();
+    } catch (e) {
+      debugPrint('Error checking login status: $e');
+      return false;
+    }
   }
 
   /// Make a GET request

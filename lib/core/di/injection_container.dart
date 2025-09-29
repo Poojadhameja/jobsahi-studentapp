@@ -6,6 +6,7 @@ import '../../features/jobs/bloc/jobs_bloc.dart';
 import '../../features/profile/bloc/profile_bloc.dart';
 import '../../features/courses/bloc/courses_bloc.dart';
 import '../../features/courses/repository/courses_repository.dart';
+import '../../features/jobs/repositories/jobs_repository.dart';
 import '../../features/messages/bloc/messages_bloc.dart';
 import '../../features/settings/bloc/settings_bloc.dart';
 import '../../features/skill_test/bloc/skill_test_bloc.dart';
@@ -34,11 +35,13 @@ void _registerBlocs() {
     () => AuthBloc(authRepository: sl<AuthRepository>()),
   );
 
-  // Home BLoCs
-  sl.registerLazySingleton<HomeBloc>(() => HomeBloc());
+  // Jobs BLoCs (register first to avoid circular dependency)
+  sl.registerLazySingleton<JobsBloc>(
+    () => JobsBloc(jobsRepository: sl<JobsRepository>()),
+  );
 
-  // Jobs BLoCs
-  sl.registerLazySingleton<JobsBloc>(() => JobsBloc());
+  // Home BLoCs (register after JobsBloc)
+  sl.registerLazySingleton<HomeBloc>(() => HomeBloc(jobsBloc: sl<JobsBloc>()));
 
   // Profile BLoCs
   sl.registerLazySingleton<ProfileBloc>(() => ProfileBloc());
@@ -69,7 +72,9 @@ void _registerRepositories() {
   );
 
   // Job repositories
-  // sl.registerLazySingleton<JobRepository>(() => JobRepositoryImpl());
+  sl.registerLazySingleton<JobsRepository>(
+    () => JobsRepositoryImpl(apiService: sl<ApiService>()),
+  );
 
   // Profile repositories
   // sl.registerLazySingleton<ProfileRepository>(() => ProfileRepositoryImpl());

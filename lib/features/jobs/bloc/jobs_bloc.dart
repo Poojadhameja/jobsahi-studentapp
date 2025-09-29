@@ -1,14 +1,21 @@
 import 'package:bloc/bloc.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'jobs_event.dart';
 import 'jobs_state.dart';
 import '../../../shared/data/job_data.dart';
 import '../../../shared/data/user_data.dart';
+import '../repositories/jobs_repository.dart';
+import '../models/job.dart';
 
 /// Jobs BLoC
 /// Handles all job-related business logic
 class JobsBloc extends Bloc<JobsEvent, JobsState> {
-  JobsBloc() : super(const JobsInitial()) {
+  final JobsRepository _jobsRepository;
+
+  JobsBloc({JobsRepository? jobsRepository})
+    : _jobsRepository = jobsRepository ?? _createDefaultRepository(),
+      super(const JobsInitial()) {
     // Register event handlers
     on<LoadJobsEvent>(_onLoadJobs);
     on<SearchJobsEvent>(_onSearchJobs);
@@ -42,51 +49,182 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     on<SubmitReviewEvent>(_onSubmitReview);
   }
 
+  /// Create default repository instance
+  static JobsRepository _createDefaultRepository() {
+    // This will be injected via dependency injection
+    throw UnimplementedError(
+      'JobsRepository must be provided via dependency injection',
+    );
+  }
+
   /// Handle load jobs
   Future<void> _onLoadJobs(LoadJobsEvent event, Emitter<JobsState> emit) async {
     try {
       emit(const JobsLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Fetch jobs from API
+      final jobsResponse = await _jobsRepository.getJobs();
 
-      // Load jobs from mock data
-      final allJobs = JobData.recommendedJobs;
-      final savedJobs = JobData.savedJobs;
-      final appliedJobs = JobData.appliedJobs;
-      final savedJobIds = UserData.savedJobIds.toSet();
+      if (jobsResponse.status) {
+        // Convert Job objects to Map format for compatibility with existing UI
+        final allJobs = jobsResponse.data.map((job) => _jobToMap(job)).toList();
+        final savedJobs = JobData.savedJobs; // Keep existing saved jobs for now
+        final appliedJobs =
+            JobData.appliedJobs; // Keep existing applied jobs for now
+        final savedJobIds = UserData.savedJobIds.toSet();
 
-      emit(
-        JobsLoaded(
-          allJobs: allJobs,
-          filteredJobs: allJobs,
-          savedJobs: savedJobs,
-          appliedJobs: appliedJobs,
-          savedJobIds: savedJobIds,
-        ),
-      );
+        emit(
+          JobsLoaded(
+            allJobs: allJobs,
+            filteredJobs: allJobs,
+            savedJobs: savedJobs,
+            appliedJobs: appliedJobs,
+            savedJobIds: savedJobIds,
+          ),
+        );
+      } else {
+        emit(JobsError(message: jobsResponse.message));
+      }
     } catch (e) {
-      emit(JobsError(message: 'Failed to load jobs: ${e.toString()}'));
+      // Check if it's an authentication error
+      final errorMessage = e.toString();
+      if (errorMessage.contains('User must be logged in') ||
+          errorMessage.contains('Unauthorized') ||
+          errorMessage.contains('No token provided')) {
+        // Use mock data as fallback when user is not authenticated
+        debugPrint('🔵 User not authenticated, using mock data as fallback');
+        final allJobs = JobData.recommendedJobs;
+        final savedJobs = JobData.savedJobs;
+        final appliedJobs = JobData.appliedJobs;
+        final savedJobIds = UserData.savedJobIds.toSet();
+
+        emit(
+          JobsLoaded(
+            allJobs: allJobs,
+            filteredJobs: allJobs,
+            savedJobs: savedJobs,
+            appliedJobs: appliedJobs,
+            savedJobIds: savedJobIds,
+          ),
+        );
+      } else {
+        emit(JobsError(message: 'Failed to load jobs: ${e.toString()}'));
+      }
     }
   }
 
+  /// Convert Job object to Map format for UI compatibility
+  Map<String, dynamic> _jobToMap(Job job) {
+    return {
+      'id': job.id.toString(),
+      'title': job.title,
+      'company':
+          'Company Name', // API doesn't provide company name, using placeholder
+      'rating': 4.5, // Default rating
+      'tags': [job.jobTypeDisplay, job.isRemote ? 'Remote' : 'On-site'],
+      'salary': job.formattedSalary,
+      'location': job.location,
+      'time': job.timeAgo,
+      'logo': 'assets/images/company/group.png',
+      'review_user_name': 'User Name',
+      'review_user_role': job.title,
+      'description': job.description,
+      'requirements': job.skillsList,
+      'benefits': [
+        'Competitive salary',
+        'Health insurance',
+        'Professional development',
+        'Work-life balance',
+      ],
+      'experience_required': job.experienceRequired,
+      'application_deadline': job.applicationDeadline,
+      'no_of_vacancies': job.noOfVacancies,
+      'is_remote': job.isRemote,
+      'status': job.status,
+      'created_at': job.createdAt,
+      'views': job.views,
+    };
+  }
+
   /// Handle search jobs
-  void _onSearchJobs(SearchJobsEvent event, Emitter<JobsState> emit) {
-    if (state is JobsLoaded) {
-      final currentState = state as JobsLoaded;
-      final filteredJobs = _filterJobs(
-        currentState.allJobs,
-        event.query,
-        currentState.selectedCategoryIndex,
-        currentState.selectedFilterIndex,
+  Future<void> _onSearchJobs(
+    SearchJobsEvent event,
+    Emitter<JobsState> emit,
+  ) async {
+    try {
+      emit(const JobsLoading());
+
+      // Use repository to search jobs
+      final searchResults = await _jobsRepository.searchJobs(
+        query: event.query,
+        location: null,
+        jobType: null,
+        experienceLevel: null,
+        salaryRange: null,
       );
 
-      emit(
-        currentState.copyWith(
-          searchQuery: event.query,
-          filteredJobs: filteredJobs,
-        ),
-      );
+      // Convert Job objects to Map format
+      final filteredJobs = searchResults.map((job) => _jobToMap(job)).toList();
+
+      if (state is JobsLoaded) {
+        final currentState = state as JobsLoaded;
+        emit(
+          currentState.copyWith(
+            searchQuery: event.query,
+            filteredJobs: filteredJobs,
+          ),
+        );
+      } else {
+        // If no current state, create a new one
+        emit(
+          JobsLoaded(
+            allJobs: filteredJobs,
+            filteredJobs: filteredJobs,
+            savedJobs: [],
+            appliedJobs: [],
+            savedJobIds: UserData.savedJobIds.toSet(),
+            searchQuery: event.query,
+          ),
+        );
+      }
+    } catch (e) {
+      // Check if it's an authentication error
+      final errorMessage = e.toString();
+      if (errorMessage.contains('User must be logged in') ||
+          errorMessage.contains('Unauthorized') ||
+          errorMessage.contains('No token provided')) {
+        // Use mock data as fallback when user is not authenticated
+        debugPrint('🔵 User not authenticated, using mock data for search');
+        final searchResults = JobData.recommendedJobs.where((job) {
+          final queryLower = event.query.toLowerCase();
+          return job['title'].toString().toLowerCase().contains(queryLower) ||
+              job['company'].toString().toLowerCase().contains(queryLower) ||
+              job['location'].toString().toLowerCase().contains(queryLower);
+        }).toList();
+
+        if (state is JobsLoaded) {
+          final currentState = state as JobsLoaded;
+          emit(
+            currentState.copyWith(
+              searchQuery: event.query,
+              filteredJobs: searchResults,
+            ),
+          );
+        } else {
+          emit(
+            JobsLoaded(
+              allJobs: searchResults,
+              filteredJobs: searchResults,
+              savedJobs: [],
+              appliedJobs: [],
+              savedJobIds: UserData.savedJobIds.toSet(),
+              searchQuery: event.query,
+            ),
+          );
+        }
+      } else {
+        emit(JobsError(message: 'Failed to search jobs: ${e.toString()}'));
+      }
     }
   }
 
@@ -353,16 +491,21 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     Emitter<JobsState> emit,
   ) async {
     try {
-      // Find job by ID from mock data
-      final allJobs = JobData.recommendedJobs;
-      final job = allJobs.firstWhere(
-        (job) => job['id'] == event.jobId,
-        orElse: () => <String, dynamic>{},
-      );
+      emit(const JobsLoading());
 
-      if (job.isNotEmpty) {
+      // Fetch job by ID from API
+      final jobId = int.tryParse(event.jobId);
+      if (jobId == null) {
+        emit(const JobsError(message: 'Invalid job ID'));
+        return;
+      }
+
+      final job = await _jobsRepository.getJobById(jobId);
+
+      if (job != null) {
+        final jobMap = _jobToMap(job);
         final isBookmarked = UserData.savedJobIds.contains(event.jobId);
-        emit(JobDetailsLoaded(job: job, isBookmarked: isBookmarked));
+        emit(JobDetailsLoaded(job: jobMap, isBookmarked: isBookmarked));
       } else {
         emit(const JobsError(message: 'Job not found'));
       }

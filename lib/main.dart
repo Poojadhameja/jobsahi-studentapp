@@ -35,21 +35,21 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         // Auth BLoC
-        BlocProvider<AuthBloc>(create: (context) => AuthBloc()),
+        BlocProvider<AuthBloc>(create: (context) => sl<AuthBloc>()),
         // Home BLoC
-        BlocProvider<HomeBloc>(create: (context) => HomeBloc()),
+        BlocProvider<HomeBloc>(create: (context) => sl<HomeBloc>()),
         // Jobs BLoC
-        BlocProvider<JobsBloc>(create: (context) => JobsBloc()),
+        BlocProvider<JobsBloc>(create: (context) => sl<JobsBloc>()),
         // Profile BLoC
-        BlocProvider<ProfileBloc>(create: (context) => ProfileBloc()),
+        BlocProvider<ProfileBloc>(create: (context) => sl<ProfileBloc>()),
         // Courses BLoC
         BlocProvider<CoursesBloc>(create: (context) => sl<CoursesBloc>()),
         // Messages BLoC
-        BlocProvider<MessagesBloc>(create: (context) => MessagesBloc()),
+        BlocProvider<MessagesBloc>(create: (context) => sl<MessagesBloc>()),
         // Settings BLoC
-        BlocProvider<SettingsBloc>(create: (context) => SettingsBloc()),
+        BlocProvider<SettingsBloc>(create: (context) => sl<SettingsBloc>()),
         // Skill Test BLoC
-        BlocProvider<SkillTestBloc>(create: (context) => SkillTestBloc()),
+        BlocProvider<SkillTestBloc>(create: (context) => sl<SkillTestBloc>()),
       ],
       child: MaterialApp.router(
         // Remove the debug banner in the top-right corner (for production apps)
