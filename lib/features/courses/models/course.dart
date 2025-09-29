@@ -6,6 +6,7 @@ class Course {
   final String description;
   final String duration;
   final String fee;
+  final String adminAction;
 
   Course({
     required this.id,
@@ -14,6 +15,7 @@ class Course {
     required this.description,
     required this.duration,
     required this.fee,
+    required this.adminAction,
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,7 @@ class Course {
       description: json['description'] ?? '',
       duration: json['duration'] ?? '',
       fee: json['fee'] ?? '0.00',
+      adminAction: json['admin_action'] ?? '',
     );
   }
 
@@ -35,6 +38,7 @@ class Course {
       'description': description,
       'duration': duration,
       'fee': fee,
+      'admin_action': adminAction,
     };
   }
 
@@ -70,6 +74,7 @@ class Course {
     String? description,
     String? duration,
     String? fee,
+    String? adminAction,
   }) {
     return Course(
       id: id ?? this.id,
@@ -78,6 +83,7 @@ class Course {
       description: description ?? this.description,
       duration: duration ?? this.duration,
       fee: fee ?? this.fee,
+      adminAction: adminAction ?? this.adminAction,
     );
   }
 
@@ -90,7 +96,8 @@ class Course {
         other.title == title &&
         other.description == description &&
         other.duration == duration &&
-        other.fee == fee;
+        other.fee == fee &&
+        other.adminAction == adminAction;
   }
 
   @override
@@ -100,12 +107,13 @@ class Course {
         title.hashCode ^
         description.hashCode ^
         duration.hashCode ^
-        fee.hashCode;
+        fee.hashCode ^
+        adminAction.hashCode;
   }
 
   @override
   String toString() {
-    return 'Course(id: $id, instituteId: $instituteId, title: $title, duration: $duration, fee: $fee)';
+    return 'Course(id: $id, instituteId: $instituteId, title: $title, duration: $duration, fee: $fee, adminAction: $adminAction)';
   }
 }
 
@@ -147,5 +155,24 @@ class CoursesResponse {
       'total_count': totalCount,
       'user_role': userRole,
     };
+  }
+}
+
+/// Course Details API response model
+class CourseDetailsResponse {
+  final bool status;
+  final Course course;
+
+  CourseDetailsResponse({required this.status, required this.course});
+
+  factory CourseDetailsResponse.fromJson(Map<String, dynamic> json) {
+    return CourseDetailsResponse(
+      status: json['status'] ?? false,
+      course: Course.fromJson(json['course'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'status': status, 'course': course.toJson()};
   }
 }

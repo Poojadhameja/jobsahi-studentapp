@@ -119,5 +119,12 @@ class CourseEnrollmentSuccessState extends CoursesState {
   List<Object?> get props => [courseId];
 }
 
+/// Course details loaded state
+class CourseDetailsLoaded extends CoursesState {
+  final Map<String, dynamic> course;
 
+  const CourseDetailsLoaded({required this.course});
 
+  @override
+  List<Object?> get props => [course];
+}

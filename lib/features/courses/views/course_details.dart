@@ -27,38 +27,76 @@ class CourseDetailsPage extends StatelessWidget {
   }
 }
 
-class _CourseDetailsPageView extends StatelessWidget {
+class _CourseDetailsPageView extends StatefulWidget {
   final Map<String, dynamic> course;
 
   const _CourseDetailsPageView({required this.course});
 
   @override
+  State<_CourseDetailsPageView> createState() => _CourseDetailsPageViewState();
+}
+
+class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch course details by ID when screen loads
+    final courseId = int.tryParse(widget.course['id']?.toString() ?? '');
+    if (courseId != null) {
+      context.read<CoursesBloc>().add(
+        LoadCourseDetailsEvent(courseId: courseId),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CoursesBloc, CoursesState>(
-      builder: (context, state) {
-        return Scaffold(
-          backgroundColor: AppConstants.backgroundColor,
-          appBar: _buildAppBar(context),
-          body: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCourseHeader(),
-                _buildCourseInfo(),
-                _buildFeesAndRatings(),
-                _buildAboutCourse(),
-                _buildOfflineBenefits(),
-                const SizedBox(height: AppConstants.largePadding),
-              ],
-            ),
-          ),
-          bottomNavigationBar: _buildContactButton(context),
-        );
+    return BlocListener<CoursesBloc, CoursesState>(
+      listener: (context, state) {
+        if (state is CoursesError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        }
       },
+      child: BlocBuilder<CoursesBloc, CoursesState>(
+        builder: (context, state) {
+          // Use course details from API if available, otherwise use passed course
+          Map<String, dynamic> displayCourse = widget.course;
+
+          if (state is CourseDetailsLoaded) {
+            displayCourse = state.course;
+          }
+
+          return Scaffold(
+            backgroundColor: AppConstants.backgroundColor,
+            appBar: _buildAppBar(context, displayCourse),
+            body: state is CoursesLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildCourseHeader(displayCourse),
+                        _buildCourseInfo(displayCourse),
+                        _buildFeesAndRatings(displayCourse),
+                        _buildAboutCourse(displayCourse),
+                        _buildOfflineBenefits(displayCourse),
+                        const SizedBox(height: AppConstants.largePadding),
+                      ],
+                    ),
+                  ),
+            bottomNavigationBar: _buildContactButton(context),
+          );
+        },
+      ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    Map<String, dynamic> course,
+  ) {
     return AppBar(
       backgroundColor: AppConstants.cardBackgroundColor,
       elevation: 0,
@@ -76,7 +114,7 @@ class _CourseDetailsPageView extends StatelessWidget {
       ),
       actions: [
         IconButton(
-          onPressed: () => _toggleCourseSaved(context),
+          onPressed: () => _toggleCourseSaved(context, course),
           icon: Icon(
             course['isSaved'] == true ? Icons.bookmark : Icons.bookmark_border,
             color: course['isSaved'] == true
@@ -88,7 +126,7 @@ class _CourseDetailsPageView extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseHeader() {
+  Widget _buildCourseHeader(Map<String, dynamic> course) {
     return Container(
       margin: const EdgeInsets.only(
         left: AppConstants.defaultPadding,
@@ -139,7 +177,7 @@ class _CourseDetailsPageView extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseInfo() {
+  Widget _buildCourseInfo(Map<String, dynamic> course) {
     return Container(
       margin: const EdgeInsets.only(
         left: AppConstants.defaultPadding,
@@ -148,15 +186,15 @@ class _CourseDetailsPageView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(child: _buildCategoryCard()),
+          Expanded(child: _buildCategoryCard(course)),
           const SizedBox(width: AppConstants.defaultPadding),
-          Expanded(child: _buildDurationCard()),
+          Expanded(child: _buildDurationCard(course)),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryCard() {
+  Widget _buildCategoryCard(Map<String, dynamic> course) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -188,7 +226,7 @@ class _CourseDetailsPageView extends StatelessWidget {
     );
   }
 
-  Widget _buildDurationCard() {
+  Widget _buildDurationCard(Map<String, dynamic> course) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -220,7 +258,7 @@ class _CourseDetailsPageView extends StatelessWidget {
     );
   }
 
-  Widget _buildFeesAndRatings() {
+  Widget _buildFeesAndRatings(Map<String, dynamic> course) {
     return Container(
       margin: const EdgeInsets.only(
         left: AppConstants.defaultPadding,
@@ -229,15 +267,15 @@ class _CourseDetailsPageView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(child: _buildFeesCard()),
+          Expanded(child: _buildFeesCard(course)),
           const SizedBox(width: AppConstants.defaultPadding),
-          Expanded(child: _buildRatingsCard()),
+          Expanded(child: _buildRatingsCard(course)),
         ],
       ),
     );
   }
 
-  Widget _buildFeesCard() {
+  Widget _buildFeesCard(Map<String, dynamic> course) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -269,7 +307,7 @@ class _CourseDetailsPageView extends StatelessWidget {
     );
   }
 
-  Widget _buildRatingsCard() {
+  Widget _buildRatingsCard(Map<String, dynamic> course) {
     final rating = course['rating'] ?? 0.0;
     final totalRatings = course['totalRatings'] ?? 0;
 
@@ -314,7 +352,7 @@ class _CourseDetailsPageView extends StatelessWidget {
     );
   }
 
-  Widget _buildAboutCourse() {
+  Widget _buildAboutCourse(Map<String, dynamic> course) {
     return Container(
       margin: const EdgeInsets.only(
         left: AppConstants.defaultPadding,
@@ -351,7 +389,7 @@ class _CourseDetailsPageView extends StatelessWidget {
     );
   }
 
-  Widget _buildOfflineBenefits() {
+  Widget _buildOfflineBenefits(Map<String, dynamic> course) {
     final benefits = course['benefits'] as List<String>? ?? [];
 
     return Container(
@@ -444,7 +482,7 @@ class _CourseDetailsPageView extends StatelessWidget {
     );
   }
 
-  void _toggleCourseSaved(BuildContext context) {
+  void _toggleCourseSaved(BuildContext context, Map<String, dynamic> course) {
     final state = context.read<CoursesBloc>().state;
     if (state is CoursesLoaded) {
       final courseId = course['id'] as String;

@@ -95,5 +95,12 @@ class ClearSearchEvent extends CoursesEvent {
   List<Object?> get props => [];
 }
 
+/// Load course details event
+class LoadCourseDetailsEvent extends CoursesEvent {
+  final int courseId;
 
+  const LoadCourseDetailsEvent({required this.courseId});
 
+  @override
+  List<Object?> get props => [courseId];
+}
