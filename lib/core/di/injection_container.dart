@@ -99,7 +99,7 @@ void _registerServices() {
   // API Service
   sl.registerLazySingleton<ApiService>(() {
     final apiService = ApiService();
-    apiService.initialize();
+    // Note: initialize() is called in main.dart after dependencies are registered
     return apiService;
   });
 

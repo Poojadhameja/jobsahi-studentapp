@@ -10,6 +10,7 @@ import 'features/courses/bloc/courses_bloc.dart';
 import 'features/messages/bloc/messages_bloc.dart';
 import 'features/settings/bloc/settings_bloc.dart';
 import 'features/skill_test/bloc/skill_test_bloc.dart';
+import 'shared/services/api_service.dart';
 
 /// The main function - this is where the Flutter app starts
 /// It calls runApp() which inflates the given widget and attaches it to the screen
@@ -18,6 +19,10 @@ void main() async {
 
   // Initialize dependency injection
   await initializeDependencies();
+
+  // Initialize API service with token restoration
+  final apiService = sl<ApiService>();
+  await apiService.initialize();
 
   runApp(const MyApp());
 }

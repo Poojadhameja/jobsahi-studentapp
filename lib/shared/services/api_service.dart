@@ -24,7 +24,7 @@ class ApiService {
   );
 
   /// Initialize the API service
-  void initialize() {
+  Future<void> initialize() async {
     // Add interceptors for logging and error handling
     _dio.interceptors.add(
       LogInterceptor(requestBody: true, responseBody: true, error: true),
@@ -40,6 +40,27 @@ class ApiService {
         },
       ),
     );
+
+    // Restore authentication token if user is logged in
+    await _restoreAuthToken();
+  }
+
+  /// Restore authentication token from storage
+  Future<void> _restoreAuthToken() async {
+    try {
+      final tokenStorage = TokenStorage.instance;
+      final isLoggedIn = await tokenStorage.isLoggedIn();
+      final token = await tokenStorage.getToken();
+
+      if (isLoggedIn && token != null && token.isNotEmpty) {
+        setAuthToken(token);
+        debugPrint('🔵 Authentication token restored successfully');
+      } else {
+        debugPrint('🔵 No valid authentication token found');
+      }
+    } catch (e) {
+      debugPrint('🔴 Error restoring auth token: $e');
+    }
   }
 
   /// Set authorization token for authenticated requests
