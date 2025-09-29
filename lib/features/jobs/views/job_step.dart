@@ -10,6 +10,7 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -24,7 +25,7 @@ class JobStepScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-          JobsBloc()..add(LoadJobApplicationFormEvent(job: job)),
+          sl<JobsBloc>()..add(LoadJobApplicationFormEvent(job: job)),
       child: _JobStepScreenView(job: job),
     );
   }

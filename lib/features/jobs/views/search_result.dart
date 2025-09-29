@@ -7,6 +7,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
+import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -21,7 +22,7 @@ class SearchResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-          JobsBloc()
+          sl<JobsBloc>()
             ..add(LoadSearchResultsEvent(searchQuery: searchQuery ?? '')),
       child: const _SearchResultScreenView(),
     );

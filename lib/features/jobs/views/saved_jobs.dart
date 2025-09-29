@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
+import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -19,7 +20,7 @@ class SavedJobsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => JobsBloc()..add(const LoadSavedJobsEvent()),
+      create: (context) => sl<JobsBloc>()..add(const LoadSavedJobsEvent()),
       child: const _SavedJobsScreenView(),
     );
   }

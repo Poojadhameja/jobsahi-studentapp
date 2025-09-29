@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/data/job_data.dart';
+import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -25,14 +26,31 @@ class JobDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          JobsBloc()..add(LoadJobDetailsEvent(jobId: job['id'] ?? '')),
+      create: (context) {
+        final jobId = int.tryParse(job['id']?.toString() ?? '');
+        if (jobId != null) {
+          return sl<JobsBloc>()..add(LoadDetailedJobEvent(jobId: jobId));
+        } else {
+          // Fallback to old method if job ID is invalid
+          return sl<JobsBloc>()
+            ..add(LoadJobDetailsEvent(jobId: job['id'] ?? ''));
+        }
+      },
       child: BlocBuilder<JobsBloc, JobsState>(
         builder: (context, state) {
           Map<String, dynamic> currentJob = job;
           bool isBookmarked = false;
+          Map<String, dynamic>? companyInfo;
+          Map<String, dynamic>? statistics;
 
-          if (state is JobDetailsLoaded) {
+          if (state is DetailedJobLoaded) {
+            // Use new detailed job information
+            currentJob = state.jobInfo;
+            companyInfo = state.companyInfo;
+            statistics = state.statistics;
+            isBookmarked = state.isBookmarked;
+          } else if (state is JobDetailsLoaded) {
+            // Fallback to old job details
             currentJob = state.job;
             isBookmarked = state.isBookmarked;
           }
@@ -49,13 +67,24 @@ class JobDetailsScreen extends StatelessWidget {
               child: Column(
                 children: [
                   // Job header section
-                  _buildJobHeader(context, currentJob, isBookmarked),
+                  _buildJobHeader(
+                    context,
+                    currentJob,
+                    isBookmarked,
+                    companyInfo,
+                  ),
 
                   // Tab bar
                   _buildTabBar(),
 
                   // Tab content
-                  Expanded(child: _buildTabContent(currentJob)),
+                  Expanded(
+                    child: _buildTabContent(
+                      currentJob,
+                      companyInfo,
+                      statistics,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -70,6 +99,7 @@ class JobDetailsScreen extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> currentJob,
     bool isBookmarked,
+    Map<String, dynamic>? companyInfo,
   ) {
     return Container(
       color: AppConstants.backgroundColor,
@@ -83,14 +113,19 @@ class JobDetailsScreen extends StatelessWidget {
           Row(
             children: [
               // Company logo
-              const CircleAvatar(
-                backgroundColor: Color(0xFFD7EDFF),
+              CircleAvatar(
+                backgroundColor: const Color(0xFFD7EDFF),
                 radius: 26,
-                child: Icon(
-                  Icons.contact_mail_rounded,
-                  color: AppConstants.accentColor,
-                  size: 28,
-                ),
+                backgroundImage: companyInfo?['company_logo'] != null
+                    ? NetworkImage(companyInfo!['company_logo'])
+                    : null,
+                child: companyInfo?['company_logo'] == null
+                    ? const Icon(
+                        Icons.contact_mail_rounded,
+                        color: AppConstants.accentColor,
+                        size: 28,
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -111,7 +146,7 @@ class JobDetailsScreen extends StatelessWidget {
                       child: GestureDetector(
                         onTap: () {
                           // Navigate to company details page
-                          final companyName = currentJob['company'];
+                          final companyName = companyInfo?['company_name'];
 
                           if (companyName != null &&
                               JobData.companies.containsKey(companyName)) {
@@ -139,7 +174,7 @@ class JobDetailsScreen extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              currentJob['company'] ?? 'Company Name',
+                              companyInfo?['company_name'] ?? 'Company Name',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: AppConstants.successColor,
@@ -203,14 +238,18 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   /// Builds the tab content
-  Widget _buildTabContent(Map<String, dynamic> currentJob) {
+  Widget _buildTabContent(
+    Map<String, dynamic> currentJob,
+    Map<String, dynamic>? companyInfo,
+    Map<String, dynamic>? statistics,
+  ) {
     return TabBarView(
       children: [
         // Description tab
         _buildAboutTab(currentJob),
 
         // Requirements tab
-        _buildCompanyTab(currentJob),
+        _buildCompanyTab(currentJob, companyInfo),
 
         // Benefits tab
         _buildReviewsTab(currentJob),
@@ -263,63 +302,132 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   /// Builds the Company tab
-  Widget _buildCompanyTab(Map<String, dynamic> currentJob) {
-    final String aboutCompany =
-        currentJob['company_about'] ??
-        'जब किसी कंपनी का विवरण लिखा जाता है, तब उसमें कंपनी का मिशन, विज़न, और संस्कृति की जानकारी दी जाती है…';
-    final String website = currentJob['company_website'] ?? 'www.google.com';
-    final String headquarters =
-        currentJob['company_headquarters'] ?? 'Noida, India';
-    final String founded = currentJob['company_founded'] ?? '14 July 2005';
-    final String size = (currentJob['company_size']?.toString()) ?? '2500';
-    final String revenue = currentJob['company_revenue'] ?? '10,000 Millions';
+  Widget _buildCompanyTab(
+    Map<String, dynamic> currentJob,
+    Map<String, dynamic>? companyInfo,
+  ) {
+    // Use only API company info - no static fallback data
+    final String? aboutCompany =
+        companyInfo?['about'] ?? companyInfo?['company_about'];
+
+    final String? website = companyInfo?['website'];
+
+    final String? headquarters = companyInfo?['location'];
+
+    final String? industry = companyInfo?['industry'];
+
+    // These fields are not in the API response, so we'll only show them if available
+    final String? founded = currentJob['company_founded'];
+    final String? size = currentJob['company_size']?.toString();
+    final String? revenue = currentJob['company_revenue'];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'About Company',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
+          // Only show "About Company" section if we have company description
+          if (aboutCompany != null && aboutCompany.isNotEmpty) ...[
+            const Text(
+              'About Company',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppConstants.textPrimaryColor,
+              ),
             ),
-          ),
-          const SizedBox(height: AppConstants.smallPadding),
-          Text(
-            aboutCompany,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 1.5,
-              color: AppConstants.textSecondaryColor,
+            const SizedBox(height: AppConstants.smallPadding),
+            Text(
+              aboutCompany,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: AppConstants.textSecondaryColor,
+              ),
             ),
-          ),
-          const SizedBox(height: AppConstants.defaultPadding),
-          const Divider(),
-          const SizedBox(height: AppConstants.defaultPadding),
+            const SizedBox(height: AppConstants.defaultPadding),
+            const Divider(),
+            const SizedBox(height: AppConstants.defaultPadding),
+          ],
 
-          _buildCompanyInfoRow(Icons.public, 'Website', website),
-          const SizedBox(height: AppConstants.defaultPadding),
-          _buildCompanyInfoRow(
-            Icons.location_on_outlined,
-            'Headquarters',
-            headquarters,
-          ),
-          const SizedBox(height: AppConstants.defaultPadding),
-          _buildCompanyInfoRow(Icons.event_outlined, 'Founded', founded),
-          const SizedBox(height: AppConstants.defaultPadding),
-          _buildCompanyInfoRow(Icons.group_outlined, 'Size', size),
-          const SizedBox(height: AppConstants.defaultPadding),
-          _buildCompanyInfoRow(Icons.attach_money, 'Revenue', revenue),
+          // Only show company info rows if we have data from API
+          if (website != null && website.isNotEmpty)
+            _buildCompanyInfoRow(
+              Icons.public,
+              'Website',
+              website,
+              isClickable: true,
+            ),
+          if (website != null && website.isNotEmpty)
+            const SizedBox(height: AppConstants.defaultPadding),
+
+          if (headquarters != null && headquarters.isNotEmpty)
+            _buildCompanyInfoRow(
+              Icons.location_on_outlined,
+              'Headquarters',
+              headquarters,
+            ),
+          if (headquarters != null && headquarters.isNotEmpty)
+            const SizedBox(height: AppConstants.defaultPadding),
+
+          if (industry != null && industry.isNotEmpty)
+            _buildCompanyInfoRow(Icons.business, 'Industry', industry),
+          if (industry != null && industry.isNotEmpty)
+            const SizedBox(height: AppConstants.defaultPadding),
+
+          if (founded != null && founded.isNotEmpty)
+            _buildCompanyInfoRow(Icons.event_outlined, 'Founded', founded),
+          if (founded != null && founded.isNotEmpty)
+            const SizedBox(height: AppConstants.defaultPadding),
+
+          if (size != null && size.isNotEmpty)
+            _buildCompanyInfoRow(Icons.group_outlined, 'Size', size),
+          if (size != null && size.isNotEmpty)
+            const SizedBox(height: AppConstants.defaultPadding),
+
+          if (revenue != null && revenue.isNotEmpty)
+            _buildCompanyInfoRow(Icons.attach_money, 'Revenue', revenue),
+
+          // Show message if no company data is available
+          if (aboutCompany == null &&
+              website == null &&
+              headquarters == null &&
+              industry == null &&
+              founded == null &&
+              size == null &&
+              revenue == null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    const Text(
+                      'No company information available',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppConstants.textSecondaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
   /// Reusable row for a company info item
-  Widget _buildCompanyInfoRow(IconData icon, String label, String value) {
+  Widget _buildCompanyInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    bool isClickable = false,
+  }) {
+    // Don't show the row if value is empty
+    if (value.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Row(
       children: [
         Icon(icon, color: AppConstants.textSecondaryColor),
@@ -334,14 +442,31 @@ class JobDetailsScreen extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          value,
-          textAlign: TextAlign.right,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppConstants.textSecondaryColor,
+        if (isClickable && value.startsWith('http'))
+          GestureDetector(
+            onTap: () {
+              // Handle website click - you can implement URL launcher here
+              debugPrint('Opening website: $value');
+            },
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          )
+        else
+          Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppConstants.textSecondaryColor,
+            ),
           ),
-        ),
       ],
     );
   }

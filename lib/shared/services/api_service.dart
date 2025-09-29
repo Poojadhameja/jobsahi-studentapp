@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/utils/app_constants.dart';
@@ -406,6 +407,71 @@ extension CoursesApi on ApiService {
       return CoursesResponse.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to fetch courses: ${e.toString()}');
+    }
+  }
+}
+
+/// Jobs API methods
+extension JobsApi on ApiService {
+  /// Get job details by ID
+  /// Requires authentication token (Bearer token)
+  Future<Map<String, dynamic>> getJobDetails(int jobId) async {
+    try {
+      debugPrint('🔵 Fetching job details for ID: $jobId');
+
+      // Check if user is authenticated
+      final userLoggedIn = await isLoggedIn();
+      if (!userLoggedIn) {
+        debugPrint('🔴 User not authenticated, cannot fetch job details');
+        throw Exception('User must be logged in to view job details');
+      }
+
+      final response = await get(
+        '/jobs/job-detail.php',
+        queryParameters: {'id': jobId.toString()},
+      );
+
+      debugPrint('🔵 Job Details API Response Status: ${response.statusCode}');
+      debugPrint('🔵 Job Details API Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        // Handle different response types
+        Map<String, dynamic> jsonData;
+        if (responseData is Map<String, dynamic>) {
+          jsonData = responseData;
+        } else if (responseData is String) {
+          try {
+            jsonData = jsonDecode(responseData) as Map<String, dynamic>;
+          } catch (e) {
+            debugPrint('🔴 Failed to parse JSON string: $e');
+            throw Exception('Invalid response format');
+          }
+        } else {
+          debugPrint(
+            '🔴 Unexpected response data type: ${responseData.runtimeType}',
+          );
+          throw Exception('Unexpected response format');
+        }
+
+        // Validate response structure
+        if (!jsonData.containsKey('status') || !jsonData.containsKey('data')) {
+          debugPrint('🔴 Invalid response structure: missing required fields');
+          throw Exception('Invalid response structure');
+        }
+
+        debugPrint('🔵 Job details fetched successfully');
+        return jsonData;
+      } else {
+        debugPrint(
+          '🔴 Job Details API failed with status: ${response.statusCode}',
+        );
+        throw Exception('Failed to fetch job details: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('🔴 Error fetching job details: $e');
+      rethrow;
     }
   }
 }

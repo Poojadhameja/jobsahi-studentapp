@@ -28,6 +28,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     on<RefreshJobsEvent>(_onRefreshJobs);
     on<ClearSearchEvent>(_onClearSearch);
     on<LoadJobDetailsEvent>(_onLoadJobDetails);
+    on<LoadDetailedJobEvent>(_onLoadDetailedJob);
     on<ToggleJobBookmarkEvent>(_onToggleJobBookmark);
     on<UpdateSearchResultsFilterEvent>(_onUpdateSearchResultsFilter);
     on<LoadSearchResultsEvent>(_onLoadSearchResults);
@@ -510,6 +511,61 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         emit(const JobsError(message: 'Job not found'));
       }
     } catch (e) {
+      emit(JobsError(message: 'Failed to load job details: ${e.toString()}'));
+    }
+  }
+
+  /// Handle load detailed job information
+  Future<void> _onLoadDetailedJob(
+    LoadDetailedJobEvent event,
+    Emitter<JobsState> emit,
+  ) async {
+    try {
+      emit(const JobsLoading());
+
+      debugPrint('🔵 Loading detailed job information for ID: ${event.jobId}');
+
+      // Fetch detailed job information from API
+      final jobDetailResponse = await _jobsRepository.getJobDetails(
+        event.jobId,
+      );
+
+      debugPrint(
+        '🔵 Job detail response received: ${jobDetailResponse.status}',
+      );
+
+      if (jobDetailResponse.status) {
+        // Convert the response data to maps for the state
+        final jobInfoMap = jobDetailResponse.data.jobInfo.toJson();
+        final companyInfoMap = jobDetailResponse.data.companyInfo.toJson();
+        final statisticsMap = jobDetailResponse.data.statistics.toJson();
+
+        // Check if job is bookmarked
+        final isBookmarked = UserData.savedJobIds.contains(
+          event.jobId.toString(),
+        );
+
+        emit(
+          DetailedJobLoaded(
+            jobInfo: jobInfoMap,
+            companyInfo: companyInfoMap,
+            statistics: statisticsMap,
+            isBookmarked: isBookmarked,
+          ),
+        );
+
+        debugPrint('🔵 Detailed job information loaded successfully');
+      } else {
+        emit(
+          JobsError(
+            message: jobDetailResponse.message.isNotEmpty
+                ? jobDetailResponse.message
+                : 'Failed to load job details',
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('🔴 Error loading detailed job information: $e');
       emit(JobsError(message: 'Failed to load job details: ${e.toString()}'));
     }
   }

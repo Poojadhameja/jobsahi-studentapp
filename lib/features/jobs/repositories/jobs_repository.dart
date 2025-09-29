@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../../shared/services/api_service.dart';
 import '../models/job.dart';
+import '../models/job_detail_models.dart';
 
 /// Jobs API response model
 class JobsResponse {
@@ -38,6 +39,7 @@ class JobsResponse {
 abstract class JobsRepository {
   Future<JobsResponse> getJobs();
   Future<Job?> getJobById(int id);
+  Future<JobDetailResponse> getJobDetails(int id);
   Future<List<Job>> searchJobs({
     String? query,
     String? location,
@@ -143,6 +145,41 @@ class JobsRepositoryImpl implements JobsRepository {
     } catch (e) {
       debugPrint('🔴 Error fetching job by ID: $e');
       return null;
+    }
+  }
+
+  @override
+  Future<JobDetailResponse> getJobDetails(int id) async {
+    try {
+      debugPrint('🔵 Fetching detailed job information for ID: $id');
+
+      // Check if user is authenticated
+      final isLoggedIn = await _apiService.isLoggedIn();
+      if (!isLoggedIn) {
+        debugPrint('🔴 User not authenticated, cannot fetch job details');
+        throw Exception('User must be logged in to view job details');
+      }
+
+      final responseData = await _apiService.getJobDetails(id);
+
+      debugPrint('🔵 Job Details API Response Data: $responseData');
+
+      final jobDetailResponse = JobDetailResponse.fromJson(responseData);
+
+      if (!jobDetailResponse.status) {
+        debugPrint('🔴 Job details API returned false status');
+        throw Exception(
+          jobDetailResponse.message.isNotEmpty
+              ? jobDetailResponse.message
+              : 'Failed to fetch job details',
+        );
+      }
+
+      debugPrint('🔵 Job details fetched successfully for ID: $id');
+      return jobDetailResponse;
+    } catch (e) {
+      debugPrint('🔴 Error fetching job details for ID $id: $e');
+      rethrow;
     }
   }
 

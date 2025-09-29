@@ -68,7 +68,7 @@ class JobData {
       "rating": 4.6,
       "tags": ["Full-Time", "Training"],
       "salary": "₹1.0L – ₹1.5L P.A.",
-      "location": "Mumbai, India",
+      "location": ", India",
       "time": "1 दिन पहले",
       "logo": "assets/images/company/group.png",
       "review_user_name": "Kim Shine",

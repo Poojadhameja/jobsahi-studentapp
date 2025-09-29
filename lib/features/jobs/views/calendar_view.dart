@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -12,7 +13,7 @@ class CalendarViewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => JobsBloc()..add(const LoadCalendarViewEvent()),
+      create: (context) => sl<JobsBloc>()..add(const LoadCalendarViewEvent()),
       child: const _CalendarViewScreenView(),
     );
   }

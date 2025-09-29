@@ -8,6 +8,7 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../core/di/injection_container.dart';
 import 'write_review.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
@@ -21,7 +22,7 @@ class AboutCompanyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => JobsBloc(),
+      create: (context) => sl<JobsBloc>(),
       child: _AboutCompanyScreenView(company: company),
     );
   }
