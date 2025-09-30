@@ -123,6 +123,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           'Company Name', // API doesn't provide company name, using placeholder
       'rating': 4.5, // Default rating
       'tags': [job.jobTypeDisplay, job.isRemote ? 'Remote' : 'On-site'],
+      'job_type_display': job.jobTypeDisplay,
       'salary': job.formattedSalary,
       'location': job.location,
       'time': job.timeAgo,

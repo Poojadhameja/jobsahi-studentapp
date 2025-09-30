@@ -286,6 +286,22 @@ class JobDetailsScreen extends StatelessWidget {
           const SizedBox(height: AppConstants.defaultPadding),
           const Divider(),
           const SizedBox(height: AppConstants.defaultPadding),
+
+          // Job Information Section
+          const Text(
+            'Job Information',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppConstants.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: AppConstants.smallPadding),
+          _buildSimpleJobInformation(currentJob),
+
+          const SizedBox(height: AppConstants.defaultPadding),
+          const Divider(),
+          const SizedBox(height: AppConstants.defaultPadding),
           const Text(
             'मुख्य जिम्मेदारियाँ (Key Responsibilities)',
             style: TextStyle(
@@ -299,6 +315,114 @@ class JobDetailsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Builds simple job information section
+  Widget _buildSimpleJobInformation(Map<String, dynamic> currentJob) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Job Type
+        if (currentJob['tags'] != null &&
+            (currentJob['tags'] as List).isNotEmpty)
+          _buildSimpleInfoRow(
+            'Job Type',
+            (currentJob['tags'] as List).first.toString(),
+          ),
+
+        // Experience Required
+        if (currentJob['experience_required'] != null &&
+            currentJob['experience_required'].toString().isNotEmpty)
+          _buildSimpleInfoRow(
+            'Experience Required',
+            currentJob['experience_required'].toString(),
+          ),
+
+        // Skills Required
+        if (currentJob['requirements'] != null &&
+            (currentJob['requirements'] as List).isNotEmpty)
+          _buildSimpleInfoRow(
+            'Skills Required',
+            (currentJob['requirements'] as List).join(', '),
+          ),
+
+        // Vacancies
+        if (currentJob['no_of_vacancies'] != null &&
+            currentJob['no_of_vacancies'] > 0)
+          _buildSimpleInfoRow(
+            'Number of Vacancies',
+            currentJob['no_of_vacancies'].toString(),
+          ),
+
+        // Status
+        if (currentJob['status'] != null &&
+            currentJob['status'].toString().isNotEmpty)
+          _buildSimpleInfoRow('Status', currentJob['status'].toString()),
+
+        // Application Deadline
+        if (currentJob['application_deadline'] != null &&
+            currentJob['application_deadline'].toString().isNotEmpty)
+          _buildSimpleInfoRow(
+            'Application Deadline',
+            _formatSimpleDeadline(currentJob['application_deadline']),
+          ),
+
+        // Views
+        if (currentJob['views'] != null && currentJob['views'] > 0)
+          _buildSimpleInfoRow('Views', currentJob['views'].toString()),
+      ],
+    );
+  }
+
+  /// Builds a simple info row
+  Widget _buildSimpleInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppConstants.textPrimaryColor,
+              ),
+            ),
+          ),
+          const Text(
+            ': ',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppConstants.textPrimaryColor,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppConstants.textSecondaryColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Formats deadline in simple way
+  String _formatSimpleDeadline(dynamic deadline) {
+    if (deadline == null) return '';
+
+    try {
+      final date = DateTime.parse(deadline.toString());
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return deadline.toString();
+    }
   }
 
   /// Builds the Company tab

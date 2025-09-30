@@ -278,14 +278,13 @@ class JobList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: jobs
-          .map(
+          .map<Widget>(
             (job) => JobCard(
               job: job,
               onTap: () {
                 // Navigate to job details screen
                 context.go(AppRoutes.jobDetailsWithId(job['id']));
               },
-              isInitiallySaved: UserData.savedJobIds.contains(job['id']),
             ),
           )
           .toList(),

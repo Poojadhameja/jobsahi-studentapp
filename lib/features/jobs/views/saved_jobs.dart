@@ -74,7 +74,6 @@ class _SavedJobsScreenView extends StatelessWidget {
                       final job = savedJobs[index];
                       return JobCard(
                         job: job,
-                        isInitiallySaved: true,
                         onTap: () =>
                             context.go(AppRoutes.jobDetailsWithId(job['id'])),
                       );

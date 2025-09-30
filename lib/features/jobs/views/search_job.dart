@@ -250,7 +250,6 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
                 onTap: () {
                   context.go(AppRoutes.jobDetailsWithId(job['id']));
                 },
-                isInitiallySaved: state.savedJobIds.contains(job['id']),
               );
             },
           );
