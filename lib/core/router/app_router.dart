@@ -229,9 +229,9 @@ class AppRouter {
         path: AppRoutes.loginVerifiedPopup,
         name: 'loginVerifiedPopup',
         builder: (context, state) => const SuccessPopupScreen(
-          title: 'Verification Successful!',
+          title: 'Login Successful!',
           description:
-              'Your email has been verified successfully. You can now access all features of the app.',
+              'Welcome back! You have successfully logged in. Let\'s continue your job search journey.',
           buttonText: 'Continue to App',
           navigationRoute: AppRoutes.profileBuilderStep1,
           showBackButton: true,
