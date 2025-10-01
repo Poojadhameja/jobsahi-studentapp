@@ -1,8 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // Import route constants
 import '../constants/app_routes.dart';
+
+// Import services for authentication check
+import '../../shared/services/token_storage.dart';
+import '../di/injection_container.dart';
 
 // Import all screen classes
 // Authentication screens
@@ -85,11 +90,14 @@ class AppRouter {
     // Debug logging for development
     debugLogDiagnostics: true,
 
-    // Central redirect to validate deep-link params and normalize bad paths
-    redirect: (context, state) {
+    // Refresh listenable - will rebuild router when auth state changes
+    refreshListenable: AuthStateNotifier.instance,
+
+    // Central redirect to validate authentication and deep-link params
+    redirect: (context, state) async {
       final path = state.uri.path;
 
-      // Public routes that don't require validation
+      // Public routes that don't require authentication
       const publicPaths = {
         AppRoutes.splash,
         AppRoutes.onboarding,
@@ -104,7 +112,38 @@ class AppRouter {
         AppRoutes.changePassword,
       };
 
-      if (publicPaths.contains(path)) return null;
+      // Check if current path is a public route
+      final isPublicRoute = publicPaths.contains(path);
+
+      // Get authentication status
+      final tokenStorage = sl<TokenStorage>();
+      final isLoggedIn = await tokenStorage.isLoggedIn();
+      final hasToken = await tokenStorage.hasToken();
+
+      // If user is not logged in and trying to access protected route
+      if (!isLoggedIn || !hasToken) {
+        // Clear invalid session data
+        if (!hasToken && isLoggedIn) {
+          await tokenStorage.clearAll();
+        }
+
+        // If trying to access a protected route, redirect to login
+        if (!isPublicRoute) {
+          debugPrint(
+            '🔒 Access denied: User not authenticated. Redirecting to login.',
+          );
+          return AppRoutes.loginOtpEmail;
+        }
+      }
+
+      // If user is logged in and on public route (except splash), allow
+      // This prevents redirect loops
+      if (isLoggedIn && hasToken && isPublicRoute && path != AppRoutes.splash) {
+        return null;
+      }
+
+      // If on public route, allow access
+      if (isPublicRoute) return null;
 
       // Validate dynamic id segments for known patterns
       if (path.startsWith('/jobs/details/')) {
@@ -687,4 +726,18 @@ Map<String, dynamic> _generateCourseById(String? id) {
 bool _isValidId(String id) {
   // Allow URL-safe ids (letters, digits, dash, underscore), up to 64 chars
   return RegExp(r'^[A-Za-z0-9_-]{1,64}$').hasMatch(id);
+}
+
+// ==================== AUTH STATE NOTIFIER ====================
+/// Notifier that triggers router refresh when authentication state changes
+class AuthStateNotifier extends ChangeNotifier {
+  static final AuthStateNotifier _instance = AuthStateNotifier._internal();
+  static AuthStateNotifier get instance => _instance;
+
+  AuthStateNotifier._internal();
+
+  /// Notify listeners when auth state changes (login/logout)
+  void notify() {
+    notifyListeners();
+  }
 }

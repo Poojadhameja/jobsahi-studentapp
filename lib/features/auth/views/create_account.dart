@@ -509,7 +509,8 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           logoPath: AppConstants.googleLogoAsset,
           text: 'Sign up with Google',
           onPressed: () {
-            debugPrint("Redirect to Google signup API");
+            // Social signup integration pending
+            debugPrint("Google signup - Integration pending");
           },
         ),
         const SizedBox(height: 16),
@@ -517,7 +518,8 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           logoPath: AppConstants.linkedinLogoAsset,
           text: 'Sign up with Linkedin',
           onPressed: () {
-            debugPrint("Redirect to LinkedIn signup API");
+            // Social signup integration pending
+            debugPrint("LinkedIn signup - Integration pending");
           },
         ),
       ],

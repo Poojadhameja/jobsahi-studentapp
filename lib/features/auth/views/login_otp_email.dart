@@ -497,35 +497,21 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   Widget _buildSocialLoginButtons() {
     return Column(
       children: [
-        BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            return SignInButton(
-              logoPath: AppConstants.googleLogoAsset,
-              text: 'Sign in with Google',
-              onPressed: state is AuthLoading
-                  ? () {}
-                  : () {
-                      context.read<AuthBloc>().add(
-                        const SocialLoginEvent(provider: 'google'),
-                      );
-                    },
-            );
+        SignInButton(
+          logoPath: AppConstants.googleLogoAsset,
+          text: 'Sign in with Google',
+          onPressed: () {
+            // Social login integration pending
+            debugPrint("Google login - Integration pending");
           },
         ),
         const SizedBox(height: 16),
-        BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            return SignInButton(
-              logoPath: AppConstants.linkedinLogoAsset,
-              text: 'Sign in with Linkedin',
-              onPressed: state is AuthLoading
-                  ? () {}
-                  : () {
-                      context.read<AuthBloc>().add(
-                        const SocialLoginEvent(provider: 'linkedin'),
-                      );
-                    },
-            );
+        SignInButton(
+          logoPath: AppConstants.linkedinLogoAsset,
+          text: 'Sign in with Linkedin',
+          onPressed: () {
+            // Social login integration pending
+            debugPrint("LinkedIn login - Integration pending");
           },
         ),
       ],

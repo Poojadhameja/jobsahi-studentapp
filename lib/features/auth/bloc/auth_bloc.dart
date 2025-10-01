@@ -4,6 +4,7 @@ import 'auth_state.dart';
 import '../repository/auth_repository.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
+import '../../../core/router/app_router.dart';
 
 /// Authentication BLoC
 /// Handles all authentication-related business logic
@@ -105,6 +106,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(const OtpVerificationSuccess());
         await Future.delayed(const Duration(milliseconds: 500));
         emit(AuthSuccess(message: response.message));
+
+        // Notify router about auth state change
+        AuthStateNotifier.instance.notify();
       } else {
         emit(AuthError(message: response.message));
       }
@@ -149,6 +153,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // ✅ Role validation is already handled in the repository
         // If we reach here, the user has the correct role (student)
         emit(AuthSuccess(message: response.message));
+
+        // Notify router about auth state change
+        AuthStateNotifier.instance.notify();
       } else {
         emit(AuthError(message: response.message));
       }
@@ -180,6 +187,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: {}, // social login के बाद भी user खाली Map रख दो
         ),
       );
+
+      // Notify router about auth state change
+      AuthStateNotifier.instance.notify();
     } catch (e) {
       emit(
         AuthError(
@@ -381,6 +391,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       if (success) {
         emit(const LogoutSuccess());
+
+        // Notify router about auth state change (logout)
+        AuthStateNotifier.instance.notify();
       } else {
         emit(const AuthError(message: 'Logout failed'));
       }
