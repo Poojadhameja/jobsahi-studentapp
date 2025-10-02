@@ -272,7 +272,7 @@ class _JobCardState extends State<JobCard> {
               ),
             ),
           );
-        }).toList(),
+        }),
         if (skills.length > 3)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

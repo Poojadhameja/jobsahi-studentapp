@@ -1,6 +1,3 @@
-/// Job Detail API Response Models
-/// These models represent the response structure for the job detail API endpoint
-
 import 'job.dart';
 
 /// Job Detail API Response Model

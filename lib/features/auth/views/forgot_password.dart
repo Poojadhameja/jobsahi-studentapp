@@ -269,6 +269,8 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
 
       // Simulate API call
       Future.delayed(const Duration(seconds: 2), () {
+        if (!context.mounted) return;
+
         // Reset sending state
         context.read<AuthBloc>().add(
           const SetForgotPasswordSendingEvent(isSending: false),

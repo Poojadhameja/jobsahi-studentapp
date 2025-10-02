@@ -171,7 +171,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
             experience: job['experience'] ?? 'Fresher',
             appliedDate: job['appliedDate'] ?? 'Applied Date',
             positions: job['positions'] ?? 'Positions',
-            applicationId: job['id'] ?? '${index}',
+            applicationId: job['id'] ?? '$index',
           ),
         );
       },

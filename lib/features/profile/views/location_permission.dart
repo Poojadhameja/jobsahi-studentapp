@@ -225,15 +225,16 @@ class _LocationPermissionView extends StatelessWidget {
       await Future.delayed(const Duration(seconds: 2));
 
       // Simulate successful permission grant
-      context.read<ProfileBloc>().add(const LocationPermissionGrantedEvent());
-
-      // Navigate to home screen after successful location access using smart navigation
       if (context.mounted) {
+        context.read<ProfileBloc>().add(const LocationPermissionGrantedEvent());
+        // Navigate to home screen after successful location access using smart navigation
         context.go(AppRoutes.home);
       }
     } catch (e) {
       // Handle location permission denied
-      context.read<ProfileBloc>().add(const LocationPermissionDeniedEvent());
+      if (context.mounted) {
+        context.read<ProfileBloc>().add(const LocationPermissionDeniedEvent());
+      }
 
       // Show error message
       if (context.mounted) {

@@ -1,9 +1,5 @@
-/// Test file to verify Jobs API integration
-/// This file can be removed after testing
-
 import 'package:flutter/material.dart';
 import 'repositories/jobs_repository.dart';
-import '../../../shared/services/api_service.dart';
 import '../../../core/di/injection_container.dart';
 
 class JobsApiTest {

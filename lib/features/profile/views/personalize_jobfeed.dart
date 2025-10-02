@@ -152,7 +152,7 @@ class _PersonalizeJobfeedViewState extends State<_PersonalizeJobfeedView> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: DropdownButtonFormField<String>(
-                    value: selectedTrade,
+                    initialValue: selectedTrade,
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(
@@ -198,7 +198,7 @@ class _PersonalizeJobfeedViewState extends State<_PersonalizeJobfeedView> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: selectedState,
+                          initialValue: selectedState,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
@@ -237,7 +237,7 @@ class _PersonalizeJobfeedViewState extends State<_PersonalizeJobfeedView> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: selectedCity,
+                          initialValue: selectedCity,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
@@ -420,7 +420,7 @@ class _PersonalizeJobfeedViewState extends State<_PersonalizeJobfeedView> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: DropdownButtonFormField<String>(
-                    value: selectedSalaryRange,
+                    initialValue: selectedSalaryRange,
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(

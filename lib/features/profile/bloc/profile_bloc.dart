@@ -134,16 +134,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
 
-      // Update profile data
-      final updatedProfile = {
-        ...UserData.currentUser,
-        'name': event.name,
-        'email': event.email,
-        'phone': event.phone,
-        'location': event.location,
-        'bio': event.bio,
-      };
-
       // Update mock data (Note: In real app, this would be an API call)
       // UserData.currentUser = updatedProfile; // This is const, so we can't modify it
 
@@ -163,12 +153,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
-
-      // Update profile image
-      final updatedProfile = {
-        ...UserData.currentUser,
-        'profileImage': event.imagePath,
-      };
 
       // Update mock data (Note: In real app, this would be an API call)
       // UserData.currentUser = updatedProfile; // This is const, so we can't modify it
@@ -193,14 +177,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
-
-      // Update job preferences
-      final updatedPreferences = {
-        'preferredLocations': event.preferredLocations,
-        'preferredJobTypes': event.preferredJobTypes,
-        'experienceLevel': event.experienceLevel,
-        'salaryRange': event.salaryRange,
-      };
 
       // Update mock data (Note: In real app, this would be an API call)
       // UserData.jobPreferences = updatedPreferences; // This is const, so we can't modify it
@@ -250,14 +226,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
 
-      // Update education
-      final newEducation = {
-        'degree': event.degree,
-        'institution': event.institution,
-        'graduationYear': event.graduationYear,
-        'fieldOfStudy': event.fieldOfStudy,
-      };
-
       // Add education (Note: In real app, this would be an API call)
       // UserData.userEducation.add(newEducation); // This is const, so we can't modify it
 
@@ -279,15 +247,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       // Simulate API call delay
       await Future.delayed(const Duration(seconds: 1));
-
-      // Update experience
-      final newExperience = {
-        'company': event.company,
-        'position': event.position,
-        'startDate': event.startDate,
-        'endDate': event.endDate,
-        'description': event.description,
-      };
 
       // Add experience (Note: In real app, this would be an API call)
       // UserData.userExperience.add(newExperience); // This is const, so we can't modify it

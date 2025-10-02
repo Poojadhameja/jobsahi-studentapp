@@ -20,7 +20,7 @@ abstract class BaseState extends Equatable {
 /// Base class for all BLoCs
 abstract class BaseBloc<Event extends BaseEvent, State extends BaseState>
     extends Bloc<Event, State> {
-  BaseBloc(State initialState) : super(initialState);
+  BaseBloc(super.initialState);
 }
 
 /// Loading state mixin for states that can show loading

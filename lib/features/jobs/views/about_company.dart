@@ -11,8 +11,6 @@ import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../core/di/injection_container.dart';
 import 'write_review.dart';
 import '../bloc/jobs_bloc.dart';
-import '../bloc/jobs_event.dart';
-import '../bloc/jobs_state.dart';
 
 class AboutCompanyScreen extends StatelessWidget {
   final Map<String, dynamic> company;

@@ -67,7 +67,7 @@ class _EducationEditScreenState extends State<EducationEditScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedDegree,
+                  initialValue: _selectedDegree,
                   decoration: const InputDecoration(
                     labelText: 'Degree Type',
                     border: OutlineInputBorder(),
