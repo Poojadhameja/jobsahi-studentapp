@@ -42,89 +42,116 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        bool isSending = false;
-
-        if (state is ForgotPasswordFormState) {
-          isSending = state.isSending;
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthLoading) {
+          // Show loading state
+          context.read<AuthBloc>().add(
+            const SetForgotPasswordSendingEvent(isSending: true),
+          );
+        } else if (state is PasswordResetCodeSentState) {
+          // Reset sending state and show success
+          context.read<AuthBloc>().add(
+            const SetForgotPasswordSendingEvent(isSending: false),
+          );
+          _showSuccessSnackBar(context, 'Verification code sent to your email');
+          Future.delayed(const Duration(seconds: 1), () {
+            if (context.mounted) {
+              context.push(AppRoutes.setPasswordCode);
+            }
+          });
+        } else if (state is AuthError) {
+          // Reset sending state and show error
+          context.read<AuthBloc>().add(
+            const SetForgotPasswordSendingEvent(isSending: false),
+          );
+          _showErrorSnackBar(context, state.message);
         }
+      },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          bool isSending = false;
 
-        return Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.largePadding,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 2),
+          if (state is ForgotPasswordFormState) {
+            isSending = state.isSending;
+          }
 
-                  /// Back button
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: AppConstants.textPrimaryColor,
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.largePadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 2),
+
+                    /// Back button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                      onPressed: () => context.pop(),
                     ),
-                    onPressed: () => context.pop(),
-                  ),
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  /// Profile avatar & title
-                  Center(
-                    child: Column(
-                      children: [
-                        const CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Color(0xFFE0E7EF),
-                          child: Icon(
-                            Icons.lock_reset,
-                            size: 45,
-                            color: AppConstants.textPrimaryColor,
+                    /// Profile avatar & title
+                    Center(
+                      child: Column(
+                        children: [
+                          const CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Color(0xFFE0E7EF),
+                            child: Icon(
+                              Icons.lock_reset,
+                              size: 45,
+                              color: AppConstants.textPrimaryColor,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          "Forgot Password",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: AppConstants.textPrimaryColor,
+                          const SizedBox(height: 6),
+                          const Text(
+                            "Forgot Password",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: AppConstants.textPrimaryColor,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          "आपका पासवर्ड रीसेट करने के लिए अपना ईमेल दर्ज करें",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF4F789B),
+                          const SizedBox(height: 6),
+                          const Text(
+                            "आपका पासवर्ड रीसेट करने के लिए अपना ईमेल दर्ज करें",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF4F789B),
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  /// Form fields
-                  Form(key: _formKey, child: _buildFormFields()),
-                  const SizedBox(height: 20),
+                    /// Form fields
+                    Form(key: _formKey, child: _buildFormFields()),
+                    const SizedBox(height: 20),
 
-                  /// Submit button
-                  _buildSubmitButton(context, isSending),
-                  const SizedBox(height: 20),
+                    /// Submit button
+                    _buildSubmitButton(context, isSending),
+                    const SizedBox(height: 20),
 
-                  /// Help text
-                  _buildHelpText(),
-                  const SizedBox(height: 40),
-                ],
+                    /// Help text
+                    _buildHelpText(),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -266,24 +293,6 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
       context.read<AuthBloc>().add(
         ForgotPasswordEvent(email: _emailController.text),
       );
-
-      // Simulate API call
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!context.mounted) return;
-
-        // Reset sending state
-        context.read<AuthBloc>().add(
-          const SetForgotPasswordSendingEvent(isSending: false),
-        );
-
-        // Show success message and navigate to enter code screen
-        _showSuccessSnackBar(context, 'Verification code sent to your email');
-        Future.delayed(const Duration(seconds: 1), () {
-          if (context.mounted) {
-            context.push(AppRoutes.setPasswordCode);
-          }
-        });
-      });
     }
   }
 
@@ -293,6 +302,16 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
       SnackBar(
         content: Text(message),
         backgroundColor: AppConstants.successColor,
+      ),
+    );
+  }
+
+  /// Shows error snackbar
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppConstants.errorColor,
       ),
     );
   }

@@ -315,14 +315,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(const AuthLoading());
-      await Future.delayed(const Duration(seconds: 1));
 
       if (!event.email.contains('@')) {
         emit(const AuthError(message: 'Please enter a valid email address'));
         return;
       }
 
-      emit(PasswordResetCodeSentState(email: event.email));
+      final response = await _authRepository.forgotPassword(
+        email: event.email,
+        purpose: 'forgot_password', // Using forgot_password as the purpose
+      );
+
+      if (response.success) {
+        emit(PasswordResetCodeSentState(email: event.email));
+      } else {
+        emit(AuthError(message: response.message));
+      }
     } catch (e) {
       emit(AuthError(message: 'Failed to send reset code: ${e.toString()}'));
     }
