@@ -306,9 +306,20 @@ class AuthRepositoryImpl implements AuthRepository {
       return response;
     } catch (e) {
       debugPrint('🔴 Error in verify OTP repository: $e');
+
+      // Check if it's a bad request error (invalid OTP)
+      if (e.toString().contains('Bad request') &&
+          e.toString().contains('Invalid OTP')) {
+        return VerifyOtpResponse(
+          success: false,
+          message: 'Invalid OTP. Please check and try again.',
+          userId: userId,
+        );
+      }
+
       return VerifyOtpResponse(
         success: false,
-        message: 'Failed to verify OTP: ${e.toString()}',
+        message: 'Failed to verify OTP. Please try again.',
         userId: userId,
       );
     }

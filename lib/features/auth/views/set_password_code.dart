@@ -34,6 +34,23 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
   /// Purpose for OTP verification
   final String _purpose = 'forgot_password';
 
+  /// Email address where OTP was sent
+  String _email = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Get email from GoRouter extra parameter
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final extra = GoRouterState.of(context).extra;
+      if (extra is Map<String, dynamic> && extra['email'] != null) {
+        setState(() {
+          _email = extra['email'] as String;
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
     for (var controller in _codeControllers) {
@@ -155,7 +172,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
         // Email display
         Center(
           child: Text(
-            'rahul.kumar@email.com', // TODO: Replace with dynamic email
+            _email.isNotEmpty ? _email : 'Loading...',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,

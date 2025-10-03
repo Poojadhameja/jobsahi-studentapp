@@ -144,6 +144,25 @@ class AuthApiService {
       debugPrint('🔵 Verify OTP API Response: ${response.data}');
 
       final responseData = response.data;
+
+      // Check if the response indicates an invalid OTP
+      if (response.statusCode == 400 &&
+          responseData is Map<String, dynamic> &&
+          (responseData['message']?.toString().toLowerCase().contains(
+                    'invalid otp',
+                  ) ==
+                  true ||
+              responseData['message']?.toString().toLowerCase().contains(
+                    'otp',
+                  ) ==
+                  true)) {
+        return VerifyOtpResponse(
+          success: false,
+          message: 'Invalid OTP. Please check and try again.',
+          userId: userId,
+        );
+      }
+
       final verifyOtpResponse = VerifyOtpResponse.fromJson(responseData);
 
       debugPrint(
@@ -157,9 +176,20 @@ class AuthApiService {
       return verifyOtpResponse;
     } catch (e) {
       debugPrint('🔴 Error in verify OTP API: $e');
+
+      // Check if it's a bad request error (invalid OTP)
+      if (e.toString().contains('Bad request') &&
+          e.toString().contains('Invalid OTP')) {
+        return VerifyOtpResponse(
+          success: false,
+          message: 'Invalid OTP. Please check and try again.',
+          userId: userId,
+        );
+      }
+
       return VerifyOtpResponse(
         success: false,
-        message: 'Failed to verify OTP: ${e.toString()}',
+        message: 'Failed to verify OTP. Please try again.',
         userId: userId,
       );
     }
@@ -313,9 +343,18 @@ class VerifyOtpResponse {
   });
 
   factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) {
+    String message = json['message'] ?? '';
+
+    // Convert technical error messages to user-friendly messages
+    if (message.toLowerCase().contains('invalid otp') ||
+        message.toLowerCase().contains('otp') &&
+            message.toLowerCase().contains('invalid')) {
+      message = 'Invalid OTP. Please check and try again.';
+    }
+
     return VerifyOtpResponse(
       success: json['status'] ?? false,
-      message: json['message'] ?? '',
+      message: message,
       userId: json['user_id'],
     );
   }

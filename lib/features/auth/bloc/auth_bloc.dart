@@ -556,7 +556,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthError(message: response.message));
       }
     } catch (e) {
-      emit(AuthError(message: 'Failed to verify OTP: ${e.toString()}'));
+      // Check if it's a bad request error (invalid OTP)
+      if (e.toString().contains('Bad request') &&
+          e.toString().contains('Invalid OTP')) {
+        emit(
+          const AuthError(message: 'Invalid OTP. Please check and try again.'),
+        );
+      } else {
+        emit(AuthError(message: 'Failed to verify OTP. Please try again.'));
+      }
     }
   }
 }

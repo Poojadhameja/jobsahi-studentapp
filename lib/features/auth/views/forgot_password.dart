@@ -57,8 +57,11 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
           _showSuccessSnackBar(context, 'Verification code sent to your email');
           Future.delayed(const Duration(seconds: 1), () {
             if (context.mounted) {
-              // TODO: Pass user ID and other data to the OTP verification screen
-              context.push(AppRoutes.setPasswordCode);
+              // Pass email to the OTP verification screen
+              context.push(
+                AppRoutes.setPasswordCode,
+                extra: {'email': state.email},
+              );
             }
           });
         } else if (state is AuthError) {
