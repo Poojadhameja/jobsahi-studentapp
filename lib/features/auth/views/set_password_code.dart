@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,6 +38,9 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
   /// Email address where OTP was sent
   String _email = '';
 
+  /// Current OTP value
+  String _currentOtp = '';
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +52,16 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
           _email = extra['email'] as String;
         });
       }
+    });
+
+    // Set up focus listeners for each field
+    for (int i = 0; i < 6; i++) {
+      _codeFocusNodes[i].addListener(() => _onFocusChanged(i));
+    }
+
+    // Auto-focus the first box when page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _codeFocusNodes[0].requestFocus();
     });
   }
 
@@ -184,10 +198,20 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
         const SizedBox(height: 20),
 
-        // Code input fields
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(6, (index) => _buildCodeField(index)),
+        // OTP input fields with keyboard listener
+        KeyboardListener(
+          focusNode: FocusNode(),
+          onKeyEvent: (KeyEvent event) {
+            if (event is KeyDownEvent) {
+              if (event.logicalKey == LogicalKeyboardKey.backspace) {
+                _handleBackspace();
+              }
+            }
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(6, (index) => _buildCodeField(index)),
+          ),
         ),
       ],
     );
@@ -203,10 +227,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
         focusNode: _codeFocusNodes[index],
         textAlign: TextAlign.center,
         keyboardType: TextInputType.number,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(1),
-        ],
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         decoration: InputDecoration(
           filled: true,
           fillColor: const Color(0xFFF5F5F5),
@@ -227,7 +248,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(
-              color: AppConstants.textPrimaryColor,
+              color: Color(0xFF58B248), // Library green color
               width: 2,
             ),
           ),
@@ -239,16 +260,129 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
           color: AppConstants.textPrimaryColor,
         ),
         onChanged: (value) {
-          if (value.isNotEmpty && index < 5) {
-            // Move to next field
-            _codeFocusNodes[index + 1].requestFocus();
-          } else if (value.isEmpty && index > 0) {
-            // Move to previous field
-            _codeFocusNodes[index - 1].requestFocus();
-          }
+          _handleCodeInput(value, index);
+        },
+        onSubmitted: (value) {
+          _handleCodeSubmit(value, index);
         },
       ),
     );
+  }
+
+  /// Handles focus changes for individual fields
+  void _onFocusChanged(int index) {
+    setState(() {
+      // Trigger UI update when focus changes
+    });
+  }
+
+  /// Handles code input for individual fields
+  void _handleCodeInput(String value, int index) {
+    if (value.length > 1) {
+      // Handle paste operation - distribute across fields
+      _handlePaste(value, index);
+    } else if (value.isNotEmpty) {
+      // Single character input - ensure only first character is kept
+      if (value.length > 1) {
+        _codeControllers[index].text = value[0];
+        _codeControllers[index].selection = TextSelection.fromPosition(
+          TextPosition(offset: 1),
+        );
+      }
+
+      // Move to next field
+      if (index < 5) {
+        _codeFocusNodes[index + 1].requestFocus();
+      }
+
+      // Update current OTP
+      _updateCurrentOtp();
+
+      // Check if all fields are filled
+      if (_isAllFieldsFilled()) {
+        _verifyCode();
+      }
+    } else {
+      // Field is empty (backspace was pressed)
+      // Don't move focus automatically - let user control it
+      _updateCurrentOtp();
+    }
+  }
+
+  /// Handles paste operation by distributing characters across fields
+  void _handlePaste(String pastedValue, int startIndex) {
+    // Clean the pasted value (only digits)
+    final cleanValue = pastedValue.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // Distribute characters starting from the current field
+    for (int i = 0; i < cleanValue.length && (startIndex + i) < 6; i++) {
+      _codeControllers[startIndex + i].text = cleanValue[i];
+    }
+
+    // Move focus to the next empty field or the last field
+    final nextEmptyIndex = _findNextEmptyField(startIndex);
+    if (nextEmptyIndex < 6) {
+      _codeFocusNodes[nextEmptyIndex].requestFocus();
+    } else {
+      // All fields are filled, focus on the last field
+      _codeFocusNodes[5].requestFocus();
+    }
+
+    // Update current OTP
+    _updateCurrentOtp();
+
+    // Check for auto-verification after paste
+    if (_isAllFieldsFilled()) {
+      _verifyCode();
+    }
+  }
+
+  /// Finds the next empty field starting from the given index
+  int _findNextEmptyField(int startIndex) {
+    for (int i = startIndex; i < 6; i++) {
+      if (_codeControllers[i].text.isEmpty) {
+        return i;
+      }
+    }
+    return 6; // All fields are filled
+  }
+
+  /// Handles backspace key press
+  void _handleBackspace() {
+    // Find the currently focused field
+    for (int i = 0; i < 6; i++) {
+      if (_codeFocusNodes[i].hasFocus) {
+        if (_codeControllers[i].text.isNotEmpty) {
+          // Clear current field
+          _codeControllers[i].clear();
+        } else if (i > 0) {
+          // Move to previous field and clear it
+          _codeFocusNodes[i - 1].requestFocus();
+          _codeControllers[i - 1].clear();
+        }
+        _updateCurrentOtp();
+        break;
+      }
+    }
+  }
+
+  /// Handles code submit (Enter key)
+  void _handleCodeSubmit(String value, int index) {
+    if (value.isNotEmpty && index < 5) {
+      _codeFocusNodes[index + 1].requestFocus();
+    } else if (_isAllFieldsFilled()) {
+      _verifyCode();
+    }
+  }
+
+  /// Updates the current OTP string from all fields
+  void _updateCurrentOtp() {
+    _currentOtp = _codeControllers.map((controller) => controller.text).join();
+  }
+
+  /// Checks if all fields are filled
+  bool _isAllFieldsFilled() {
+    return _codeControllers.every((controller) => controller.text.isNotEmpty);
   }
 
   /// Builds the verify button
@@ -310,9 +444,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
   /// Verifies the entered code
   void _verifyCode() {
-    final code = _codeControllers.map((controller) => controller.text).join();
-
-    if (code.length != 6) {
+    if (_currentOtp.length != 6) {
       _showErrorSnackBar('Please enter a valid 6-digit code');
       return;
     }
@@ -325,7 +457,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
     context.read<AuthBloc>().add(
       VerifyForgotPasswordOtpEvent(
         userId: userId,
-        otp: code,
+        otp: _currentOtp,
         purpose: _purpose,
       ),
     );
