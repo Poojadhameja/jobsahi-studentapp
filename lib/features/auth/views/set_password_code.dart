@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
 class SetPasswordCodeScreen extends StatefulWidget {
   const SetPasswordCodeScreen({super.key});
@@ -12,20 +16,23 @@ class SetPasswordCodeScreen extends StatefulWidget {
 }
 
 class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
-  /// Controllers for code input fields
+  /// Controllers for code input fields (6 digits)
   final List<TextEditingController> _codeControllers = List.generate(
-    4,
+    6,
     (index) => TextEditingController(),
   );
 
   /// Focus nodes for code input fields
   final List<FocusNode> _codeFocusNodes = List.generate(
-    4,
+    6,
     (index) => FocusNode(),
   );
 
   /// Whether the code is being verified
   bool _isVerifying = false;
+
+  /// Purpose for OTP verification
+  final String _purpose = 'forgot_password';
 
   @override
   void dispose() {
@@ -40,72 +47,99 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.largePadding,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 2),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthLoading) {
+          setState(() {
+            _isVerifying = true;
+          });
+        } else if (state is ForgotPasswordOtpVerificationSuccess) {
+          setState(() {
+            _isVerifying = false;
+          });
+          _showSuccessSnackBar(state.message);
+          Future.delayed(const Duration(seconds: 1), () {
+            if (context.mounted) {
+              context.push(AppRoutes.setNewPassword);
+            }
+          });
+        } else if (state is AuthError) {
+          setState(() {
+            _isVerifying = false;
+          });
+          _showErrorSnackBar(state.message);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.largePadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 2),
 
-              /// Back button
-              IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppConstants.textPrimaryColor,
+                /// Back button
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                  onPressed: () => context.pop(),
                 ),
-                onPressed: () => context.pop(),
-              ),
-              const SizedBox(height: 4),
+                const SizedBox(height: 4),
 
-              /// Profile avatar & title
-              Center(
-                child: Column(
-                  children: [
-                    const CircleAvatar(
-                      radius: 40,
-                      backgroundColor: Color(0xFFE0E7EF),
-                      child: Icon(
-                        Icons.verified_user,
-                        size: 45,
-                        color: AppConstants.textPrimaryColor,
+                /// Profile avatar & title
+                Center(
+                  child: Column(
+                    children: [
+                      const CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Color(0xFFE0E7EF),
+                        child: Icon(
+                          Icons.verified_user,
+                          size: 45,
+                          color: AppConstants.textPrimaryColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Enter Verification Code",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.textPrimaryColor,
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Enter Verification Code",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "हमने आपके ईमेल पर 4 अंकों का सत्यापन कोड भेजा है",
-                      style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      const Text(
+                        "हमने आपके ईमेल पर 6 अंकों का सत्यापन कोड भेजा है",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF4F789B),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // Code input section
-              _buildCodeInput(),
-              const SizedBox(height: 24),
+                // Code input section
+                _buildCodeInput(),
+                const SizedBox(height: 24),
 
-              // Verify button
-              _buildVerifyButton(),
-              const SizedBox(height: 24),
+                // Verify button
+                _buildVerifyButton(),
+                const SizedBox(height: 24),
 
-              // Resend code section
-              _buildResendCodeSection(),
-            ],
+                // Resend code section
+                _buildResendCodeSection(),
+              ],
+            ),
           ),
         ),
       ),
@@ -136,7 +170,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
         // Code input fields
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(4, (index) => _buildCodeField(index)),
+          children: List.generate(6, (index) => _buildCodeField(index)),
         ),
       ],
     );
@@ -188,7 +222,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
           color: AppConstants.textPrimaryColor,
         ),
         onChanged: (value) {
-          if (value.isNotEmpty && index < 3) {
+          if (value.isNotEmpty && index < 5) {
             // Move to next field
             _codeFocusNodes[index + 1].requestFocus();
           } else if (value.isEmpty && index > 0) {
@@ -261,31 +295,23 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
   void _verifyCode() {
     final code = _codeControllers.map((controller) => controller.text).join();
 
-    if (code.length != 4) {
-      _showErrorSnackBar('Please enter a valid 4-digit code');
+    if (code.length != 6) {
+      _showErrorSnackBar('Please enter a valid 6-digit code');
       return;
     }
 
-    setState(() {
-      _isVerifying = true;
-    });
+    // For now, we'll use a default user ID. In a real app, this would come from the previous screen
+    // or from the forgot password response
+    const userId = 51; // This should be passed from the forgot password screen
 
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _isVerifying = false;
-      });
-
-      // For demo purposes, accept any 4-digit code
-      if (code.length == 4) {
-        // Navigate to set new password screen
-        if (mounted) {
-          context.push(AppRoutes.setNewPassword);
-        }
-      } else {
-        _showErrorSnackBar('Invalid verification code');
-      }
-    });
+    // Dispatch OTP verification event to BLoC
+    context.read<AuthBloc>().add(
+      VerifyForgotPasswordOtpEvent(
+        userId: userId,
+        otp: code,
+        purpose: _purpose,
+      ),
+    );
   }
 
   /// Resends the verification code

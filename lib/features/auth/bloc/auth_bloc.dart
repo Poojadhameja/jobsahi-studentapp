@@ -34,6 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<ToggleTermsAcceptanceEvent>(_onToggleTermsAcceptance);
     on<SetFormSubmittingEvent>(_onSetFormSubmitting);
     on<SetForgotPasswordSendingEvent>(_onSetForgotPasswordSending);
+    on<VerifyForgotPasswordOtpEvent>(_onVerifyForgotPasswordOtp);
   }
 
   /// Create default repository instance
@@ -522,6 +523,40 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(currentState.copyWith(isSending: event.isSending));
     } else {
       emit(ForgotPasswordFormState(isSending: event.isSending));
+    }
+  }
+
+  /// Handle forgot password OTP verification
+  Future<void> _onVerifyForgotPasswordOtp(
+    VerifyForgotPasswordOtpEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      emit(const AuthLoading());
+
+      if (event.otp.length != 6) {
+        emit(const AuthError(message: 'Please enter a valid 6-digit OTP'));
+        return;
+      }
+
+      final response = await _authRepository.verifyForgotPasswordOtp(
+        userId: event.userId,
+        otp: event.otp,
+        purpose: event.purpose,
+      );
+
+      if (response.success) {
+        emit(
+          ForgotPasswordOtpVerificationSuccess(
+            userId: response.userId ?? event.userId,
+            message: response.message,
+          ),
+        );
+      } else {
+        emit(AuthError(message: response.message));
+      }
+    } catch (e) {
+      emit(AuthError(message: 'Failed to verify OTP: ${e.toString()}'));
     }
   }
 }

@@ -205,3 +205,19 @@ class SetForgotPasswordSendingEvent extends AuthEvent {
   @override
   List<Object?> get props => [isSending];
 }
+
+/// Verify forgot password OTP event
+class VerifyForgotPasswordOtpEvent extends AuthEvent {
+  final int userId;
+  final String otp;
+  final String purpose;
+
+  const VerifyForgotPasswordOtpEvent({
+    required this.userId,
+    required this.otp,
+    required this.purpose,
+  });
+
+  @override
+  List<Object?> get props => [userId, otp, purpose];
+}

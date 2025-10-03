@@ -122,6 +122,49 @@ class AuthApiService {
     }
   }
 
+  /// Verify OTP for forgot password
+  Future<VerifyOtpResponse> verifyForgotPasswordOtp({
+    required int userId,
+    required String otp,
+    required String purpose,
+  }) async {
+    try {
+      debugPrint('🔵 Verifying forgot password OTP for user: $userId');
+
+      final requestData = {'user_id': userId, 'otp': otp, 'purpose': purpose};
+
+      debugPrint('🔵 Request data: $requestData');
+
+      final response = await _apiService.post(
+        '/auth/verify-otp.php',
+        data: jsonEncode(requestData),
+      );
+
+      debugPrint('🔵 Verify OTP API Status: ${response.statusCode}');
+      debugPrint('🔵 Verify OTP API Response: ${response.data}');
+
+      final responseData = response.data;
+      final verifyOtpResponse = VerifyOtpResponse.fromJson(responseData);
+
+      debugPrint(
+        '🔵 Verify OTP Response success: ${verifyOtpResponse.success}',
+      );
+      debugPrint(
+        '🔵 Verify OTP Response message: ${verifyOtpResponse.message}',
+      );
+      debugPrint('🔵 Verify OTP Response userId: ${verifyOtpResponse.userId}');
+
+      return verifyOtpResponse;
+    } catch (e) {
+      debugPrint('🔴 Error in verify OTP API: $e');
+      return VerifyOtpResponse(
+        success: false,
+        message: 'Failed to verify OTP: ${e.toString()}',
+        userId: userId,
+      );
+    }
+  }
+
   /// Login with email and password
   Future<LoginResponse> login({
     required String email,
@@ -253,6 +296,27 @@ class ForgotPasswordResponse {
       purpose: json['purpose'],
       userId: json['user_id'],
       expiresIn: json['expires_in'],
+    );
+  }
+}
+
+/// Verify OTP response model
+class VerifyOtpResponse {
+  final bool success;
+  final String message;
+  final int? userId;
+
+  VerifyOtpResponse({
+    required this.success,
+    required this.message,
+    this.userId,
+  });
+
+  factory VerifyOtpResponse.fromJson(Map<String, dynamic> json) {
+    return VerifyOtpResponse(
+      success: json['status'] ?? false,
+      message: json['message'] ?? '',
+      userId: json['user_id'],
     );
   }
 }

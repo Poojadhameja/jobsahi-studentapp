@@ -31,6 +31,12 @@ abstract class AuthRepository {
     required String purpose,
   });
 
+  Future<VerifyOtpResponse> verifyForgotPasswordOtp({
+    required int userId,
+    required String otp,
+    required String purpose,
+  });
+
   Future<bool> logout();
   Future<bool> isLoggedIn();
   Future<User?> getCurrentUser();
@@ -273,6 +279,37 @@ class AuthRepositoryImpl implements AuthRepository {
       return ForgotPasswordResponse(
         success: false,
         message: 'Failed to send reset code: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<VerifyOtpResponse> verifyForgotPasswordOtp({
+    required int userId,
+    required String otp,
+    required String purpose,
+  }) async {
+    try {
+      debugPrint(
+        '🔵 Verifying forgot password OTP for user: $userId with purpose: $purpose',
+      );
+
+      final response = await _authApiService.verifyForgotPasswordOtp(
+        userId: userId,
+        otp: otp,
+        purpose: purpose,
+      );
+
+      debugPrint('🔵 Verify OTP Repository Response: ${response.success}');
+      debugPrint('🔵 Verify OTP Repository Message: ${response.message}');
+
+      return response;
+    } catch (e) {
+      debugPrint('🔴 Error in verify OTP repository: $e');
+      return VerifyOtpResponse(
+        success: false,
+        message: 'Failed to verify OTP: ${e.toString()}',
+        userId: userId,
       );
     }
   }

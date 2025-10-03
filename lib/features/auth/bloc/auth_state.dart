@@ -218,3 +218,17 @@ class PhoneAlreadyExistsError extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Forgot password OTP verification success state
+class ForgotPasswordOtpVerificationSuccess extends AuthState {
+  final int userId;
+  final String message;
+
+  const ForgotPasswordOtpVerificationSuccess({
+    required this.userId,
+    required this.message,
+  });
+
+  @override
+  List<Object?> get props => [userId, message];
+}
