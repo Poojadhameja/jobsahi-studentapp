@@ -346,6 +346,48 @@ class AuthApiService {
       );
     }
   }
+
+  /// Reset password using user ID and new password
+  Future<ResetPasswordResponse> resetPassword({
+    required int userId,
+    required String newPassword,
+  }) async {
+    try {
+      debugPrint('🔵 Sending reset password request for user: $userId');
+
+      final requestData = {'user_id': userId, 'new_password': newPassword};
+
+      debugPrint('🔵 Request data: $requestData');
+
+      final response = await _apiService.post(
+        '/auth/reset_password.php',
+        data: jsonEncode(requestData),
+      );
+
+      debugPrint('🔵 Reset Password API Status: ${response.statusCode}');
+      debugPrint('🔵 Reset Password API Response: ${response.data}');
+
+      final responseData = response.data;
+      final resetPasswordResponse = ResetPasswordResponse.fromJson(
+        responseData,
+      );
+
+      debugPrint(
+        '🔵 Reset Password Response success: ${resetPasswordResponse.success}',
+      );
+      debugPrint(
+        '🔵 Reset Password Response message: ${resetPasswordResponse.message}',
+      );
+
+      return resetPasswordResponse;
+    } catch (e) {
+      debugPrint('🔴 Error in reset password API: $e');
+      return ResetPasswordResponse(
+        success: false,
+        message: 'Failed to reset password: ${e.toString()}',
+      );
+    }
+  }
 }
 
 /// Forgot password response model
@@ -440,5 +482,20 @@ class ResendOtpResponse {
     );
 
     return response;
+  }
+}
+
+/// Reset password response model
+class ResetPasswordResponse {
+  final bool success;
+  final String message;
+
+  ResetPasswordResponse({required this.success, required this.message});
+
+  factory ResetPasswordResponse.fromJson(Map<String, dynamic> json) {
+    return ResetPasswordResponse(
+      success: json['status'] ?? false,
+      message: json['message'] ?? '',
+    );
   }
 }

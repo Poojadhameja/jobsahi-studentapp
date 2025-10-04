@@ -91,7 +91,10 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
           _showSuccessSnackBar(state.message);
           Future.delayed(const Duration(seconds: 1), () {
             if (context.mounted) {
-              context.push(AppRoutes.setNewPassword);
+              context.push(
+                AppRoutes.setNewPassword,
+                extra: {'userId': state.userId},
+              );
             }
           });
         } else if (state is ResendOtpSuccess) {

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/app_constants.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/utils/app_constants.dart';
+import '../../../core/constants/app_routes.dart';
+import '../bloc/auth_bloc.dart';
+import '../bloc/auth_event.dart';
+import '../bloc/auth_state.dart';
 
 class SetNewPasswordScreen extends StatefulWidget {
   const SetNewPasswordScreen({super.key});
@@ -24,6 +29,23 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
   /// Whether the password is being reset
   bool _isResetting = false;
 
+  /// User ID for password reset
+  int _userId = 51; // Default value, should be passed from previous screen
+
+  @override
+  void initState() {
+    super.initState();
+    // Get userId from GoRouter extra parameter
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final extra = GoRouterState.of(context).extra;
+      if (extra is Map<String, dynamic> && extra['userId'] != null) {
+        setState(() {
+          _userId = extra['userId'] as int;
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
     _passwordController.dispose();
@@ -33,77 +55,102 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.largePadding,
-          ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 2),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthLoading) {
+          setState(() {
+            _isResetting = true;
+          });
+        } else if (state is PasswordResetSuccess) {
+          setState(() {
+            _isResetting = false;
+          });
+          _showSuccessSnackBar('Password reset successfully');
+          Future.delayed(const Duration(seconds: 1), () {
+            if (context.mounted) {
+              // Navigate back to login screen
+              context.go(AppRoutes.loginOtpEmail);
+            }
+          });
+        } else if (state is AuthError) {
+          setState(() {
+            _isResetting = false;
+          });
+          _showErrorSnackBar(state.message);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.largePadding,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 2),
 
-                /// Back button
-                IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: AppConstants.textPrimaryColor,
+                  /// Back button
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                    onPressed: () => context.pop(),
                   ),
-                  onPressed: () => context.pop(),
-                ),
-                const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                /// Profile avatar & title
-                Center(
-                  child: Column(
-                    children: [
-                      const CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Color(0xFFE0E7EF),
-                        child: Icon(
-                          Icons.lock_outline,
-                          size: 45,
-                          color: AppConstants.textPrimaryColor,
+                  /// Profile avatar & title
+                  Center(
+                    child: Column(
+                      children: [
+                        const CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Color(0xFFE0E7EF),
+                          child: Icon(
+                            Icons.lock_outline,
+                            size: 45,
+                            color: AppConstants.textPrimaryColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "Enter New Password",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppConstants.textPrimaryColor,
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Enter New Password",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppConstants.textPrimaryColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "आपका नया पासवर्ड पहले वाले से अलग होना चाहिए",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF4F789B),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "आपका नया पासवर्ड पहले वाले से अलग होना चाहिए",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF4F789B),
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                // Password input
-                _buildPasswordInput(),
-                const SizedBox(height: 20),
+                  // Password input
+                  _buildPasswordInput(),
+                  const SizedBox(height: 20),
 
-                // Confirm password input
-                _buildConfirmPasswordInput(),
-                const SizedBox(height: 24),
+                  // Confirm password input
+                  _buildConfirmPasswordInput(),
+                  const SizedBox(height: 24),
 
-                // Submit button
-                _buildSubmitButton(),
-              ],
+                  // Submit button
+                  _buildSubmitButton(),
+                ],
+              ),
             ),
           ),
         ),
@@ -260,25 +307,13 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
   /// Resets the password
   void _resetPassword() {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isResetting = true;
-      });
-
-      // Simulate API call
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() {
-          _isResetting = false;
-        });
-
-        // Show success message and navigate to login
-        _showSuccessSnackBar('Password reset successfully');
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            context.pop();
-            context.pop();
-          }
-        });
-      });
+      // Dispatch reset password event to BLoC
+      context.read<AuthBloc>().add(
+        ResetPasswordEvent(
+          userId: _userId,
+          newPassword: _passwordController.text,
+        ),
+      );
     }
   }
 
@@ -288,6 +323,16 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: AppConstants.successColor,
+      ),
+    );
+  }
+
+  /// Shows error snackbar
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppConstants.errorColor,
       ),
     );
   }

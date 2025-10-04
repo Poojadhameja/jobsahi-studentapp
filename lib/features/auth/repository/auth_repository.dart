@@ -43,6 +43,11 @@ abstract class AuthRepository {
     required String purpose,
   });
 
+  Future<ResetPasswordResponse> resetPassword({
+    required int userId,
+    required String newPassword,
+  });
+
   Future<bool> logout();
   Future<bool> isLoggedIn();
   Future<User?> getCurrentUser();
@@ -397,6 +402,32 @@ class AuthRepositoryImpl implements AuthRepository {
       return ResendOtpResponse(
         success: false,
         message: 'Failed to resend OTP. Please try again.',
+      );
+    }
+  }
+
+  @override
+  Future<ResetPasswordResponse> resetPassword({
+    required int userId,
+    required String newPassword,
+  }) async {
+    try {
+      debugPrint('🔵 Sending reset password request for user: $userId');
+
+      final response = await _authApiService.resetPassword(
+        userId: userId,
+        newPassword: newPassword,
+      );
+
+      debugPrint('🔵 Reset Password Repository Response: ${response.success}');
+      debugPrint('🔵 Reset Password Repository Message: ${response.message}');
+
+      return response;
+    } catch (e) {
+      debugPrint('🔴 Error in reset password repository: $e');
+      return ResetPasswordResponse(
+        success: false,
+        message: 'Failed to reset password: ${e.toString()}',
       );
     }
   }

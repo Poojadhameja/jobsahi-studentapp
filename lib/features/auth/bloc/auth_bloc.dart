@@ -345,12 +345,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(const AuthLoading());
-      await Future.delayed(const Duration(seconds: 1));
 
-      if (event.otp.length != 6) {
-        emit(const AuthError(message: 'Please enter a valid 6-digit code'));
-        return;
-      }
       if (event.newPassword.length < 6) {
         emit(
           const AuthError(message: 'Password must be at least 6 characters'),
@@ -358,7 +353,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      emit(const PasswordResetSuccess());
+      final response = await _authRepository.resetPassword(
+        userId: event.userId,
+        newPassword: event.newPassword,
+      );
+
+      if (response.success) {
+        emit(const PasswordResetSuccess());
+      } else {
+        emit(AuthError(message: response.message));
+      }
     } catch (e) {
       emit(AuthError(message: 'Password reset failed: ${e.toString()}'));
     }
