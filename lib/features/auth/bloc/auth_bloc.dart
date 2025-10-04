@@ -35,6 +35,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SetFormSubmittingEvent>(_onSetFormSubmitting);
     on<SetForgotPasswordSendingEvent>(_onSetForgotPasswordSending);
     on<VerifyForgotPasswordOtpEvent>(_onVerifyForgotPasswordOtp);
+    on<ResendOtpEvent>(_onResendOtp);
   }
 
   /// Create default repository instance
@@ -322,7 +323,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      final response = await _authRepository.forgotPassword(
+      final response = await _authRepository.generateOtp(
         email: event.email,
         purpose: 'forgot_password', // Using forgot_password as the purpose
       );
@@ -565,6 +566,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(AuthError(message: 'Failed to verify OTP. Please try again.'));
       }
+    }
+  }
+
+  /// Handle resend OTP event
+  Future<void> _onResendOtp(
+    ResendOtpEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      emit(const AuthLoading());
+
+      final response = await _authRepository.resendOtp(
+        email: event.email,
+        purpose: event.purpose,
+      );
+
+      if (response.success) {
+        emit(
+          ResendOtpSuccess(
+            message: response.message,
+            email: response.email,
+            expiresIn: response.expiresIn,
+          ),
+        );
+      } else {
+        emit(AuthError(message: response.message));
+      }
+    } catch (e) {
+      emit(AuthError(message: 'Failed to resend OTP. Please try again.'));
     }
   }
 }

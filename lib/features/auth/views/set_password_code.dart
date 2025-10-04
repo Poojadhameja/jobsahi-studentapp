@@ -94,6 +94,11 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
               context.push(AppRoutes.setNewPassword);
             }
           });
+        } else if (state is ResendOtpSuccess) {
+          setState(() {
+            _isVerifying = false;
+          });
+          _showSuccessSnackBar(state.message);
         } else if (state is AuthError) {
           setState(() {
             _isVerifying = false;
@@ -465,8 +470,17 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
   /// Resends the verification code
   void _resendCode() {
-    // TODO: Implement resend code functionality
-    _showSuccessSnackBar('Verification code resent successfully');
+    print('🔵 _resendCode: Email: $_email, Purpose: $_purpose');
+
+    if (_email.isNotEmpty) {
+      // Dispatch resend OTP event to BLoC
+      context.read<AuthBloc>().add(
+        ResendOtpEvent(email: _email, purpose: _purpose),
+      );
+    } else {
+      print('🔴 _resendCode: Email is empty');
+      _showErrorSnackBar('Email not available for resending OTP');
+    }
   }
 
   /// Shows error snackbar

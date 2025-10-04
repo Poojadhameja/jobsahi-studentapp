@@ -1,5 +1,6 @@
 import 'dart:convert'; // ✅ for jsonEncode
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../core/utils/app_constants.dart';
@@ -26,7 +27,7 @@ abstract class AuthRepository {
     required String otp,
   });
 
-  Future<ForgotPasswordResponse> forgotPassword({
+  Future<ForgotPasswordResponse> generateOtp({
     required String email,
     required String purpose,
   });
@@ -34,6 +35,11 @@ abstract class AuthRepository {
   Future<VerifyOtpResponse> verifyForgotPasswordOtp({
     required int userId,
     required String otp,
+    required String purpose,
+  });
+
+  Future<ResendOtpResponse> resendOtp({
+    required String email,
     required String purpose,
   });
 
@@ -256,29 +262,29 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<ForgotPasswordResponse> forgotPassword({
+  Future<ForgotPasswordResponse> generateOtp({
     required String email,
     required String purpose,
   }) async {
     try {
       debugPrint(
-        '🔵 Sending forgot password request for: $email with purpose: $purpose',
+        '🔵 Sending generate OTP request for: $email with purpose: $purpose',
       );
 
-      final response = await _authApiService.forgotPassword(
+      final response = await _authApiService.generateOtp(
         email: email,
         purpose: purpose,
       );
 
-      debugPrint('🔵 Forgot Password Repository Response: ${response.success}');
-      debugPrint('🔵 Forgot Password Repository Message: ${response.message}');
+      debugPrint('🔵 Generate OTP Repository Response: ${response.success}');
+      debugPrint('🔵 Generate OTP Repository Message: ${response.message}');
 
       return response;
     } catch (e) {
-      debugPrint('🔴 Error in forgot password repository: $e');
+      debugPrint('🔴 Error in generate OTP repository: $e');
       return ForgotPasswordResponse(
         success: false,
-        message: 'Failed to send reset code: ${e.toString()}',
+        message: 'Failed to generate OTP: ${e.toString()}',
       );
     }
   }
@@ -321,6 +327,76 @@ class AuthRepositoryImpl implements AuthRepository {
         success: false,
         message: 'Failed to verify OTP. Please try again.',
         userId: userId,
+      );
+    }
+  }
+
+  @override
+  Future<ResendOtpResponse> resendOtp({
+    required String email,
+    required String purpose,
+  }) async {
+    try {
+      debugPrint('🔵 Resending OTP to email: $email with purpose: $purpose');
+
+      final response = await _authApiService.resendOtp(
+        email: email,
+        purpose: purpose,
+      );
+
+      debugPrint('🔵 Resend OTP Repository Response: ${response.success}');
+      debugPrint('🔵 Resend OTP Repository Message: ${response.message}');
+
+      return response;
+    } catch (e) {
+      debugPrint('🔴 Error in resend OTP repository: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      // Handle DioException specifically
+      if (e is DioException) {
+        debugPrint('🔴 DioException status code: ${e.response?.statusCode}');
+        debugPrint('🔴 DioException response data: ${e.response?.data}');
+        debugPrint('🔴 DioException type: ${e.type}');
+        debugPrint('🔴 DioException message: ${e.message}');
+
+        // Check for CORS errors
+        if (e.type == DioExceptionType.connectionError ||
+            e.message?.contains('CORS') == true ||
+            e.message?.contains('cors') == true) {
+          return ResendOtpResponse(
+            success: false,
+            message:
+                'Network error. Please check your connection and try again.',
+          );
+        }
+
+        // Check for specific error responses
+        if (e.response?.statusCode == 400) {
+          return ResendOtpResponse(
+            success: false,
+            message: 'Invalid request. Please check your email and try again.',
+          );
+        } else if (e.response?.statusCode == 404) {
+          return ResendOtpResponse(
+            success: false,
+            message: 'Service not found. Please try again later.',
+          );
+        } else if (e.response?.statusCode == 405) {
+          return ResendOtpResponse(
+            success: false,
+            message: 'Method not allowed. Please contact support.',
+          );
+        } else if (e.response?.statusCode == 500) {
+          return ResendOtpResponse(
+            success: false,
+            message: 'Server error. Please try again later.',
+          );
+        }
+      }
+
+      return ResendOtpResponse(
+        success: false,
+        message: 'Failed to resend OTP. Please try again.',
       );
     }
   }

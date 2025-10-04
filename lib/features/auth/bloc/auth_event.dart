@@ -221,3 +221,13 @@ class VerifyForgotPasswordOtpEvent extends AuthEvent {
   @override
   List<Object?> get props => [userId, otp, purpose];
 }
+
+class ResendOtpEvent extends AuthEvent {
+  final String email;
+  final String purpose;
+
+  const ResendOtpEvent({required this.email, required this.purpose});
+
+  @override
+  List<Object?> get props => [email, purpose];
+}

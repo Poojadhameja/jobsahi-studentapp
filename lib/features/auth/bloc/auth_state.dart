@@ -232,3 +232,14 @@ class ForgotPasswordOtpVerificationSuccess extends AuthState {
   @override
   List<Object?> get props => [userId, message];
 }
+
+class ResendOtpSuccess extends AuthState {
+  final String message;
+  final String? email;
+  final String? expiresIn;
+
+  const ResendOtpSuccess({required this.message, this.email, this.expiresIn});
+
+  @override
+  List<Object?> get props => [message, email, expiresIn];
+}

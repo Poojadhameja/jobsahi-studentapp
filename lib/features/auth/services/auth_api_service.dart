@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import '../../../shared/services/api_service.dart';
 
 /// Auth-specific API service
@@ -10,53 +11,53 @@ class AuthApiService {
   AuthApiService({ApiService? apiService})
     : _apiService = apiService ?? ApiService();
 
-  /// Send forgot password OTP
-  Future<ForgotPasswordResponse> forgotPassword({
+  /// Generate OTP (unified API for both forgot password and resend OTP)
+  Future<ForgotPasswordResponse> generateOtp({
     required String email,
     required String purpose,
   }) async {
     try {
-      debugPrint('🔵 Sending forgot password request for: $email');
+      debugPrint(
+        '🔵 Sending generate OTP request for: $email with purpose: $purpose',
+      );
 
       final requestData = {'email': email, 'purpose': purpose};
 
       debugPrint('🔵 Request data: $requestData');
 
       final response = await _apiService.post(
-        '/auth/forgot-password.php',
+        '/auth/generate-otp.php',
         data: jsonEncode(requestData),
       );
 
-      debugPrint('🔵 Forgot Password API Status: ${response.statusCode}');
-      debugPrint('🔵 Forgot Password API Response: ${response.data}');
+      debugPrint('🔵 Generate OTP API Status: ${response.statusCode}');
+      debugPrint('🔵 Generate OTP API Response: ${response.data}');
 
       final responseData = response.data;
-      final forgotPasswordResponse = ForgotPasswordResponse.fromJson(
-        responseData,
-      );
+      final generateOtpResponse = ForgotPasswordResponse.fromJson(responseData);
 
       debugPrint(
-        '🔵 Forgot Password Response success: ${forgotPasswordResponse.success}',
+        '🔵 Generate OTP Response success: ${generateOtpResponse.success}',
       );
       debugPrint(
-        '🔵 Forgot Password Response message: ${forgotPasswordResponse.message}',
+        '🔵 Generate OTP Response message: ${generateOtpResponse.message}',
       );
       debugPrint(
-        '🔵 Forgot Password Response purpose: ${forgotPasswordResponse.purpose}',
+        '🔵 Generate OTP Response purpose: ${generateOtpResponse.purpose}',
       );
       debugPrint(
-        '🔵 Forgot Password Response userId: ${forgotPasswordResponse.userId}',
+        '🔵 Generate OTP Response userId: ${generateOtpResponse.userId}',
       );
       debugPrint(
-        '🔵 Forgot Password Response expiresIn: ${forgotPasswordResponse.expiresIn}',
+        '🔵 Generate OTP Response expiresIn: ${generateOtpResponse.expiresIn}',
       );
 
-      return forgotPasswordResponse;
+      return generateOtpResponse;
     } catch (e) {
-      debugPrint('🔴 Error in forgot password API: $e');
+      debugPrint('🔴 Error in generate OTP API: $e');
       return ForgotPasswordResponse(
         success: false,
-        message: 'Failed to send reset code: ${e.toString()}',
+        message: 'Failed to generate OTP: ${e.toString()}',
       );
     }
   }
@@ -301,6 +302,50 @@ class AuthApiService {
       );
     }
   }
+
+  /// Resends OTP to the specified email (uses unified generate-otp endpoint)
+  Future<ResendOtpResponse> resendOtp({
+    required String email,
+    required String purpose,
+  }) async {
+    try {
+      debugPrint(
+        '🔵 AuthApiService: Resending OTP to email: $email with purpose: $purpose',
+      );
+
+      // Use the unified generate-otp endpoint for resending OTP
+      final generateOtpResponse = await generateOtp(
+        email: email,
+        purpose: purpose,
+      );
+
+      return ResendOtpResponse(
+        success: generateOtpResponse.success,
+        message: generateOtpResponse.message,
+        email: email,
+        expiresIn: generateOtpResponse.expiresIn?.toString(),
+      );
+    } catch (e) {
+      debugPrint('🔴 AuthApiService: Resend OTP error: $e');
+      debugPrint('🔴 AuthApiService: Error type: ${e.runtimeType}');
+
+      // Handle DioException specifically
+      if (e is DioException) {
+        debugPrint(
+          '🔴 AuthApiService: DioException status code: ${e.response?.statusCode}',
+        );
+        debugPrint(
+          '🔴 AuthApiService: DioException response data: ${e.response?.data}',
+        );
+        debugPrint('🔴 AuthApiService: DioException message: ${e.message}');
+      }
+
+      return ResendOtpResponse(
+        success: false,
+        message: 'Failed to resend OTP: ${e.toString()}',
+      );
+    }
+  }
 }
 
 /// Forgot password response model
@@ -357,5 +402,43 @@ class VerifyOtpResponse {
       message: message,
       userId: json['user_id'],
     );
+  }
+}
+
+/// Resend OTP response model
+class ResendOtpResponse {
+  final bool success;
+  final String message;
+  final String? email;
+  final String? expiresIn;
+  final String? timestamp;
+
+  ResendOtpResponse({
+    required this.success,
+    required this.message,
+    this.email,
+    this.expiresIn,
+    this.timestamp,
+  });
+
+  factory ResendOtpResponse.fromJson(Map<String, dynamic> json) {
+    print('🔵 ResendOtpResponse.fromJson: Parsing response: $json');
+
+    final data = json['data'] as Map<String, dynamic>?;
+    print('🔵 ResendOtpResponse.fromJson: Data field: $data');
+
+    final response = ResendOtpResponse(
+      success: json['success'] ?? false,
+      message: json['message'] ?? '',
+      email: data?['email'],
+      expiresIn: data?['expires_in'],
+      timestamp: json['timestamp'],
+    );
+
+    print(
+      '🔵 ResendOtpResponse.fromJson: Parsed response - success: ${response.success}, message: ${response.message}',
+    );
+
+    return response;
   }
 }
