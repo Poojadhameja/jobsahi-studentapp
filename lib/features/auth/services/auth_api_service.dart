@@ -382,10 +382,27 @@ class AuthApiService {
       return resetPasswordResponse;
     } catch (e) {
       debugPrint('🔴 Error in reset password API: $e');
-      return ResetPasswordResponse(
-        success: false,
-        message: 'Failed to reset password: ${e.toString()}',
-      );
+
+      // Handle specific error cases and provide user-friendly messages
+      String errorMessage = 'Failed to reset password. Please try again.';
+
+      if (e.toString().contains('Bad request')) {
+        // Extract the actual error message from the response
+        if (e.toString().contains('New password must be different')) {
+          errorMessage =
+              'New password must be different from your current password';
+        } else if (e.toString().contains('Invalid password')) {
+          errorMessage = 'Please enter a valid password';
+        } else {
+          errorMessage =
+              'Invalid request. Please check your input and try again.';
+        }
+      } else if (e.toString().contains('Network')) {
+        errorMessage =
+            'Network error. Please check your connection and try again.';
+      }
+
+      return ResetPasswordResponse(success: false, message: errorMessage);
     }
   }
 }

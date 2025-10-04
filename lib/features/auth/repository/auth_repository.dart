@@ -425,10 +425,21 @@ class AuthRepositoryImpl implements AuthRepository {
       return response;
     } catch (e) {
       debugPrint('🔴 Error in reset password repository: $e');
-      return ResetPasswordResponse(
-        success: false,
-        message: 'Failed to reset password: ${e.toString()}',
-      );
+
+      // Handle specific error cases and provide user-friendly messages
+      String errorMessage = 'Failed to reset password. Please try again.';
+
+      if (e.toString().contains('New password must be different')) {
+        errorMessage =
+            'New password must be different from your current password';
+      } else if (e.toString().contains('Invalid password')) {
+        errorMessage = 'Please enter a valid password';
+      } else if (e.toString().contains('Network')) {
+        errorMessage =
+            'Network error. Please check your connection and try again.';
+      }
+
+      return ResetPasswordResponse(success: false, message: errorMessage);
     }
   }
 

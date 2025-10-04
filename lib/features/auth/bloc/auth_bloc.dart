@@ -364,7 +364,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthError(message: response.message));
       }
     } catch (e) {
-      emit(AuthError(message: 'Password reset failed: ${e.toString()}'));
+      // Handle specific error cases and provide user-friendly messages
+      String errorMessage = 'Password reset failed. Please try again.';
+
+      if (e.toString().contains('New password must be different')) {
+        errorMessage =
+            'New password must be different from your current password';
+      } else if (e.toString().contains('Invalid password')) {
+        errorMessage = 'Please enter a valid password';
+      } else if (e.toString().contains('Network')) {
+        errorMessage =
+            'Network error. Please check your connection and try again.';
+      }
+
+      emit(AuthError(message: errorMessage));
     }
   }
 

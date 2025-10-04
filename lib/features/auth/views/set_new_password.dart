@@ -162,7 +162,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
   Widget _buildPasswordInput() {
     return _buildFormField(
       controller: _passwordController,
-      label: "Password*",
+      label: "New Password*",
       hint: "पासवर्ड",
       prefixIcon: Icons.lock,
       isPassword: true,
@@ -188,7 +188,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
   Widget _buildConfirmPasswordInput() {
     return _buildFormField(
       controller: _confirmPasswordController,
-      label: "Confirm Password*",
+      label: "Confirm New Password*",
       hint: "पासवर्ड दोबारा दर्ज करें",
       prefixIcon: Icons.lock,
       isPassword: true,
