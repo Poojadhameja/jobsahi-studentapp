@@ -476,6 +476,9 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
     print('🔵 _resendCode: Email: $_email, Purpose: $_purpose');
 
     if (_email.isNotEmpty) {
+      // Clear all input boxes before resending OTP
+      _clearAllInputBoxes();
+
       // Dispatch resend OTP event to BLoC
       context.read<AuthBloc>().add(
         ResendOtpEvent(email: _email, purpose: _purpose),
@@ -484,6 +487,17 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
       print('🔴 _resendCode: Email is empty');
       _showErrorSnackBar('Email not available for resending OTP');
     }
+  }
+
+  /// Clears all OTP input boxes
+  void _clearAllInputBoxes() {
+    for (int i = 0; i < 6; i++) {
+      _codeControllers[i].clear();
+    }
+    _currentOtp = '';
+
+    // Focus on the first input box after clearing
+    _codeFocusNodes[0].requestFocus();
   }
 
   /// Shows error snackbar
