@@ -446,13 +446,47 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> logout() async {
     try {
+      // Get user ID for logout API call
+      final userIdString = await _tokenStorage.getUserId();
+      if (userIdString != null && userIdString.isNotEmpty) {
+        final userId = int.tryParse(userIdString);
+        if (userId != null) {
+          debugPrint('🔵 Calling logout API for user: $userId');
+
+          // Call logout API to revoke JWT token on server
+          final logoutResponse = await _authApiService.logout(userId: userId);
+
+          if (logoutResponse.success) {
+            debugPrint('🔵 Logout API successful: ${logoutResponse.message}');
+          } else {
+            debugPrint('🔴 Logout API failed: ${logoutResponse.message}');
+            // Continue with local logout even if API fails
+          }
+        } else {
+          debugPrint('🔴 Invalid user ID format: $userIdString');
+        }
+      } else {
+        debugPrint('🔴 No user ID found for logout');
+      }
+
+      // Clear local data regardless of API result
       await _tokenStorage.clearAll();
       _apiService.clearAuthToken();
-      debugPrint('User logged out successfully');
+      debugPrint('🔵 User logged out successfully (local data cleared)');
       return true;
     } catch (e) {
-      debugPrint('Error during logout: $e');
-      return false;
+      debugPrint('🔴 Error during logout: $e');
+
+      // Clear local data even if there's an error
+      try {
+        await _tokenStorage.clearAll();
+        _apiService.clearAuthToken();
+        debugPrint('🔵 Local data cleared despite error');
+        return true;
+      } catch (clearError) {
+        debugPrint('🔴 Error clearing local data: $clearError');
+        return false;
+      }
     }
   }
 

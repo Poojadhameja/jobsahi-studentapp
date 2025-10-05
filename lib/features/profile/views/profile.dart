@@ -1,28 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../auth/bloc/auth_bloc.dart';
+import '../../auth/bloc/auth_event.dart';
+import '../../auth/bloc/auth_state.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            children: [
-              // Profile header
-              _buildProfileHeader(context),
-              const SizedBox(height: AppConstants.largePadding),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is LogoutSuccess) {
+          // Navigate to login screen after successful logout
+          context.go(AppRoutes.loginOtpEmail);
+        } else if (state is AuthError) {
+          // Show error message if logout fails
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppConstants.errorColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: Column(
+              children: [
+                // Profile header
+                _buildProfileHeader(context),
+                const SizedBox(height: AppConstants.largePadding),
 
-              // Profile options
-              _buildProfileOptions(context),
-            ],
+                // Profile options
+                _buildProfileOptions(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -212,7 +233,7 @@ class ProfileScreen extends StatelessWidget {
 
   /// Handles logout
   void _logout(BuildContext context) {
-    // TODO: Clear user data and navigate to login screen
-    context.go(AppRoutes.loginOtpEmail);
+    // Dispatch logout event to AuthBloc
+    context.read<AuthBloc>().add(const LogoutEvent());
   }
 }

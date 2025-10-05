@@ -405,6 +405,49 @@ class AuthApiService {
       return ResetPasswordResponse(success: false, message: errorMessage);
     }
   }
+
+  /// Logout user and revoke JWT token
+  Future<LogoutResponse> logout({required int userId}) async {
+    try {
+      debugPrint('🔵 Sending logout request for user: $userId');
+
+      final requestData = {'uid': userId};
+
+      debugPrint('🔵 Logout Request data: $requestData');
+
+      final response = await _apiService.post(
+        '/auth/logout.php',
+        data: jsonEncode(requestData),
+      );
+
+      debugPrint('🔵 Logout API Status: ${response.statusCode}');
+      debugPrint('🔵 Logout API Response: ${response.data}');
+
+      final responseData = response.data;
+      final logoutResponse = LogoutResponse.fromJson(responseData);
+
+      debugPrint('🔵 Logout Response success: ${logoutResponse.success}');
+      debugPrint('🔵 Logout Response message: ${logoutResponse.message}');
+
+      return logoutResponse;
+    } catch (e) {
+      debugPrint('🔴 Error in logout API: $e');
+
+      // Handle specific error cases and provide user-friendly messages
+      String errorMessage = 'Failed to logout. Please try again.';
+
+      if (e.toString().contains('Bad request')) {
+        errorMessage = 'Invalid logout request. Please try again.';
+      } else if (e.toString().contains('Network')) {
+        errorMessage =
+            'Network error. Please check your connection and try again.';
+      } else if (e.toString().contains('Unauthorized')) {
+        errorMessage = 'Session expired. Please login again.';
+      }
+
+      return LogoutResponse(success: false, message: errorMessage);
+    }
+  }
 }
 
 /// Forgot password response model
@@ -511,6 +554,21 @@ class ResetPasswordResponse {
 
   factory ResetPasswordResponse.fromJson(Map<String, dynamic> json) {
     return ResetPasswordResponse(
+      success: json['status'] ?? false,
+      message: json['message'] ?? '',
+    );
+  }
+}
+
+/// Logout response model
+class LogoutResponse {
+  final bool success;
+  final String message;
+
+  LogoutResponse({required this.success, required this.message});
+
+  factory LogoutResponse.fromJson(Map<String, dynamic> json) {
+    return LogoutResponse(
       success: json['status'] ?? false,
       message: json['message'] ?? '',
     );
