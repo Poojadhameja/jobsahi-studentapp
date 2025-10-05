@@ -329,7 +329,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (response.success) {
-        emit(PasswordResetCodeSentState(email: event.email));
+        emit(
+          PasswordResetCodeSentState(
+            email: event.email,
+            userId: response.userId,
+          ),
+        );
       } else {
         emit(AuthError(message: response.message));
       }

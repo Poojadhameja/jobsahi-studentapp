@@ -30,7 +30,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
   bool _isResetting = false;
 
   /// User ID for password reset
-  int _userId = 51; // Default value, should be passed from previous screen
+  int _userId = 0; // Will be passed from previous screen
 
   @override
   void initState() {

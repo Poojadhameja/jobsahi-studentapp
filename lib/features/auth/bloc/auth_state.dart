@@ -72,11 +72,12 @@ class OtpVerificationSuccess extends AuthState {
 /// Password reset code sent state
 class PasswordResetCodeSentState extends AuthState {
   final String email;
+  final int? userId;
 
-  const PasswordResetCodeSentState({required this.email});
+  const PasswordResetCodeSentState({required this.email, this.userId});
 
   @override
-  List<Object?> get props => [email];
+  List<Object?> get props => [email, userId];
 }
 
 /// Password reset success state

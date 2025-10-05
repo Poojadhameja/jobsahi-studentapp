@@ -41,16 +41,26 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
   /// Current OTP value
   String _currentOtp = '';
 
+  /// User ID for password reset
+  int _userId = 0;
+
   @override
   void initState() {
     super.initState();
-    // Get email from GoRouter extra parameter
+    // Get email and userId from GoRouter extra parameter
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final extra = GoRouterState.of(context).extra;
-      if (extra is Map<String, dynamic> && extra['email'] != null) {
-        setState(() {
-          _email = extra['email'] as String;
-        });
+      if (extra is Map<String, dynamic>) {
+        if (extra['email'] != null) {
+          setState(() {
+            _email = extra['email'] as String;
+          });
+        }
+        if (extra['userId'] != null) {
+          setState(() {
+            _userId = extra['userId'] as int;
+          });
+        }
       }
     });
 
@@ -457,14 +467,16 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
       return;
     }
 
-    // For now, we'll use a default user ID. In a real app, this would come from the previous screen
-    // or from the forgot password response
-    const userId = 51; // This should be passed from the forgot password screen
+    // Validate that we have a valid userId
+    if (_userId == 0) {
+      _showErrorSnackBar('User ID not found. Please try again.');
+      return;
+    }
 
     // Dispatch OTP verification event to BLoC
     context.read<AuthBloc>().add(
       VerifyForgotPasswordOtpEvent(
-        userId: userId,
+        userId: _userId,
         otp: _currentOtp,
         purpose: _purpose,
       ),
