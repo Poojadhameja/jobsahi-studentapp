@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
@@ -17,6 +18,8 @@ import '../bloc/home_state.dart';
 import '../../jobs/views/application_tracker.dart';
 import '../../profile/views/profile_details.dart';
 import '../../courses/views/learning_center.dart';
+import '../../courses/bloc/courses_bloc.dart';
+import '../../courses/bloc/courses_event.dart';
 import '../../messages/views/inbox_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,11 +30,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  DateTime? _lastBackPressed;
+
   @override
   void initState() {
     super.initState();
     // Load home data when screen initializes
     context.read<HomeBloc>().add(const LoadHomeDataEvent());
+
+    // Preload courses in background for faster access
+    _preloadCourses();
+  }
+
+  /// Preload courses in background
+  void _preloadCourses() {
+    // Add a small delay to not interfere with home loading
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        context.read<CoursesBloc>().add(const LoadCoursesEvent());
+      }
+    });
   }
 
   @override
@@ -41,13 +59,14 @@ class _HomeScreenState extends State<HomeScreen> {
         final selectedIndex = state is HomeLoaded ? state.selectedTabIndex : 0;
 
         return PopScope(
-          canPop: false, // Intercept back to avoid accidental app exit
+          canPop: false, // Intercept back to handle exit confirmation
           onPopInvokedWithResult: (didPop, result) {
             if (selectedIndex != 0) {
               // If not on home tab, navigate to home tab instead of exiting
               _navigateToHomeTab();
             } else {
-              // On home tab: ignore back to prevent exiting the app
+              // On home tab: show exit confirmation
+              _handleBackPress();
             }
           },
           child: Scaffold(
@@ -67,6 +86,44 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Navigates back to home tab
   void _navigateToHomeTab() {
     context.read<HomeBloc>().add(const ChangeTabEvent(tabIndex: 0));
+  }
+
+  /// Handle back press with exit confirmation
+  void _handleBackPress() {
+    final now = DateTime.now();
+
+    if (_lastBackPressed == null ||
+        now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
+      // First back press - show exit message
+      _lastBackPressed = now;
+      _showExitMessage();
+    } else {
+      // Second back press within 2 seconds - exit app
+      _exitApp();
+    }
+  }
+
+  /// Show exit confirmation message
+  void _showExitMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text(
+          'Press back again to exit the app',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.grey.withOpacity(0.7),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  /// Exit the app
+  void _exitApp() {
+    // Use SystemNavigator to exit the app
+    SystemNavigator.pop();
   }
 
   /// Builds the appropriate app bar based on selected tab

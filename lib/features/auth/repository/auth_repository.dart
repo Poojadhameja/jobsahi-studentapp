@@ -50,6 +50,7 @@ abstract class AuthRepository {
 
   Future<bool> logout();
   Future<bool> isLoggedIn();
+  Future<bool> hasToken();
   Future<User?> getCurrentUser();
 }
 
@@ -504,6 +505,16 @@ class AuthRepositoryImpl implements AuthRepository {
       return isLoggedIn && hasToken;
     } catch (e) {
       debugPrint('Error checking login status: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> hasToken() async {
+    try {
+      return await _tokenStorage.hasToken();
+    } catch (e) {
+      debugPrint('Error checking token: $e');
       return false;
     }
   }

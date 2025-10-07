@@ -32,9 +32,12 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     Emitter<CoursesState> emit,
   ) async {
     try {
-      emit(const CoursesLoading());
+      // Only show loading if we don't have any data
+      if (state is! CoursesLoaded) {
+        emit(const CoursesLoading());
+      }
 
-      // Fetch courses from API
+      // Fetch courses from API (will use cache if available)
       final courses = await _coursesRepository.getCourses();
 
       // Convert API courses to UI format

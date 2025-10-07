@@ -15,7 +15,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => AuthBloc()..add(const SplashInitializationEvent()),
+      create: (context) => AuthBloc()..add(const CheckAuthStatusEvent()),
       child: const _SplashScreenView(),
     );
   }
@@ -28,8 +28,14 @@ class _SplashScreenView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is SplashReadyToNavigate) {
-          // Navigate to onboarding screen when ready
+        if (state is AuthSuccess) {
+          // User is already logged in, navigate to home
+          context.go(AppRoutes.home);
+        } else if (state is AuthInitial) {
+          // User is not logged in, navigate to onboarding
+          context.go(AppRoutes.onboarding);
+        } else if (state is AuthError) {
+          // Authentication check failed, navigate to onboarding
           context.go(AppRoutes.onboarding);
         }
       },

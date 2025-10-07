@@ -62,6 +62,7 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
+          // Navigate to success popup first
           context.push(AppRoutes.loginVerifiedPopup);
         }
       },

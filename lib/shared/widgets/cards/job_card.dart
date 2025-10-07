@@ -103,21 +103,24 @@ class _JobCardState extends State<JobCard> {
           ),
         ),
 
-        // Posted Date and Deadline in one row
-        Row(
+        // Posted Date and Deadline in column layout
+        Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Posted Date
-            if (job['created_at'] != null &&
-                job['created_at'].toString().isNotEmpty) ...[
-              _buildPostedDateBadge(job['created_at']),
-              const SizedBox(width: 8),
-            ],
-
-            // Deadline
+            // Deadline (top)
             if (job['application_deadline'] != null &&
                 job['application_deadline'].toString().isNotEmpty)
               _buildDeadlineBadge(job['application_deadline']),
+
+            // Posted Date (bottom)
+            if (job['created_at'] != null &&
+                job['created_at'].toString().isNotEmpty) ...[
+              if (job['application_deadline'] != null &&
+                  job['application_deadline'].toString().isNotEmpty)
+                const SizedBox(height: 4),
+              _buildPostedDateBadge(job['created_at']),
+            ],
           ],
         ),
       ],

@@ -15,19 +15,49 @@ abstract class CoursesRepository {
 class CoursesRepositoryImpl implements CoursesRepository {
   final ApiService _apiService;
 
+  // Cache for courses
+  List<Course>? _cachedCourses;
+  DateTime? _cacheTimestamp;
+  static const Duration _cacheValidity = Duration(
+    minutes: 5,
+  ); // Cache for 5 minutes
+
   CoursesRepositoryImpl({required ApiService apiService})
     : _apiService = apiService;
 
   @override
   Future<List<Course>> getCourses() async {
     try {
+      // Check if we have valid cached data
+      if (_cachedCourses != null &&
+          _cacheTimestamp != null &&
+          DateTime.now().difference(_cacheTimestamp!) < _cacheValidity) {
+        debugPrint(
+          '🔵 Returning cached courses (${_cachedCourses!.length} courses)',
+        );
+        return _cachedCourses!;
+      }
+
+      debugPrint('🔵 Fetching courses from API...');
       final response = await _apiService.getCourses();
+
       if (response.status) {
+        // Cache the courses
+        _cachedCourses = response.courses;
+        _cacheTimestamp = DateTime.now();
+        debugPrint(
+          '✅ Courses cached successfully (${_cachedCourses!.length} courses)',
+        );
         return response.courses;
       } else {
         throw Exception(response.message);
       }
     } catch (e) {
+      // If API fails but we have cached data, return cached data
+      if (_cachedCourses != null) {
+        debugPrint('🔴 API failed, returning cached courses: ${e.toString()}');
+        return _cachedCourses!;
+      }
       throw Exception('Failed to fetch courses: ${e.toString()}');
     }
   }

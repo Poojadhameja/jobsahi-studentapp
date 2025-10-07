@@ -232,8 +232,8 @@ class AppRouter {
           description:
               'Welcome back! You have successfully logged in. Let\'s continue your job search journey.',
           buttonText: 'Continue to App',
-          navigationRoute: AppRoutes.profileBuilderStep1,
-          showBackButton: true,
+          navigationRoute: AppRoutes.home,
+          showBackButton: false,
         ),
       ),
 
@@ -247,7 +247,7 @@ class AppRouter {
         path: AppRoutes.createAccountPopup,
         name: 'createAccountPopup',
         builder: (context, state) => const SuccessPopupScreen(
-          title: 'Welcome to Jobsahi!',
+          title: 'Account Created Successfully!',
           description:
               'Your account has been created successfully. You can now log in to access all features and start your job search journey.',
           buttonText: 'Continue',

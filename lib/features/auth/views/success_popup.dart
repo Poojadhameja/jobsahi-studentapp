@@ -99,7 +99,10 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
                   Icons.arrow_back,
                   color: AppConstants.textPrimaryColor,
                 ),
-                onPressed: () => context.pop(),
+                onPressed: () {
+                  // Navigate to the specified route instead of just popping
+                  context.go(widget.navigationRoute);
+                },
               ),
             )
           : null,

@@ -169,6 +169,27 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
       isSearching = state.searchQuery.isNotEmpty;
     }
 
+    // Show cached data immediately if available, even during loading
+    if (state is CoursesLoading && state is! CoursesLoaded) {
+      // Check if we have any cached courses to show
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Loading courses...',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppConstants.textSecondaryColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
         _refreshCourses(context);

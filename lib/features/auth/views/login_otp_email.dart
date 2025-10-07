@@ -16,7 +16,7 @@ class LoginOtpEmailScreen extends StatefulWidget {
 }
 
 class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
-  bool isOTPSelected = true;
+  bool isOTPSelected = false;
   bool _isPasswordVisible = false;
 
   /// 👁 for password toggle
@@ -62,19 +62,10 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           );
           context.push(AppRoutes.loginOtpCode);
         } else if (state is AuthSuccess) {
-          debugPrint(
-            "🔵 LoginScreen showing success and navigating to verified popup",
-          );
+          debugPrint("🔵 LoginScreen showing success and navigating to popup");
           debugPrint("🔵 AuthSuccess message: ${state.message}");
           debugPrint("🔵 AuthSuccess user: ${state.user}");
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              duration: const Duration(seconds: 2),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          // Navigate to success popup first
           context.push(AppRoutes.loginVerifiedPopup);
         }
       },

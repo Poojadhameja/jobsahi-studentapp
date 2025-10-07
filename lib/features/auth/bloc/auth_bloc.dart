@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../repository/auth_repository.dart';
@@ -442,24 +443,45 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      final isLoggedIn = await _authRepository.isLoggedIn();
+      // Add a small delay for better UX
+      await Future.delayed(const Duration(seconds: 1));
 
-      if (isLoggedIn) {
-        final user = await _authRepository.getCurrentUser();
+      final isLoggedIn = await _authRepository.isLoggedIn();
+      final hasToken = await _authRepository.hasToken();
+
+      if (isLoggedIn && hasToken) {
+        // Get user data from storage
+        final tokenStorage = TokenStorage.instance;
+        final userName = await tokenStorage.getUserName();
+        final userEmail = await tokenStorage.getUserEmail();
+
+        // Restore auth token in API service
+        final token = await tokenStorage.getToken();
+        if (token != null) {
+          final apiService = ApiService();
+          apiService.setAuthToken(token);
+        }
+
+        // Create user data map
+        final userData = {'name': userName ?? 'User', 'email': userEmail ?? ''};
+
         emit(
           AuthSuccess(
-            message: user != null ? 'Welcome back,!' : 'Welcome back!',
+            message: 'Welcome back, ${userName ?? 'User'}!',
+            isLoggedIn: true,
+            user: userData,
           ),
         );
       } else {
+        // Clear any invalid session data
+        if (isLoggedIn && !hasToken) {
+          await _authRepository.logout();
+        }
         emit(const AuthInitial());
       }
     } catch (e) {
-      emit(
-        AuthError(
-          message: 'Failed to check authentication status: ${e.toString()}',
-        ),
-      );
+      debugPrint('🔴 Error checking auth status: $e');
+      emit(const AuthInitial());
     }
   }
 
