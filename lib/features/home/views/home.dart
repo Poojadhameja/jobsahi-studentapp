@@ -9,6 +9,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../../core/router/app_router.dart';
 import '../../../shared/widgets/common/custom_app_bar.dart';
 import '../../../shared/widgets/common/bottom_navigation.dart';
+import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
 import '../bloc/home_bloc.dart';
@@ -226,20 +227,13 @@ class _HomePageState extends State<HomePage> {
         }
 
         if (state is HomeError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(state.message, style: const TextStyle(color: Colors.red)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<HomeBloc>().add(const LoadHomeDataEvent());
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          return NoInternetErrorWidget(
+            errorMessage: state.message,
+            onRetry: () {
+              context.read<HomeBloc>().add(const LoadHomeDataEvent());
+            },
+            showImage: true,
+            enablePullToRefresh: true,
           );
         }
 

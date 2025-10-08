@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -17,7 +18,9 @@ class ProfileDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => ProfileBloc()..add(const LoadProfileDataEvent()),
-      child: _ProfileDetailsView(isFromBottomNavigation: isFromBottomNavigation),
+      child: _ProfileDetailsView(
+        isFromBottomNavigation: isFromBottomNavigation,
+      ),
     );
   }
 }
@@ -32,17 +35,19 @@ class _ProfileDetailsView extends StatelessWidget {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state is CertificateDeletedSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         } else if (state is ProfileImageRemovedSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile image removed successfully!')),
+            const SnackBar(
+              content: Text('Profile image removed successfully!'),
+            ),
           );
         } else if (state is ProfileError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
         }
       },
       builder: (context, state) {
@@ -54,30 +59,25 @@ class _ProfileDetailsView extends StatelessWidget {
           return _buildProfileDetails(context, state);
         } else if (state is ProfileError) {
           return Scaffold(
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Error: ${state.message}'),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<ProfileBloc>().add(const LoadProfileDataEvent());
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            body: NoInternetErrorWidget(
+              errorMessage: state.message,
+              onRetry: () {
+                context.read<ProfileBloc>().add(const LoadProfileDataEvent());
+              },
+              showImage: true,
+              enablePullToRefresh: true,
             ),
           );
         }
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
 
-  Widget _buildProfileDetails(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildProfileDetails(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
 
@@ -149,7 +149,10 @@ class _ProfileDetailsView extends StatelessWidget {
 
   /// ---------------- PROFILE IMAGE SECTION ----------------
   /// Shows profile image at the center with upload functionality
-  Widget _buildProfileImageSection(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildProfileImageSection(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -170,38 +173,35 @@ class _ProfileDetailsView extends StatelessWidget {
           GestureDetector(
             onTap: () => _showProfileImageOptions(context, state),
             child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                  color: AppConstants.primaryColor,
-                      width: 3,
-                    ),
-                  ),
-                  child: ClipOval(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppConstants.primaryColor, width: 3),
+              ),
+              child: ClipOval(
                 child: state.profileImagePath != null
-                        ? Image.asset(
+                    ? Image.asset(
                         state.profileImagePath!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildDefaultProfileImage();
-                            },
-                          )
-                        : _buildDefaultProfileImage(),
-                  ),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildDefaultProfileImage();
+                        },
+                      )
+                    : _buildDefaultProfileImage(),
+              ),
             ),
           ),
 
           const SizedBox(height: AppConstants.smallPadding),
 
           // Upload/Change Text
-            Text(
+          Text(
             state.profileImagePath != null ? 'Change Photo' : 'Upload Photo',
-              style: const TextStyle(
+            style: const TextStyle(
               color: AppConstants.primaryColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
 
@@ -224,7 +224,10 @@ class _ProfileDetailsView extends StatelessWidget {
   }
 
   /// Shows options for profile image (upload/remove)
-  void _showProfileImageOptions(BuildContext context, ProfileDetailsLoaded state) {
+  void _showProfileImageOptions(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -239,27 +242,35 @@ class _ProfileDetailsView extends StatelessWidget {
                   title: const Text('Remove Photo'),
                   onTap: () {
                     Navigator.of(dialogContext).pop();
-                    context.read<ProfileBloc>().add(const RemoveProfileImageEvent());
+                    context.read<ProfileBloc>().add(
+                      const RemoveProfileImageEvent(),
+                    );
                   },
                 ),
                 const Divider(),
               ],
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppConstants.primaryColor),
+                leading: const Icon(
+                  Icons.camera_alt,
+                  color: AppConstants.primaryColor,
+                ),
                 title: const Text('Take Photo'),
                 onTap: () {
                   Navigator.of(dialogContext).pop();
                   _uploadProfileImage(context);
                 },
               ),
-                ListTile(
-                leading: const Icon(Icons.photo_library, color: AppConstants.primaryColor),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: AppConstants.primaryColor,
+                ),
                 title: const Text('Choose from Gallery'),
-                  onTap: () {
+                onTap: () {
                   Navigator.of(dialogContext).pop();
                   _uploadProfileImage(context);
-                  },
-                ),
+                },
+              ),
             ],
           ),
         );
@@ -272,14 +283,19 @@ class _ProfileDetailsView extends StatelessWidget {
     // TODO: Implement actual image picker functionality
     // For now, simulate upload with sample data
     context.read<ProfileBloc>().add(
-      const UpdateProfileImageEvent(imagePath: 'assets/images/profile/sample_profile.jpg'),
+      const UpdateProfileImageEvent(
+        imagePath: 'assets/images/profile/sample_profile.jpg',
+      ),
     );
     _showMessage(context, 'Profile image uploaded successfully!');
   }
 
   /// ---------------- PROFILE SECTION ----------------
   /// Shows user details like Email, Location, Phone, Experience
-  Widget _buildProfileSection(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildProfileSection(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     final user = state.userProfile;
     return _buildSectionCard(
       context: context,
@@ -290,9 +306,17 @@ class _ProfileDetailsView extends StatelessWidget {
       child: Column(
         children: [
           _buildInfoRow(Icons.email_outlined, 'Email', user['email'] ?? 'N/A'),
-          _buildInfoRow(Icons.location_on_outlined, 'Location', user['location'] ?? 'N/A'),
+          _buildInfoRow(
+            Icons.location_on_outlined,
+            'Location',
+            user['location'] ?? 'N/A',
+          ),
           _buildInfoRow(Icons.phone_outlined, 'Phone', user['phone'] ?? 'N/A'),
-          _buildInfoRow(Icons.work_outline, 'Experience', user['experience'] ?? '8 Year'),
+          _buildInfoRow(
+            Icons.work_outline,
+            'Experience',
+            user['experience'] ?? '8 Year',
+          ),
         ],
       ),
     );
@@ -300,7 +324,10 @@ class _ProfileDetailsView extends StatelessWidget {
 
   /// ---------------- PROFILE SUMMARY SECTION ----------------
   /// Shows a short description about the user with "Read More" option
-  Widget _buildProfileSummarySection(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildProfileSummarySection(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     final user = state.userProfile;
     final summary = user['bio'] ?? 'No summary available';
     final isLongSummary = summary.length > 100;
@@ -323,18 +350,18 @@ class _ProfileDetailsView extends StatelessWidget {
             ),
           ),
           if (isLongSummary) ...[
-          const SizedBox(height: AppConstants.smallPadding),
-          GestureDetector(
+            const SizedBox(height: AppConstants.smallPadding),
+            GestureDetector(
               onTap: () => _showFullProfileSummary(context, summary),
               child: const Text(
-              'Read More',
-              style: TextStyle(
+                'Read More',
+                style: TextStyle(
                   color: AppConstants.primaryColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
           ],
         ],
       ),
@@ -343,7 +370,10 @@ class _ProfileDetailsView extends StatelessWidget {
 
   /// ---------------- EDUCATION SECTION ----------------
   /// Displays education fields like Qualification, Institute, Course
-  Widget _buildEducationSection(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildEducationSection(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     final user = state.userProfile;
     return _buildSectionCard(
       context: context,
@@ -368,11 +398,11 @@ class _ProfileDetailsView extends StatelessWidget {
             user['course'] ?? 'Electrician',
             Icons.book_outlined,
           ),
-            _buildEducationField(
+          _buildEducationField(
             'Passing Year',
             user['passingYear'] ?? '2020',
-              Icons.calendar_today_outlined,
-            ),
+            Icons.calendar_today_outlined,
+          ),
         ],
       ),
     );
@@ -380,7 +410,10 @@ class _ProfileDetailsView extends StatelessWidget {
 
   /// ---------------- KEY SKILLS SECTION ----------------
   /// Displays list of user's skills in chip format
-  Widget _buildKeySkillsSection(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildKeySkillsSection(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     final userSkills = state.skills;
 
     return _buildSectionCard(
@@ -399,7 +432,10 @@ class _ProfileDetailsView extends StatelessWidget {
 
   /// ---------------- EXPERIENCE SECTION ----------------
   /// Displays user's work experience with company, position, and duration
-  Widget _buildExperienceSection(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildExperienceSection(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     final experiences = state.experience;
 
     return _buildSectionCard(
@@ -419,19 +455,26 @@ class _ProfileDetailsView extends StatelessWidget {
                   ),
                 ),
               ]
-            : experiences.map((exp) => _buildExperienceItem(
-                exp['company'] ?? 'N/A',
-                exp['position'] ?? 'N/A',
-                exp['startDate'] ?? 'N/A',
-                exp['endDate'],
-              )).toList(),
+            : experiences
+                  .map(
+                    (exp) => _buildExperienceItem(
+                      exp['company'] ?? 'N/A',
+                      exp['position'] ?? 'N/A',
+                      exp['startDate'] ?? 'N/A',
+                      exp['endDate'],
+                    ),
+                  )
+                  .toList(),
       ),
     );
   }
 
   /// ---------------- CERTIFICATES SECTION ----------------
   /// Displays certificates section with file upload functionality
-  Widget _buildCertificatesSection(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildCertificatesSection(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     return _buildSectionCard(
       context: context,
       state: state,
@@ -499,8 +542,12 @@ class _ProfileDetailsView extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.download, color: AppConstants.primaryColor),
-                  onPressed: () => _showMessage(context, 'Downloading resume...'),
+                  icon: const Icon(
+                    Icons.download,
+                    color: AppConstants.primaryColor,
+                  ),
+                  onPressed: () =>
+                      _showMessage(context, 'Downloading resume...'),
                 ),
               ],
             ),
@@ -526,9 +573,9 @@ class _ProfileDetailsView extends StatelessWidget {
                 SizedBox(height: AppConstants.smallPadding),
                 Text(
                   'No resume uploaded yet',
-                    style: TextStyle(
-                      color: AppConstants.textSecondaryColor,
-                      fontSize: 14,
+                  style: TextStyle(
+                    color: AppConstants.textSecondaryColor,
+                    fontSize: 14,
                   ),
                 ),
               ],
@@ -569,24 +616,22 @@ class _ProfileDetailsView extends StatelessWidget {
         children: [
           // Header with title, icon, and expand/collapse button
           InkWell(
-            onTap: () => context.read<ProfileBloc>().add(ToggleSectionEvent(section: section)),
+            onTap: () => context.read<ProfileBloc>().add(
+              ToggleSectionEvent(section: section),
+            ),
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             child: Container(
               padding: const EdgeInsets.all(AppConstants.defaultPadding),
               child: Row(
                 children: [
-                  Icon(
-                    icon,
-                    color: AppConstants.primaryColor,
-                    size: 24,
-                  ),
+                  Icon(icon, color: AppConstants.primaryColor, size: 24),
                   const SizedBox(width: AppConstants.smallPadding),
                   Expanded(
                     child: Text(
-              title,
-              style: const TextStyle(
-                color: AppConstants.textPrimaryColor,
-                fontSize: 16,
+                      title,
+                      style: const TextStyle(
+                        color: AppConstants.textPrimaryColor,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -596,14 +641,16 @@ class _ProfileDetailsView extends StatelessWidget {
                       isExpanded ? Icons.expand_less : Icons.expand_more,
                       color: AppConstants.textSecondaryColor,
                     ),
-                    onPressed: () => context.read<ProfileBloc>().add(ToggleSectionEvent(section: section)),
+                    onPressed: () => context.read<ProfileBloc>().add(
+                      ToggleSectionEvent(section: section),
+                    ),
                   ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.edit,
-                    color: AppConstants.primaryColor,
-                    size: 20,
-                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.edit,
+                      color: AppConstants.primaryColor,
+                      size: 20,
+                    ),
                     onPressed: () => _navigateToEditPage(context, title),
                   ),
                 ],
@@ -633,11 +680,7 @@ class _ProfileDetailsView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppConstants.smallPadding),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: AppConstants.textSecondaryColor,
-            size: 20,
-          ),
+          Icon(icon, color: AppConstants.textSecondaryColor, size: 20),
           const SizedBox(width: AppConstants.smallPadding),
           Expanded(
             child: Column(
@@ -672,11 +715,7 @@ class _ProfileDetailsView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppConstants.smallPadding),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: AppConstants.textSecondaryColor,
-            size: 20,
-          ),
+          Icon(icon, color: AppConstants.textSecondaryColor, size: 20),
           const SizedBox(width: AppConstants.smallPadding),
           Expanded(
             child: Column(
@@ -690,10 +729,10 @@ class _ProfileDetailsView extends StatelessWidget {
                   ),
                 ),
                 Text(
-                    placeholder,
+                  placeholder,
                   style: const TextStyle(
                     color: AppConstants.textPrimaryColor,
-                      fontSize: 14,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -745,25 +784,25 @@ class _ProfileDetailsView extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         border: Border.all(color: AppConstants.borderColor),
       ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  company,
-                  style: const TextStyle(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            company,
+            style: const TextStyle(
               color: AppConstants.textPrimaryColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  position,
-                  style: const TextStyle(
-                    color: AppConstants.textSecondaryColor,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            position,
+            style: const TextStyle(
+              color: AppConstants.textSecondaryColor,
               fontSize: 12,
-                  ),
-                ),
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             '$startDate - ${endDate ?? 'Present'}',
@@ -778,55 +817,61 @@ class _ProfileDetailsView extends StatelessWidget {
   }
 
   /// Certificate display area (read-only)
-  Widget _buildCertificateUploadArea(BuildContext context, ProfileDetailsLoaded state) {
+  Widget _buildCertificateUploadArea(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
     return Column(
       children: [
         if (state.certificates.isNotEmpty) ...[
-          ...state.certificates.map((certificate) => Container(
-            padding: const EdgeInsets.all(AppConstants.smallPadding),
-            margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
-            decoration: BoxDecoration(
-              color: AppConstants.cardBackgroundColor,
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-              border: Border.all(color: AppConstants.borderColor),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _getCertificateIcon(certificate['type']),
-                  color: _getCertificateColor(certificate['type']),
-                  size: 24,
-                ),
-                const SizedBox(width: AppConstants.smallPadding),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        certificate['name'],
-                        style: const TextStyle(
-                          color: AppConstants.textPrimaryColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        '${certificate['type']} • ${certificate['uploadDate']}',
-                        style: const TextStyle(
-                          color: AppConstants.textSecondaryColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+          ...state.certificates.map(
+            (certificate) => Container(
+              padding: const EdgeInsets.all(AppConstants.smallPadding),
+              margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.cardBackgroundColor,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                border: Border.all(color: AppConstants.borderColor),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _getCertificateIcon(certificate['type']),
+                    color: _getCertificateColor(certificate['type']),
+                    size: 24,
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                  onPressed: () => _showDeleteCertificateDialog(context, certificate),
-                ),
-              ],
+                  const SizedBox(width: AppConstants.smallPadding),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          certificate['name'],
+                          style: const TextStyle(
+                            color: AppConstants.textPrimaryColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          '${certificate['type']} • ${certificate['uploadDate']}',
+                          style: const TextStyle(
+                            color: AppConstants.textSecondaryColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                    onPressed: () =>
+                        _showDeleteCertificateDialog(context, certificate),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
         ] else ...[
           Container(
             padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -919,13 +964,18 @@ class _ProfileDetailsView extends StatelessWidget {
   }
 
   /// Show delete certificate confirmation dialog
-  void _showDeleteCertificateDialog(BuildContext context, Map<String, dynamic> certificate) {
+  void _showDeleteCertificateDialog(
+    BuildContext context,
+    Map<String, dynamic> certificate,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Delete Certificate'),
-          content: Text('Are you sure you want to delete "${certificate['name']}"?'),
+          content: Text(
+            'Are you sure you want to delete "${certificate['name']}"?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -934,7 +984,9 @@ class _ProfileDetailsView extends StatelessWidget {
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                context.read<ProfileBloc>().add(DeleteCertificateEvent(certificate: certificate));
+                context.read<ProfileBloc>().add(
+                  DeleteCertificateEvent(certificate: certificate),
+                );
               },
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
@@ -974,8 +1026,8 @@ class _ProfileDetailsView extends StatelessWidget {
 
   /// Show message to user
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

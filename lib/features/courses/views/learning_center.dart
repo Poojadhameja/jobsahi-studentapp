@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/cards/course_card.dart';
+import '../../../shared/widgets/common/no_internet_widget.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
@@ -167,6 +168,18 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
     bool isSearching = false;
     if (state is CoursesLoaded) {
       isSearching = state.searchQuery.isNotEmpty;
+    }
+
+    // Handle error state
+    if (state is CoursesError) {
+      return NoInternetErrorWidget(
+        errorMessage: state.message,
+        onRetry: () {
+          context.read<CoursesBloc>().add(LoadCoursesEvent());
+        },
+        showImage: true,
+        enablePullToRefresh: true,
+      );
     }
 
     // Show cached data immediately if available, even during loading

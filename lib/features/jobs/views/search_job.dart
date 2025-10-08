@@ -5,6 +5,7 @@ import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/job_data.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
 import '../bloc/jobs_bloc.dart';
@@ -214,20 +215,13 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
         }
 
         if (state is JobsError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(state.message, style: const TextStyle(color: Colors.red)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    context.read<JobsBloc>().add(const LoadJobsEvent());
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          return NoInternetErrorWidget(
+            errorMessage: state.message,
+            onRetry: () {
+              context.read<JobsBloc>().add(const LoadJobsEvent());
+            },
+            showImage: true,
+            enablePullToRefresh: true,
           );
         }
 

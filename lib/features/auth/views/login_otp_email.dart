@@ -26,6 +26,10 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  // Form keys for validation
+  final _otpFormKey = GlobalKey<FormState>();
+  final _emailFormKey = GlobalKey<FormState>();
+
   @override
   void dispose() {
     _mobileController.dispose();
@@ -215,272 +219,337 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
 
   /// OTP login form
   Widget _buildOTPLogin() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: const TextSpan(
-            text: 'Phone Number',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppConstants.textPrimaryColor,
-            ),
-            children: [
-              TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red),
+    return Form(
+      key: _otpFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RichText(
+            text: const TextSpan(
+              text: 'Phone Number',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppConstants.textPrimaryColor,
               ),
+              children: [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _mobileController,
+            decoration: InputDecoration(
+              hintText: "मोबाइल नंबर",
+              hintStyle: const TextStyle(color: Colors.grey),
+              filled: true,
+              fillColor: const Color(0xFFE7EDF4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 16,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
+              ),
+              prefixIcon: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '+91',
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 0,
+              ),
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(10),
+              FilteringTextInputFormatter.digitsOnly,
             ],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter mobile number';
+              }
+              if (value.length != 10) {
+                return 'Mobile number must be 10 digits';
+              }
+              return null;
+            },
           ),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _mobileController,
-          decoration: InputDecoration(
-            hintText: "मोबाइल नंबर",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: const Color(0xFFE7EDF4),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                '+91',
-                style: TextStyle(color: Colors.black, fontSize: 16),
-              ),
-            ),
-            prefixIconConstraints: const BoxConstraints(
-              minWidth: 0,
-              minHeight: 0,
-            ),
-          ),
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            LengthLimitingTextInputFormatter(10),
-            FilteringTextInputFormatter.digitsOnly,
-          ],
-        ),
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-        /// Send OTP
-        BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            return SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: state is AuthLoading
-                    ? null
-                    : () {
-                        context.read<AuthBloc>().add(
-                          LoginWithOtpEvent(
-                            phoneNumber: _mobileController.text,
-                          ),
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5C9A24),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.borderRadius,
+          /// Send OTP
+          BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: state is AuthLoading
+                      ? null
+                      : () {
+                          if (_otpFormKey.currentState!.validate()) {
+                            context.read<AuthBloc>().add(
+                              LoginWithOtpEvent(
+                                phoneNumber: _mobileController.text,
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF5C9A24),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
                     ),
                   ),
-                ),
-                child: state is AuthLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                  child: state is AuthLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          "Send OTP",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      )
-                    : const Text(
-                        "Send OTP",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            );
-          },
-        ),
-      ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
   /// Email login form
   Widget _buildEmailLogin() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Email field
-        Align(
-          alignment: Alignment.centerLeft,
-          child: RichText(
-            text: const TextSpan(
-              text: 'Email Address',
-              style: TextStyle(fontSize: 14, color: Color(0xFF144B75)),
-              children: [
-                TextSpan(
-                  text: ' *',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _emailController,
-          decoration: InputDecoration(
-            hintText: "ईमेल पता",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: Color(0xFFF1F5F9),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 16,
-            ),
-          ),
-          keyboardType: TextInputType.emailAddress,
-        ),
-
-        const SizedBox(height: 20),
-
-        // Password field
-        Align(
-          alignment: Alignment.centerLeft,
-          child: RichText(
-            text: const TextSpan(
-              text: 'Password',
-              style: TextStyle(fontSize: 14, color: Color(0xFF144B75)),
-              children: [
-                TextSpan(
-                  text: ' *',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _passwordController,
-          obscureText: !_isPasswordVisible,
-          decoration: InputDecoration(
-            hintText: "पासवर्ड",
-            hintStyle: const TextStyle(color: Colors.grey),
-            filled: true,
-            fillColor: const Color(0xFFF1F5F9),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 16,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                color: Color(0xFF0B537D),
+    return Form(
+      key: _emailFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Email field
+          Align(
+            alignment: Alignment.centerLeft,
+            child: RichText(
+              text: const TextSpan(
+                text: 'Email Address',
+                style: TextStyle(fontSize: 14, color: Color(0xFF144B75)),
+                children: [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ],
               ),
-              onPressed: () {
-                setState(() {
-                  _isPasswordVisible = !_isPasswordVisible;
-                });
-              },
             ),
           ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Forgot Password
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: () {
-              context.go(AppRoutes.forgotPassword);
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _emailController,
+            decoration: InputDecoration(
+              hintText: "ईमेल पता",
+              hintStyle: const TextStyle(color: Colors.grey),
+              filled: true,
+              fillColor: const Color(0xFFF1F5F9),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 16,
+              ),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter email address';
+              }
+              // Email validation regex
+              final emailRegex = RegExp(
+                r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+              );
+              if (!emailRegex.hasMatch(value)) {
+                return 'Please enter a valid email address';
+              }
+              return null;
             },
-            child: const Text(
-              "Forgot Password?",
-              style: TextStyle(color: Color(0xFF144B75)),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Password field
+          Align(
+            alignment: Alignment.centerLeft,
+            child: RichText(
+              text: const TextSpan(
+                text: 'Password',
+                style: TextStyle(fontSize: 14, color: Color(0xFF144B75)),
+                children: [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _passwordController,
+            obscureText: !_isPasswordVisible,
+            decoration: InputDecoration(
+              hintText: "पासवर्ड",
+              hintStyle: const TextStyle(color: Colors.grey),
+              filled: true,
+              fillColor: const Color(0xFFF1F5F9),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 16,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: const Color(0xFF0B537D),
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter password';
+              }
+              if (value.length < 6) {
+                return 'Password must be at least 6 characters';
+              }
+              return null;
+            },
+          ),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+          const SizedBox(height: 12),
 
-        // Sign In Button
-        BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            return Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: state is AuthLoading
-                        ? null
-                        : () {
-                            context.read<AuthBloc>().add(
-                              LoginWithEmailEvent(
-                                email: _emailController.text,
-                                password: _passwordController.text,
-                              ),
-                            );
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.secondaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
+          // Forgot Password
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () {
+                context.go(AppRoutes.forgotPassword);
+              },
+              child: const Text(
+                "Forgot Password?",
+                style: TextStyle(color: Color(0xFF144B75)),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: AppConstants.defaultPadding),
+
+          // Sign In Button
+          BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              return Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: state is AuthLoading
+                          ? null
+                          : () {
+                              if (_emailFormKey.currentState!.validate()) {
+                                context.read<AuthBloc>().add(
+                                  LoginWithEmailEvent(
+                                    email: _emailController.text,
+                                    password: _passwordController.text,
+                                  ),
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.secondaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
                         ),
                       ),
-                    ),
-                    child: state is AuthLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                      child: state is AuthLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              AppConstants.loginText,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          )
-                        : const Text(
-                            AppConstants.loginText,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 

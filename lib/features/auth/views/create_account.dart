@@ -447,6 +447,14 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 18,
               vertical: 16,
