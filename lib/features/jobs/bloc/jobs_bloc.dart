@@ -526,6 +526,23 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
 
       debugPrint('🔵 Loading detailed job information for ID: ${event.jobId}');
 
+      // Check if user is authenticated
+      final isLoggedIn = await _jobsRepository
+          .getJobs()
+          .then((_) => true)
+          .catchError((error) {
+            final errorMsg = error.toString();
+            return !errorMsg.contains('User must be logged in');
+          });
+
+      if (!isLoggedIn) {
+        debugPrint('🔴 User not authenticated, cannot fetch job details');
+        emit(
+          const JobsError(message: 'कृपया जॉब विवरण देखने के लिए लॉग इन करें'),
+        );
+        return;
+      }
+
       // Fetch detailed job information from API
       final jobDetailResponse = await _jobsRepository.getJobDetails(
         event.jobId,
@@ -546,6 +563,10 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           event.jobId.toString(),
         );
 
+        debugPrint('🔵 Detailed job information loaded successfully');
+        debugPrint('🔵 Job Title: ${jobInfoMap['title']}');
+        debugPrint('🔵 Company: ${companyInfoMap['company_name']}');
+
         emit(
           DetailedJobLoaded(
             jobInfo: jobInfoMap,
@@ -554,20 +575,34 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             isBookmarked: isBookmarked,
           ),
         );
-
-        debugPrint('🔵 Detailed job information loaded successfully');
       } else {
-        emit(
-          JobsError(
-            message: jobDetailResponse.message.isNotEmpty
-                ? jobDetailResponse.message
-                : 'Failed to load job details',
-          ),
-        );
+        final errorMessage = jobDetailResponse.message.isNotEmpty
+            ? jobDetailResponse.message
+            : 'जॉब विवरण लोड करने में विफल';
+
+        debugPrint('🔴 API returned error: $errorMessage');
+        emit(JobsError(message: errorMessage));
       }
     } catch (e) {
       debugPrint('🔴 Error loading detailed job information: $e');
-      emit(JobsError(message: 'Failed to load job details: ${e.toString()}'));
+
+      // Provide user-friendly error messages
+      String errorMessage = 'जॉब विवरण लोड करने में त्रुटि';
+
+      if (e.toString().contains('User must be logged in')) {
+        errorMessage = 'कृपया जॉब विवरण देखने के लिए लॉग इन करें';
+      } else if (e.toString().contains('Connection timeout') ||
+          e.toString().contains('No internet connection')) {
+        errorMessage = 'इंटरनेट कनेक्शन की जांच करें';
+      } else if (e.toString().contains('404') ||
+          e.toString().contains('Not found')) {
+        errorMessage = 'जॉब नहीं मिली';
+      } else if (e.toString().contains('500') ||
+          e.toString().contains('Internal server error')) {
+        errorMessage = 'सर्वर में समस्या है, कृपया बाद में प्रयास करें';
+      }
+
+      emit(JobsError(message: errorMessage));
     }
   }
 

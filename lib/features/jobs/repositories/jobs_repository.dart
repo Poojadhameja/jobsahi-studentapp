@@ -151,34 +151,54 @@ class JobsRepositoryImpl implements JobsRepository {
   @override
   Future<JobDetailResponse> getJobDetails(int id) async {
     try {
-      debugPrint('🔵 Fetching detailed job information for ID: $id');
+      debugPrint(
+        '🔵 [Repository] Fetching detailed job information for ID: $id',
+      );
 
       // Check if user is authenticated
       final isLoggedIn = await _apiService.isLoggedIn();
       if (!isLoggedIn) {
-        debugPrint('🔴 User not authenticated, cannot fetch job details');
+        debugPrint('🔴 [Repository] User not authenticated');
         throw Exception('User must be logged in to view job details');
       }
 
+      debugPrint('🔵 [Repository] User authenticated, calling API service');
+
       final responseData = await _apiService.getJobDetails(id);
 
-      debugPrint('🔵 Job Details API Response Data: $responseData');
+      debugPrint('🔵 [Repository] API Response received');
+      debugPrint('🔵 [Repository] Response keys: ${responseData.keys}');
 
+      // Parse the response
       final jobDetailResponse = JobDetailResponse.fromJson(responseData);
 
+      debugPrint(
+        '🔵 [Repository] Response parsed, status: ${jobDetailResponse.status}',
+      );
+
       if (!jobDetailResponse.status) {
-        debugPrint('🔴 Job details API returned false status');
-        throw Exception(
-          jobDetailResponse.message.isNotEmpty
-              ? jobDetailResponse.message
-              : 'Failed to fetch job details',
-        );
+        debugPrint('🔴 [Repository] Job details API returned false status');
+        final errorMessage = jobDetailResponse.message.isNotEmpty
+            ? jobDetailResponse.message
+            : 'Failed to fetch job details';
+        debugPrint('🔴 [Repository] Error message: $errorMessage');
+        throw Exception(errorMessage);
       }
 
-      debugPrint('🔵 Job details fetched successfully for ID: $id');
+      debugPrint(
+        '🔵 [Repository] Job details fetched successfully for ID: $id',
+      );
+      debugPrint(
+        '🔵 [Repository] Job title: ${jobDetailResponse.data.jobInfo.title}',
+      );
+      debugPrint(
+        '🔵 [Repository] Company: ${jobDetailResponse.data.companyInfo.companyName}',
+      );
+
       return jobDetailResponse;
     } catch (e) {
-      debugPrint('🔴 Error fetching job details for ID $id: $e');
+      debugPrint('🔴 [Repository] Error fetching job details for ID $id: $e');
+      debugPrint('🔴 [Repository] Error type: ${e.runtimeType}');
       rethrow;
     }
   }

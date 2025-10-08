@@ -36,14 +36,40 @@ class JobDetailsScreen extends StatelessWidget {
             ..add(LoadJobDetailsEvent(jobId: job['id'] ?? ''));
         }
       },
-      child: BlocBuilder<JobsBloc, JobsState>(
+      child: BlocConsumer<JobsBloc, JobsState>(
+        listener: (context, state) {
+          // Show snackbar on error but keep showing basic job info
+          if (state is JobsError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+                action: SnackBarAction(
+                  label: 'पुनः प्रयास करें',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    final jobId = int.tryParse(job['id']?.toString() ?? '');
+                    if (jobId != null) {
+                      context.read<JobsBloc>().add(
+                        LoadDetailedJobEvent(jobId: jobId),
+                      );
+                    }
+                  },
+                ),
+              ),
+            );
+          }
+        },
         builder: (context, state) {
           Map<String, dynamic> currentJob = job;
           bool isBookmarked = false;
           Map<String, dynamic>? companyInfo;
           Map<String, dynamic>? statistics;
+          bool isLoading = false;
 
-          if (state is DetailedJobLoaded) {
+          if (state is JobsLoading) {
+            isLoading = true;
+          } else if (state is DetailedJobLoaded) {
             // Use new detailed job information
             currentJob = state.jobInfo;
             companyInfo = state.companyInfo;
@@ -62,31 +88,61 @@ class JobDetailsScreen extends StatelessWidget {
               showBackButton: true,
             ),
             bottomNavigationBar: _buildApplyButton(context),
-            body: DefaultTabController(
-              length: 3,
-              child: Column(
-                children: [
-                  // Job header section
-                  _buildJobHeader(
-                    context,
-                    currentJob,
-                    isBookmarked,
-                    companyInfo,
+            body: Stack(
+              children: [
+                DefaultTabController(
+                  length: 3,
+                  child: Column(
+                    children: [
+                      // Job header section
+                      _buildJobHeader(
+                        context,
+                        currentJob,
+                        isBookmarked,
+                        companyInfo,
+                      ),
+
+                      // Tab bar
+                      _buildTabBar(),
+
+                      // Tab content
+                      Expanded(
+                        child: _buildTabContent(
+                          currentJob,
+                          companyInfo,
+                          statistics,
+                        ),
+                      ),
+                    ],
                   ),
-
-                  // Tab bar
-                  _buildTabBar(),
-
-                  // Tab content
-                  Expanded(
-                    child: _buildTabContent(
-                      currentJob,
-                      companyInfo,
-                      statistics,
+                ),
+                // Loading overlay
+                if (isLoading)
+                  Container(
+                    color: Colors.black.withOpacity(0.3),
+                    child: const Center(
+                      child: Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text(
+                                'जॉब विवरण लोड हो रहा है...',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           );
         },

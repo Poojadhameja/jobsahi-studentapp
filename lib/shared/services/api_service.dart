@@ -417,22 +417,28 @@ extension JobsApi on ApiService {
   /// Requires authentication token (Bearer token)
   Future<Map<String, dynamic>> getJobDetails(int jobId) async {
     try {
-      debugPrint('🔵 Fetching job details for ID: $jobId');
+      debugPrint('🔵 [JobDetails] Fetching job details for ID: $jobId');
 
       // Check if user is authenticated
       final userLoggedIn = await isLoggedIn();
       if (!userLoggedIn) {
-        debugPrint('🔴 User not authenticated, cannot fetch job details');
+        debugPrint('🔴 [JobDetails] User not authenticated');
         throw Exception('User must be logged in to view job details');
       }
+
+      debugPrint('🔵 [JobDetails] User authenticated, making API call');
+      debugPrint('🔵 [JobDetails] Endpoint: /jobs/job-detail.php?id=$jobId');
 
       final response = await get(
         '/jobs/job-detail.php',
         queryParameters: {'id': jobId.toString()},
       );
 
-      debugPrint('🔵 Job Details API Response Status: ${response.statusCode}');
-      debugPrint('🔵 Job Details API Response Data: ${response.data}');
+      debugPrint('🔵 [JobDetails] API Response Status: ${response.statusCode}');
+      debugPrint('🔵 [JobDetails] API Response Headers: ${response.headers}');
+      debugPrint(
+        '🔵 [JobDetails] API Response Data Type: ${response.data.runtimeType}',
+      );
 
       if (response.statusCode == 200) {
         final responseData = response.data;
@@ -441,37 +447,69 @@ extension JobsApi on ApiService {
         Map<String, dynamic> jsonData;
         if (responseData is Map<String, dynamic>) {
           jsonData = responseData;
+          debugPrint('🔵 [JobDetails] Response is already a Map');
         } else if (responseData is String) {
+          debugPrint('🔵 [JobDetails] Response is String, parsing JSON');
           try {
             jsonData = jsonDecode(responseData) as Map<String, dynamic>;
+            debugPrint('🔵 [JobDetails] JSON parsed successfully');
           } catch (e) {
-            debugPrint('🔴 Failed to parse JSON string: $e');
+            debugPrint('🔴 [JobDetails] Failed to parse JSON string: $e');
+            debugPrint('🔴 [JobDetails] Raw response: $responseData');
             throw Exception('Invalid response format');
           }
         } else {
           debugPrint(
-            '🔴 Unexpected response data type: ${responseData.runtimeType}',
+            '🔴 [JobDetails] Unexpected response data type: ${responseData.runtimeType}',
           );
           throw Exception('Unexpected response format');
         }
 
         // Validate response structure
-        if (!jsonData.containsKey('status') || !jsonData.containsKey('data')) {
-          debugPrint('🔴 Invalid response structure: missing required fields');
-          throw Exception('Invalid response structure');
+        if (!jsonData.containsKey('status')) {
+          debugPrint(
+            '🔴 [JobDetails] Invalid response structure: missing "status" field',
+          );
+          debugPrint('🔴 [JobDetails] Available keys: ${jsonData.keys}');
+          throw Exception('Invalid response structure: missing status field');
         }
 
-        debugPrint('🔵 Job details fetched successfully');
+        if (!jsonData.containsKey('data')) {
+          debugPrint(
+            '🔴 [JobDetails] Invalid response structure: missing "data" field',
+          );
+          debugPrint('🔴 [JobDetails] Available keys: ${jsonData.keys}');
+          throw Exception('Invalid response structure: missing data field');
+        }
+
+        // Check if status is true
+        final status = jsonData['status'];
+        if (status == false || status == 'false') {
+          final message = jsonData['message'] ?? 'Unknown error';
+          debugPrint('🔴 [JobDetails] API returned error: $message');
+          throw Exception(message);
+        }
+
+        debugPrint('🔵 [JobDetails] Job details fetched successfully');
+        debugPrint('🔵 [JobDetails] Response structure validated');
         return jsonData;
       } else {
         debugPrint(
-          '🔴 Job Details API failed with status: ${response.statusCode}',
+          '🔴 [JobDetails] API failed with status: ${response.statusCode}',
         );
+        debugPrint('🔴 [JobDetails] Response data: ${response.data}');
         throw Exception('Failed to fetch job details: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('🔴 Error fetching job details: $e');
-      rethrow;
+      debugPrint('🔴 [JobDetails] Error fetching job details: $e');
+      debugPrint('🔴 [JobDetails] Error type: ${e.runtimeType}');
+
+      // Rethrow with more context if it's not already an Exception
+      if (e is Exception) {
+        rethrow;
+      } else {
+        throw Exception('Unexpected error: ${e.toString()}');
+      }
     }
   }
 }
