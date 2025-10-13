@@ -215,7 +215,11 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.loginOtpEmail,
         name: 'loginOtpEmail',
-        builder: (context, state) => const LoginOtpEmailScreen(),
+        builder: (context, state) {
+          // Check if user came from splash (returning user) or onboarding (new user)
+          final fromSplash = state.uri.queryParameters['fromSplash'] == 'true';
+          return LoginOtpEmailScreen(showBackButton: !fromSplash);
+        },
       ),
 
       GoRoute(
@@ -233,7 +237,6 @@ class AppRouter {
               'Welcome back! You have successfully logged in. Let\'s continue your job search journey.',
           buttonText: 'Continue to App',
           navigationRoute: AppRoutes.home,
-          showBackButton: false,
         ),
       ),
 
@@ -252,7 +255,6 @@ class AppRouter {
               'Your account has been created successfully. You can now log in to access all features and start your job search journey.',
           buttonText: 'Continue',
           navigationRoute: AppRoutes.loginOtpEmail,
-          showBackButton: true,
         ),
       ),
 

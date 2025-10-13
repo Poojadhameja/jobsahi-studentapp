@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/router/app_router.dart';
 import 'core/di/injection_container.dart';
+import 'core/services/onboarding_service.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/home/bloc/home_bloc.dart';
 import 'features/jobs/bloc/jobs_bloc.dart';
@@ -23,6 +24,9 @@ void main() async {
   // Initialize API service with token restoration
   final apiService = sl<ApiService>();
   await apiService.initialize();
+
+  // Initialize onboarding service for optimized performance
+  await OnboardingService.instance.initialize();
 
   runApp(const MyApp());
 }
@@ -61,7 +65,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
 
         // The title of the app (shown in task switcher on mobile)
-        title: 'Job Sahi',
+        title: 'Jobsahi',
 
         // Use GoRouter for modern navigation with deep linking support
         // This provides better URL handling, deep linking, and navigation state management

@@ -9,15 +9,21 @@ import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
 class LoginOtpEmailScreen extends StatefulWidget {
-  const LoginOtpEmailScreen({super.key});
+  final bool showBackButton;
+
+  const LoginOtpEmailScreen({
+    super.key,
+    this.showBackButton = true, // Default true for backward compatibility
+  });
 
   @override
   State<LoginOtpEmailScreen> createState() => _LoginOtpEmailScreenState();
 }
 
 class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
-  bool isOTPSelected = false;
+  bool isOTPSelected = false; // false = Email selected, true = Phone selected
   bool _isPasswordVisible = false;
+  bool _isSubmitting = false; // Track submission state locally
 
   /// 👁 for password toggle
 
@@ -44,8 +50,17 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
       listener: (context, state) {
         debugPrint("🔵 LoginScreen received state: ${state.runtimeType}");
 
-        if (state is AuthError) {
+        if (state is AuthLoading) {
+          // Set submitting state when loading starts
+          setState(() {
+            _isSubmitting = true;
+          });
+        } else if (state is AuthError) {
           debugPrint("🔵 LoginScreen showing error: ${state.message}");
+          // Reset submitting state on error
+          setState(() {
+            _isSubmitting = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -64,137 +79,175 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
+          // Keep submitting state true until navigation completes
           context.push(AppRoutes.loginOtpCode);
         } else if (state is AuthSuccess) {
           debugPrint("🔵 LoginScreen showing success and navigating to popup");
           debugPrint("🔵 AuthSuccess message: ${state.message}");
           debugPrint("🔵 AuthSuccess user: ${state.user}");
-          // Navigate to success popup first
+          // Keep submitting state true until navigation completes
           context.push(AppRoutes.loginVerifiedPopup);
         }
       },
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.largePadding,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 2),
+          child: Column(
+            children: [
+              // Sticky header section
+              Builder(
+                builder: (context) {
+                  // Check if back button should be shown
+                  final shouldShowBackButton =
+                      widget.showBackButton && context.canPop();
 
-                /// Back button
-                IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: AppConstants.textPrimaryColor,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.largePadding,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// Back button (conditionally shown)
+                        if (shouldShowBackButton) ...[
+                          const SizedBox(height: 2),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: AppConstants.textPrimaryColor,
+                            ),
+                            onPressed: () {
+                              context.pop();
+                            },
+                          ),
+                          const SizedBox(height: 4),
+                        ] else
+                          const SizedBox(height: 50),
+
+                        /// Profile avatar & title
+                        Center(
+                          child: Column(
+                            children: [
+                              const CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Color(0xFFE0E7EF),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 45,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                "Sign in with",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        /// Email / Phone toggle
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildToggleButton("Email", !isOTPSelected, () {
+                              setState(() => isOTPSelected = false);
+                            }),
+                            _buildToggleButton("Phone", isOTPSelected, () {
+                              setState(() => isOTPSelected = true);
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        /// Hindi welcome text
+                        const Center(
+                          child: Text(
+                            "अपने सपनों की नौकरी तक पहुंचने के लिए लॉग इन करें",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF4F789B),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              // Scrollable content section
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.largePadding,
                   ),
-                  onPressed: () {
-                    context.pop();
-                  },
-                ),
-                const SizedBox(height: 4),
-
-                /// Profile avatar & title
-                Center(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Color(0xFFE0E7EF),
-                        child: Icon(
-                          Icons.person,
-                          size: 45,
-                          color: AppConstants.textPrimaryColor,
-                        ),
+                      const SizedBox(height: 8),
+
+                      /// Login input section
+                      isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
+
+                      const SizedBox(height: 24),
+
+                      /// Or divider
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Divider(color: Color(0xFF58B248)),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: const Text(
+                              "Or Login with",
+                              style: TextStyle(
+                                color: Color(0xFF58B248),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const Expanded(
+                            child: Divider(color: Color(0xFF58B248)),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "Sign In With",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppConstants.textPrimaryColor,
-                        ),
-                      ),
+                      const SizedBox(height: 20),
+
+                      /// Social login buttons
+                      _buildSocialLoginButtons(),
+
+                      const SizedBox(height: 24),
+
+                      /// Create account link
+                      _buildCreateAccountLink(),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                /// OTP / Mail toggle
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildToggleButton("OTP", isOTPSelected, () {
-                      setState(() => isOTPSelected = true);
-                    }),
-                    _buildToggleButton("MAIL", !isOTPSelected, () {
-                      setState(() => isOTPSelected = false);
-                    }),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                /// Hindi welcome text
-                const Center(
-                  child: Text(
-                    "स्वागत है! आपने लॉग इन नहीं किया कुछ समय से",
-                    style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                /// Login input section
-                isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
-
-                const SizedBox(height: 24),
-
-                /// Or divider
-                Row(
-                  children: [
-                    const Expanded(child: Divider(color: Color(0xFF58B248))),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        "Or Login with",
-                        style: const TextStyle(
-                          color: Color(0xFF58B248),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const Expanded(child: Divider(color: Color(0xFF58B248))),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                /// Social login buttons
-                _buildSocialLoginButtons(),
-
-                const SizedBox(height: 24),
-
-                /// Create account link
-                _buildCreateAccountLink(),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  /// OTP / MAIL toggle button
+  /// Email / Phone toggle button
   Widget _buildToggleButton(String text, bool active, VoidCallback onPressed) {
     return Container(
       decoration: BoxDecoration(
         color: active ? AppConstants.textPrimaryColor : Colors.white,
-        borderRadius: text == "OTP"
+        borderRadius: text == "Email"
             ? const BorderRadius.only(
                 topLeft: Radius.circular(6),
                 bottomLeft: Radius.circular(6),
@@ -293,53 +346,48 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           const SizedBox(height: 20),
 
           /// Send OTP
-          BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              return SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: state is AuthLoading
-                      ? null
-                      : () {
-                          if (_otpFormKey.currentState!.validate()) {
-                            context.read<AuthBloc>().add(
-                              LoginWithOtpEvent(
-                                phoneNumber: _mobileController.text,
-                              ),
-                            );
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5C9A24),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.borderRadius,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                      if (_otpFormKey.currentState!.validate()) {
+                        context.read<AuthBloc>().add(
+                          LoginWithOtpEvent(
+                            phoneNumber: _mobileController.text,
+                          ),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5C9A24),
+                disabledBackgroundColor: const Color(0xFF5C9A24),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
+                ),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      "Send OTP",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  child: state is AuthLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Text(
-                          "Send OTP",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              );
-            },
+            ),
           ),
         ],
       ),
@@ -410,7 +458,7 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
             },
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
 
           // Password field
           Align(
@@ -476,18 +524,22 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
             },
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
 
           // Forgot Password
           Align(
             alignment: Alignment.centerRight,
-            child: GestureDetector(
+            child: InkWell(
               onTap: () {
                 context.go(AppRoutes.forgotPassword);
               },
-              child: const Text(
-                "Forgot Password?",
-                style: TextStyle(color: Color(0xFF144B75)),
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: const Text(
+                  "Forgot Password?",
+                  style: TextStyle(color: Color(0xFF144B75)),
+                ),
               ),
             ),
           ),
@@ -495,58 +547,49 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           const SizedBox(height: AppConstants.defaultPadding),
 
           // Sign In Button
-          BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              return Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: state is AuthLoading
-                          ? null
-                          : () {
-                              if (_emailFormKey.currentState!.validate()) {
-                                context.read<AuthBloc>().add(
-                                  LoginWithEmailEvent(
-                                    email: _emailController.text,
-                                    password: _passwordController.text,
-                                  ),
-                                );
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppConstants.secondaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                      if (_emailFormKey.currentState!.validate()) {
+                        context.read<AuthBloc>().add(
+                          LoginWithEmailEvent(
+                            email: _emailController.text,
+                            password: _passwordController.text,
                           ),
-                        ),
-                      ),
-                      child: state is AuthLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Text(
-                              AppConstants.loginText,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.secondaryColor,
+                disabledBackgroundColor: AppConstants.secondaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
                   ),
-                ],
-              );
-            },
+                ),
+              ),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      AppConstants.loginText,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
           ),
         ],
       ),
@@ -584,15 +627,19 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text("Not a member? "),
-        GestureDetector(
+        InkWell(
           onTap: () {
             context.go(AppRoutes.createAccount);
           },
-          child: const Text(
-            "Create an account",
-            style: TextStyle(
-              color: Color(0xFF58B248),
-              fontWeight: FontWeight.bold,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: const Text(
+              "Create an account",
+              style: TextStyle(
+                color: Color(0xFF58B248),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),

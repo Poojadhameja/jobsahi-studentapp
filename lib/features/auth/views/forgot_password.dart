@@ -31,8 +31,18 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
 
+  /// Local state for submission tracking
+  bool _isSubmitting = false;
+
   /// Email controller
   final _emailController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Reset submitting state when screen initializes
+    _isSubmitting = false;
+  }
 
   @override
   void dispose() {
@@ -45,111 +55,123 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthLoading) {
-          // Show loading state
-          context.read<AuthBloc>().add(
-            const SetForgotPasswordSendingEvent(isSending: true),
-          );
-        } else if (state is PasswordResetCodeSentState) {
-          // Reset sending state and show success
-          context.read<AuthBloc>().add(
-            const SetForgotPasswordSendingEvent(isSending: false),
-          );
-          _showSuccessSnackBar(context, 'Verification code sent to your email');
-          Future.delayed(const Duration(seconds: 1), () {
-            if (context.mounted) {
-              // Pass email and userId to the OTP verification screen
-              context.push(
-                AppRoutes.setPasswordCode,
-                extra: {'email': state.email, 'userId': state.userId},
-              );
-            }
+          // Set submitting state
+          setState(() {
+            _isSubmitting = true;
           });
-        } else if (state is AuthError) {
-          // Reset sending state and show error
-          context.read<AuthBloc>().add(
-            const SetForgotPasswordSendingEvent(isSending: false),
+        } else if (state is PasswordResetCodeSentState) {
+          // Navigate immediately without any delay or snackbar
+          context.push(
+            AppRoutes.setPasswordCode,
+            extra: {'email': state.email, 'userId': state.userId},
           );
+        } else if (state is AuthError) {
+          // Reset submitting state and show error
+          setState(() {
+            _isSubmitting = false;
+          });
           _showErrorSnackBar(context, state.message);
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
-          bool isSending = false;
-
-          if (state is ForgotPasswordFormState) {
-            isSending = state.isSending;
+          // Reset submitting state if not in loading and submitting is true
+          // This handles the case when user comes back from OTP screen
+          if (_isSubmitting && state is! AuthLoading) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _isSubmitting = false;
+                });
+              }
+            });
           }
 
-          return Scaffold(
-            backgroundColor: Colors.white,
-            body: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.largePadding,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 2),
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              // Always go to login when back is pressed
+              context.go(AppRoutes.loginOtpEmail);
+            },
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.largePadding,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 2),
 
-                    /// Back button
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: AppConstants.textPrimaryColor,
+                      /// Back button
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: AppConstants.textPrimaryColor,
+                        ),
+                        onPressed: () {
+                          // Check if can pop, otherwise go to login
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(AppRoutes.loginOtpEmail);
+                          }
+                        },
                       ),
-                      onPressed: () => context.pop(),
-                    ),
-                    const SizedBox(height: 4),
+                      const SizedBox(height: 4),
 
-                    /// Profile avatar & title
-                    Center(
-                      child: Column(
-                        children: [
-                          const CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Color(0xFFE0E7EF),
-                            child: Icon(
-                              Icons.lock_reset,
-                              size: 45,
-                              color: AppConstants.textPrimaryColor,
+                      /// Profile avatar & title
+                      Center(
+                        child: Column(
+                          children: [
+                            const CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Color(0xFFE0E7EF),
+                              child: Icon(
+                                Icons.lock_reset,
+                                size: 45,
+                                color: AppConstants.textPrimaryColor,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            "Forgot Password",
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppConstants.textPrimaryColor,
+                            const SizedBox(height: 6),
+                            const Text(
+                              "Forgot Password",
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: AppConstants.textPrimaryColor,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            "आपका पासवर्ड रीसेट करने के लिए अपना ईमेल दर्ज करें",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF4F789B),
+                            const SizedBox(height: 6),
+                            const Text(
+                              "आपका पासवर्ड रीसेट करने के लिए अपना ईमेल दर्ज करें",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF4F789B),
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    /// Form fields
-                    Form(key: _formKey, child: _buildFormFields()),
-                    const SizedBox(height: 20),
+                      /// Form fields
+                      Form(key: _formKey, child: _buildFormFields()),
+                      const SizedBox(height: 20),
 
-                    /// Submit button
-                    _buildSubmitButton(context, isSending),
-                    const SizedBox(height: 20),
+                      /// Submit button
+                      _buildSubmitButton(context, _isSubmitting),
+                      const SizedBox(height: 20),
 
-                    /// Help text
-                    _buildHelpText(),
-                    const SizedBox(height: 40),
-                  ],
+                      /// Help text
+                      _buildHelpText(),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -242,6 +264,7 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
         onPressed: isSending ? null : () => _sendResetLink(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF5C9A24),
+          disabledBackgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
@@ -271,13 +294,19 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text("Remember your password? "),
-        GestureDetector(
-          onTap: () => context.pop(),
-          child: const Text(
-            "Sign In",
-            style: TextStyle(
-              color: Color(0xFF58B248),
-              fontWeight: FontWeight.bold,
+        InkWell(
+          onTap: () {
+            context.go(AppRoutes.loginOtpEmail);
+          },
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: const Text(
+              "Sign In",
+              style: TextStyle(
+                color: Color(0xFF58B248),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -288,26 +317,11 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
   /// Sends the reset link
   void _sendResetLink(BuildContext context) {
     if (_formKey.currentState!.validate()) {
-      // Set sending state
-      context.read<AuthBloc>().add(
-        const SetForgotPasswordSendingEvent(isSending: true),
-      );
-
       // Send forgot password request using existing ForgotPasswordEvent
       context.read<AuthBloc>().add(
         ForgotPasswordEvent(email: _emailController.text),
       );
     }
-  }
-
-  /// Shows success snackbar
-  void _showSuccessSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-      ),
-    );
   }
 
   /// Shows error snackbar

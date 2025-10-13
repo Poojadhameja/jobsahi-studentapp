@@ -7,7 +7,6 @@ class SuccessPopupScreen extends StatefulWidget {
   final String description;
   final String buttonText;
   final String navigationRoute;
-  final bool showBackButton;
 
   const SuccessPopupScreen({
     super.key,
@@ -15,7 +14,6 @@ class SuccessPopupScreen extends StatefulWidget {
     required this.description,
     required this.buttonText,
     required this.navigationRoute,
-    this.showBackButton = true,
   });
 
   @override
@@ -24,9 +22,6 @@ class SuccessPopupScreen extends StatefulWidget {
 
 class _SuccessPopupScreenState extends State<SuccessPopupScreen>
     with TickerProviderStateMixin {
-  /// Whether the verification is in progress
-  bool _isVerifying = false;
-
   /// Animation controllers
   late AnimationController _scaleController;
   late AnimationController _checkController;
@@ -36,9 +31,6 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
   @override
   void initState() {
     super.initState();
-
-    // Reset verification state when screen initializes
-    _isVerifying = false;
 
     // Initialize scale animation controller
     _scaleController = AnimationController(
@@ -88,41 +80,35 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: widget.showBackButton
-          ? AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppConstants.textPrimaryColor,
-                ),
-                onPressed: () {
-                  // Navigate to the specified route instead of just popping
-                  context.go(widget.navigationRoute);
-                },
-              ),
-            )
-          : null,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.largePadding),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Success icon
-              _buildSuccessIcon(),
-              const SizedBox(height: AppConstants.largePadding),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
+        // Prevent going back to auth screens, navigate to home instead
+        context.go(widget.navigationRoute);
+      },
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
+        // Remove back button completely
+        appBar: null,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.largePadding),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Success icon
+                _buildSuccessIcon(),
+                const SizedBox(height: AppConstants.largePadding),
 
-              // Title and description
-              _buildContent(),
-              const SizedBox(height: AppConstants.largePadding),
+                // Title and description
+                _buildContent(),
+                const SizedBox(height: AppConstants.largePadding),
 
-              // Continue button
-              _buildContinueButton(),
-            ],
+                // Continue button
+                _buildContinueButton(),
+              ],
+            ),
           ),
         ),
       ),
@@ -198,7 +184,7 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isVerifying ? null : _continueToNext,
+        onPressed: _continueToNext,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.successColor,
           foregroundColor: Colors.white,
@@ -207,42 +193,17 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
           ),
         ),
-        child: _isVerifying
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Text(
-                widget.buttonText,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+        child: Text(
+          widget.buttonText,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
 
   /// Continues to the next page
   void _continueToNext() {
-    setState(() {
-      _isVerifying = true;
-    });
-
-    // Simulate loading
-    Future.delayed(const Duration(milliseconds: 500), () {
-      setState(() {
-        _isVerifying = false;
-      });
-
-      // Navigate to specified route
-      if (mounted) {
-        context.go(widget.navigationRoute);
-      }
-    });
+    // Navigate immediately without any delay or loader
+    context.go(widget.navigationRoute);
   }
 }

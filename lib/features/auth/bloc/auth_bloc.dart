@@ -107,7 +107,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // ✅ Role validation is already handled in the repository
         // If we reach here, the user has the correct role (student)
         emit(const OtpVerificationSuccess());
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 200));
         emit(AuthSuccess(message: response.message));
 
         // Notify router about auth state change
@@ -182,7 +182,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       emit(
         AuthSuccess(
@@ -394,7 +394,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       emit(const AuthLoading());
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       if (event.currentPassword.isEmpty) {
         emit(const AuthError(message: 'Please enter your current password'));
@@ -443,8 +443,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      // Add a small delay for better UX
-      await Future.delayed(const Duration(seconds: 1));
+      // Quick delay for smooth transition
+      await Future.delayed(const Duration(milliseconds: 200));
 
       final isLoggedIn = await _authRepository.isLoggedIn();
       final hasToken = await _authRepository.hasToken();

@@ -32,6 +32,9 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
   /// Form key for validation
   final _formKey = GlobalKey<FormState>();
 
+  /// Local state for submission tracking
+  bool _isLocallySubmitting = false;
+
   /// Text editing controllers
   final _nameController = TextEditingController();
   final _middleNameController = TextEditingController();
@@ -55,8 +58,18 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        // Track loading state
+        if (state is AuthLoading) {
+          setState(() {
+            _isLocallySubmitting = true;
+          });
+        }
+
         // Handle specific error states with snackbars
         if (state is EmailAlreadyExistsError) {
+          setState(() {
+            _isLocallySubmitting = false;
+          });
           _showErrorSnackBar(
             context,
             'Email already exists. Please use a different email or try signing in.',
@@ -64,6 +77,9 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           // Clear email field
           _emailController.clear();
         } else if (state is PhoneAlreadyExistsError) {
+          setState(() {
+            _isLocallySubmitting = false;
+          });
           _showErrorSnackBar(
             context,
             'Phone number already exists. Please use a different phone number or try signing in.',
@@ -75,11 +91,16 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           if (state.message.toLowerCase().contains('registered successfully') ||
               state.message.toLowerCase().contains('account created') ||
               state.message.toLowerCase().contains('student profile')) {
+            // Keep submitting state true until navigation
             context.go(AppRoutes.createAccountPopup);
           } else {
+            setState(() {
+              _isLocallySubmitting = false;
+            });
             _showErrorSnackBar(context, state.message);
           }
         } else if (state is AccountCreationSuccess) {
+          // Keep submitting state true until navigation
           context.go(AppRoutes.createAccountPopup);
         }
       },
@@ -88,13 +109,11 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           bool isPasswordVisible = false;
           bool isConfirmPasswordVisible = false;
           bool isTermsAccepted = false;
-          bool isSubmitting = false;
 
           if (state is CreateAccountFormState) {
             isPasswordVisible = state.isPasswordVisible;
             isConfirmPasswordVisible = state.isConfirmPasswordVisible;
             isTermsAccepted = state.isTermsAccepted;
-            isSubmitting = state.isSubmitting;
           }
 
           return Scaffold(
@@ -102,24 +121,30 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
             body: SafeArea(
               child: Column(
                 children: [
-                  // Scrollable content
-                  Expanded(
-                    child: SingleChildScrollView(
+                  // Sticky header (always visible)
+                  Transform.translate(
+                    offset: const Offset(0, -2),
+                    child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppConstants.largePadding,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 2),
-
                           /// Back button
                           IconButton(
                             icon: const Icon(
                               Icons.arrow_back,
                               color: AppConstants.textPrimaryColor,
                             ),
-                            onPressed: () => context.pop(),
+                            onPressed: () {
+                              // Check if can pop, otherwise go to login
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(AppRoutes.loginOtpEmail);
+                              }
+                            },
                           ),
                           const SizedBox(height: 4),
 
@@ -147,7 +172,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
                                 ),
                                 const SizedBox(height: 6),
                                 const Text(
-                                  "वापसी का स्वागत है! कृपया अपनी जानकारी दर्ज करें",
+                                  "अपना Jobsahi account बनाएं",
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Color(0xFF4F789B),
@@ -157,6 +182,21 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
                               ],
                             ),
                           ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Scrollable form content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.largePadding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           const SizedBox(height: 20),
 
                           /// Form fields
@@ -218,7 +258,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
                         top: BorderSide(color: Colors.grey.shade200),
                       ),
                     ),
-                    child: _buildSubmitButton(context, isSubmitting),
+                    child: _buildSubmitButton(context, _isLocallySubmitting),
                   ),
                 ],
               ),
@@ -486,6 +526,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
         onPressed: isSubmitting ? null : () => _submitForm(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF5C9A24),
+          disabledBackgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
@@ -540,15 +581,19 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text("Already have an account? "),
-        GestureDetector(
+        InkWell(
           onTap: () {
-            context.push(AppRoutes.loginOtpEmail);
+            context.go(AppRoutes.loginOtpEmail);
           },
-          child: const Text(
-            "Sign In",
-            style: TextStyle(
-              color: Color(0xFF58B248),
-              fontWeight: FontWeight.bold,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: const Text(
+              "Sign In",
+              style: TextStyle(
+                color: Color(0xFF58B248),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -577,11 +622,6 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
         );
         return;
       }
-
-      // Set submitting state
-      context.read<AuthBloc>().add(
-        const SetFormSubmittingEvent(isSubmitting: true),
-      );
 
       // Create account using existing CreateAccountEvent
       // Combine first name and middle name (if provided)

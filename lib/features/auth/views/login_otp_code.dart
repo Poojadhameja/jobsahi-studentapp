@@ -16,6 +16,8 @@ class LoginOtpCodeScreen extends StatefulWidget {
 }
 
 class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
+  bool _isSubmitting = false; // Track submission state locally
+
   /// Controllers for OTP input fields
   final List<TextEditingController> _otpControllers = List.generate(
     4,
@@ -44,7 +46,16 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is AuthError) {
+        if (state is OtpVerificationLoading) {
+          // Set submitting state when loading starts
+          setState(() {
+            _isSubmitting = true;
+          });
+        } else if (state is AuthError) {
+          // Reset submitting state on error
+          setState(() {
+            _isSubmitting = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message),
@@ -62,7 +73,7 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          // Navigate to success popup first
+          // Keep submitting state true until navigation completes
           context.push(AppRoutes.loginVerifiedPopup);
         }
       },
@@ -258,38 +269,33 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
   /// Builds the verify button
   Widget _buildVerifyButton() {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        final isLoading = state is OtpVerificationLoading;
-
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: isLoading ? null : _verifyOTP,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF5C9A24),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Text(
-                    "Verify Code",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isSubmitting ? null : _verifyOTP,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF5C9A24),
+          disabledBackgroundColor: const Color(0xFF5C9A24),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        );
-      },
+        ),
+        child: _isSubmitting
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                "Verify Code",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+      ),
     );
   }
 

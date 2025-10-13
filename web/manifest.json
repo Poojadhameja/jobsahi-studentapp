@@ -1,6 +1,6 @@
 {
-    "name": "jobsahi_studen",
-    "short_name": "jobsahi_studen",
+    "name": "Jobsahi",
+    "short_name": "Jobsahi",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

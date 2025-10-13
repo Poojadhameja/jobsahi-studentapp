@@ -98,7 +98,7 @@ class _TermsConditionsPageView extends StatelessWidget {
                       children: [
                         // Content paragraphs
                         _buildParagraph(
-                          'Job Sahi आपकी व्यक्तिगत जानकारी को किसी भी अनधिकृत तृतीय पक्ष के साथ साझा नहीं करता है',
+                          'Jobsahi आपकी व्यक्तिगत जानकारी को किसी भी अनधिकृत तृतीय पक्ष के साथ साझा नहीं करता है',
                         ),
 
                         const SizedBox(height: AppConstants.defaultPadding),

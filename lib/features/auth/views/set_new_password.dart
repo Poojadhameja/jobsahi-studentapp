@@ -62,16 +62,8 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
             _isResetting = true;
           });
         } else if (state is PasswordResetSuccess) {
-          setState(() {
-            _isResetting = false;
-          });
-          _showSuccessSnackBar('Password reset successfully');
-          Future.delayed(const Duration(seconds: 1), () {
-            if (context.mounted) {
-              // Navigate back to login screen
-              context.go(AppRoutes.loginOtpEmail);
-            }
-          });
+          // Navigate immediately without any delay or snackbar
+          context.go(AppRoutes.loginOtpEmail);
         } else if (state is AuthError) {
           setState(() {
             _isResetting = false;
@@ -281,6 +273,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
         onPressed: _isResetting ? null : _resetPassword,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF5C9A24),
+          disabledBackgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
@@ -315,16 +308,6 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
         ),
       );
     }
-  }
-
-  /// Shows success snackbar
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-      ),
-    );
   }
 
   /// Shows error snackbar

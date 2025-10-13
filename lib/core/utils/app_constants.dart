@@ -74,7 +74,7 @@ class AppConstants {
   static const String locationIconAsset = 'assets/images/location_icon.png';
 
   /// App Strings
-  static const String appName = 'Job Sahi';
+  static const String appName = 'Jobsahi';
   static const String appTagline = 'Find Your Perfect Job';
 
   /// Location Strings
@@ -169,7 +169,7 @@ class AppConstants {
   /// Success Messages
   static const String loginSuccess = 'Login successful';
   static const String signupSuccess =
-      'Account created successfully! Welcome to Job Sahi! 🎉';
+      'Account created successfully! Welcome to Jobsahi! 🎉';
   static const String otpSent = 'OTP sent successfully';
   static const String passwordReset = 'Password reset successfully';
   static const String jobSaved = 'Job saved successfully';

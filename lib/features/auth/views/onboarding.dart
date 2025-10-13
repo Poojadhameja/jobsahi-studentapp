@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../core/services/onboarding_service.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -110,9 +111,15 @@ class _OnboardingScreenViewState extends State<_OnboardingScreenView> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is OnboardingCompleted || state is OnboardingSkipped) {
-          context.push(AppRoutes.loginOtpEmail);
+          // Mark onboarding as complete so it won't show again
+          await OnboardingService.instance.setOnboardingComplete();
+
+          // Navigate to login screen
+          if (context.mounted) {
+            context.go(AppRoutes.loginOtpEmail);
+          }
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -95,18 +94,11 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
             _isVerifying = true;
           });
         } else if (state is ForgotPasswordOtpVerificationSuccess) {
-          setState(() {
-            _isVerifying = false;
-          });
-          _showSuccessSnackBar(state.message);
-          Future.delayed(const Duration(seconds: 1), () {
-            if (context.mounted) {
-              context.push(
-                AppRoutes.setNewPassword,
-                extra: {'userId': state.userId},
-              );
-            }
-          });
+          // Navigate immediately without any delay or snackbar
+          context.push(
+            AppRoutes.setNewPassword,
+            extra: {'userId': state.userId},
+          );
         } else if (state is ResendOtpSuccess) {
           setState(() {
             _isVerifying = false;
@@ -411,6 +403,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
         onPressed: _isVerifying ? null : _verifyCode,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF5C9A24),
+          disabledBackgroundColor: const Color(0xFF5C9A24),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
