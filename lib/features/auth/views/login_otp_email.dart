@@ -13,7 +13,7 @@ class LoginOtpEmailScreen extends StatefulWidget {
 
   const LoginOtpEmailScreen({
     super.key,
-    this.showBackButton = true, // Default true for backward compatibility
+    this.showBackButton = false, // Default false since login is auth root
   });
 
   @override
@@ -26,6 +26,9 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   bool _isSubmitting = false; // Track submission state locally
 
   /// 👁 for password toggle
+
+  /// Double back press handling
+  DateTime? _lastBackPressed;
 
   // Add controllers for text fields
   final TextEditingController _mobileController = TextEditingController();
@@ -89,157 +92,210 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           context.push(AppRoutes.loginVerifiedPopup);
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Sticky header section
-              Builder(
-                builder: (context) {
-                  // Check if back button should be shown
-                  final shouldShowBackButton =
-                      widget.showBackButton && context.canPop();
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          _handleBackPress();
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Sticky header section
+                Builder(
+                  builder: (context) {
+                    // Check if back button should be shown
+                    final shouldShowBackButton =
+                        widget.showBackButton && context.canPop();
 
-                  return Padding(
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.largePadding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// Back button (conditionally shown)
+                          if (shouldShowBackButton) ...[
+                            const SizedBox(height: 2),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: AppConstants.textPrimaryColor,
+                              ),
+                              onPressed: () {
+                                context.pop();
+                              },
+                            ),
+                            const SizedBox(height: 4),
+                          ] else
+                            const SizedBox(height: 50),
+
+                          /// Profile avatar & title
+                          Center(
+                            child: Column(
+                              children: [
+                                const CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Color(0xFFE0E7EF),
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 45,
+                                    color: AppConstants.textPrimaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  "Sign in with",
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppConstants.textPrimaryColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          /// Email / Phone toggle
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildToggleButton("Email", !isOTPSelected, () {
+                                setState(() => isOTPSelected = false);
+                              }),
+                              _buildToggleButton("Phone", isOTPSelected, () {
+                                setState(() => isOTPSelected = true);
+                              }),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          /// Hindi welcome text
+                          const Center(
+                            child: Text(
+                              "अपने सपनों की नौकरी तक पहुंचने के लिए लॉग इन करें",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF4F789B),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
+                // Scrollable content section
+                Expanded(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppConstants.largePadding,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        /// Back button (conditionally shown)
-                        if (shouldShowBackButton) ...[
-                          const SizedBox(height: 2),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: AppConstants.textPrimaryColor,
-                            ),
-                            onPressed: () {
-                              context.pop();
-                            },
-                          ),
-                          const SizedBox(height: 4),
-                        ] else
-                          const SizedBox(height: 50),
+                        const SizedBox(height: 8),
 
-                        /// Profile avatar & title
-                        Center(
-                          child: Column(
-                            children: [
-                              const CircleAvatar(
-                                radius: 40,
-                                backgroundColor: Color(0xFFE0E7EF),
-                                child: Icon(
-                                  Icons.person,
-                                  size: 45,
-                                  color: AppConstants.textPrimaryColor,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                "Sign in with",
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppConstants.textPrimaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+                        /// Login input section
+                        isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
 
-                        /// Email / Phone toggle
+                        const SizedBox(height: 24),
+
+                        /// Or divider
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildToggleButton("Email", !isOTPSelected, () {
-                              setState(() => isOTPSelected = false);
-                            }),
-                            _buildToggleButton("Phone", isOTPSelected, () {
-                              setState(() => isOTPSelected = true);
-                            }),
+                            const Expanded(
+                              child: Divider(color: Color(0xFF58B248)),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: const Text(
+                                "Or Login with",
+                                style: TextStyle(
+                                  color: Color(0xFF58B248),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Expanded(
+                              child: Divider(color: Color(0xFF58B248)),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 20),
 
-                        /// Hindi welcome text
-                        const Center(
-                          child: Text(
-                            "अपने सपनों की नौकरी तक पहुंचने के लिए लॉग इन करें",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF4F789B),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        /// Social login buttons
+                        _buildSocialLoginButtons(),
+
+                        const SizedBox(height: 24),
+
+                        /// Create account link
+                        _buildCreateAccountLink(),
+                        const SizedBox(height: 20),
                       ],
                     ),
-                  );
-                },
-              ),
-
-              // Scrollable content section
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppConstants.largePadding,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 8),
-
-                      /// Login input section
-                      isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
-
-                      const SizedBox(height: 24),
-
-                      /// Or divider
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Divider(color: Color(0xFF58B248)),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: const Text(
-                              "Or Login with",
-                              style: TextStyle(
-                                color: Color(0xFF58B248),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const Expanded(
-                            child: Divider(color: Color(0xFF58B248)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      /// Social login buttons
-                      _buildSocialLoginButtons(),
-
-                      const SizedBox(height: 24),
-
-                      /// Create account link
-                      _buildCreateAccountLink(),
-                      const SizedBox(height: 20),
-                    ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  /// Handle back press with double tap to exit
+  void _handleBackPress() {
+    final now = DateTime.now();
+
+    if (_lastBackPressed == null ||
+        now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
+      // First back press - show exit message
+      _lastBackPressed = now;
+      _showExitMessage();
+    } else {
+      // Second back press within 2 seconds - exit app
+      _exitApp();
+    }
+  }
+
+  /// Show exit confirmation message
+  void _showExitMessage() {
+    // Create custom overlay with fade animations
+    final overlay = Overlay.of(context);
+    late OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => _CustomExitSnackbar(
+        onDismiss: () {
+          overlayEntry.remove();
+        },
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    // Auto dismiss after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (overlayEntry.mounted) {
+        overlayEntry.remove();
+      }
+    });
+  }
+
+  /// Exit the app
+  void _exitApp() {
+    SystemNavigator.pop();
   }
 
   /// Email / Phone toggle button
@@ -680,6 +736,94 @@ class SignInButton extends StatelessWidget {
         side: const BorderSide(color: Color(0xFFE0E7EF)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         textStyle: const TextStyle(fontSize: 16),
+      ),
+    );
+  }
+}
+
+/// Custom exit snackbar with fade animations
+class _CustomExitSnackbar extends StatefulWidget {
+  final VoidCallback onDismiss;
+
+  const _CustomExitSnackbar({required this.onDismiss});
+
+  @override
+  State<_CustomExitSnackbar> createState() => _CustomExitSnackbarState();
+}
+
+class _CustomExitSnackbarState extends State<_CustomExitSnackbar>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    // Start animation
+    _animationController.forward();
+
+    // Start fade out after 1.2 seconds
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        _animationController.reverse().then((_) {
+          widget.onDismiss();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      bottom: 167,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _fadeAnimation.value,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: const Text(
+                    'Press back again to exit the app',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

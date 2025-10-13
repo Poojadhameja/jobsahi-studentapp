@@ -116,151 +116,163 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
             isTermsAccepted = state.isTermsAccepted;
           }
 
-          return Scaffold(
-            backgroundColor: Colors.white,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  // Sticky header (always visible)
-                  Transform.translate(
-                    offset: const Offset(0, -2),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.largePadding,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          /// Back button
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: AppConstants.textPrimaryColor,
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              // Check if can pop, otherwise go to login
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRoutes.loginOtpEmail);
+              }
+            },
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    // Sticky header (always visible)
+                    Transform.translate(
+                      offset: const Offset(0, -2),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppConstants.largePadding,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            /// Back button
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: AppConstants.textPrimaryColor,
+                              ),
+                              onPressed: () {
+                                // Check if can pop, otherwise go to login
+                                if (context.canPop()) {
+                                  context.pop();
+                                } else {
+                                  context.go(AppRoutes.loginOtpEmail);
+                                }
+                              },
                             ),
-                            onPressed: () {
-                              // Check if can pop, otherwise go to login
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go(AppRoutes.loginOtpEmail);
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 4),
+                            const SizedBox(height: 4),
 
-                          /// Profile avatar & title
-                          Center(
-                            child: Column(
+                            /// Profile avatar & title
+                            Center(
+                              child: Column(
+                                children: [
+                                  const CircleAvatar(
+                                    radius: 40,
+                                    backgroundColor: Color(0xFFE0E7EF),
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 45,
+                                      color: AppConstants.textPrimaryColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                    "Create your account",
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppConstants.textPrimaryColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                    "अपना Jobsahi account बनाएं",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF4F789B),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Scrollable form content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppConstants.largePadding,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 20),
+
+                            /// Form fields
+                            Form(
+                              key: _formKey,
+                              child: _buildFormFields(
+                                context,
+                                isPasswordVisible,
+                                isConfirmPasswordVisible,
+                                isTermsAccepted,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            /// Or divider
+                            Row(
                               children: [
-                                const CircleAvatar(
-                                  radius: 40,
-                                  backgroundColor: Color(0xFFE0E7EF),
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 45,
-                                    color: AppConstants.textPrimaryColor,
+                                const Expanded(
+                                  child: Divider(color: Color(0xFF58B248)),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Text(
+                                    "Or Sign up with",
+                                    style: const TextStyle(
+                                      color: Color(0xFF58B248),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  "Create your account",
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppConstants.textPrimaryColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  "अपना Jobsahi account बनाएं",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF4F789B),
-                                  ),
-                                  textAlign: TextAlign.center,
+                                const Expanded(
+                                  child: Divider(color: Color(0xFF58B248)),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                            const SizedBox(height: 20),
+
+                            /// Social buttons
+                            _buildSocialLoginButtons(),
+                            const SizedBox(height: 24),
+
+                            /// Sign in link
+                            _buildSignInLink(),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
 
-                  // Scrollable form content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.largePadding,
+                    // Fixed bottom button
+                    Container(
+                      padding: const EdgeInsets.all(AppConstants.largePadding),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border(
+                          top: BorderSide(color: Colors.grey.shade200),
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 20),
-
-                          /// Form fields
-                          Form(
-                            key: _formKey,
-                            child: _buildFormFields(
-                              context,
-                              isPasswordVisible,
-                              isConfirmPasswordVisible,
-                              isTermsAccepted,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          /// Or divider
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Divider(color: Color(0xFF58B248)),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                child: Text(
-                                  "Or Sign up with",
-                                  style: const TextStyle(
-                                    color: Color(0xFF58B248),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              const Expanded(
-                                child: Divider(color: Color(0xFF58B248)),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-
-                          /// Social buttons
-                          _buildSocialLoginButtons(),
-                          const SizedBox(height: 24),
-
-                          /// Sign in link
-                          _buildSignInLink(),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
+                      child: _buildSubmitButton(context, _isLocallySubmitting),
                     ),
-                  ),
-
-                  // Fixed bottom button
-                  Container(
-                    padding: const EdgeInsets.all(AppConstants.largePadding),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        top: BorderSide(color: Colors.grey.shade200),
-                      ),
-                    ),
-                    child: _buildSubmitButton(context, _isLocallySubmitting),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
