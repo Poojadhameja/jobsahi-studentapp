@@ -51,8 +51,12 @@ class MenuScreen extends StatelessWidget {
                 color: AppConstants.textPrimaryColor,
               ),
               onPressed: () {
-                // Navigate back to home screen
-                context.go(AppRoutes.home);
+                // Navigate back to previous screen
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go(AppRoutes.home);
+                }
               },
             ),
           ),
@@ -83,7 +87,7 @@ class MenuScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         // Navigate to profile details when profile header is tapped
-        context.go(AppRoutes.profileDetails);
+        context.push(AppRoutes.profileDetails);
       },
       child: Container(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -146,42 +150,42 @@ class MenuScreen extends StatelessWidget {
           icon: Icons.track_changes,
           title: 'Job Status / नौकरी की स्थिति',
           onTap: () {
-            context.go(AppRoutes.jobStatus);
+            context.push(AppRoutes.jobStatus);
           },
         ),
         _buildOptionTile(
           icon: Icons.timeline,
           title: 'Track Application / आवेदन ट्रैक करें',
           onTap: () {
-            context.go(AppRoutes.applicationTracker);
+            context.push(AppRoutes.applicationTracker);
           },
         ),
         _buildOptionTile(
           icon: Icons.chat_outlined,
           title: 'My Chats / आपकी बातचीत',
           onTap: () {
-            context.go(AppRoutes.inbox);
+            context.push(AppRoutes.inbox);
           },
         ),
         _buildOptionTile(
           icon: Icons.favorite_outline,
           title: 'Personalize Jobfeed / पसंद की नौकरी',
           onTap: () {
-            context.go(AppRoutes.personalizeJobfeed);
+            context.push(AppRoutes.personalizeJobfeed);
           },
         ),
         _buildOptionTile(
           icon: Icons.feedback_outlined,
           title: 'Feedback / प्रतिक्रिया',
           onTap: () {
-            context.go(AppRoutes.helpCenter);
+            context.push(AppRoutes.helpCenter);
           },
         ),
         _buildOptionTile(
           icon: Icons.settings_outlined,
           title: 'Settings / सेटिंग्स',
           onTap: () {
-            context.go(AppRoutes.settings);
+            context.push(AppRoutes.settings);
           },
         ),
         _buildOptionTile(
