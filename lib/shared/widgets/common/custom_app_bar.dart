@@ -1,223 +1,136 @@
 import 'package:flutter/material.dart';
-import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
 
+/// Custom App Bar Widget
+/// A custom app bar with hamburger menu, search bar, and notification icon
+/// Used specifically for the home screen
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  /// Title to be displayed in the app bar
-  final String? title;
-
-  /// Whether to show the search bar (default: true)
+  /// Whether to show the search bar
   final bool showSearchBar;
 
-  /// Whether to show the back button (default: false)
-  final bool showBackButton;
-
-  /// Whether to show the menu button (default: true)
+  /// Whether to show the hamburger menu button
   final bool showMenuButton;
 
-  /// Whether to show the notification icon (default: true)
+  /// Whether to show the notification icon
   final bool showNotificationIcon;
-
-  /// Whether to show the bookmark icon (default: false)
-  final bool showBookmarkIcon;
 
   /// Callback function when search is performed
   final Function(String)? onSearch;
 
-  /// Callback function when back button is pressed
-  final VoidCallback? onBackPressed;
-
-  /// Callback function when menu button is pressed
-  final VoidCallback? onMenuPressed;
-
   /// Callback function when notification icon is pressed
   final VoidCallback? onNotificationPressed;
 
-  /// Callback function when bookmark icon is pressed
-  final VoidCallback? onBookmarkPressed;
-
-  /// Search hint text
-  final String searchHint;
+  /// Background color of the app bar
+  final Color? backgroundColor;
 
   const CustomAppBar({
     super.key,
-    this.title,
-    this.showSearchBar = true,
-    this.showBackButton = false,
-    this.showMenuButton = true,
-    this.showNotificationIcon = true,
-    this.showBookmarkIcon = false,
+    this.showSearchBar = false,
+    this.showMenuButton = false,
+    this.showNotificationIcon = false,
     this.onSearch,
-    this.onBackPressed,
-    this.onMenuPressed,
     this.onNotificationPressed,
-    this.onBookmarkPressed,
-    this.searchHint = AppConstants.searchPlaceholder,
+    this.backgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      elevation: 1,
+      backgroundColor:
+          backgroundColor ??
+          AppConstants.cardBackgroundColor, // Match home page background
+      elevation: 0,
+      toolbarHeight:
+          kToolbarHeight + 16, // Add 16px total height (8px top + 8px bottom)
       titleSpacing: 0,
-      leading: _buildLeadingWidget(context),
-      title: _buildTitleWidget(),
-      actions: _buildActionWidgets(),
+      leading: showMenuButton
+          ? IconButton(
+              icon: const Icon(
+                Icons.menu,
+                color: AppConstants.textPrimaryColor,
+                size: 24,
+              ),
+              onPressed: () {
+                // Navigate to main profile screen with personalized job feed and job status
+                context.go(AppRoutes.profile);
+              },
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(
+                minWidth: 32, // Very compact width like bell icon
+                minHeight: 32, // Very compact height like bell icon
+              ),
+            )
+          : null,
+      title: showSearchBar ? _buildSearchBar() : null,
+      centerTitle: !showSearchBar,
+      actions: showNotificationIcon
+          ? [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  bottom: 8,
+                ), // Add padding to actions
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.notifications_outlined,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                  onPressed: onNotificationPressed,
+                ),
+              ),
+            ]
+          : null,
+      iconTheme: const IconThemeData(color: AppConstants.textPrimaryColor),
     );
-  }
-
-  /// Builds the leading widget (back button or menu button)
-  Widget? _buildLeadingWidget(BuildContext context) {
-    if (showBackButton) {
-      return IconButton(
-        icon: const Icon(
-          Icons.arrow_back,
-          color: AppConstants.textPrimaryColor,
-        ),
-        onPressed: onBackPressed ?? () {},
-      );
-    } else if (showMenuButton) {
-      return IconButton(
-        icon: const Icon(Icons.menu, color: AppConstants.textPrimaryColor),
-        onPressed:
-            onMenuPressed ??
-            () {
-              // Navigate to profile page when hamburger menu is tapped
-              context.go(AppRoutes.profile);
-            },
-      );
-    }
-    return null;
-  }
-
-  /// Builds the title widget (search bar or title text)
-  Widget _buildTitleWidget() {
-    if (showSearchBar) {
-      return Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: _buildSearchBar(),
-      );
-    } else if (title != null) {
-      return Text(
-        title!,
-        style: const TextStyle(color: AppConstants.textPrimaryColor),
-      );
-    }
-    return const SizedBox.shrink();
   }
 
   /// Builds the search bar widget
   Widget _buildSearchBar() {
-    return TextField(
-      decoration: InputDecoration(
-        hintText: searchHint,
-        prefixIcon: const Icon(
-          Icons.search,
-          color: AppConstants.textPrimaryColor,
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: 8,
+        bottom: 8,
+      ), // Add padding to search bar
+      child: Container(
+        height: 45, // Increased height from 40 to 45
+        decoration: BoxDecoration(
+          color:
+              AppConstants.backgroundColor, // Light background for search bar
+          borderRadius: BorderRadius.circular(
+            22.5,
+          ), // Adjusted border radius to match new height
+          border: Border.all(color: AppConstants.borderColor, width: 1),
         ),
-        filled: true,
-        fillColor: Colors.grey[200],
-        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      onSubmitted: onSearch,
-    );
-  }
-
-  /// Builds the action widgets (notification and bookmark icons)
-  List<Widget> _buildActionWidgets() {
-    final actions = <Widget>[];
-
-    // Add bookmark icon if needed
-    if (showBookmarkIcon) {
-      actions.add(
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: IconButton(
-            icon: const Icon(
-              Icons.bookmark_border,
-              color: AppConstants.textPrimaryColor,
+        child: TextField(
+          onSubmitted: onSearch,
+          decoration: const InputDecoration(
+            hintText: 'नौकरी खोजें', // Hindi text for "Search jobs"
+            hintStyle: TextStyle(
+              color: AppConstants.textSecondaryColor,
+              fontSize: 14,
             ),
-            onPressed: onBookmarkPressed ?? () {},
+            prefixIcon: Icon(
+              Icons.search,
+              color: AppConstants.textSecondaryColor,
+              size: 20,
+            ),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ), // Increased vertical padding
+          ),
+          style: const TextStyle(
+            color: AppConstants.textPrimaryColor,
+            fontSize: 14,
           ),
         ),
-      );
-    }
-
-    // Add notification icon if needed
-    if (showNotificationIcon) {
-      actions.add(
-        Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: IconButton(
-            icon: const Icon(
-              Icons.notifications_none,
-              color: AppConstants.textPrimaryColor,
-            ),
-            onPressed: onNotificationPressed,
-          ),
-        ),
-      );
-    }
-
-    return actions;
-  }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-/// Tab App Bar Widget
-/// A simple app bar for tabs with heading and back icon
-/// Used for courses, applications, messages, and profile tabs
-/// Note: onBackPressed callback is required for proper navigation
-class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
-  /// Title to be displayed in the app bar
-  final String title;
-
-  /// Callback function when back button is pressed (required)
-  final VoidCallback onBackPressed;
-
-  /// Background color of the app bar
-  final Color backgroundColor;
-
-  /// Text color of the title
-  final Color textColor;
-
-  const TabAppBar({
-    super.key,
-    required this.title,
-    required this.onBackPressed,
-    this.backgroundColor = AppConstants.cardBackgroundColor,
-    this.textColor = AppConstants.textPrimaryColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: backgroundColor,
-      elevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: textColor),
-        onPressed: onBackPressed,
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      centerTitle: true,
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 16); // Added 16px for padding
 }

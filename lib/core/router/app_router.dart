@@ -38,7 +38,7 @@ import '../../features/jobs/views/job_step.dart';
 import '../../features/profile/views/your_location.dart';
 import '../../features/profile/views/location_permission.dart';
 import '../../features/profile/views/profile_builder_steps.dart';
-import '../../features/profile/views/profile.dart';
+import '../../features/profile/views/menu.dart';
 import '../../features/profile/views/profile_details.dart';
 import '../../features/profile/views/job_status.dart';
 import '../../features/profile/views/personalize_jobfeed.dart';
@@ -293,7 +293,7 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.profile,
         name: 'profile',
-        builder: (context, state) => const ProfileScreen(),
+        builder: (context, state) => const MenuScreen(),
       ),
 
       GoRoute(

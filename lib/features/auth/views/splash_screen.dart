@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/services/onboarding_service.dart';
+import '../../../core/utils/app_constants.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -33,23 +34,32 @@ class _SplashScreenView extends StatefulWidget {
 }
 
 class _SplashScreenViewState extends State<_SplashScreenView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // Track when the splash screen was created
   final DateTime _startTime = DateTime.now();
   bool _hasNavigated = false;
 
   // Animation controllers
   late AnimationController _animationController;
+  late AnimationController _loaderAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _loaderRotationAnimation;
+  late Animation<double> _loaderScaleAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    // Setup animations
+    // Setup main animations
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    // Setup loader animations
+    _loaderAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
@@ -63,13 +73,28 @@ class _SplashScreenViewState extends State<_SplashScreenView>
       CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
 
-    // Start the animation
+    // Loader rotation animation (continuous rotation)
+    _loaderRotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _loaderAnimationController, curve: Curves.linear),
+    );
+
+    // Loader scale animation (pulsing effect)
+    _loaderScaleAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _loaderAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // Start the animations
     _animationController.forward();
+    _loaderAnimationController.repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _loaderAnimationController.dispose();
     super.dispose();
   }
 
@@ -143,8 +168,27 @@ class _SplashScreenViewState extends State<_SplashScreenView>
                         height: 120,
                       ),
                       const SizedBox(height: 24),
-                      // Loading indicator to show the app is starting up
-                      const CircularProgressIndicator(color: Colors.green),
+                      // Animated loading indicator with primary green color
+                      AnimatedBuilder(
+                        animation: _loaderAnimationController,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _loaderScaleAnimation.value,
+                            child: Transform.rotate(
+                              angle:
+                                  _loaderRotationAnimation.value * 2 * 3.14159,
+                              child: CircularProgressIndicator(
+                                color: AppConstants
+                                    .secondaryColor, // Primary green color
+                                strokeWidth: 3.0,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppConstants.secondaryColor,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),

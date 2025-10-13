@@ -8,6 +8,7 @@ import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/router/app_router.dart';
 import '../../../shared/widgets/common/custom_app_bar.dart';
+import '../../../shared/widgets/common/tab_app_bar.dart';
 import '../../../shared/widgets/common/bottom_navigation.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/cards/job_card.dart';
