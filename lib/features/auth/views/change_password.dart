@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -29,90 +30,92 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Scrollable content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.largePadding,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 2),
+    return KeyboardDismissWrapper(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Scrollable content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.largePadding,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 2),
 
-                    /// Back button
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: AppConstants.textPrimaryColor,
+                      /// Back button
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: AppConstants.textPrimaryColor,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(height: 4),
+                      const SizedBox(height: 4),
 
-                    /// Profile avatar & title
-                    Center(
-                      child: Column(
-                        children: [
-                          const CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Color(0xFFE0E7EF),
-                            child: Icon(
-                              Icons.lock_outline,
-                              size: 45,
-                              color: AppConstants.textPrimaryColor,
+                      /// Profile avatar & title
+                      Center(
+                        child: Column(
+                          children: [
+                            const CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Color(0xFFE0E7EF),
+                              child: Icon(
+                                Icons.lock_outline,
+                                size: 45,
+                                color: AppConstants.textPrimaryColor,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            "Change your password",
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppConstants.textPrimaryColor,
+                            const SizedBox(height: 6),
+                            const Text(
+                              "Change your password",
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: AppConstants.textPrimaryColor,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            "अपना पासवर्ड सुरक्षित रखें और नियमित रूप से बदलें",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF4F789B),
+                            const SizedBox(height: 6),
+                            const Text(
+                              "अपना पासवर्ड सुरक्षित रखें और नियमित रूप से बदलें",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF4F789B),
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    /// Form fields
-                    Form(key: _formKey, child: _buildFormFields()),
-                    const SizedBox(height: 24),
+                      /// Form fields
+                      Form(key: _formKey, child: _buildFormFields()),
+                      const SizedBox(height: 24),
 
-                    /// Password requirements
-                    _buildPasswordRequirements(),
-                    const SizedBox(height: 40),
-                  ],
+                      /// Password requirements
+                      _buildPasswordRequirements(),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Fixed bottom button
-            Container(
-              padding: const EdgeInsets.all(AppConstants.largePadding),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              // Fixed bottom button
+              Container(
+                padding: const EdgeInsets.all(AppConstants.largePadding),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: _buildSubmitButton(),
               ),
-              child: _buildSubmitButton(),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

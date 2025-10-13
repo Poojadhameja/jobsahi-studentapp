@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -98,155 +99,157 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           if (didPop) return;
           _handleBackPress();
         },
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Sticky header section
-                Builder(
-                  builder: (context) {
-                    // Check if back button should be shown
-                    final shouldShowBackButton =
-                        widget.showBackButton && context.canPop();
+        child: KeyboardDismissWrapper(
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // Sticky header section
+                  Builder(
+                    builder: (context) {
+                      // Check if back button should be shown
+                      final shouldShowBackButton =
+                          widget.showBackButton && context.canPop();
 
-                    return Padding(
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppConstants.largePadding,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            /// Back button (conditionally shown)
+                            if (shouldShowBackButton) ...[
+                              const SizedBox(height: 2),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
+                                onPressed: () {
+                                  context.pop();
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                            ] else
+                              const SizedBox(height: 50),
+
+                            /// Profile avatar & title
+                            Center(
+                              child: Column(
+                                children: [
+                                  const CircleAvatar(
+                                    radius: 40,
+                                    backgroundColor: Color(0xFFE0E7EF),
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 45,
+                                      color: AppConstants.textPrimaryColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                    "Sign in with",
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppConstants.textPrimaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            /// Email / Phone toggle
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildToggleButton("Email", !isOTPSelected, () {
+                                  setState(() => isOTPSelected = false);
+                                }),
+                                _buildToggleButton("Phone", isOTPSelected, () {
+                                  setState(() => isOTPSelected = true);
+                                }),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            /// Hindi welcome text
+                            const Center(
+                              child: Text(
+                                "अपने सपनों की नौकरी तक पहुंचने के लिए लॉग इन करें",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF4F789B),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Scrollable content section
+                  Expanded(
+                    child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppConstants.largePadding,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          /// Back button (conditionally shown)
-                          if (shouldShowBackButton) ...[
-                            const SizedBox(height: 2),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.arrow_back,
-                                color: AppConstants.textPrimaryColor,
-                              ),
-                              onPressed: () {
-                                context.pop();
-                              },
-                            ),
-                            const SizedBox(height: 4),
-                          ] else
-                            const SizedBox(height: 50),
+                          const SizedBox(height: 8),
 
-                          /// Profile avatar & title
-                          Center(
-                            child: Column(
-                              children: [
-                                const CircleAvatar(
-                                  radius: 40,
-                                  backgroundColor: Color(0xFFE0E7EF),
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 45,
-                                    color: AppConstants.textPrimaryColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  "Sign in with",
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppConstants.textPrimaryColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
+                          /// Login input section
+                          isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
 
-                          /// Email / Phone toggle
+                          const SizedBox(height: 24),
+
+                          /// Or divider
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              _buildToggleButton("Email", !isOTPSelected, () {
-                                setState(() => isOTPSelected = false);
-                              }),
-                              _buildToggleButton("Phone", isOTPSelected, () {
-                                setState(() => isOTPSelected = true);
-                              }),
+                              const Expanded(
+                                child: Divider(color: Color(0xFF58B248)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: const Text(
+                                  "Or Login with",
+                                  style: TextStyle(
+                                    color: Color(0xFF58B248),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              const Expanded(
+                                child: Divider(color: Color(0xFF58B248)),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),
 
-                          /// Hindi welcome text
-                          const Center(
-                            child: Text(
-                              "अपने सपनों की नौकरी तक पहुंचने के लिए लॉग इन करें",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF4F789B),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                          /// Social login buttons
+                          _buildSocialLoginButtons(),
+
+                          const SizedBox(height: 24),
+
+                          /// Create account link
+                          _buildCreateAccountLink(),
+                          const SizedBox(height: 20),
                         ],
                       ),
-                    );
-                  },
-                ),
-
-                // Scrollable content section
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.largePadding,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-
-                        /// Login input section
-                        isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
-
-                        const SizedBox(height: 24),
-
-                        /// Or divider
-                        Row(
-                          children: [
-                            const Expanded(
-                              child: Divider(color: Color(0xFF58B248)),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: const Text(
-                                "Or Login with",
-                                style: TextStyle(
-                                  color: Color(0xFF58B248),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const Expanded(
-                              child: Divider(color: Color(0xFF58B248)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
-                        /// Social login buttons
-                        _buildSocialLoginButtons(),
-
-                        const SizedBox(height: 24),
-
-                        /// Create account link
-                        _buildCreateAccountLink(),
-                        const SizedBox(height: 20),
-                      ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

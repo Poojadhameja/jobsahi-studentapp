@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/profile_navigation_app_bar.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/messages_bloc.dart';
 import '../bloc/messages_event.dart';
 import '../bloc/messages_state.dart';
@@ -35,34 +36,36 @@ class _InboxScreenView extends StatelessWidget {
           messages = state.messages;
         }
 
-        return Scaffold(
-          backgroundColor: AppConstants.cardBackgroundColor,
-          appBar: isFromProfile
-              ? ProfileNavigationAppBar(title: 'Messages')
-              : null,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: AppConstants.defaultPadding),
-                  // Messages list
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: messages.length,
-                      separatorBuilder: (context, index) => const Divider(
-                        height: 1,
-                        thickness: 0.5,
-                        color: Color(0xFFE0E0E0),
+        return KeyboardDismissWrapper(
+          child: Scaffold(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            appBar: isFromProfile
+                ? ProfileNavigationAppBar(title: 'Messages')
+                : null,
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    // Messages list
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: messages.length,
+                        separatorBuilder: (context, index) => const Divider(
+                          height: 1,
+                          thickness: 0.5,
+                          color: Color(0xFFE0E0E0),
+                        ),
+                        itemBuilder: (context, index) {
+                          final message = messages[index];
+                          return _buildMessageItem(context, message);
+                        },
                       ),
-                      itemBuilder: (context, index) {
-                        final message = messages[index];
-                        return _buildMessageItem(context, message);
-                      },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

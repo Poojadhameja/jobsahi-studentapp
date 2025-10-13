@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -77,75 +78,77 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
           context.push(AppRoutes.loginVerifiedPopup);
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.largePadding,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 2),
+      child: KeyboardDismissWrapper(
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.largePadding,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 2),
 
-                /// Back button
-                IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: AppConstants.textPrimaryColor,
+                  /// Back button
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                    onPressed: () => context.pop(),
                   ),
-                  onPressed: () => context.pop(),
-                ),
-                const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                /// Profile avatar & title
-                Center(
-                  child: Column(
-                    children: [
-                      const CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Color(0xFFE0E7EF),
-                        child: Icon(
-                          Icons.verified_user,
-                          size: 45,
-                          color: AppConstants.textPrimaryColor,
+                  /// Profile avatar & title
+                  Center(
+                    child: Column(
+                      children: [
+                        const CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Color(0xFFE0E7EF),
+                          child: Icon(
+                            Icons.verified_user,
+                            size: 45,
+                            color: AppConstants.textPrimaryColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "Enter Verification Code",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppConstants.textPrimaryColor,
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Enter Verification Code",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: AppConstants.textPrimaryColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        "हमने आपके मोबाइल पर 4 अंकों का OTP भेजा है",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF4F789B),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "हमने आपके मोबाइल पर 4 अंकों का OTP भेजा है",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF4F789B),
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                // OTP input section
-                _buildOTPInputSection(),
-                const SizedBox(height: 24),
+                  // OTP input section
+                  _buildOTPInputSection(),
+                  const SizedBox(height: 24),
 
-                // Verify button
-                _buildVerifyButton(),
-                const SizedBox(height: 24),
+                  // Verify button
+                  _buildVerifyButton(),
+                  const SizedBox(height: 24),
 
-                // Resend OTP section
-                _buildResendOTPSection(),
-              ],
+                  // Resend OTP section
+                  _buildResendOTPSection(),
+                ],
+              ),
             ),
           ),
         ),

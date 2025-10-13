@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/services/onboarding_service.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -134,33 +135,35 @@ class _OnboardingScreenViewState extends State<_OnboardingScreenView> {
                 : 0;
           }
 
-          return Scaffold(
-            backgroundColor: Colors.white,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  // Skip button at the top
-                  _buildSkipButton(context),
+          return KeyboardDismissWrapper(
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    // Skip button at the top
+                    _buildSkipButton(context),
 
-                  // PageView with onboarding content
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      onPageChanged: (index) {
-                        context.read<AuthBloc>().add(
-                          OnboardingPageChangeEvent(pageIndex: index),
-                        );
-                      },
-                      itemCount: _onboardingPages.length,
-                      itemBuilder: (context, index) {
-                        return _buildOnboardingPage(_onboardingPages[index]);
-                      },
+                    // PageView with onboarding content
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          context.read<AuthBloc>().add(
+                            OnboardingPageChangeEvent(pageIndex: index),
+                          );
+                        },
+                        itemCount: _onboardingPages.length,
+                        itemBuilder: (context, index) {
+                          return _buildOnboardingPage(_onboardingPages[index]);
+                        },
+                      ),
                     ),
-                  ),
 
-                  // Bottom section with navigation
-                  _buildBottomSection(context, currentPage),
-                ],
+                    // Bottom section with navigation
+                    _buildBottomSection(context, currentPage),
+                  ],
+                ),
               ),
             ),
           );

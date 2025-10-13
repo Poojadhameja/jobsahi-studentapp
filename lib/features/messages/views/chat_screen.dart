@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/messages_bloc.dart';
 import '../bloc/messages_event.dart';
 import '../bloc/messages_state.dart';
@@ -49,17 +50,19 @@ class _ChatScreenViewState extends State<_ChatScreenView> {
           chatMessages = state.chatMessages;
         }
 
-        return Scaffold(
-          backgroundColor: AppConstants.cardBackgroundColor,
-          appBar: _buildAppBar(),
-          body: Column(
-            children: [
-              // Chat messages area
-              Expanded(child: _buildChatArea(chatMessages)),
+        return KeyboardDismissWrapper(
+          child: Scaffold(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            appBar: _buildAppBar(),
+            body: Column(
+              children: [
+                // Chat messages area
+                Expanded(child: _buildChatArea(chatMessages)),
 
-              // Input area
-              _buildInputArea(),
-            ],
+                // Input area
+                _buildInputArea(),
+              ],
+            ),
           ),
         );
       },

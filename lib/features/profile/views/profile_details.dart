@@ -4,6 +4,7 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -78,69 +79,71 @@ class _ProfileDetailsView extends StatelessWidget {
     BuildContext context,
     ProfileDetailsLoaded state,
   ) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
+    return KeyboardDismissWrapper(
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
 
-      /// AppBar with back button & title (only when not from bottom navigation)
-      appBar: isFromBottomNavigation
-          ? null
-          : AppBar(
-              backgroundColor: AppConstants.backgroundColor,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: AppConstants.textPrimaryColor,
+        /// AppBar with back button & title (only when not from bottom navigation)
+        appBar: isFromBottomNavigation
+            ? null
+            : AppBar(
+                backgroundColor: AppConstants.backgroundColor,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                  onPressed: () => context.pop(), // Go back to previous screen
                 ),
-                onPressed: () => context.pop(), // Go back to previous screen
-              ),
-              title: const Text(
-                'Profile Details',
-                style: TextStyle(
-                  color: AppConstants.textPrimaryColor,
-                  fontWeight: FontWeight.bold,
+                title: const Text(
+                  'Profile Details',
+                  style: TextStyle(
+                    color: AppConstants.textPrimaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+                centerTitle: true,
               ),
-              centerTitle: true,
+
+        /// Main body wrapped with scroll view
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: Column(
+              children: [
+                // Profile Image Section (Center)
+                _buildProfileImageSection(context, state),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Profile Section
+                _buildProfileSection(context, state),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Profile Summary Section
+                _buildProfileSummarySection(context, state),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Education Section
+                _buildEducationSection(context, state),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Key Skills Section
+                _buildKeySkillsSection(context, state),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Experience Section
+                _buildExperienceSection(context, state),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Certificates Section
+                _buildCertificatesSection(context, state),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Resume/CV Section
+                _buildResumeSection(context, state),
+              ],
             ),
-
-      /// Main body wrapped with scroll view
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            children: [
-              // Profile Image Section (Center)
-              _buildProfileImageSection(context, state),
-              const SizedBox(height: AppConstants.defaultPadding),
-
-              // Profile Section
-              _buildProfileSection(context, state),
-              const SizedBox(height: AppConstants.defaultPadding),
-
-              // Profile Summary Section
-              _buildProfileSummarySection(context, state),
-              const SizedBox(height: AppConstants.defaultPadding),
-
-              // Education Section
-              _buildEducationSection(context, state),
-              const SizedBox(height: AppConstants.defaultPadding),
-
-              // Key Skills Section
-              _buildKeySkillsSection(context, state),
-              const SizedBox(height: AppConstants.defaultPadding),
-
-              // Experience Section
-              _buildExperienceSection(context, state),
-              const SizedBox(height: AppConstants.defaultPadding),
-
-              // Certificates Section
-              _buildCertificatesSection(context, state),
-              const SizedBox(height: AppConstants.defaultPadding),
-
-              // Resume/CV Section
-              _buildResumeSection(context, state),
-            ],
           ),
         ),
       ),

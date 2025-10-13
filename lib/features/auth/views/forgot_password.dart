@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -94,83 +95,85 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
               // Always go to login when back is pressed
               context.go(AppRoutes.loginOtpEmail);
             },
-            child: Scaffold(
-              backgroundColor: Colors.white,
-              body: SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppConstants.largePadding,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 2),
+            child: KeyboardDismissWrapper(
+              child: Scaffold(
+                backgroundColor: Colors.white,
+                body: SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.largePadding,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 2),
 
-                      /// Back button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: AppConstants.textPrimaryColor,
+                        /// Back button
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: AppConstants.textPrimaryColor,
+                          ),
+                          onPressed: () {
+                            // Check if can pop, otherwise go to login
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go(AppRoutes.loginOtpEmail);
+                            }
+                          },
                         ),
-                        onPressed: () {
-                          // Check if can pop, otherwise go to login
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go(AppRoutes.loginOtpEmail);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 4),
+                        const SizedBox(height: 4),
 
-                      /// Profile avatar & title
-                      Center(
-                        child: Column(
-                          children: [
-                            const CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Color(0xFFE0E7EF),
-                              child: Icon(
-                                Icons.lock_reset,
-                                size: 45,
-                                color: AppConstants.textPrimaryColor,
+                        /// Profile avatar & title
+                        Center(
+                          child: Column(
+                            children: [
+                              const CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Color(0xFFE0E7EF),
+                                child: Icon(
+                                  Icons.lock_reset,
+                                  size: 45,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              "Forgot Password",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: AppConstants.textPrimaryColor,
+                              const SizedBox(height: 6),
+                              const Text(
+                                "Forgot Password",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              "आपका पासवर्ड रीसेट करने के लिए अपना ईमेल दर्ज करें",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF4F789B),
+                              const SizedBox(height: 6),
+                              const Text(
+                                "आपका पासवर्ड रीसेट करने के लिए अपना ईमेल दर्ज करें",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF4F789B),
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      /// Form fields
-                      Form(key: _formKey, child: _buildFormFields()),
-                      const SizedBox(height: 20),
+                        /// Form fields
+                        Form(key: _formKey, child: _buildFormFields()),
+                        const SizedBox(height: 20),
 
-                      /// Submit button
-                      _buildSubmitButton(context, _isSubmitting),
-                      const SizedBox(height: 20),
+                        /// Submit button
+                        _buildSubmitButton(context, _isSubmitting),
+                        const SizedBox(height: 20),
 
-                      /// Help text
-                      _buildHelpText(),
-                      const SizedBox(height: 40),
-                    ],
+                        /// Help text
+                        _buildHelpText(),
+                        const SizedBox(height: 40),
+                      ],
+                    ),
                   ),
                 ),
               ),

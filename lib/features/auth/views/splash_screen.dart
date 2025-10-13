@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/services/onboarding_service.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -148,52 +149,56 @@ class _SplashScreenViewState extends State<_SplashScreenView>
           }
         }
       },
-      child: Scaffold(
-        // White background for clean, professional look
-        backgroundColor: Colors.white,
-        body: Center(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // App logo - main branding element with bounce effect
-                      Image.asset(
-                        'assets/images/logo/jobsahi_logo.png',
-                        height: 120,
-                      ),
-                      const SizedBox(height: 24),
-                      // Animated loading indicator with primary green color
-                      AnimatedBuilder(
-                        animation: _loaderAnimationController,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: _loaderScaleAnimation.value,
-                            child: Transform.rotate(
-                              angle:
-                                  _loaderRotationAnimation.value * 2 * 3.14159,
-                              child: CircularProgressIndicator(
-                                color: AppConstants
-                                    .secondaryColor, // Primary green color
-                                strokeWidth: 3.0,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppConstants.secondaryColor,
+      child: KeyboardDismissWrapper(
+        child: Scaffold(
+          // White background for clean, professional look
+          backgroundColor: Colors.white,
+          body: Center(
+            child: AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // App logo - main branding element with bounce effect
+                        Image.asset(
+                          'assets/images/logo/jobsahi_logo.png',
+                          height: 120,
+                        ),
+                        const SizedBox(height: 24),
+                        // Animated loading indicator with primary green color
+                        AnimatedBuilder(
+                          animation: _loaderAnimationController,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: _loaderScaleAnimation.value,
+                              child: Transform.rotate(
+                                angle:
+                                    _loaderRotationAnimation.value *
+                                    2 *
+                                    3.14159,
+                                child: CircularProgressIndicator(
+                                  color: AppConstants
+                                      .secondaryColor, // Primary green color
+                                  strokeWidth: 3.0,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppConstants.secondaryColor,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

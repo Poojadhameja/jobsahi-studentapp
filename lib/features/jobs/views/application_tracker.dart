@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/profile_navigation_app_bar.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
@@ -63,24 +64,26 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
 
           return DefaultTabController(
             length: 3,
-            child: Scaffold(
-              backgroundColor: AppConstants.backgroundColor,
-              appBar: isFromProfile
-                  ? ProfileNavigationAppBar(title: 'Application Tracker')
-                  : null,
-              body: Column(
-                children: [
-                  if (!isFromProfile) _buildTabBar(),
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        _buildAppliedTab(context, appliedJobs),
-                        _buildInterviewTab(context, interviewJobs),
-                        _buildOffersTab(context, offerJobs),
-                      ],
+            child: KeyboardDismissWrapper(
+              child: Scaffold(
+                backgroundColor: AppConstants.backgroundColor,
+                appBar: isFromProfile
+                    ? ProfileNavigationAppBar(title: 'Application Tracker')
+                    : null,
+                body: Column(
+                  children: [
+                    if (!isFromProfile) _buildTabBar(),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          _buildAppliedTab(context, appliedJobs),
+                          _buildInterviewTab(context, interviewJobs),
+                          _buildOffersTab(context, offerJobs),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

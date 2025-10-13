@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/cards/course_card.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
@@ -69,23 +70,25 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
   Widget build(BuildContext context) {
     return BlocBuilder<CoursesBloc, CoursesState>(
       builder: (context, state) {
-        return Scaffold(
-          backgroundColor: AppConstants.backgroundColor,
-          appBar: _buildAppBar(context, state),
-          body: Column(
-            children: [
-              _buildSearchBar(),
-              _buildTabBar(),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildLearningCenterTab(context, state),
-                    const SavedCoursesPage(),
-                  ],
+        return KeyboardDismissWrapper(
+          child: Scaffold(
+            backgroundColor: AppConstants.backgroundColor,
+            appBar: _buildAppBar(context, state),
+            body: Column(
+              children: [
+                _buildSearchBar(),
+                _buildTabBar(),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildLearningCenterTab(context, state),
+                      const SavedCoursesPage(),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

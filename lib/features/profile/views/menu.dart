@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_event.dart';
 import '../../auth/bloc/auth_state.dart';
@@ -29,43 +30,45 @@ class MenuScreen extends StatelessWidget {
           );
         }
       },
-      child: Scaffold(
-        backgroundColor: AppConstants.cardBackgroundColor,
-        appBar: AppBar(
+      child: KeyboardDismissWrapper(
+        child: Scaffold(
           backgroundColor: AppConstants.cardBackgroundColor,
-          elevation: 0,
-          title: const Text(
-            'Menu',
-            style: TextStyle(
-              color: AppConstants.textPrimaryColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
+          appBar: AppBar(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            elevation: 0,
+            title: const Text(
+              'Menu',
+              style: TextStyle(
+                color: AppConstants.textPrimaryColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppConstants.textPrimaryColor,
+              ),
+              onPressed: () {
+                // Navigate back to home screen
+                context.go(AppRoutes.home);
+              },
             ),
           ),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: AppConstants.textPrimaryColor,
-            ),
-            onPressed: () {
-              // Navigate back to home screen
-              context.go(AppRoutes.home);
-            },
-          ),
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Column(
-              children: [
-                // Profile header
-                _buildProfileHeader(context),
-                const SizedBox(height: AppConstants.largePadding),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Column(
+                children: [
+                  // Profile header
+                  _buildProfileHeader(context),
+                  const SizedBox(height: AppConstants.largePadding),
 
-                // Menu options
-                _buildMenuOptions(context),
-              ],
+                  // Menu options
+                  _buildMenuOptions(context),
+                ],
+              ),
             ),
           ),
         ),

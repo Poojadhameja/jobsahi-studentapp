@@ -11,6 +11,7 @@ import '../../../shared/widgets/common/custom_app_bar.dart';
 import '../../../shared/widgets/common/tab_app_bar.dart';
 import '../../../shared/widgets/common/bottom_navigation.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
 import '../bloc/home_bloc.dart';
@@ -71,13 +72,15 @@ class _HomeScreenState extends State<HomeScreen> {
               _handleBackPress();
             }
           },
-          child: Scaffold(
-            backgroundColor: AppConstants.cardBackgroundColor,
-            appBar: _buildAppBar(selectedIndex),
-            body: _buildCurrentScreen(selectedIndex),
-            bottomNavigationBar: CustomBottomNavigation(
-              currentIndex: selectedIndex,
-              onTap: _onTabSelected,
+          child: KeyboardDismissWrapper(
+            child: Scaffold(
+              backgroundColor: AppConstants.cardBackgroundColor,
+              appBar: _buildAppBar(selectedIndex),
+              body: _buildCurrentScreen(selectedIndex),
+              bottomNavigationBar: CustomBottomNavigation(
+                currentIndex: selectedIndex,
+                onTap: _onTabSelected,
+              ),
             ),
           ),
         );

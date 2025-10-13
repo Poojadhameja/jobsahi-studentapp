@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 
 class SuccessPopupScreen extends StatefulWidget {
   final String title;
@@ -87,27 +88,29 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
         // Prevent going back to auth screens, navigate to home instead
         context.go(widget.navigationRoute);
       },
-      child: Scaffold(
-        backgroundColor: AppConstants.cardBackgroundColor,
-        // Remove back button completely
-        appBar: null,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppConstants.largePadding),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Success icon
-                _buildSuccessIcon(),
-                const SizedBox(height: AppConstants.largePadding),
+      child: KeyboardDismissWrapper(
+        child: Scaffold(
+          backgroundColor: AppConstants.cardBackgroundColor,
+          // Remove back button completely
+          appBar: null,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(AppConstants.largePadding),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Success icon
+                  _buildSuccessIcon(),
+                  const SizedBox(height: AppConstants.largePadding),
 
-                // Title and description
-                _buildContent(),
-                const SizedBox(height: AppConstants.largePadding),
+                  // Title and description
+                  _buildContent(),
+                  const SizedBox(height: AppConstants.largePadding),
 
-                // Continue button
-                _buildContinueButton(),
-              ],
+                  // Continue button
+                  _buildContinueButton(),
+                ],
+              ),
             ),
           ),
         ),
