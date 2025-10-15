@@ -319,6 +319,9 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
 
   /// Sends the reset link
   void _sendResetLink(BuildContext context) {
+    // Dismiss keyboard instantly
+    FocusScope.of(context).unfocus();
+
     if (_formKey.currentState!.validate()) {
       // Send forgot password request using existing ForgotPasswordEvent
       context.read<AuthBloc>().add(

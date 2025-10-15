@@ -411,6 +411,8 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
               onPressed: _isSubmitting
                   ? null
                   : () {
+                      // Dismiss keyboard instantly
+                      FocusScope.of(context).unfocus();
                       if (_otpFormKey.currentState!.validate()) {
                         context.read<AuthBloc>().add(
                           LoginWithOtpEvent(
@@ -612,6 +614,8 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
               onPressed: _isSubmitting
                   ? null
                   : () {
+                      // Dismiss keyboard instantly
+                      FocusScope.of(context).unfocus();
                       if (_emailFormKey.currentState!.validate()) {
                         context.read<AuthBloc>().add(
                           LoginWithEmailEvent(

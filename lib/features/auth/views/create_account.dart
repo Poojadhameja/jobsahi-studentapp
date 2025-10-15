@@ -623,6 +623,9 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
 
   /// Submits the form
   void _submitForm(BuildContext context) {
+    // Dismiss keyboard instantly
+    FocusScope.of(context).unfocus();
+
     if (_formKey.currentState!.validate()) {
       // Get current state to check terms acceptance
       final currentState = context.read<AuthBloc>().state;

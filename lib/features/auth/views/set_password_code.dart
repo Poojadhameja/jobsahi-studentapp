@@ -458,6 +458,9 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
   /// Verifies the entered code
   void _verifyCode() {
+    // Dismiss keyboard instantly
+    FocusScope.of(context).unfocus();
+
     if (_currentOtp.length != 6) {
       _showErrorSnackBar('Please enter a valid 6-digit code');
       return;

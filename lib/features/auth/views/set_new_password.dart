@@ -302,6 +302,9 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
 
   /// Resets the password
   void _resetPassword() {
+    // Dismiss keyboard instantly
+    FocusScope.of(context).unfocus();
+
     if (_formKey.currentState!.validate()) {
       // Dispatch reset password event to BLoC
       context.read<AuthBloc>().add(

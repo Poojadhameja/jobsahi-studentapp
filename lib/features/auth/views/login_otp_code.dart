@@ -304,6 +304,9 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
   /// Verifies the entered OTP
   void _verifyOTP() {
+    // Dismiss keyboard instantly
+    FocusScope.of(context).unfocus();
+
     // Get the complete OTP
     final otp = _otpControllers.map((controller) => controller.text).join();
 
