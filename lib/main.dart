@@ -12,6 +12,7 @@ import 'features/messages/bloc/messages_bloc.dart';
 import 'features/settings/bloc/settings_bloc.dart';
 import 'features/skill_test/bloc/skill_test_bloc.dart';
 import 'shared/services/api_service.dart';
+import 'shared/services/inactivity_service.dart';
 
 /// The main function - this is where the Flutter app starts
 /// It calls runApp() which inflates the given widget and attaches it to the screen
@@ -28,14 +29,62 @@ void main() async {
   // Initialize onboarding service for optimized performance
   await OnboardingService.instance.initialize();
 
+  // Initialize inactivity service for token expiry management
+  await InactivityService.instance.initialize();
+
   runApp(const MyApp());
 }
 
 /// MyApp - The root widget of the application
-/// This is a StatelessWidget that sets up the MaterialApp with all necessary configurations
-/// StatelessWidget means this widget doesn't change over time - it's static
-class MyApp extends StatelessWidget {
+/// This is a StatefulWidget that handles app lifecycle events for inactivity monitoring
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App came to foreground - check for token expiry
+        _checkInactivity();
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        // App went to background or became inactive
+        break;
+      case AppLifecycleState.detached:
+        // App is detached
+        break;
+      case AppLifecycleState.hidden:
+        // App is hidden
+        break;
+    }
+  }
+
+  /// Check for user inactivity and handle token expiry if needed
+  Future<void> _checkInactivity() async {
+    if (mounted) {
+      await InactivityService.instance.checkAndHandleTokenExpiry(context);
+    }
+  }
 
   /// The build method is called whenever Flutter needs to render this widget
   /// It returns a MaterialApp which provides Material Design styling and navigation

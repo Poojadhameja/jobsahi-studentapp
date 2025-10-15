@@ -14,6 +14,7 @@ import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
+import '../../../shared/widgets/activity_tracker.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
@@ -61,25 +62,27 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, state) {
         final selectedIndex = state is HomeLoaded ? state.selectedTabIndex : 0;
 
-        return PopScope(
-          canPop: false, // Intercept back to handle exit confirmation
-          onPopInvokedWithResult: (didPop, result) {
-            if (selectedIndex != 0) {
-              // If not on home tab, navigate to home tab instead of exiting
-              _navigateToHomeTab();
-            } else {
-              // On home tab: show exit confirmation
-              _handleBackPress();
-            }
-          },
-          child: KeyboardDismissWrapper(
-            child: Scaffold(
-              backgroundColor: AppConstants.cardBackgroundColor,
-              appBar: _buildAppBar(selectedIndex),
-              body: _buildCurrentScreen(selectedIndex),
-              bottomNavigationBar: CustomBottomNavigation(
-                currentIndex: selectedIndex,
-                onTap: _onTabSelected,
+        return ActivityTracker(
+          child: PopScope(
+            canPop: false, // Intercept back to handle exit confirmation
+            onPopInvokedWithResult: (didPop, result) {
+              if (selectedIndex != 0) {
+                // If not on home tab, navigate to home tab instead of exiting
+                _navigateToHomeTab();
+              } else {
+                // On home tab: show exit confirmation
+                _handleBackPress();
+              }
+            },
+            child: KeyboardDismissWrapper(
+              child: Scaffold(
+                backgroundColor: AppConstants.cardBackgroundColor,
+                appBar: _buildAppBar(selectedIndex),
+                body: _buildCurrentScreen(selectedIndex),
+                bottomNavigationBar: CustomBottomNavigation(
+                  currentIndex: selectedIndex,
+                  onTap: _onTabSelected,
+                ),
               ),
             ),
           ),

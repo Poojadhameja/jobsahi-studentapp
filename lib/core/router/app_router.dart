@@ -6,6 +6,7 @@ import '../constants/app_routes.dart';
 
 // Import services for authentication check
 import '../../shared/services/token_storage.dart';
+import '../../shared/services/inactivity_service.dart';
 import '../di/injection_container.dart';
 
 // Import all screen classes
@@ -118,6 +119,21 @@ class AppRouter {
       final tokenStorage = sl<TokenStorage>();
       final isLoggedIn = await tokenStorage.isLoggedIn();
       final hasToken = await tokenStorage.hasToken();
+
+      // If user is logged in, check for inactivity
+      if (isLoggedIn && hasToken) {
+        final inactivityService = InactivityService.instance;
+        final isTokenExpired = await inactivityService.isTokenExpired();
+
+        if (isTokenExpired) {
+          // Token expired due to inactivity
+          await inactivityService.handleTokenExpiry(context);
+          return AppRoutes.loginOtpEmail;
+        } else {
+          // Update last active timestamp for current activity
+          await inactivityService.updateLastActive();
+        }
+      }
 
       // If user is not logged in and trying to access protected route
       if (!isLoggedIn || !hasToken) {

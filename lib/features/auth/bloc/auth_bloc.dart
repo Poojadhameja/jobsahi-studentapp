@@ -5,6 +5,7 @@ import 'auth_state.dart';
 import '../repository/auth_repository.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
+import '../../../shared/services/inactivity_service.dart';
 import '../../../core/router/app_router.dart';
 
 /// Authentication BLoC
@@ -110,6 +111,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await Future.delayed(const Duration(milliseconds: 200));
         emit(AuthSuccess(message: response.message));
 
+        // Initialize inactivity tracking for the logged-in user
+        await InactivityService.instance.updateLastActive();
+
         // Notify router about auth state change
         AuthStateNotifier.instance.notify();
       } else {
@@ -157,6 +161,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // If we reach here, the user has the correct role (student)
         emit(AuthSuccess(message: response.message));
 
+        // Initialize inactivity tracking for the logged-in user
+        await InactivityService.instance.updateLastActive();
+
         // Notify router about auth state change
         AuthStateNotifier.instance.notify();
       } else {
@@ -190,6 +197,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           user: {}, // social login के बाद भी user खाली Map रख दो
         ),
       );
+
+      // Initialize inactivity tracking for the logged-in user
+      await InactivityService.instance.updateLastActive();
 
       // Notify router about auth state change
       AuthStateNotifier.instance.notify();
@@ -425,6 +435,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (success) {
         emit(const LogoutSuccess());
 
+        // Clear inactivity tracking on logout
+        await InactivityService.instance.clearLastActive();
+
         // Notify router about auth state change (logout)
         AuthStateNotifier.instance.notify();
       } else {
@@ -464,6 +477,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         // Create user data map
         final userData = {'name': userName ?? 'User', 'email': userEmail ?? ''};
+
+        // Update last active timestamp when user returns to the app
+        await InactivityService.instance.updateLastActive();
 
         emit(
           AuthSuccess(

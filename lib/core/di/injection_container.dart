@@ -12,6 +12,7 @@ import '../../features/settings/bloc/settings_bloc.dart';
 import '../../features/skill_test/bloc/skill_test_bloc.dart';
 import '../../shared/services/api_service.dart';
 import '../../shared/services/token_storage.dart';
+import '../../shared/services/inactivity_service.dart';
 
 /// Global service locator instance
 final GetIt sl = GetIt.instance;
@@ -108,5 +109,12 @@ void _registerServices() {
     final tokenStorage = TokenStorage.instance;
     tokenStorage.initialize();
     return tokenStorage;
+  });
+
+  // Inactivity Service
+  sl.registerLazySingleton<InactivityService>(() {
+    final inactivityService = InactivityService.instance;
+    inactivityService.initialize();
+    return inactivityService;
   });
 }

@@ -211,16 +211,19 @@ class AppConstants {
   static const Duration animationDuration = Duration(milliseconds: 300);
   static const Duration debounceDuration = Duration(milliseconds: 500);
 
+  /// Inactivity timeout - 30 days for production
+  static const Duration inactivityTimeout = Duration(days: 30);
+
   /// User Roles
   static const String studentRole = 'student';
 
   /// API Endpoints
   /// Local development base URL
-  // static const String baseUrl = 'http://localhost/jobsahi-API/api/';
+  static const String baseUrl = 'http://localhost/jobsahi-API/api/';
 
   /// Production server base URL
-  static const String baseUrl =
-      'https://beige-jaguar-560051.hostingersite.com/api';
+  // static const String baseUrl =
+  //     'https://beige-jaguar-560051.hostingersite.com/api';
 
   /// Use device-to-PC LAN IP if testing on a real device
   static const String lanBaseUrl = 'http://10.167.188.31:8000/api';
