@@ -89,8 +89,8 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           debugPrint("🔵 LoginScreen showing success and navigating to popup");
           debugPrint("🔵 AuthSuccess message: ${state.message}");
           debugPrint("🔵 AuthSuccess user: ${state.user}");
-          // Keep submitting state true until navigation completes
-          context.push(AppRoutes.loginVerifiedPopup);
+          // Use go instead of push to replace the route and prevent back navigation
+          context.go(AppRoutes.loginVerifiedPopup);
         }
       },
       child: PopScope(

@@ -151,9 +151,28 @@ class AppRouter {
         }
       }
 
-      // If user is logged in and on public route (except splash), allow
-      // This prevents redirect loops
+      // If user is logged in and trying to access auth routes, redirect to home
       if (isLoggedIn && hasToken && isPublicRoute && path != AppRoutes.splash) {
+        // Check if trying to access auth routes (including success popups)
+        const authRoutes = {
+          AppRoutes.loginOtpEmail,
+          AppRoutes.loginOtpCode,
+          AppRoutes.loginVerifiedPopup,
+          AppRoutes.createAccount,
+          AppRoutes.createAccountPopup,
+          AppRoutes.forgotPassword,
+          AppRoutes.setPasswordCode,
+          AppRoutes.setNewPassword,
+          AppRoutes.changePassword,
+        };
+
+        if (authRoutes.contains(path)) {
+          debugPrint(
+            '🔒 Logged-in user trying to access auth route. Redirecting to home.',
+          );
+          return AppRoutes.home;
+        }
+
         return null;
       }
 

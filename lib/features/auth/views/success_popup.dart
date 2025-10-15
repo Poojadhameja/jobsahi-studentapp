@@ -21,6 +21,24 @@ class SuccessPopupScreen extends StatefulWidget {
   State<SuccessPopupScreen> createState() => _SuccessPopupScreenState();
 }
 
+/// Global flag to track if success popup has been shown
+class SuccessPopupState {
+  static bool _hasShownLoginPopup = false;
+  static bool _hasShownCreateAccountPopup = false;
+
+  static bool hasShownLoginPopup() => _hasShownLoginPopup;
+  static bool hasShownCreateAccountPopup() => _hasShownCreateAccountPopup;
+
+  static void markLoginPopupShown() => _hasShownLoginPopup = true;
+  static void markCreateAccountPopupShown() =>
+      _hasShownCreateAccountPopup = true;
+
+  static void resetFlags() {
+    _hasShownLoginPopup = false;
+    _hasShownCreateAccountPopup = false;
+  }
+}
+
 class _SuccessPopupScreenState extends State<SuccessPopupScreen>
     with TickerProviderStateMixin {
   /// Animation controllers
@@ -32,6 +50,9 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
   @override
   void initState() {
     super.initState();
+
+    // Check if this popup has already been shown
+    _checkIfAlreadyShown();
 
     // Initialize scale animation controller
     _scaleController = AnimationController(
@@ -59,6 +80,34 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
     _startAnimations();
   }
 
+  /// Check if this popup has already been shown and redirect if so
+  void _checkIfAlreadyShown() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Determine which popup this is based on the navigation route
+      bool shouldRedirect = false;
+
+      if (widget.navigationRoute == '/home') {
+        // This is login success popup
+        if (SuccessPopupState.hasShownLoginPopup()) {
+          shouldRedirect = true;
+        } else {
+          SuccessPopupState.markLoginPopupShown();
+        }
+      } else if (widget.navigationRoute == '/auth/login') {
+        // This is create account success popup
+        if (SuccessPopupState.hasShownCreateAccountPopup()) {
+          shouldRedirect = true;
+        } else {
+          SuccessPopupState.markCreateAccountPopupShown();
+        }
+      }
+
+      if (shouldRedirect && mounted) {
+        context.go(widget.navigationRoute);
+      }
+    });
+  }
+
   @override
   void dispose() {
     _scaleController.dispose();
@@ -84,9 +133,8 @@ class _SuccessPopupScreenState extends State<SuccessPopupScreen>
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) async {
-        if (didPop) return;
-        // Prevent going back to auth screens, navigate to home instead
-        context.go(widget.navigationRoute);
+        // Completely prevent back navigation - do nothing when back is pressed
+        // This makes it behave like a true popup that can only be dismissed by the continue button
       },
       child: KeyboardDismissWrapper(
         child: Scaffold(

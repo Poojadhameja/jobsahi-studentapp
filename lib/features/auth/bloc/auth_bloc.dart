@@ -7,6 +7,7 @@ import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../shared/services/inactivity_service.dart';
 import '../../../core/router/app_router.dart';
+import '../views/success_popup.dart' as success_popup;
 
 /// Authentication BLoC
 /// Handles all authentication-related business logic
@@ -437,6 +438,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         // Clear inactivity tracking on logout
         await InactivityService.instance.clearLastActive();
+
+        // Reset success popup flags
+        success_popup.SuccessPopupState.resetFlags();
 
         // Notify router about auth state change (logout)
         AuthStateNotifier.instance.notify();

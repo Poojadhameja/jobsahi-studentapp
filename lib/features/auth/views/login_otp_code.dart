@@ -74,8 +74,8 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          // Keep submitting state true until navigation completes
-          context.push(AppRoutes.loginVerifiedPopup);
+          // Use go instead of push to replace the route and prevent back navigation
+          context.go(AppRoutes.loginVerifiedPopup);
         }
       },
       child: KeyboardDismissWrapper(
