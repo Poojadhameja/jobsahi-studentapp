@@ -17,6 +17,7 @@ class Job {
   final String adminAction;
   final String createdAt;
   final int views;
+  final String? companyName; // New field for company name
 
   const Job({
     required this.id,
@@ -36,6 +37,7 @@ class Job {
     required this.adminAction,
     required this.createdAt,
     required this.views,
+    this.companyName, // Optional company name
   });
 
   /// Create Job from JSON
@@ -58,6 +60,8 @@ class Job {
       adminAction: json['admin_action'] as String? ?? '',
       createdAt: json['created_at'] as String? ?? '',
       views: json['views'] as int? ?? 0,
+      companyName:
+          json['company_name'] as String?, // Parse company_name from API
     );
   }
 
@@ -81,6 +85,7 @@ class Job {
       'admin_action': adminAction,
       'created_at': createdAt,
       'views': views,
+      'company_name': companyName, // Include company_name in JSON output
     };
   }
 

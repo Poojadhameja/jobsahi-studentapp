@@ -119,8 +119,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     return {
       'id': job.id.toString(),
       'title': job.title,
-      'company':
-          'Company Name', // API doesn't provide company name, using placeholder
+      'company': job.companyName ?? 'Company Name', // Use company_name from API
       'rating': 4.5, // Default rating
       'tags': [job.jobTypeDisplay, job.isRemote ? 'Remote' : 'On-site'],
       'job_type_display': job.jobTypeDisplay,
@@ -145,6 +144,8 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       'status': job.status,
       'created_at': job.createdAt,
       'views': job.views,
+      'company_name':
+          job.companyName, // Add company_name field for direct access
     };
   }
 

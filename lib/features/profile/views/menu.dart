@@ -164,7 +164,7 @@ class MenuScreen extends StatelessWidget {
           icon: Icons.chat_outlined,
           title: 'My Chats / आपकी बातचीत',
           onTap: () {
-            context.push(AppRoutes.inbox);
+            context.push(AppRoutes.messages);
           },
         ),
         _buildOptionTile(

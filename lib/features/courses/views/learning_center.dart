@@ -9,7 +9,7 @@ import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/cards/course_card.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
-import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/common/navigation_helper.dart';
 import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
@@ -71,48 +71,23 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
     return BlocBuilder<CoursesBloc, CoursesState>(
       builder: (context, state) {
         return KeyboardDismissWrapper(
-          child: Scaffold(
-            backgroundColor: AppConstants.backgroundColor,
-            appBar: _buildAppBar(context, state),
-            body: Column(
-              children: [
-                _buildSearchBar(),
-                _buildTabBar(),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildLearningCenterTab(context, state),
-                      const SavedCoursesPage(),
-                    ],
-                  ),
+          child: Column(
+            children: [
+              _buildSearchBar(),
+              _buildTabBar(),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildLearningCenterTab(context, state),
+                    const SavedCoursesPage(),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context, CoursesState state) {
-    return AppBar(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      elevation: 0,
-      title: const Text(
-        'Learning Center',
-        style: TextStyle(
-          color: AppConstants.primaryColor,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      actions: [
-        IconButton(
-          onPressed: () => _refreshCourses(context),
-          icon: const Icon(Icons.refresh, color: AppConstants.primaryColor),
-        ),
-      ],
     );
   }
 
@@ -208,7 +183,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
 
     return RefreshIndicator(
       onRefresh: () async {
-        _refreshCourses(context);
+        context.read<CoursesBloc>().add(const LoadCoursesEvent());
         // Wait for the API call to complete
         await Future.delayed(const Duration(milliseconds: 500));
       },
@@ -411,7 +386,8 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
   }
 
   void _navigateToCourseDetails(Map<String, dynamic> course) {
-    context.go(AppRoutes.courseDetailsWithId(course['id']));
+    // Use NavigationHelper for proper stack navigation
+    NavigationHelper.navigateTo(AppRoutes.courseDetailsWithId(course['id']));
   }
 
   void _onSaveToggle(
@@ -444,10 +420,5 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
       'Drafting',
       'General',
     ];
-  }
-
-  /// Refresh courses by reloading from API
-  void _refreshCourses(BuildContext context) {
-    context.read<CoursesBloc>().add(const LoadCoursesEvent());
   }
 }

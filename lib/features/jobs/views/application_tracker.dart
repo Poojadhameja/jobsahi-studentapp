@@ -3,24 +3,40 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/profile_navigation_app_bar.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
-import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
 
-class ApplicationTrackerScreen extends StatelessWidget {
+class ApplicationTrackerScreen extends StatefulWidget {
   /// Whether this screen is opened from profile navigation
   final bool isFromProfile;
 
   const ApplicationTrackerScreen({super.key, this.isFromProfile = false});
 
   @override
+  State<ApplicationTrackerScreen> createState() =>
+      _ApplicationTrackerScreenState();
+}
+
+class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Add event after the widget is built and BLoC is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
+        } catch (e) {
+          // BLoC not available, ignore
+        }
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) =>
-          sl<JobsBloc>()..add(const LoadApplicationTrackerEvent()),
-      child: _ApplicationTrackerScreenView(isFromProfile: isFromProfile),
-    );
+    return _ApplicationTrackerScreenView(isFromProfile: widget.isFromProfile);
   }
 }
 

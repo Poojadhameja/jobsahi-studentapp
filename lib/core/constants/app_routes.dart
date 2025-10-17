@@ -43,8 +43,17 @@ class AppRoutes {
   /// Home screen - main dashboard
   static const String home = '/home';
 
-  /// Profile screen
-  static const String profile = '/profile';
+  /// Learning center - courses overview
+  static const String learning = '/learning';
+
+  /// Application tracker
+  static const String applicationTracker = '/application-tracker';
+
+  /// Messages inbox
+  static const String messages = '/messages';
+
+  /// Profile menu screen
+  static const String profile = '/profile/menu';
 
   /// Profile details screen
   static const String profileDetails = '/profile/details';
@@ -104,9 +113,6 @@ class AppRoutes {
   /// Saved jobs
   static const String savedJobs = '/jobs/saved';
 
-  /// Application tracker
-  static const String applicationTracker = '/jobs/applications/tracker';
-
   /// Calendar view for job applications
   static const String calendarView = '/jobs/applications/calendar';
 
@@ -123,8 +129,6 @@ class AppRoutes {
   static const String jobStep = '/jobs/application/step/:id';
 
   // ==================== COURSES ROUTES ====================
-  /// Learning center - courses overview
-  static const String learningCenter = '/courses';
 
   /// Course details with dynamic ID
   static const String courseDetails = '/courses/:id';
@@ -133,8 +137,6 @@ class AppRoutes {
   static const String savedCourses = '/courses/saved';
 
   // ==================== MESSAGES ROUTES ====================
-  /// Messages inbox
-  static const String inbox = '/messages/inbox';
 
   /// Chat screen with dynamic ID
   static const String chat = '/messages/chat/:id';

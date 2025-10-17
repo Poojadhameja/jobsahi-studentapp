@@ -24,6 +24,9 @@ import '../../features/auth/views/change_password.dart';
 
 // Main app screens
 import '../../features/home/views/home.dart';
+
+// Import MainScaffold for ShellRoute
+import '../../shared/widgets/common/main_scaffold.dart';
 import '../../features/jobs/views/search_job.dart';
 import '../../features/jobs/views/search_result.dart';
 import '../../features/jobs/views/job_details.dart';
@@ -317,17 +320,47 @@ class AppRouter {
         builder: (context, state) => const ChangePasswordPage(),
       ),
 
-      // ==================== MAIN APP ROUTES ====================
-      GoRoute(
-        path: AppRoutes.home,
-        name: 'home',
-        builder: (context, state) => const HomeScreen(),
+      // ==================== MAIN APP ROUTES WITH SHELL ROUTE ====================
+      ShellRoute(
+        builder: (context, state, child) {
+          return MainScaffold(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/home',
+            name: 'home',
+            builder: (context, state) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: '/learning',
+            name: 'learning',
+            builder: (context, state) => const LearningCenterPage(),
+          ),
+          GoRoute(
+            path: '/application-tracker',
+            name: 'application-tracker',
+            builder: (context, state) =>
+                const ApplicationTrackerScreen(isFromProfile: false),
+          ),
+          GoRoute(
+            path: '/messages',
+            name: 'messages',
+            builder: (context, state) =>
+                const InboxScreen(isFromProfile: false),
+          ),
+          GoRoute(
+            path: '/profile',
+            name: 'profile',
+            builder: (context, state) =>
+                const ProfileDetailsScreen(isFromBottomNavigation: true),
+          ),
+        ],
       ),
 
       // ==================== PROFILE ROUTES ====================
       GoRoute(
         path: AppRoutes.profile,
-        name: 'profile',
+        name: 'profileMenu',
         builder: (context, state) => const MenuScreen(),
       ),
 
@@ -471,12 +504,6 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: AppRoutes.applicationTracker,
-        name: 'applicationTracker',
-        builder: (context, state) => const ApplicationTrackerScreen(),
-      ),
-
-      GoRoute(
         path: AppRoutes.calendarView,
         name: 'calendarView',
         builder: (context, state) => const CalendarViewScreen(),
@@ -523,12 +550,6 @@ class AppRouter {
 
       // ==================== COURSES ROUTES ====================
       GoRoute(
-        path: AppRoutes.learningCenter,
-        name: 'learningCenter',
-        builder: (context, state) => const LearningCenterPage(),
-      ),
-
-      GoRoute(
         path: AppRoutes.courseDetails,
         name: 'courseDetails',
         builder: (context, state) {
@@ -545,12 +566,6 @@ class AppRouter {
       ),
 
       // ==================== MESSAGES ROUTES ====================
-      GoRoute(
-        path: AppRoutes.inbox,
-        name: 'inbox',
-        builder: (context, state) => const InboxScreen(),
-      ),
-
       GoRoute(
         path: AppRoutes.chat,
         name: 'chat',

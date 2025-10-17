@@ -227,6 +227,7 @@ class JobInfo {
       adminAction: adminAction,
       createdAt: createdAt,
       views: 0, // This will be populated from statistics
+      companyName: null, // Will be populated from API response
     );
   }
 }

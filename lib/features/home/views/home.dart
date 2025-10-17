@@ -1,30 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/job_data.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../core/router/app_router.dart';
-import '../../../shared/widgets/common/custom_app_bar.dart';
-import '../../../shared/widgets/common/tab_app_bar.dart';
-import '../../../shared/widgets/common/bottom_navigation.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/navigation_helper.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/cards/filter_chip.dart';
 import '../../../shared/widgets/activity_tracker.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
-
-import '../../jobs/views/application_tracker.dart';
-import '../../profile/views/profile_details.dart';
-import '../../courses/views/learning_center.dart';
 import '../../courses/bloc/courses_bloc.dart';
 import '../../courses/bloc/courses_event.dart';
-import '../../messages/views/inbox_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -34,8 +24,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  DateTime? _lastBackPressed;
-
   @override
   void initState() {
     super.initState();
@@ -58,160 +46,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HomeBloc, HomeState>(
-      builder: (context, state) {
-        final selectedIndex = state is HomeLoaded ? state.selectedTabIndex : 0;
-
         return ActivityTracker(
-          child: PopScope(
-            canPop: false, // Intercept back to handle exit confirmation
-            onPopInvokedWithResult: (didPop, result) {
-              if (selectedIndex != 0) {
-                // If not on home tab, navigate to home tab instead of exiting
-                _navigateToHomeTab();
-              } else {
-                // On home tab: show exit confirmation
-                _handleBackPress();
-              }
-            },
             child: KeyboardDismissWrapper(
-              child: Scaffold(
-                backgroundColor: AppConstants.cardBackgroundColor,
-                appBar: _buildAppBar(selectedIndex),
-                body: _buildCurrentScreen(selectedIndex),
-                bottomNavigationBar: CustomBottomNavigation(
-                  currentIndex: selectedIndex,
-                  onTap: _onTabSelected,
+        child: BlocBuilder<HomeBloc, HomeState>(
+          builder: (context, state) {
+            if (state is HomeLoading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is HomeError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      style: const TextStyle(fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<HomeBloc>().add(const LoadHomeDataEvent());
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// Navigates back to home tab
-  void _navigateToHomeTab() {
-    context.read<HomeBloc>().add(const ChangeTabEvent(tabIndex: 0));
-  }
-
-  /// Handle back press with exit confirmation
-  void _handleBackPress() {
-    final now = DateTime.now();
-
-    if (_lastBackPressed == null ||
-        now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
-      // First back press - show exit message
-      _lastBackPressed = now;
-      _showExitMessage();
+              );
     } else {
-      // Second back press within 2 seconds - exit app
-      _exitApp();
-    }
-  }
-
-  /// Show exit confirmation message
-  void _showExitMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Press back again to exit the app',
-          style: TextStyle(color: Colors.white),
+              // Show HomePage content
+              return const HomePage();
+            }
+          },
         ),
-        backgroundColor: Colors.grey.withOpacity(0.7),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        margin: const EdgeInsets.all(16),
       ),
     );
-  }
-
-  /// Exit the app
-  void _exitApp() {
-    // Use SystemNavigator to exit the app
-    SystemNavigator.pop();
-  }
-
-  /// Builds the appropriate app bar based on selected tab
-  PreferredSizeWidget? _buildAppBar(int selectedIndex) {
-    switch (selectedIndex) {
-      case 0:
-        // Home tab - show hamburger menu, search, and notification
-        return CustomAppBar(
-          showSearchBar: true,
-          showMenuButton: true,
-          showNotificationIcon: true,
-          onSearch: _onSearch,
-          onNotificationPressed: _onNotificationPressed,
-        );
-      case 1:
-        // Courses tab - show heading with back icon
-        return TabAppBar(
-          title: 'Learning Center',
-          onBackPressed: _navigateToHomeTab, // Navigate to home tab
-        );
-      case 2:
-        // Application Tracker tab - show heading with back icon
-        return TabAppBar(
-          title: 'Application Tracker',
-          onBackPressed: _navigateToHomeTab, // Navigate to home tab
-        );
-      case 3:
-        // Messages tab - show heading with back icon
-        return TabAppBar(
-          title: 'Messages',
-          onBackPressed: _navigateToHomeTab, // Navigate to home tab
-        );
-      case 4:
-        // Profile tab - show heading with back icon
-        return TabAppBar(
-          title: 'Profile Details',
-          onBackPressed: _navigateToHomeTab, // Navigate to home tab
-        );
-      default:
-        return null;
-    }
-  }
-
-  /// Builds the current screen based on selected tab
-  Widget _buildCurrentScreen(int selectedIndex) {
-    switch (selectedIndex) {
-      case 0:
-        return const HomePage();
-      case 1:
-        return const LearningCenterPage();
-      case 2:
-        return const ApplicationTrackerScreen(isFromProfile: false);
-      case 3:
-        return InboxScreen(isFromProfile: false);
-      case 4:
-        // Profile tab - navigate directly to profile details
-        return const ProfileDetailsScreen(isFromBottomNavigation: true);
-      default:
-        return const HomePage();
-    }
-  }
-
-  /// Handles tab selection
-  void _onTabSelected(int index) {
-    context.read<HomeBloc>().add(ChangeTabEvent(tabIndex: index));
-  }
-
-  /// Handles search functionality
-  static void _onSearch(String query) {
-    // Navigate to search results screen
-    // Note: This is a static method, so we need to use a different approach
-    // In a real app, you might want to pass the context or use a different pattern
-    // For now, we'll use the global router
-    AppRouter.go('${AppRoutes.searchJob}?query=${Uri.encodeComponent(query)}');
-  }
-
-  /// Handles notification icon tap
-  void _onNotificationPressed() {
-    // Navigate to notification permission page
-    context.go(AppRoutes.notificationPermission);
   }
 }
 
@@ -340,8 +214,10 @@ class JobList extends StatelessWidget {
             (job) => JobCard(
               job: job,
               onTap: () {
-                // Navigate to job details screen
-                context.go(AppRoutes.jobDetailsWithId(job['id']));
+                // Navigate to job details screen using NavigationHelper
+                NavigationHelper.navigateTo(
+                  AppRoutes.jobDetailsWithId(job['id']),
+                );
               },
             ),
           )
