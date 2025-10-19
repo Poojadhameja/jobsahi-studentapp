@@ -5,12 +5,39 @@ import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/services/location_service.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_event.dart';
 import '../../auth/bloc/auth_state.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
+
+  /// Gets user's current location for display
+  Future<String> _getUserLocation() async {
+    try {
+      final locationService = LocationService.instance;
+      await locationService.initialize();
+
+      // Try to get saved location first
+      final savedLocation = await locationService.getSavedLocation();
+      if (savedLocation != null) {
+        return savedLocation.address ??
+            '${savedLocation.latitude.toStringAsFixed(4)}, ${savedLocation.longitude.toStringAsFixed(4)}';
+      }
+
+      // If no saved location, try to get current location
+      final currentLocation = await locationService.getCurrentLocation();
+      if (currentLocation != null) {
+        return currentLocation.address ??
+            '${currentLocation.latitude.toStringAsFixed(4)}, ${currentLocation.longitude.toStringAsFixed(4)}';
+      }
+
+      return 'Location not available';
+    } catch (e) {
+      return 'Location not available';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,11 +154,24 @@ class MenuScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    user['phone'] ?? 'phone',
-                    style: const TextStyle(
-                      color: AppConstants.textSecondaryColor,
-                    ),
+                  FutureBuilder<String>(
+                    future: _getUserLocation(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Text(
+                          'Getting location...',
+                          style: TextStyle(
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        );
+                      }
+                      return Text(
+                        snapshot.data ?? 'Location not available',
+                        style: const TextStyle(
+                          color: AppConstants.textSecondaryColor,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

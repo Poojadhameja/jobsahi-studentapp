@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/services/location_service.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -30,6 +31,32 @@ class _ProfileDetailsView extends StatelessWidget {
   final bool isFromBottomNavigation;
 
   const _ProfileDetailsView({required this.isFromBottomNavigation});
+
+  /// Gets user's current location for display
+  Future<String> _getUserLocation() async {
+    try {
+      final locationService = LocationService.instance;
+      await locationService.initialize();
+
+      // Try to get saved location first
+      final savedLocation = await locationService.getSavedLocation();
+      if (savedLocation != null) {
+        return savedLocation.address ??
+            '${savedLocation.latitude.toStringAsFixed(4)}, ${savedLocation.longitude.toStringAsFixed(4)}';
+      }
+
+      // If no saved location, try to get current location
+      final currentLocation = await locationService.getCurrentLocation();
+      if (currentLocation != null) {
+        return currentLocation.address ??
+            '${currentLocation.latitude.toStringAsFixed(4)}, ${currentLocation.longitude.toStringAsFixed(4)}';
+      }
+
+      return 'Location not available';
+    } catch (e) {
+      return 'Location not available';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,6 +169,10 @@ class _ProfileDetailsView extends StatelessWidget {
 
                 // Resume/CV Section
                 _buildResumeSection(context, state),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Location Section
+                _buildLocationSection(context, state),
               ],
             ),
           ),
@@ -309,12 +340,16 @@ class _ProfileDetailsView extends StatelessWidget {
       child: Column(
         children: [
           _buildInfoRow(Icons.email_outlined, 'Email', user['email'] ?? 'N/A'),
-          _buildInfoRow(
-            Icons.location_on_outlined,
-            'Location',
-            user['location'] ?? 'N/A',
+          FutureBuilder<String>(
+            future: _getUserLocation(),
+            builder: (context, snapshot) {
+              return _buildInfoRow(
+                Icons.location_on_outlined,
+                'Location',
+                snapshot.data ?? 'Getting location...',
+              );
+            },
           ),
-          _buildInfoRow(Icons.phone_outlined, 'Phone', user['phone'] ?? 'N/A'),
           _buildInfoRow(
             Icons.work_outline,
             'Experience',
@@ -501,6 +536,22 @@ class _ProfileDetailsView extends StatelessWidget {
     );
   }
 
+  /// ---------------- LOCATION SECTION ----------------
+  /// Displays current location with update functionality
+  Widget _buildLocationSection(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
+    return _buildSectionCard(
+      context: context,
+      state: state,
+      title: 'Current Location',
+      icon: Icons.location_on_outlined,
+      section: 'location',
+      child: _buildLocationContent(context, state),
+    );
+  }
+
   /// Builds the content for resume section
   Widget _buildResumeContent(BuildContext context, ProfileDetailsLoaded state) {
     return Column(
@@ -587,6 +638,347 @@ class _ProfileDetailsView extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// Builds the content for location section
+  Widget _buildLocationContent(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
+    return FutureBuilder<LocationData?>(
+      future: LocationService.instance.getSavedLocation(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            decoration: BoxDecoration(
+              color: AppConstants.cardBackgroundColor,
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              border: Border.all(color: AppConstants.borderColor),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: AppConstants.smallPadding),
+                const Text(
+                  'Error loading location',
+                  style: TextStyle(
+                    color: AppConstants.textSecondaryColor,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: AppConstants.smallPadding),
+                ElevatedButton(
+                  onPressed: () => _updateLocation(context),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final locationData = snapshot.data;
+
+        if (locationData == null) {
+          return Container(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            decoration: BoxDecoration(
+              color: AppConstants.cardBackgroundColor,
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              border: Border.all(color: AppConstants.borderColor),
+            ),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.location_off,
+                  color: AppConstants.textSecondaryColor,
+                  size: 48,
+                ),
+                const SizedBox(height: AppConstants.smallPadding),
+                const Text(
+                  'No location data available',
+                  style: TextStyle(
+                    color: AppConstants.textSecondaryColor,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: AppConstants.smallPadding),
+                ElevatedButton(
+                  onPressed: () => _updateLocation(context),
+                  child: const Text('Get Current Location'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          decoration: BoxDecoration(
+            color: AppConstants.cardBackgroundColor,
+            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            border: Border.all(color: AppConstants.borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.location_on,
+                    color: AppConstants.primaryColor,
+                    size: 24,
+                  ),
+                  const SizedBox(width: AppConstants.smallPadding),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Current Location',
+                          style: TextStyle(
+                            color: AppConstants.textSecondaryColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          'Lat: ${locationData.latitude.toStringAsFixed(4)}, Lng: ${locationData.longitude.toStringAsFixed(4)}',
+                          style: const TextStyle(
+                            color: AppConstants.textPrimaryColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (locationData.address != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            locationData.address!,
+                            style: const TextStyle(
+                              color: AppConstants.textSecondaryColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Last updated: ${_formatDateTime(locationData.timestamp)}',
+                          style: const TextStyle(
+                            color: AppConstants.textSecondaryColor,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: AppConstants.primaryColor,
+                    ),
+                    onPressed: () => _updateLocation(context),
+                    tooltip: 'Update Location',
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppConstants.smallPadding),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _updateLocation(context),
+                      icon: const Icon(Icons.my_location, size: 18),
+                      label: const Text('Update Location'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _testLocationUpdate(context),
+                      icon: const Icon(Icons.bug_report, size: 18),
+                      label: const Text('Test API'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.warningColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Updates the current location
+  Future<void> _updateLocation(BuildContext context) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Updating location...'),
+            ],
+          ),
+        ),
+      );
+
+      final locationService = LocationService.instance;
+      final success = await locationService.completeLocationFlow(
+        context: context,
+      );
+
+      // Hide loading indicator
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (success) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location updated successfully!'),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+          // Refresh the page to show updated location
+          context.read<ProfileBloc>().add(const LoadProfileDataEvent());
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to update location. Please try again.'),
+              backgroundColor: AppConstants.errorColor,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Hide loading indicator
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating location: ${e.toString()}'),
+            backgroundColor: AppConstants.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Test location update with sample data
+  Future<void> _testLocationUpdate(BuildContext context) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Testing location update...'),
+            ],
+          ),
+        ),
+      );
+
+      final locationService = LocationService.instance;
+      final success = await locationService.testLocationUpdate();
+
+      // Hide loading indicator
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (success) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Test location update successful! Check logs for details.',
+              ),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Test location update failed! Check logs for details.',
+              ),
+              backgroundColor: AppConstants.errorColor,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Hide loading indicator
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error in test location update: ${e.toString()}'),
+            backgroundColor: AppConstants.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Formats DateTime for display
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    }
   }
 
   /// ---------------- REUSABLE COMPONENTS ----------------
@@ -934,6 +1326,9 @@ class _ProfileDetailsView extends StatelessWidget {
         break;
       case 'Resume/CV':
         context.go(AppRoutes.profileResumeEdit);
+        break;
+      case 'Current Location':
+        _updateLocation(context);
         break;
     }
   }

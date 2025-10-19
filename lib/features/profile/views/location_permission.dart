@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_routes.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
+import '../../../shared/services/location_service.dart';
 
 class LocationPermissionScreen extends StatelessWidget {
   final bool isFromCurrentLocation;
@@ -45,49 +47,64 @@ class _LocationPermissionView extends StatelessWidget {
           isProcessing = state.isProcessing;
         }
 
-        return Scaffold(
-          backgroundColor: AppConstants.cardBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.arrow_back,
-                color: AppConstants.textPrimaryColor,
+        return FutureBuilder<bool>(
+          future: LocationService.instance.isLocationPermissionGranted(),
+          builder: (context, permissionSnapshot) {
+            final hasPermission = permissionSnapshot.data ?? false;
+
+            return Scaffold(
+              backgroundColor: AppConstants.cardBackgroundColor,
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                  onPressed: () => context.pop(),
+                ),
               ),
-              onPressed: () => context.pop(),
-            ),
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.largePadding),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Location icon image
-                  _buildLocationIcon(),
-                  const SizedBox(height: AppConstants.largePadding),
+              body: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppConstants.largePadding),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Location icon image
+                      _buildLocationIcon(),
+                      const SizedBox(height: AppConstants.largePadding),
 
-                  // Main question
-                  _buildMainQuestion(),
-                  const SizedBox(height: AppConstants.defaultPadding),
+                      // Main question
+                      _buildMainQuestion(hasPermission),
+                      const SizedBox(height: AppConstants.defaultPadding),
 
-                  // Description text
-                  _buildDescription(),
-                  const SizedBox(height: AppConstants.largePadding),
+                      // Description text
+                      _buildDescription(hasPermission),
+                      const SizedBox(height: AppConstants.largePadding),
 
-                  // Allow location access button
-                  _buildAllowLocationButton(context, isProcessing),
-                  const SizedBox(height: AppConstants.defaultPadding),
+                      // Allow location access button
+                      _buildAllowLocationButton(
+                        context,
+                        isProcessing,
+                        hasPermission,
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
 
-                  // Manual location entry option (only show if not from current location)
-                  if (!isFromCurrentLocation) ...[
-                    _buildManualLocationOption(context),
-                  ],
-                ],
+                      // Skip button for users who don't want to grant location permission
+                      _buildSkipButton(context, isProcessing),
+                      const SizedBox(height: AppConstants.defaultPadding),
+
+                      // Manual location entry option (only show if not from current location)
+                      if (!isFromCurrentLocation) ...[
+                        _buildManualLocationOption(context),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -120,10 +137,16 @@ class _LocationPermissionView extends StatelessWidget {
   }
 
   /// Builds the main question
-  Widget _buildMainQuestion() {
-    final questionText = isFromCurrentLocation
-        ? AppConstants.allowLocationQuestion
-        : AppConstants.enterLocationTitle;
+  Widget _buildMainQuestion(bool hasPermission) {
+    String questionText;
+
+    if (hasPermission) {
+      questionText = 'Location Access Already Granted';
+    } else if (isFromCurrentLocation) {
+      questionText = AppConstants.allowLocationQuestion;
+    } else {
+      questionText = AppConstants.enterLocationTitle;
+    }
 
     return Text(
       questionText,
@@ -137,10 +160,17 @@ class _LocationPermissionView extends StatelessWidget {
   }
 
   /// Builds the description text
-  Widget _buildDescription() {
-    final descriptionText = isFromCurrentLocation
-        ? AppConstants.currentLocationDescription
-        : AppConstants.locationDescription;
+  Widget _buildDescription(bool hasPermission) {
+    String descriptionText;
+
+    if (hasPermission) {
+      descriptionText =
+          'Your location permission is already granted. You can update your location or continue to the app.';
+    } else if (isFromCurrentLocation) {
+      descriptionText = AppConstants.currentLocationDescription;
+    } else {
+      descriptionText = AppConstants.locationDescription;
+    }
 
     return Text(
       descriptionText,
@@ -154,7 +184,11 @@ class _LocationPermissionView extends StatelessWidget {
   }
 
   /// Builds the allow location access button
-  Widget _buildAllowLocationButton(BuildContext context, bool isProcessing) {
+  Widget _buildAllowLocationButton(
+    BuildContext context,
+    bool isProcessing,
+    bool hasPermission,
+  ) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -178,7 +212,9 @@ class _LocationPermissionView extends StatelessWidget {
                 ),
               )
             : Text(
-                AppConstants.allowLocationAccess,
+                hasPermission
+                    ? 'Update Location'
+                    : AppConstants.allowLocationAccess,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
       ),
@@ -215,42 +251,207 @@ class _LocationPermissionView extends StatelessWidget {
     );
   }
 
-  /// Handles allowing location access
+  /// Handles allowing location access - Simple flow
   void _allowLocationAccess(BuildContext context) async {
     context.read<ProfileBloc>().add(const RequestLocationPermissionEvent());
 
     try {
-      // TODO: Implement actual location permission request
-      // For now, simulate the process
-      await Future.delayed(const Duration(seconds: 2));
+      final locationService = LocationService.instance;
 
-      // Simulate successful permission grant
-      if (context.mounted) {
-        context.read<ProfileBloc>().add(const LocationPermissionGrantedEvent());
-        // Navigate to home screen after successful location access using smart navigation
-        context.go(AppRoutes.home);
+      // Initialize location service first
+      await locationService.initialize();
+
+      // Step 1: Check if location permission is granted
+      final permissionGranted = await locationService
+          .isLocationPermissionGranted();
+
+      if (!permissionGranted) {
+        // Step 2: Request system permission (shows system dialog)
+        final systemPermission = await Permission.location.request();
+        if (systemPermission != PermissionStatus.granted) {
+          // User denied system permission
+          if (context.mounted) {
+            context.read<ProfileBloc>().add(
+              const LocationPermissionDeniedEvent(),
+            );
+          }
+          return;
+        }
+      }
+
+      // Step 3: Check GPS status first
+      final gpsEnabled = await locationService.isLocationServiceEnabled();
+      if (!gpsEnabled) {
+        // GPS is disabled - system will show dialog when we try to get location
+        // Stop the loading state first
+        if (context.mounted) {
+          context.read<ProfileBloc>().add(
+            const LocationPermissionDeniedEvent(),
+          );
+        }
+
+        // Try to get location - this will trigger system GPS dialog
+        try {
+          final locationSuccess = await locationService.completeLocationFlow();
+
+          if (context.mounted) {
+            if (locationSuccess) {
+              // Immediately update state and navigate
+              context.read<ProfileBloc>().add(
+                const LocationPermissionGrantedEvent(),
+              );
+              // Navigate immediately without waiting
+              if (context.mounted) {
+                context.go(AppRoutes.home);
+              }
+            } else {
+              context.read<ProfileBloc>().add(
+                const LocationPermissionDeniedEvent(),
+              );
+            }
+          }
+        } catch (e) {
+          // User cancelled system dialog - already in denied state
+          debugPrint('User cancelled GPS dialog: $e');
+        }
+        return;
+      }
+
+      // Step 4: GPS is enabled, get location normally
+      try {
+        final locationSuccess = await locationService.completeLocationFlow();
+
+        if (context.mounted) {
+          if (locationSuccess) {
+            // Immediately update state and navigate
+            context.read<ProfileBloc>().add(
+              const LocationPermissionGrantedEvent(),
+            );
+            // Navigate immediately without waiting
+            if (context.mounted) {
+              context.go(AppRoutes.home);
+            }
+          } else {
+            context.read<ProfileBloc>().add(
+              const LocationPermissionDeniedEvent(),
+            );
+            _showSimpleErrorDialog(
+              context,
+              'Unable to get location. Please try again.',
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          context.read<ProfileBloc>().add(
+            const LocationPermissionDeniedEvent(),
+          );
+          debugPrint('Location error: $e');
+        }
       }
     } catch (e) {
-      // Handle location permission denied
       if (context.mounted) {
         context.read<ProfileBloc>().add(const LocationPermissionDeniedEvent());
-      }
-
-      // Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Location access denied. Please try again.'),
-            backgroundColor: AppConstants.errorColor,
-          ),
+        _showSimpleErrorDialog(
+          context,
+          'Something went wrong. Please try again.',
         );
       }
     }
+  }
+
+  /// Shows simple error dialog
+  void _showSimpleErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text(
+            'Error',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          content: Text(message, style: const TextStyle(fontSize: 16)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('OK', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Handles manual location entry
   void _enterLocationManually(BuildContext context) {
     // Navigate back to location1 screen for manual selection
     context.pop();
+  }
+
+  /// Handles skipping location permission
+  void _skipLocationPermission(BuildContext context) async {
+    try {
+      // First, emit the processing state
+      context.read<ProfileBloc>().add(const RequestLocationPermissionEvent());
+
+      // Initialize location service and mark that we've asked for permission
+      final locationService = LocationService.instance;
+      await locationService.initialize();
+      await locationService.markLocationPermissionAsked();
+
+      // Emit the denied state to stop processing
+      if (context.mounted) {
+        context.read<ProfileBloc>().add(const LocationPermissionDeniedEvent());
+
+        // Navigate to home screen
+        context.go(AppRoutes.home);
+      }
+    } catch (e) {
+      // Even if there's an error, emit denied state and navigate to home
+      if (context.mounted) {
+        context.read<ProfileBloc>().add(const LocationPermissionDeniedEvent());
+        context.go(AppRoutes.home);
+      }
+    }
+  }
+
+  /// Builds the skip button
+  Widget _buildSkipButton(BuildContext context, bool isProcessing) {
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        bool isProcessing = false;
+
+        if (state is LocationPermissionState) {
+          isProcessing = state.isProcessing;
+        }
+
+        return SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: isProcessing
+                ? null
+                : () => _skipLocationPermission(context),
+            style: TextButton.styleFrom(
+              foregroundColor: AppConstants.textSecondaryColor,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text(
+              'Skip for now',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

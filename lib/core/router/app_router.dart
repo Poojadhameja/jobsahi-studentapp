@@ -154,7 +154,7 @@ class AppRouter {
         }
       }
 
-      // If user is logged in and trying to access auth routes, redirect to home
+      // If user is logged in and trying to access auth routes, redirect to appropriate screen
       if (isLoggedIn && hasToken && isPublicRoute && path != AppRoutes.splash) {
         // Check if trying to access auth routes (including success popups)
         const authRoutes = {
@@ -171,9 +171,15 @@ class AppRouter {
 
         if (authRoutes.contains(path)) {
           debugPrint(
-            '🔒 Logged-in user trying to access auth route. Redirecting to home.',
+            '🔒 Logged-in user trying to access auth route. Redirecting to location permission page.',
           );
-          return AppRoutes.home;
+
+          // Always redirect to location permission page first after login
+          // This ensures all users go through location permission flow
+          debugPrint(
+            '🔒 Redirecting logged-in user to location permission page',
+          );
+          return AppRoutes.locationPermission;
         }
 
         return null;
@@ -269,12 +275,13 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.loginVerifiedPopup,
         name: 'loginVerifiedPopup',
-        builder: (context, state) => const SuccessPopupScreen(
+        builder: (context, state) => SuccessPopupScreen(
           title: 'Login Successful!',
           description:
               'Welcome back! You have successfully logged in. Let\'s continue your job search journey.',
           buttonText: 'Continue to App',
-          navigationRoute: AppRoutes.home,
+          navigationRoute:
+              AppRoutes.home, // Will be overridden by redirect logic
         ),
       ),
 

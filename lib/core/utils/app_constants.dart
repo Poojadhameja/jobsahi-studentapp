@@ -232,6 +232,9 @@ class AppConstants {
   static const String createUserEndpoint = '/user/create_user.php';
   static const String loginEndpoint = '/auth/login.php';
 
+  // Location
+  static const String updateLocationEndpoint = '/student/update_location.php';
+
   // Other (placeholders)
   static const String signupEndpoint = '/auth/signup';
   static const String jobsEndpoint = '/jobs';

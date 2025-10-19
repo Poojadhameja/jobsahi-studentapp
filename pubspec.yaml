@@ -58,6 +58,16 @@ dependencies:
   # Sweet Alert for beautiful popups
   rflutter_alert: ^2.0.7
   
+  # Location services
+  geolocator: ^10.1.0
+  permission_handler: ^11.2.0
+  
+  # URL launcher for opening system settings
+  url_launcher: ^6.2.5
+  
+  # HTTP client for reverse geocoding
+  http: ^1.1.0
+  
 
 dev_dependencies:
   flutter_test:
