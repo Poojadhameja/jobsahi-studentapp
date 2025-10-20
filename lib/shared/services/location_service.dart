@@ -253,6 +253,13 @@ class LocationService {
         return null;
       }
 
+      // Check if location service is enabled
+      final serviceEnabled = await isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('❌ Location service not enabled');
+        return null;
+      }
+
       // Try to get current position - this will automatically trigger system dialogs
       // if GPS is disabled or location accuracy needs to be enabled
       Position? position;
@@ -294,19 +301,30 @@ class LocationService {
         }
       }
 
-      // For testing purposes, return a mock location if in simulator/emulator
-      if (kDebugMode) {
-        debugPrint('🔧 Debug mode: Using mock location for testing');
-        final mockLocationData = LocationData(
-          latitude: 28.6139, // Delhi coordinates
-          longitude: 77.2090,
-          timestamp: DateTime.now(),
-        );
-        debugPrint('✅ Mock location: ${mockLocationData.toString()}');
-        return mockLocationData;
-      }
+      // Only use mock location in simulator/emulator, not on real devices
+      // For now, disable mock location to get real GPS coordinates
+      // if (kDebugMode && (Platform.isAndroid || Platform.isIOS)) {
+      //   final isSimulator = await _isSimulator();
+      //   if (isSimulator) {
+      //     debugPrint('🔧 Debug mode: Using mock location for simulator testing');
+      //     final mockLocationData = LocationData(
+      //       latitude: 28.6139, // Delhi coordinates
+      //       longitude: 77.2090,
+      //       timestamp: DateTime.now(),
+      //     );
+      //     debugPrint('✅ Mock location: ${mockLocationData.toString()}');
+      //     return mockLocationData;
+      //   }
+      // }
 
       // Position should be available at this point
+      // Note: position can't be null at this point due to the try-catch structure above
+
+      debugPrint(
+        '🔵 GPS Position received: lat=${position.latitude}, lng=${position.longitude}',
+      );
+      debugPrint('🔵 GPS Accuracy: ${position.accuracy}m');
+      debugPrint('🔵 GPS Timestamp: ${position.timestamp}');
 
       // Get address using reverse geocoding
       final address = await _reverseGeocode(
@@ -322,6 +340,7 @@ class LocationService {
       );
 
       debugPrint('✅ Current location: ${locationData.toString()}');
+      debugPrint('✅ Location data ready for server update');
       return locationData;
     } catch (e) {
       debugPrint('🔴 Error getting current location: $e');
@@ -551,21 +570,31 @@ class LocationService {
   Future<bool> completeLocationFlow({BuildContext? context}) async {
     try {
       debugPrint('🔵 Starting complete location flow...');
+      debugPrint('🔵 Context provided: ${context != null}');
 
       // Ensure service is initialized
       if (_prefs == null) {
+        debugPrint('🔵 Initializing location service...');
         await initialize();
       }
+
+      // Clear any existing saved location to force fresh GPS location
+      debugPrint('🔵 Clearing any existing saved location...');
+      await clearLocationData();
 
       // Get current location - this will automatically handle:
       // 1. Our custom permission dialog (if permission denied)
       // 2. System permission dialog (after user allows in our dialog)
       // 3. System GPS enable dialog (like in your image) if GPS is disabled
+      debugPrint('🔵 Getting current location...');
       final locationData = await getCurrentLocation(context: context);
+
       if (locationData == null) {
-        debugPrint('❌ Could not get current location');
+        debugPrint('❌ Could not get current location - returning false');
         return false;
       }
+
+      debugPrint('✅ Location data received: ${locationData.toString()}');
 
       // Get address using reverse geocoding if not already available
       if (locationData.address == null) {
@@ -597,20 +626,17 @@ class LocationService {
         debugPrint('✅ Location saved locally');
       }
 
-      // Update server in background (don't wait for it)
-      updateLocationOnServer(locationData)
-          .then((success) {
-            if (success) {
-              debugPrint('✅ Location updated on server (background)');
-            } else {
-              debugPrint('⚠️ Server update failed (background)');
-            }
-          })
-          .catchError((e) {
-            debugPrint('🔴 Server update error (background): $e');
-          });
+      // Update server (wait for it to complete for debugging)
+      debugPrint('🔵 Updating location on server...');
+      final serverUpdateSuccess = await updateLocationOnServer(locationData);
 
-      // Return immediately after local save
+      if (serverUpdateSuccess) {
+        debugPrint('✅ Location updated on server successfully');
+      } else {
+        debugPrint('⚠️ Server update failed, but location saved locally');
+      }
+
+      // Return success if location was saved locally (even if server update failed)
       debugPrint('✅ Complete location flow successful');
       return true;
     } catch (e) {
@@ -668,6 +694,97 @@ class LocationService {
       debugPrint('🔴 Error opening location settings: $e');
       // Final fallback to general app settings
       await openAppSettings();
+    }
+  }
+
+  /// Force fresh GPS location (ignore any saved location)
+  Future<LocationData?> getFreshGPSLocation({BuildContext? context}) async {
+    try {
+      debugPrint('🔵 Getting fresh GPS location (ignoring saved data)...');
+
+      // Clear any saved location first
+      await clearLocationData();
+
+      // Get fresh GPS location
+      return await getCurrentLocation(context: context);
+    } catch (e) {
+      debugPrint('🔴 Error getting fresh GPS location: $e');
+      return null;
+    }
+  }
+
+  /// Test function to directly get GPS coordinates for debugging
+  Future<void> testGPSLocation() async {
+    try {
+      debugPrint('🔵 Testing GPS location directly...');
+
+      // Check permission first
+      final permission = await Permission.location.status;
+      debugPrint('🔵 Permission status: $permission');
+
+      if (permission != PermissionStatus.granted) {
+        debugPrint('❌ Permission not granted - requesting permission...');
+        final requestResult = await Permission.location.request();
+        debugPrint('🔵 Permission request result: $requestResult');
+
+        if (requestResult != PermissionStatus.granted) {
+          debugPrint('❌ Permission still not granted after request');
+          return;
+        }
+      }
+
+      // Check GPS service
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      debugPrint('🔵 GPS service enabled: $serviceEnabled');
+
+      if (!serviceEnabled) {
+        debugPrint(
+          '❌ GPS service not enabled - this will trigger system dialog',
+        );
+        // Don't return here, let the system handle it
+      }
+
+      // Try to get position with different accuracy levels
+      debugPrint('🔵 Getting current position...');
+
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 15),
+        );
+      } catch (e) {
+        debugPrint('⚠️ High accuracy failed: $e');
+        try {
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 10),
+          );
+        } catch (e2) {
+          debugPrint('⚠️ Medium accuracy failed: $e2');
+          try {
+            position = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.low,
+              timeLimit: const Duration(seconds: 5),
+            );
+          } catch (e3) {
+            debugPrint('❌ All accuracy levels failed: $e3');
+            return;
+          }
+        }
+      }
+
+      debugPrint('✅ GPS Position received:');
+      debugPrint('   Latitude: ${position.latitude}');
+      debugPrint('   Longitude: ${position.longitude}');
+      debugPrint('   Accuracy: ${position.accuracy}m');
+      debugPrint('   Altitude: ${position.altitude}m');
+      debugPrint('   Speed: ${position.speed}m/s');
+      debugPrint('   Heading: ${position.heading}°');
+      debugPrint('   Timestamp: ${position.timestamp}');
+    } catch (e) {
+      debugPrint('🔴 GPS test error: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
     }
   }
 
