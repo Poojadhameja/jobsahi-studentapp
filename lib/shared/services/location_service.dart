@@ -100,6 +100,16 @@ class LocationService {
     }
   }
 
+  /// Check GPS status - let system handle the dialog
+  Future<bool> checkGPSStatus() async {
+    try {
+      return await isLocationServiceEnabled();
+    } catch (e) {
+      debugPrint('🔴 Error checking GPS status: $e');
+      return false;
+    }
+  }
+
   /// Request location permission with proper dialog
   Future<bool> requestLocationPermission({BuildContext? context}) async {
     try {
@@ -244,8 +254,6 @@ class LocationService {
     try {
       debugPrint('🔵 Getting current location...');
 
-      // GPS check will be handled by system when we try to get location
-
       // Check if permission is granted
       final permissionGranted = await isLocationPermissionGranted();
       if (!permissionGranted) {
@@ -254,10 +262,13 @@ class LocationService {
       }
 
       // Check if location service is enabled
-      final serviceEnabled = await isLocationServiceEnabled();
+      final serviceEnabled = await checkGPSStatus();
       if (!serviceEnabled) {
-        debugPrint('❌ Location service not enabled');
-        return null;
+        debugPrint(
+          '❌ Location service not enabled - system will show dialog when we try to get location',
+        );
+        // Don't return null here - let the system handle GPS enable dialog
+        // when we call getCurrentPosition()
       }
 
       // Try to get current position - this will automatically trigger system dialogs
@@ -265,40 +276,32 @@ class LocationService {
       Position? position;
 
       try {
-        // Try with medium accuracy first (faster than high)
+        // This will trigger the native system dialog for GPS enable if GPS is disabled
         position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.medium,
-          timeLimit: const Duration(seconds: 5),
+          timeLimit: const Duration(seconds: 10),
         );
+        debugPrint('✅ Got location from system dialog');
       } catch (e) {
-        debugPrint('⚠️ Medium accuracy failed, trying low accuracy: $e');
+        debugPrint('❌ Location request failed: $e');
 
-        try {
-          // Fallback to low accuracy (fastest)
-          position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.low,
-            timeLimit: const Duration(seconds: 3),
-          );
-        } catch (e2) {
-          debugPrint('⚠️ Low accuracy failed, trying lowest accuracy: $e2');
-
-          try {
-            // Final fallback to lowest accuracy (very fast)
-            position = await Geolocator.getCurrentPosition(
-              desiredAccuracy: LocationAccuracy.lowest,
-              timeLimit: const Duration(seconds: 2),
-            );
-          } catch (e3) {
-            debugPrint('❌ All location attempts failed: $e3');
-            // If user cancelled system dialog, throw a specific error
-            if (e3.toString().contains('cancelled') ||
-                e3.toString().contains('denied') ||
-                e3.toString().contains('permission')) {
-              throw Exception('Location cancelled by user');
-            }
-            rethrow;
-          }
+        // Check if it's a GPS disabled error
+        if (e.toString().contains('location_service_disabled') ||
+            e.toString().contains('location_disabled')) {
+          debugPrint('❌ GPS is disabled - system should have shown dialog');
+          return null;
         }
+
+        // Check if user cancelled the system dialog
+        if (e.toString().contains('cancelled') ||
+            e.toString().contains('denied') ||
+            e.toString().contains('permission')) {
+          debugPrint('❌ User cancelled system location dialog');
+          return null;
+        }
+
+        // Re-throw other errors
+        rethrow;
       }
 
       // Only use mock location in simulator/emulator, not on real devices

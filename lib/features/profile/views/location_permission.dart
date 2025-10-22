@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/app_routes.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
@@ -286,13 +287,10 @@ class _LocationPermissionView extends StatelessWidget {
 
       if (!serviceEnabled) {
         debugPrint(
-          '❌ GPS service not enabled - user needs to enable in settings',
+          '❌ GPS service not enabled - system will show dialog when we try to get location',
         );
-        _showSimpleErrorDialog(
-          context,
-          'Please enable GPS/Location services in your device settings and try again.',
-        );
-        return;
+        // Don't return here - let the system handle GPS enable dialog
+        // when we call getCurrentPosition()
       }
 
       debugPrint('🔵 === END DIAGNOSTIC ===');
