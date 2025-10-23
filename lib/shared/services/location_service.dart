@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart';
 import '../../core/utils/app_constants.dart';
 import '../widgets/location_permission_dialog.dart';
@@ -16,13 +15,11 @@ import 'token_storage.dart';
 class LocationData {
   final double latitude;
   final double longitude;
-  final String? address;
   final DateTime timestamp;
 
   LocationData({
     required this.latitude,
     required this.longitude,
-    this.address,
     required this.timestamp,
   });
 
@@ -30,7 +27,6 @@ class LocationData {
     return {
       'latitude': latitude,
       'longitude': longitude,
-      'address': address,
       'timestamp': timestamp.toIso8601String(),
     };
   }
@@ -39,14 +35,13 @@ class LocationData {
     return LocationData(
       latitude: json['latitude']?.toDouble() ?? 0.0,
       longitude: json['longitude']?.toDouble() ?? 0.0,
-      address: json['address'],
       timestamp: DateTime.parse(json['timestamp']),
     );
   }
 
   @override
   String toString() {
-    return 'LocationData(lat: $latitude, lng: $longitude, address: $address)';
+    return 'LocationData(lat: $latitude, lng: $longitude)';
   }
 }
 
@@ -213,42 +208,6 @@ class LocationService {
     }
   }
 
-  /// Reverse geocoding - convert coordinates to address
-  Future<String?> _reverseGeocode(double latitude, double longitude) async {
-    try {
-      debugPrint('🔵 Reverse geocoding: $latitude, $longitude');
-
-      // Using OpenStreetMap Nominatim API (free)
-      final url =
-          'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&addressdetails=1';
-
-      final response = await http
-          .get(Uri.parse(url), headers: {'User-Agent': 'JobsahiApp/1.0'})
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final address = data['display_name'] as String?;
-
-        if (address != null) {
-          // Simplify the address
-          final parts = address.split(', ');
-          if (parts.length >= 3) {
-            // Take city, state, country
-            return '${parts[0]}, ${parts[1]}, ${parts[2]}';
-          }
-          return address;
-        }
-      }
-
-      debugPrint('⚠️ Reverse geocoding failed: ${response.statusCode}');
-      return null;
-    } catch (e) {
-      debugPrint('🔴 Reverse geocoding error: $e');
-      return null;
-    }
-  }
-
   /// Get current location with GPS enable dialog
   Future<LocationData?> getCurrentLocation({BuildContext? context}) async {
     try {
@@ -329,16 +288,9 @@ class LocationService {
       debugPrint('🔵 GPS Accuracy: ${position.accuracy}m');
       debugPrint('🔵 GPS Timestamp: ${position.timestamp}');
 
-      // Get address using reverse geocoding
-      final address = await _reverseGeocode(
-        position.latitude,
-        position.longitude,
-      );
-
       final locationData = LocationData(
         latitude: position.latitude,
         longitude: position.longitude,
-        address: address,
         timestamp: DateTime.now(),
       );
 
@@ -374,27 +326,6 @@ class LocationService {
       if (locationJson != null) {
         final locationMap = jsonDecode(locationJson);
         final locationData = LocationData.fromJson(locationMap);
-
-        // If saved location doesn't have address, try to get it
-        if (locationData.address == null) {
-          debugPrint('🔵 Getting address for existing saved location...');
-          final address = await _reverseGeocode(
-            locationData.latitude,
-            locationData.longitude,
-          );
-          if (address != null) {
-            // Update and save with address
-            final updatedLocationData = LocationData(
-              latitude: locationData.latitude,
-              longitude: locationData.longitude,
-              address: address,
-              timestamp: locationData.timestamp,
-            );
-            await saveLocationLocally(updatedLocationData);
-            debugPrint('✅ Updated saved location with address: $address');
-            return updatedLocationData;
-          }
-        }
 
         debugPrint('✅ Retrieved saved location: ${locationData.toString()}');
         return locationData;
@@ -555,7 +486,6 @@ class LocationService {
       final testLocationData = LocationData(
         latitude: 28.6, // Delhi coordinates (matching your example)
         longitude: 77.09,
-        address: 'Test Location, Delhi',
         timestamp: DateTime.now(),
       );
 
@@ -599,35 +529,9 @@ class LocationService {
 
       debugPrint('✅ Location data received: ${locationData.toString()}');
 
-      // Get address using reverse geocoding if not already available
-      if (locationData.address == null) {
-        debugPrint('🔵 Getting address for saved location...');
-        final address = await _reverseGeocode(
-          locationData.latitude,
-          locationData.longitude,
-        );
-        if (address != null) {
-          // Update location data with address
-          final updatedLocationData = LocationData(
-            latitude: locationData.latitude,
-            longitude: locationData.longitude,
-            address: address,
-            timestamp: locationData.timestamp,
-          );
-
-          // Save updated location with address
-          await saveLocationLocally(updatedLocationData);
-          debugPrint('✅ Location with address saved locally: $address');
-        } else {
-          // Save without address
-          await saveLocationLocally(locationData);
-          debugPrint('✅ Location saved locally (no address)');
-        }
-      } else {
-        // Save as is
-        await saveLocationLocally(locationData);
-        debugPrint('✅ Location saved locally');
-      }
+      // Save location data locally
+      await saveLocationLocally(locationData);
+      debugPrint('✅ Location saved locally');
 
       // Update server (wait for it to complete for debugging)
       debugPrint('🔵 Updating location on server...');

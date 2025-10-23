@@ -22,15 +22,13 @@ class MenuScreen extends StatelessWidget {
       // Try to get saved location first
       final savedLocation = await locationService.getSavedLocation();
       if (savedLocation != null) {
-        return savedLocation.address ??
-            '${savedLocation.latitude.toStringAsFixed(4)}, ${savedLocation.longitude.toStringAsFixed(4)}';
+        return '${savedLocation.latitude.toStringAsFixed(4)}, ${savedLocation.longitude.toStringAsFixed(4)}';
       }
 
       // If no saved location, try to get current location
       final currentLocation = await locationService.getCurrentLocation();
       if (currentLocation != null) {
-        return currentLocation.address ??
-            '${currentLocation.latitude.toStringAsFixed(4)}, ${currentLocation.longitude.toStringAsFixed(4)}';
+        return '${currentLocation.latitude.toStringAsFixed(4)}, ${currentLocation.longitude.toStringAsFixed(4)}';
       }
 
       return 'Location not available';
