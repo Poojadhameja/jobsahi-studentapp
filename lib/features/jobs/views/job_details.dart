@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/data/job_data.dart';
-import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -17,136 +16,135 @@ import 'job_step.dart';
 import 'write_review.dart';
 import 'about_company.dart';
 
-class JobDetailsScreen extends StatelessWidget {
+class JobDetailsScreen extends StatefulWidget {
   /// Job data to display
   final Map<String, dynamic> job;
 
   const JobDetailsScreen({super.key, required this.job});
 
   @override
+  State<JobDetailsScreen> createState() => _JobDetailsScreenState();
+}
+
+class _JobDetailsScreenState extends State<JobDetailsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load job details when the screen is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        // Use the job ID from the URL parameter, not from the static job data
+        final jobId = widget.job['id']?.toString() ?? '';
+        debugPrint('🔵 [JobDetailsScreen] Widget job data: ${widget.job}');
+        debugPrint('🔵 [JobDetailsScreen] Extracted job ID: $jobId');
+        debugPrint('🔵 [JobDetailsScreen] Loading job details for ID: $jobId');
+        context.read<JobsBloc>().add(LoadJobDetailsEvent(jobId: jobId));
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) {
-        final jobId = int.tryParse(job['id']?.toString() ?? '');
-        if (jobId != null) {
-          return sl<JobsBloc>()..add(LoadDetailedJobEvent(jobId: jobId));
-        } else {
-          // Fallback to old method if job ID is invalid
-          return sl<JobsBloc>()
-            ..add(LoadJobDetailsEvent(jobId: job['id'] ?? ''));
+    return BlocConsumer<JobsBloc, JobsState>(
+      listener: (context, state) {
+        // Show snackbar on error but keep showing basic job info
+        if (state is JobsError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'पुनः प्रयास करें',
+                textColor: Colors.white,
+                onPressed: () {
+                  context.read<JobsBloc>().add(
+                    LoadJobDetailsEvent(jobId: widget.job['id'] ?? ''),
+                  );
+                },
+              ),
+            ),
+          );
         }
       },
-      child: BlocConsumer<JobsBloc, JobsState>(
-        listener: (context, state) {
-          // Show snackbar on error but keep showing basic job info
-          if (state is JobsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-                action: SnackBarAction(
-                  label: 'पुनः प्रयास करें',
-                  textColor: Colors.white,
-                  onPressed: () {
-                    final jobId = int.tryParse(job['id']?.toString() ?? '');
-                    if (jobId != null) {
-                      context.read<JobsBloc>().add(
-                        LoadDetailedJobEvent(jobId: jobId),
-                      );
-                    }
-                  },
+      builder: (context, state) {
+        Map<String, dynamic> currentJob = widget.job;
+        bool isBookmarked = false;
+        Map<String, dynamic>? companyInfo;
+        Map<String, dynamic>? statistics;
+        bool isLoading = false;
+
+        if (state is JobsLoading) {
+          isLoading = true;
+        } else if (state is JobDetailsLoaded) {
+          currentJob = state.job;
+          isBookmarked = state.isBookmarked;
+        }
+
+        return Scaffold(
+          backgroundColor: AppConstants.cardBackgroundColor,
+          appBar: const SimpleAppBar(
+            title: 'Job Details',
+            showBackButton: true,
+          ),
+          bottomNavigationBar: _buildApplyButton(context),
+          body: Stack(
+            children: [
+              DefaultTabController(
+                length: 3,
+                child: Column(
+                  children: [
+                    // Job header section
+                    _buildJobHeader(
+                      context,
+                      currentJob,
+                      isBookmarked,
+                      companyInfo,
+                    ),
+
+                    // Tab bar
+                    _buildTabBar(),
+
+                    // Tab content
+                    Expanded(
+                      child: _buildTabContent(
+                        currentJob,
+                        companyInfo,
+                        statistics,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            );
-          }
-        },
-        builder: (context, state) {
-          Map<String, dynamic> currentJob = job;
-          bool isBookmarked = false;
-          Map<String, dynamic>? companyInfo;
-          Map<String, dynamic>? statistics;
-          bool isLoading = false;
-
-          if (state is JobsLoading) {
-            isLoading = true;
-          } else if (state is DetailedJobLoaded) {
-            // Use new detailed job information
-            currentJob = state.jobInfo;
-            companyInfo = state.companyInfo;
-            statistics = state.statistics;
-            isBookmarked = state.isBookmarked;
-          } else if (state is JobDetailsLoaded) {
-            // Fallback to old job details
-            currentJob = state.job;
-            isBookmarked = state.isBookmarked;
-          }
-
-          return Scaffold(
-            backgroundColor: AppConstants.cardBackgroundColor,
-            appBar: const SimpleAppBar(
-              title: 'Job Details',
-              showBackButton: true,
-            ),
-            bottomNavigationBar: _buildApplyButton(context),
-            body: Stack(
-              children: [
-                DefaultTabController(
-                  length: 3,
-                  child: Column(
-                    children: [
-                      // Job header section
-                      _buildJobHeader(
-                        context,
-                        currentJob,
-                        isBookmarked,
-                        companyInfo,
-                      ),
-
-                      // Tab bar
-                      _buildTabBar(),
-
-                      // Tab content
-                      Expanded(
-                        child: _buildTabContent(
-                          currentJob,
-                          companyInfo,
-                          statistics,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Loading overlay
-                if (isLoading)
-                  Container(
-                    color: Colors.black.withOpacity(0.3),
-                    child: const Center(
-                      child: Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 16),
-                              Text(
-                                'जॉब विवरण लोड हो रहा है...',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
+              // Loading overlay
+              if (isLoading)
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(
+                    child: Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text(
+                              'जॉब विवरण लोड हो रहा है...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-              ],
-            ),
-          );
-        },
-      ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1097,7 +1095,7 @@ class JobDetailsScreen extends StatelessWidget {
   void _navigateToJobStep(BuildContext context) {
     // Get current job from BLoC state
     final currentState = context.read<JobsBloc>().state;
-    Map<String, dynamic> currentJob = job;
+    Map<String, dynamic> currentJob = widget.job;
 
     if (currentState is JobDetailsLoaded) {
       currentJob = currentState.job;

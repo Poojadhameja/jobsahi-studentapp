@@ -1,3 +1,85 @@
+/// Company information model
+class CompanyInfo {
+  final int recruiterId;
+  final String companyName;
+  final String companyLogo;
+  final String industry;
+  final String website;
+  final String location;
+
+  const CompanyInfo({
+    required this.recruiterId,
+    required this.companyName,
+    required this.companyLogo,
+    required this.industry,
+    required this.website,
+    required this.location,
+  });
+
+  factory CompanyInfo.fromJson(Map<String, dynamic> json) {
+    return CompanyInfo(
+      recruiterId: json['recruiter_id'] ?? 0,
+      companyName: json['company_name']?.toString() ?? '',
+      companyLogo: json['company_logo']?.toString() ?? '',
+      industry: json['industry']?.toString() ?? '',
+      website: json['website']?.toString() ?? '',
+      location: json['location']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'recruiter_id': recruiterId,
+      'company_name': companyName,
+      'company_logo': companyLogo,
+      'industry': industry,
+      'website': website,
+      'location': location,
+    };
+  }
+}
+
+/// Job statistics model
+class JobStatistics {
+  final int totalViews;
+  final int totalApplications;
+  final int pendingApplications;
+  final int shortlistedApplications;
+  final int selectedApplications;
+  final int timesSaved;
+
+  const JobStatistics({
+    required this.totalViews,
+    required this.totalApplications,
+    required this.pendingApplications,
+    required this.shortlistedApplications,
+    required this.selectedApplications,
+    required this.timesSaved,
+  });
+
+  factory JobStatistics.fromJson(Map<String, dynamic> json) {
+    return JobStatistics(
+      totalViews: json['total_views'] ?? 0,
+      totalApplications: json['total_applications'] ?? 0,
+      pendingApplications: json['pending_applications'] ?? 0,
+      shortlistedApplications: json['shortlisted_applications'] ?? 0,
+      selectedApplications: json['selected_applications'] ?? 0,
+      timesSaved: json['times_saved'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'total_views': totalViews,
+      'total_applications': totalApplications,
+      'pending_applications': pendingApplications,
+      'shortlisted_applications': shortlistedApplications,
+      'selected_applications': selectedApplications,
+      'times_saved': timesSaved,
+    };
+  }
+}
+
 /// Job model representing a job posting from the API
 class Job {
   final int id;
@@ -5,7 +87,7 @@ class Job {
   final String title;
   final String description;
   final String location;
-  final String skillsRequired;
+  final List<String> skillsRequired;
   final String salaryMin;
   final String salaryMax;
   final String jobType;
@@ -41,6 +123,24 @@ class Job {
   });
 
   /// Create Job from JSON
+  /// Helper method to parse skills from different formats
+  static List<String> _parseSkills(dynamic skillsData) {
+    if (skillsData == null) return [];
+
+    if (skillsData is List) {
+      return skillsData.map((skill) => skill.toString()).toList();
+    } else if (skillsData is String) {
+      // Handle comma-separated string
+      return skillsData
+          .split(',')
+          .map((skill) => skill.trim())
+          .where((skill) => skill.isNotEmpty)
+          .toList();
+    }
+
+    return [];
+  }
+
   factory Job.fromJson(Map<String, dynamic> json) {
     return Job(
       id: json['id'] as int,
@@ -48,7 +148,7 @@ class Job {
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       location: json['location'] as String? ?? '',
-      skillsRequired: json['skills_required'] as String? ?? '',
+      skillsRequired: _parseSkills(json['skills_required']),
       salaryMin: json['salary_min'] as String? ?? '0',
       salaryMax: json['salary_max'] as String? ?? '0',
       jobType: json['job_type'] as String? ?? '',
@@ -115,8 +215,7 @@ class Job {
 
   /// Get skills as a list
   List<String> get skillsList {
-    if (skillsRequired.isEmpty) return [];
-    return skillsRequired.split(',').map((skill) => skill.trim()).toList();
+    return skillsRequired;
   }
 
   /// Get time since creation
@@ -173,4 +272,47 @@ class Job {
 
   @override
   int get hashCode => id.hashCode;
+}
+
+/// Job details API response model
+class JobDetailsResponse {
+  final bool status;
+  final String message;
+  final Job jobInfo;
+  final CompanyInfo companyInfo;
+  final JobStatistics statistics;
+  final String timestamp;
+
+  const JobDetailsResponse({
+    required this.status,
+    required this.message,
+    required this.jobInfo,
+    required this.companyInfo,
+    required this.statistics,
+    required this.timestamp,
+  });
+
+  factory JobDetailsResponse.fromJson(Map<String, dynamic> json) {
+    return JobDetailsResponse(
+      status: json['status'] ?? false,
+      message: json['message']?.toString() ?? '',
+      jobInfo: Job.fromJson(json['data']['job_info'] ?? {}),
+      companyInfo: CompanyInfo.fromJson(json['data']['company_info'] ?? {}),
+      statistics: JobStatistics.fromJson(json['data']['statistics'] ?? {}),
+      timestamp: json['timestamp']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'message': message,
+      'data': {
+        'job_info': jobInfo.toJson(),
+        'company_info': companyInfo.toJson(),
+        'statistics': statistics.toJson(),
+      },
+      'timestamp': timestamp,
+    };
+  }
 }

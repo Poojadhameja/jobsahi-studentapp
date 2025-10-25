@@ -139,38 +139,6 @@ class JobDetailsLoaded extends JobsState {
   }
 }
 
-/// Detailed job information loaded state
-class DetailedJobLoaded extends JobsState {
-  final Map<String, dynamic> jobInfo;
-  final Map<String, dynamic> companyInfo;
-  final Map<String, dynamic> statistics;
-  final bool isBookmarked;
-
-  const DetailedJobLoaded({
-    required this.jobInfo,
-    required this.companyInfo,
-    required this.statistics,
-    required this.isBookmarked,
-  });
-
-  @override
-  List<Object?> get props => [jobInfo, companyInfo, statistics, isBookmarked];
-
-  DetailedJobLoaded copyWith({
-    Map<String, dynamic>? jobInfo,
-    Map<String, dynamic>? companyInfo,
-    Map<String, dynamic>? statistics,
-    bool? isBookmarked,
-  }) {
-    return DetailedJobLoaded(
-      jobInfo: jobInfo ?? this.jobInfo,
-      companyInfo: companyInfo ?? this.companyInfo,
-      statistics: statistics ?? this.statistics,
-      isBookmarked: isBookmarked ?? this.isBookmarked,
-    );
-  }
-}
-
 /// Job bookmark toggled state
 class JobBookmarkToggled extends JobsState {
   final String jobId;

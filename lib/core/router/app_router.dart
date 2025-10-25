@@ -499,7 +499,19 @@ class AppRouter {
         name: 'jobDetails',
         builder: (context, state) {
           final id = state.pathParameters['id'];
-          final job = _findJobByIdOrDefault(id);
+          debugPrint('🔵 [Router] Job details route - ID from URL: $id');
+          debugPrint('🔵 [Router] Full path: ${state.uri}');
+          debugPrint('🔵 [Router] Path parameters: ${state.pathParameters}');
+          // Create a job object with the correct ID from URL
+          final job = {
+            'id': id,
+            'title': 'Loading...',
+            'company': 'Loading...',
+            'location': 'Loading...',
+            'salary': 'Loading...',
+            'description': 'Loading job details...',
+          };
+          debugPrint('🔵 [Router] Created job object: $job');
           return JobDetailsScreen(job: job);
         },
       ),

@@ -66,13 +66,6 @@ class _YourLocationViewState extends State<_YourLocationView> {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.arrow_back,
-                color: AppConstants.textPrimaryColor,
-              ),
-              onPressed: () => context.pop(),
-            ),
             title: Text(
               AppConstants.yourLocationTitle,
               style: TextStyle(

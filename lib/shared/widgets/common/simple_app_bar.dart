@@ -5,8 +5,8 @@ export 'custom_app_bar.dart' show CustomAppBar;
 /// Used across multiple screens for consistent navigation
 
 import 'package:flutter/material.dart';
-import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/utils/app_constants.dart';
 
 /// Simple app bar with title and optional back button
 class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -74,12 +74,12 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (showBackButton) {
       return IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () => context.pop(),
+        onPressed: () => context.go('/home'),
       );
     } else if (showCloseButton) {
       return IconButton(
         icon: const Icon(Icons.close),
-        onPressed: () => context.pop(),
+        onPressed: () => context.go('/home'),
       );
     }
     return null;
@@ -123,7 +123,7 @@ class SearchAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.pop(),
+              onPressed: () => context.go('/home'),
             )
           : null,
       title: Container(

@@ -9,6 +9,7 @@ import '../../../shared/services/location_service.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
+import 'enhanced_profile_details.dart';
 
 /// ---------------- PROFILE DETAILS SCREEN ----------------
 class ProfileDetailsScreen extends StatelessWidget {
@@ -18,11 +19,9 @@ class ProfileDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ProfileBloc()..add(const LoadProfileDataEvent()),
-      child: _ProfileDetailsView(
-        isFromBottomNavigation: isFromBottomNavigation,
-      ),
+    // Use the enhanced profile details screen
+    return EnhancedProfileDetailsScreen(
+      isFromBottomNavigation: isFromBottomNavigation,
     );
   }
 }

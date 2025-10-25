@@ -5,6 +5,8 @@ import '../../../core/utils/app_constants.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/loaders/jobsahi_loader.dart';
+import '../../../shared/widgets/profile/profile_header_card.dart';
 import '../../../shared/services/location_service.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_event.dart';
@@ -39,65 +41,48 @@ class MenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is LogoutSuccess) {
-          // Navigate to login screen after successful logout
-          context.go(AppRoutes.loginOtpEmail);
-        } else if (state is AuthError) {
-          // Show error message if logout fails
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppConstants.errorColor,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      },
-      child: KeyboardDismissWrapper(
-        child: Scaffold(
+    return KeyboardDismissWrapper(
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
+        appBar: AppBar(
           backgroundColor: AppConstants.cardBackgroundColor,
-          appBar: AppBar(
-            backgroundColor: AppConstants.cardBackgroundColor,
-            elevation: 0,
-            title: const Text(
-              'Menu',
-              style: TextStyle(
-                color: AppConstants.textPrimaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            centerTitle: true,
-            leading: IconButton(
-              icon: const Icon(
-                Icons.arrow_back,
-                color: AppConstants.textPrimaryColor,
-              ),
-              onPressed: () {
-                // Navigate back to previous screen
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.go(AppRoutes.home);
-                }
-              },
+          elevation: 0,
+          title: const Text(
+            'Menu',
+            style: TextStyle(
+              color: AppConstants.textPrimaryColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Column(
-                children: [
-                  // Profile header
-                  _buildProfileHeader(context),
-                  const SizedBox(height: AppConstants.largePadding),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back,
+              color: AppConstants.textPrimaryColor,
+            ),
+            onPressed: () {
+              // Navigate back to previous screen
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRoutes.home);
+              }
+            },
+          ),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: Column(
+              children: [
+                // Profile header
+                _buildProfileHeader(context),
+                const SizedBox(height: AppConstants.largePadding),
 
-                  // Menu options
-                  _buildMenuOptions(context),
-                ],
-              ),
+                // Menu options
+                _buildMenuOptions(context),
+              ],
             ),
           ),
         ),
@@ -109,74 +94,19 @@ class MenuScreen extends StatelessWidget {
   Widget _buildProfileHeader(BuildContext context) {
     final user = UserData.currentUser;
 
-    return GestureDetector(
+    return ProfileHeaderCard(
+      name: user['name'] ?? 'User Name',
+      email: user['email'] ?? 'user@email.com',
+      location: 'Location not available', // Will be updated by FutureBuilder
+      profileImagePath: user['profileImage'],
       onTap: () {
         // Navigate to profile details when profile header is tapped
         context.push(AppRoutes.profileDetails);
       },
-      child: Container(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        decoration: BoxDecoration(
-          color: AppConstants.backgroundColor,
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        ),
-        child: Row(
-          children: [
-            // Profile image
-            CircleAvatar(
-              radius: 40,
-              backgroundImage: AssetImage(
-                user['profileImage'] ?? AppConstants.defaultProfileImage,
-              ),
-            ),
-            const SizedBox(width: AppConstants.defaultPadding),
-
-            // User info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user['name'] ?? 'User Name',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppConstants.textPrimaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user['email'] ?? 'user@email.com',
-                    style: const TextStyle(
-                      color: AppConstants.textSecondaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  FutureBuilder<String>(
-                    future: _getUserLocation(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Text(
-                          'Getting location...',
-                          style: TextStyle(
-                            color: AppConstants.textSecondaryColor,
-                          ),
-                        );
-                      }
-                      return Text(
-                        snapshot.data ?? 'Location not available',
-                        style: const TextStyle(
-                          color: AppConstants.textSecondaryColor,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      showEditButton: true,
+      onEditPressed: () {
+        context.push(AppRoutes.profileEdit);
+      },
     );
   }
 
@@ -274,34 +204,143 @@ class MenuScreen extends StatelessWidget {
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _logout(dialogContext);
-            },
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: AppConstants.errorColor),
-            ),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (dialogContext) => BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is LogoutSuccess) {
+            // Hide the dialog and navigate to login screen
+            Navigator.of(dialogContext).pop();
+            context.go(AppRoutes.loginOtpEmail);
+          } else if (state is AuthError) {
+            // Hide the dialog and show error
+            Navigator.of(dialogContext).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppConstants.errorColor,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+        child: _LogoutDialog(),
       ),
     );
   }
+}
 
-  /// Handles logout
-  void _logout(BuildContext context) {
+/// Logout dialog widget that shows confirmation and then loader
+class _LogoutDialog extends StatefulWidget {
+  @override
+  State<_LogoutDialog> createState() => _LogoutDialogState();
+}
+
+class _LogoutDialogState extends State<_LogoutDialog> {
+  bool _isLoggingOut = false;
+
+  void _handleLogout() {
+    setState(() {
+      _isLoggingOut = true;
+    });
+
     // Dispatch logout event to AuthBloc
     context.read<AuthBloc>().add(const LogoutEvent());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header with title
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Column(
+                children: [
+                  if (!_isLoggingOut) ...[
+                    Text(
+                      'Logout',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.errorColor,
+                        height: 1.3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  _isLoggingOut
+                      ? JobsahiLoader(
+                          size: 50,
+                          strokeWidth: 4,
+                          message: 'Logging out',
+                          showMessage: true,
+                        )
+                      : const Text(
+                          'Are you sure you want to logout?',
+                          style: TextStyle(fontSize: 16, color: Colors.black87),
+                          textAlign: TextAlign.center,
+                        ),
+                ],
+              ),
+            ),
+
+            // Action buttons
+            if (!_isLoggingOut) ...[
+              Container(height: 1, color: Colors.grey.shade300),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.black54,
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 16, color: Colors.black54),
+                      ),
+                    ),
+                  ),
+                  Container(height: 40, width: 1, color: Colors.grey.shade300),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: _handleLogout,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: AppConstants.errorColor,
+                      ),
+                      child: const Text(
+                        'Logout',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppConstants.errorColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

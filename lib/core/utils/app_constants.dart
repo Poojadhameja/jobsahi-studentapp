@@ -219,20 +219,24 @@ class AppConstants {
 
   /// API Endpoints
   /// Local development base URL
-  // static const String baseUrl = 'http://localhost/jobsahi-API/api/';
+  static const String baseUrl = 'http://localhost/jobsahi-API/api/';
 
   /// Production server base URL
-  static const String baseUrl = 'https://beige-jaguar-560051.hostingersite.com/api';
+  // static const String baseUrl = 'https://beige-jaguar-560051.hostingersite.com/api';
 
   /// Use device-to-PC LAN IP if testing on a real device
-  static const String lanBaseUrl = 'http://10.167.188.31:8000/api';
+  // static const String lanBaseUrl = 'http://10.167.188.31:8000/api';
 
   // Auth
   static const String createUserEndpoint = '/user/create_user.php';
   static const String loginEndpoint = '/auth/login.php';
 
   // Location
-  static const String updateLocationEndpoint = '/student/update_location.php';
+  static const String updateLocationEndpoint =
+      '/student/set_current_location.php';
+
+  // Student Profile
+  static const String studentProfileEndpoint = '/student/profile.php';
 
   // Other (placeholders)
   static const String signupEndpoint = '/auth/signup';

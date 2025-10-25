@@ -431,6 +431,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
+      // Add 2 second delay for logout loading
+      await Future.delayed(const Duration(seconds: 1));
+
       final success = await _authRepository.logout();
 
       if (success) {

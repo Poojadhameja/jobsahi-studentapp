@@ -110,16 +110,6 @@ class LoadJobDetailsEvent extends JobsEvent {
   List<Object?> get props => [jobId];
 }
 
-/// Load detailed job information event
-class LoadDetailedJobEvent extends JobsEvent {
-  final int jobId;
-
-  const LoadDetailedJobEvent({required this.jobId});
-
-  @override
-  List<Object?> get props => [jobId];
-}
-
 /// Toggle job bookmark event
 class ToggleJobBookmarkEvent extends JobsEvent {
   final String jobId;

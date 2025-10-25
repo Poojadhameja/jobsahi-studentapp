@@ -33,10 +33,62 @@ class LocationPermissionScreen extends StatelessWidget {
   }
 }
 
-class _LocationPermissionView extends StatelessWidget {
+class _LocationPermissionView extends StatefulWidget {
   final bool isFromCurrentLocation;
 
   const _LocationPermissionView({required this.isFromCurrentLocation});
+
+  @override
+  State<_LocationPermissionView> createState() =>
+      _LocationPermissionViewState();
+}
+
+class _LocationPermissionViewState extends State<_LocationPermissionView>
+    with TickerProviderStateMixin {
+  late AnimationController _rippleController;
+  late AnimationController _pulseController;
+  late Animation<double> _rippleAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Ripple animation controller
+    _rippleController = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    );
+
+    // Pulse animation controller
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _rippleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _rippleController, curve: Curves.easeOut),
+    );
+
+    _pulseAnimation = Tween<double>(begin: 0.98, end: 1.02).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    // Start animations
+    _startAnimations();
+  }
+
+  void _startAnimations() {
+    _rippleController.repeat();
+    _pulseController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _rippleController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,53 +106,55 @@ class _LocationPermissionView extends StatelessWidget {
             final hasPermission = permissionSnapshot.data ?? false;
 
             return Scaffold(
-              backgroundColor: AppConstants.cardBackgroundColor,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: AppConstants.textPrimaryColor,
-                  ),
-                  onPressed: () => context.pop(),
-                ),
-              ),
-              body: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppConstants.largePadding),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Location icon image
-                      _buildLocationIcon(),
-                      const SizedBox(height: AppConstants.largePadding),
-
-                      // Main question
-                      _buildMainQuestion(hasPermission),
-                      const SizedBox(height: AppConstants.defaultPadding),
-
-                      // Description text
-                      _buildDescription(hasPermission),
-                      const SizedBox(height: AppConstants.largePadding),
-
-                      // Allow location access button
-                      _buildAllowLocationButton(
-                        context,
-                        isProcessing,
-                        hasPermission,
-                      ),
-                      const SizedBox(height: AppConstants.defaultPadding),
-
-                      // Skip button for users who don't want to grant location permission
-                      _buildSkipButton(context, isProcessing),
-                      const SizedBox(height: AppConstants.defaultPadding),
-
-                      // Manual location entry option (only show if not from current location)
-                      if (!isFromCurrentLocation) ...[
-                        _buildManualLocationOption(context),
-                      ],
+              body: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppConstants.cardBackgroundColor,
+                      AppConstants.cardBackgroundColor.withValues(alpha: 0.95),
                     ],
+                  ),
+                ),
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.largePadding,
+                        vertical: AppConstants.largePadding,
+                      ),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 40),
+
+                          // Location icon image
+                          _buildLocationIcon(),
+                          const SizedBox(height: 40),
+
+                          // Main question
+                          _buildMainQuestion(hasPermission),
+                          const SizedBox(height: 16),
+
+                          // Description text
+                          _buildDescription(hasPermission),
+                          const SizedBox(height: 50),
+
+                          // Allow location access button
+                          _buildAllowLocationButton(
+                            context,
+                            isProcessing,
+                            hasPermission,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Skip button for users who don't want to grant location permission
+                          _buildSkipButton(context, isProcessing),
+
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -113,27 +167,131 @@ class _LocationPermissionView extends StatelessWidget {
 
   /// Builds the location icon using the asset image
   Widget _buildLocationIcon() {
-    return SizedBox(
-      width: 120,
-      height: 120,
-      child: Image.asset(
-        'assets/images/location_icon.png',
-        width: 120,
-        height: 120,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          // Fallback to a custom location icon if image fails to load
-          return Container(
-            width: 120,
-            height: 120,
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Opacity(
+          opacity: 0.8 + (_pulseAnimation.value - 0.98) * 2.5, // Fade in effect
+          child: Container(
+            width: 180,
+            height: 180,
             decoration: BoxDecoration(
-              color: AppConstants.secondaryColor,
               shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppConstants.secondaryColor.withValues(alpha: 0.15),
+                  AppConstants.secondaryColor.withValues(alpha: 0.08),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.7, 1.0],
+              ),
             ),
-            child: Icon(Icons.my_location, size: 60, color: Colors.white),
-          );
-        },
-      ),
+            child: Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Animated ripple effects
+                  _buildAnimatedRippleEffect(
+                    AppConstants.secondaryColor.withValues(alpha: 0.1),
+                    160,
+                    0.0,
+                  ),
+                  _buildAnimatedRippleEffect(
+                    AppConstants.secondaryColor.withValues(alpha: 0.15),
+                    130,
+                    0.3,
+                  ),
+                  _buildAnimatedRippleEffect(
+                    AppConstants.secondaryColor.withValues(alpha: 0.2),
+                    100,
+                    0.6,
+                  ),
+                  // Main icon container with pulse animation
+                  _buildAnimatedMainIcon(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Builds animated ripple effect container
+  Widget _buildAnimatedRippleEffect(Color color, double size, double delay) {
+    return AnimatedBuilder(
+      animation: _rippleAnimation,
+      builder: (context, child) {
+        final animationValue = (_rippleAnimation.value + delay) % 1.0;
+        final smoothValue = Curves.easeOut.transform(animationValue);
+
+        // Fade-in effect for new layers
+        final fadeInValue = Curves.easeIn.transform(
+          (animationValue < 0.3) ? (animationValue / 0.3) : 1.0,
+        );
+
+        return Transform.scale(
+          scale: 0.9 + (smoothValue * 0.3), // Scale from 0.9 to 1.2
+          child: Opacity(
+            opacity:
+                fadeInValue *
+                (1.0 - smoothValue) *
+                0.6, // Fade in then fade out
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Builds animated main icon with pulse effect
+  Widget _buildAnimatedMainIcon() {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _pulseAnimation.value,
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppConstants.secondaryColor,
+                  AppConstants.secondaryColor.withValues(alpha: 0.8),
+                  AppConstants.secondaryColor.withValues(alpha: 0.9),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppConstants.secondaryColor.withValues(alpha: 0.4),
+                  blurRadius: 25,
+                  spreadRadius: 8,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: AppConstants.secondaryColor.withValues(alpha: 0.2),
+                  blurRadius: 40,
+                  spreadRadius: 15,
+                  offset: const Offset(0, 15),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.my_location_rounded,
+              size: 40,
+              color: Colors.white,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -143,7 +301,7 @@ class _LocationPermissionView extends StatelessWidget {
 
     if (hasPermission) {
       questionText = 'Location Access Already Granted';
-    } else if (isFromCurrentLocation) {
+    } else if (widget.isFromCurrentLocation) {
       questionText = AppConstants.allowLocationQuestion;
     } else {
       questionText = AppConstants.enterLocationTitle;
@@ -167,7 +325,7 @@ class _LocationPermissionView extends StatelessWidget {
     if (hasPermission) {
       descriptionText =
           'Your location permission is already granted. You can update your location or continue to the app.';
-    } else if (isFromCurrentLocation) {
+    } else if (widget.isFromCurrentLocation) {
       descriptionText = AppConstants.currentLocationDescription;
     } else {
       descriptionText = AppConstants.locationDescription;
@@ -190,25 +348,41 @@ class _LocationPermissionView extends StatelessWidget {
     bool isProcessing,
     bool hasPermission,
   ) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppConstants.secondaryColor,
+            AppConstants.secondaryColor.withValues(alpha: 0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppConstants.secondaryColor.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: isProcessing ? null : () => _allowLocationAccess(context),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.secondaryColor,
+          backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            borderRadius: BorderRadius.circular(16),
           ),
-          elevation: 0,
         ),
         child: isProcessing
             ? const SizedBox(
-                height: 20,
-                width: 20,
+                height: 24,
+                width: 24,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
@@ -216,39 +390,13 @@ class _LocationPermissionView extends StatelessWidget {
                 hasPermission
                     ? 'Update Location'
                     : AppConstants.allowLocationAccess,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
               ),
       ),
-    );
-  }
-
-  /// Builds the manual location entry option
-  Widget _buildManualLocationOption(BuildContext context) {
-    return BlocBuilder<ProfileBloc, ProfileState>(
-      builder: (context, state) {
-        bool isProcessing = false;
-        if (state is LocationPermissionState) {
-          isProcessing = state.isProcessing;
-        }
-
-        return TextButton(
-          onPressed: isProcessing
-              ? null
-              : () => _enterLocationManually(context),
-          style: TextButton.styleFrom(
-            foregroundColor: AppConstants.secondaryColor,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-          child: Text(
-            AppConstants.enterLocationManually,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              decoration: TextDecoration.underline,
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -490,12 +638,6 @@ class _LocationPermissionView extends StatelessWidget {
     );
   }
 
-  /// Handles manual location entry
-  void _enterLocationManually(BuildContext context) {
-    // Navigate back to location1 screen for manual selection
-    context.pop();
-  }
-
   /// Handles skipping location permission
   void _skipLocationPermission(BuildContext context) async {
     try {
@@ -533,22 +675,33 @@ class _LocationPermissionView extends StatelessWidget {
           isProcessing = state.isProcessing;
         }
 
-        return SizedBox(
+        return Container(
           width: double.infinity,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppConstants.textSecondaryColor.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
           child: TextButton(
             onPressed: isProcessing
                 ? null
                 : () => _skipLocationPermission(context),
             style: TextButton.styleFrom(
               foregroundColor: AppConstants.textSecondaryColor,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text(
               'Skip for now',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
-                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
               ),
             ),
           ),

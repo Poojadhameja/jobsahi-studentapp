@@ -2,6 +2,8 @@ import 'package:bloc/bloc.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
 import '../../../shared/data/user_data.dart';
+import '../../../shared/services/api_service.dart';
+import '../models/student_profile.dart';
 
 /// Profile BLoC
 /// Handles all profile-related business logic
@@ -52,10 +54,134 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     try {
       emit(const ProfileLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Try to fetch from API first
+      try {
+        final apiService = ApiService();
+        final studentProfileResponse = await apiService.getStudentProfile();
 
-      // Load profile data from mock data
+        if (studentProfileResponse.success &&
+            studentProfileResponse.data.profiles.isNotEmpty) {
+          final profile = studentProfileResponse.data.profiles.first;
+
+          // Convert API data to UI format
+          final userProfile = {
+            'id': profile.userId.toString(),
+            'name': profile.personalInfo.userName,
+            'email': profile.personalInfo.email,
+            'phone': profile.personalInfo.phoneNumber,
+            'location': profile.personalInfo.location,
+            'gender': profile.personalInfo.gender,
+            'dateOfBirth': profile.personalInfo.dateOfBirth,
+            'bio': profile.additionalInfo.bio,
+            'profileImage': null, // Will be handled separately
+            'portfolioLink': profile.socialLinks.portfolioLink,
+            'linkedinUrl': profile.socialLinks.linkedinUrl,
+            'aadharNumber': profile.documents.aadharNumber,
+            'languages': profile.professionalInfo.languages,
+            'jobType': profile.professionalInfo.jobType,
+            'trade': profile.professionalInfo.trade,
+            'graduationYear': profile.professionalInfo.graduationYear,
+            'cgpa': profile.professionalInfo.cgpa,
+          };
+
+          // Parse skills from comma-separated string
+          final skills = profile.professionalInfo.skills
+              .split(',')
+              .map((skill) => skill.trim())
+              .where((skill) => skill.isNotEmpty)
+              .toList();
+
+          // Convert experience data
+          final experience = profile.professionalInfo.experience
+              .map(
+                (exp) => {
+                  'company': exp.company,
+                  'position': exp.role,
+                  'startDate': exp.duration.split(' - ').first,
+                  'endDate': exp.duration.split(' - ').length > 1
+                      ? exp.duration.split(' - ').last
+                      : 'Present',
+                  'description': exp.description,
+                },
+              )
+              .toList();
+
+          // Convert education data
+          final education = [
+            {
+              'qualification': profile.professionalInfo.education,
+              'institute': 'Not specified',
+              'course': profile.professionalInfo.trade,
+              'passingYear': profile.professionalInfo.graduationYear,
+              'cgpa': profile.professionalInfo.cgpa,
+            },
+          ];
+
+          // Job preferences
+          final jobPreferences = {
+            'preferredJobTypes': [profile.professionalInfo.jobType],
+            'preferredLocation': profile.personalInfo.location,
+            'expectedSalary': 'Not specified',
+          };
+
+          // Initialize section expansion states (all collapsed by default)
+          final sectionExpansionStates = {
+            'profile': false,
+            'summary': false,
+            'education': false,
+            'skills': false,
+            'experience': false,
+            'certificates': false,
+            'resume': false,
+          };
+
+          // Convert documents to certificates format
+          final certificates = <Map<String, dynamic>>[];
+          if (profile.documents.resume.isNotEmpty) {
+            certificates.add({
+              'name': 'Resume.pdf',
+              'type': 'Resume',
+              'uploadDate': 'Recent',
+              'size': 0,
+              'extension': 'pdf',
+            });
+          }
+          if (profile.documents.certificates.isNotEmpty) {
+            certificates.add({
+              'name': 'Certificates.zip',
+              'type': 'Certificate',
+              'uploadDate': 'Recent',
+              'size': 0,
+              'extension': 'zip',
+            });
+          }
+
+          emit(
+            ProfileDetailsLoaded(
+              userProfile: userProfile,
+              skills: skills,
+              education: education,
+              experience: experience,
+              jobPreferences: jobPreferences,
+              sectionExpansionStates: sectionExpansionStates,
+              certificates: certificates,
+              profileImagePath: null,
+              profileImageName: null,
+              resumeFileName: profile.documents.resume.isNotEmpty
+                  ? 'Resume.pdf'
+                  : null,
+              lastResumeUpdatedDate: profile.status.modifiedAt,
+              resumeFileSize: 0,
+            ),
+          );
+          return;
+        }
+      } catch (e) {
+        // If API fails, fall back to mock data
+        print('API call failed, using mock data: $e');
+      }
+
+      // Fallback to mock data if API fails
       final userProfile = UserData.currentUser;
       final skills = List<String>.from(UserData.currentUser['skills'] ?? []);
       final education = <Map<String, dynamic>>[]; // Empty for now

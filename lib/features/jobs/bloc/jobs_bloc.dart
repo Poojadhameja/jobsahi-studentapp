@@ -7,6 +7,7 @@ import '../../../shared/data/job_data.dart';
 import '../../../shared/data/user_data.dart';
 import '../repositories/jobs_repository.dart';
 import '../models/job.dart';
+import '../models/job_detail_models.dart';
 
 /// Jobs BLoC
 /// Handles all job-related business logic
@@ -28,7 +29,6 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     on<RefreshJobsEvent>(_onRefreshJobs);
     on<ClearSearchEvent>(_onClearSearch);
     on<LoadJobDetailsEvent>(_onLoadJobDetails);
-    on<LoadDetailedJobEvent>(_onLoadDetailedJob);
     on<ToggleJobBookmarkEvent>(_onToggleJobBookmark);
     on<UpdateSearchResultsFilterEvent>(_onUpdateSearchResultsFilter);
     on<LoadSearchResultsEvent>(_onLoadSearchResults);
@@ -147,6 +147,82 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       'company_name':
           job.companyName, // Add company_name field for direct access
     };
+  }
+
+  /// Convert JobDetailResponse to Map format for UI compatibility
+  Map<String, dynamic> _jobDetailResponseToMap(JobDetailResponse response) {
+    final jobInfo = response.data.jobInfo;
+    final companyInfo = response.data.companyInfo;
+    final statistics = response.data.statistics;
+
+    return {
+      'id': jobInfo.id.toString(),
+      'title': jobInfo.title,
+      'company': companyInfo.companyName,
+      'company_name': companyInfo.companyName,
+      'company_logo': companyInfo.companyLogo,
+      'company_industry': companyInfo.industry,
+      'company_website': companyInfo.website,
+      'company_location': companyInfo.location,
+      'rating': 4.5, // Default rating
+      'tags': [jobInfo.jobType, jobInfo.isRemote ? 'Remote' : 'On-site'],
+      'job_type_display': jobInfo.jobType.isEmpty
+          ? 'Full-Time'
+          : jobInfo.jobType,
+      'salary':
+          '₹${(jobInfo.salaryMin / 1000).toStringAsFixed(1)}K - ₹${(jobInfo.salaryMax / 1000).toStringAsFixed(1)}K',
+      'salary_min': jobInfo.salaryMin,
+      'salary_max': jobInfo.salaryMax,
+      'location': jobInfo.location,
+      'time': _formatTimeAgo(jobInfo.createdAt),
+      'logo': 'assets/images/company/group.png',
+      'review_user_name': 'User Name',
+      'review_user_role': jobInfo.title,
+      'description': jobInfo.description,
+      'requirements': jobInfo.skillsRequired,
+      'skills_required': jobInfo.skillsRequired,
+      'benefits': [
+        'Competitive salary',
+        'Health insurance',
+        'Professional development',
+        'Work-life balance',
+      ],
+      'experience_required': jobInfo.experienceRequired,
+      'application_deadline': jobInfo.applicationDeadline,
+      'no_of_vacancies': jobInfo.noOfVacancies,
+      'is_remote': jobInfo.isRemote,
+      'status': jobInfo.status,
+      'admin_action': jobInfo.adminAction,
+      'created_at': jobInfo.createdAt,
+      'views': statistics.totalViews,
+      'total_applications': statistics.totalApplications,
+      'pending_applications': statistics.pendingApplications,
+      'shortlisted_applications': statistics.shortlistedApplications,
+      'selected_applications': statistics.selectedApplications,
+      'times_saved': statistics.timesSaved,
+      'recruiter_id': companyInfo.recruiterId,
+    };
+  }
+
+  /// Format time ago string
+  String _formatTimeAgo(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays} दिन पहले';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours} घंटे पहले';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes} मिनट पहले';
+      } else {
+        return 'अभी';
+      }
+    } catch (e) {
+      return 'Unknown';
+    }
   }
 
   /// Handle search jobs
@@ -496,114 +572,34 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     try {
       emit(const JobsLoading());
 
-      // Fetch job by ID from API
+      // Fetch comprehensive job details from API
       final jobId = int.tryParse(event.jobId);
       if (jobId == null) {
         emit(const JobsError(message: 'Invalid job ID'));
         return;
       }
 
-      final job = await _jobsRepository.getJobById(jobId);
+      debugPrint('🔵 [BLoC] Loading job details for ID: $jobId');
 
-      if (job != null) {
-        final jobMap = _jobToMap(job);
+      // Use the new comprehensive job details API
+      final jobDetailsResponse = await _jobsRepository.getJobDetails(jobId);
+
+      if (jobDetailsResponse.status) {
+        // Convert JobDetailResponse to Map for UI compatibility
+        final jobMap = _jobDetailResponseToMap(jobDetailsResponse);
         final isBookmarked = UserData.savedJobIds.contains(event.jobId);
+
+        debugPrint('🔵 [BLoC] Job details loaded successfully');
+        debugPrint('🔵 [BLoC] Job Title: ${jobMap['title']}');
+        debugPrint('🔵 [BLoC] Company: ${jobMap['company_name']}');
+
         emit(JobDetailsLoaded(job: jobMap, isBookmarked: isBookmarked));
       } else {
-        emit(const JobsError(message: 'Job not found'));
+        emit(JobsError(message: jobDetailsResponse.message));
       }
     } catch (e) {
+      debugPrint('🔴 [BLoC] Error loading job details: $e');
       emit(JobsError(message: 'Failed to load job details: ${e.toString()}'));
-    }
-  }
-
-  /// Handle load detailed job information
-  Future<void> _onLoadDetailedJob(
-    LoadDetailedJobEvent event,
-    Emitter<JobsState> emit,
-  ) async {
-    try {
-      emit(const JobsLoading());
-
-      debugPrint('🔵 Loading detailed job information for ID: ${event.jobId}');
-
-      // Check if user is authenticated
-      final isLoggedIn = await _jobsRepository
-          .getJobs()
-          .then((_) => true)
-          .catchError((error) {
-            final errorMsg = error.toString();
-            return !errorMsg.contains('User must be logged in');
-          });
-
-      if (!isLoggedIn) {
-        debugPrint('🔴 User not authenticated, cannot fetch job details');
-        emit(
-          const JobsError(message: 'कृपया जॉब विवरण देखने के लिए लॉग इन करें'),
-        );
-        return;
-      }
-
-      // Fetch detailed job information from API
-      final jobDetailResponse = await _jobsRepository.getJobDetails(
-        event.jobId,
-      );
-
-      debugPrint(
-        '🔵 Job detail response received: ${jobDetailResponse.status}',
-      );
-
-      if (jobDetailResponse.status) {
-        // Convert the response data to maps for the state
-        final jobInfoMap = jobDetailResponse.data.jobInfo.toJson();
-        final companyInfoMap = jobDetailResponse.data.companyInfo.toJson();
-        final statisticsMap = jobDetailResponse.data.statistics.toJson();
-
-        // Check if job is bookmarked
-        final isBookmarked = UserData.savedJobIds.contains(
-          event.jobId.toString(),
-        );
-
-        debugPrint('🔵 Detailed job information loaded successfully');
-        debugPrint('🔵 Job Title: ${jobInfoMap['title']}');
-        debugPrint('🔵 Company: ${companyInfoMap['company_name']}');
-
-        emit(
-          DetailedJobLoaded(
-            jobInfo: jobInfoMap,
-            companyInfo: companyInfoMap,
-            statistics: statisticsMap,
-            isBookmarked: isBookmarked,
-          ),
-        );
-      } else {
-        final errorMessage = jobDetailResponse.message.isNotEmpty
-            ? jobDetailResponse.message
-            : 'जॉब विवरण लोड करने में विफल';
-
-        debugPrint('🔴 API returned error: $errorMessage');
-        emit(JobsError(message: errorMessage));
-      }
-    } catch (e) {
-      debugPrint('🔴 Error loading detailed job information: $e');
-
-      // Provide user-friendly error messages
-      String errorMessage = 'जॉब विवरण लोड करने में त्रुटि';
-
-      if (e.toString().contains('User must be logged in')) {
-        errorMessage = 'कृपया जॉब विवरण देखने के लिए लॉग इन करें';
-      } else if (e.toString().contains('Connection timeout') ||
-          e.toString().contains('No internet connection')) {
-        errorMessage = 'इंटरनेट कनेक्शन की जांच करें';
-      } else if (e.toString().contains('404') ||
-          e.toString().contains('Not found')) {
-        errorMessage = 'जॉब नहीं मिली';
-      } else if (e.toString().contains('500') ||
-          e.toString().contains('Internal server error')) {
-        errorMessage = 'सर्वर में समस्या है, कृपया बाद में प्रयास करें';
-      }
-
-      emit(JobsError(message: errorMessage));
     }
   }
 

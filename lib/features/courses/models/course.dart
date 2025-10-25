@@ -22,11 +22,11 @@ class Course {
     return Course(
       id: json['id'] ?? 0,
       instituteId: json['institute_id'] ?? 0,
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      duration: json['duration'] ?? '',
-      fee: json['fee'] ?? '0.00',
-      adminAction: json['admin_action'] ?? '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      duration: json['duration']?.toString() ?? '',
+      fee: json['fee']?.toString() ?? '0.00',
+      adminAction: json['admin_action']?.toString() ?? '',
     );
   }
 
@@ -136,14 +136,14 @@ class CoursesResponse {
   factory CoursesResponse.fromJson(Map<String, dynamic> json) {
     return CoursesResponse(
       status: json['status'] ?? false,
-      message: json['message'] ?? '',
+      message: json['message']?.toString() ?? '',
       courses:
           (json['courses'] as List<dynamic>?)
               ?.map((course) => Course.fromJson(course))
               .toList() ??
           [],
       totalCount: json['total_count'] ?? 0,
-      userRole: json['user_role'] ?? '',
+      userRole: json['user_role']?.toString() ?? '',
     );
   }
 

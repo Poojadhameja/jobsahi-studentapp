@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/utils/app_constants.dart';
 import '../../features/courses/models/course.dart';
+import '../../features/profile/models/student_profile.dart';
+import '../../features/jobs/models/job_details_api_models.dart';
 import 'token_storage.dart';
 
 /// API Service for making HTTP requests
@@ -415,29 +417,109 @@ extension CoursesApi on ApiService {
 extension JobsApi on ApiService {
   /// Get job details by ID
   /// Requires authentication token (Bearer token)
-  Future<Map<String, dynamic>> getJobDetails(int jobId) async {
+  Future<JobDetailsApiResponse> getJobDetails(String jobId) async {
     try {
-      debugPrint('🔵 [JobDetails] Fetching job details for ID: $jobId');
+      debugPrint('🔵 [Jobs] Fetching job details for ID: $jobId');
 
       // Check if user is authenticated
       final userLoggedIn = await isLoggedIn();
       if (!userLoggedIn) {
-        debugPrint('🔴 [JobDetails] User not authenticated');
+        debugPrint('🔴 [Jobs] User not authenticated');
         throw Exception('User must be logged in to view job details');
       }
 
-      debugPrint('🔵 [JobDetails] User authenticated, making API call');
-      debugPrint('🔵 [JobDetails] Endpoint: /jobs/job-detail.php?id=$jobId');
+      debugPrint('🔵 [Jobs] User authenticated, making API call');
+      final endpoint = '${AppConstants.baseUrl}/jobs/job-detail.php?id=$jobId';
+      debugPrint('🔵 [Jobs] Endpoint: $endpoint');
 
-      final response = await get(
-        '/jobs/job-detail.php',
-        queryParameters: {'id': jobId.toString()},
+      final response = await get(endpoint);
+
+      debugPrint('🔵 [Jobs] API Response Status: ${response.statusCode}');
+      debugPrint('🔵 [Jobs] API Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        // Handle different response types
+        Map<String, dynamic> jsonData;
+        if (responseData is Map<String, dynamic>) {
+          jsonData = responseData;
+          debugPrint('🔵 [Jobs] Response is already a Map');
+        } else if (responseData is String) {
+          debugPrint('🔵 [Jobs] Response is String, parsing JSON');
+          try {
+            jsonData = jsonDecode(responseData) as Map<String, dynamic>;
+            debugPrint('🔵 [Jobs] JSON parsed successfully');
+          } catch (e) {
+            debugPrint('🔴 [Jobs] JSON parsing failed: $e');
+            throw Exception('Failed to parse job details response');
+          }
+        } else {
+          debugPrint(
+            '🔴 [Jobs] Unexpected response type: ${responseData.runtimeType}',
+          );
+          throw Exception('Unexpected response format from server');
+        }
+
+        // Check if the response indicates success
+        if (jsonData['status'] == false) {
+          final message = jsonData['message']?.toString() ?? 'Job not found';
+          debugPrint('🔴 [Jobs] API returned error: $message');
+          throw Exception(message);
+        }
+
+        // Parse the response
+        final jobDetailsResponse = JobDetailsApiResponse.fromJson(jsonData);
+        debugPrint('🔵 [Jobs] Job details parsed successfully');
+        debugPrint('🔵 [Jobs] Job Title: ${jobDetailsResponse.jobInfo.title}');
+        debugPrint(
+          '🔵 [Jobs] Company: ${jobDetailsResponse.companyInfo.companyName}',
+        );
+
+        return jobDetailsResponse;
+      } else {
+        debugPrint(
+          '🔴 [Jobs] API call failed with status: ${response.statusCode}',
+        );
+        throw Exception('Failed to fetch job details: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('🔴 [Jobs] Error fetching job details: $e');
+      rethrow;
+    }
+  }
+}
+
+/// Student Profile API methods
+extension StudentProfileApi on ApiService {
+  /// Get student profile data
+  /// Requires authentication token (Bearer token)
+  Future<StudentProfileResponse> getStudentProfile() async {
+    try {
+      debugPrint('🔵 [StudentProfile] Fetching student profile data');
+
+      // Check if user is authenticated
+      final userLoggedIn = await isLoggedIn();
+      if (!userLoggedIn) {
+        debugPrint('🔴 [StudentProfile] User not authenticated');
+        throw Exception('User must be logged in to view profile');
+      }
+
+      debugPrint('🔵 [StudentProfile] User authenticated, making API call');
+      debugPrint(
+        '🔵 [StudentProfile] Endpoint: ${AppConstants.studentProfileEndpoint}',
       );
 
-      debugPrint('🔵 [JobDetails] API Response Status: ${response.statusCode}');
-      debugPrint('🔵 [JobDetails] API Response Headers: ${response.headers}');
+      final response = await get(AppConstants.studentProfileEndpoint);
+
       debugPrint(
-        '🔵 [JobDetails] API Response Data Type: ${response.data.runtimeType}',
+        '🔵 [StudentProfile] API Response Status: ${response.statusCode}',
+      );
+      debugPrint(
+        '🔵 [StudentProfile] API Response Headers: ${response.headers}',
+      );
+      debugPrint(
+        '🔵 [StudentProfile] API Response Data Type: ${response.data.runtimeType}',
       );
 
       if (response.statusCode == 200) {
@@ -447,62 +529,65 @@ extension JobsApi on ApiService {
         Map<String, dynamic> jsonData;
         if (responseData is Map<String, dynamic>) {
           jsonData = responseData;
-          debugPrint('🔵 [JobDetails] Response is already a Map');
+          debugPrint('🔵 [StudentProfile] Response is already a Map');
         } else if (responseData is String) {
-          debugPrint('🔵 [JobDetails] Response is String, parsing JSON');
+          debugPrint('🔵 [StudentProfile] Response is String, parsing JSON');
           try {
             jsonData = jsonDecode(responseData) as Map<String, dynamic>;
-            debugPrint('🔵 [JobDetails] JSON parsed successfully');
+            debugPrint('🔵 [StudentProfile] JSON parsed successfully');
           } catch (e) {
-            debugPrint('🔴 [JobDetails] Failed to parse JSON string: $e');
-            debugPrint('🔴 [JobDetails] Raw response: $responseData');
+            debugPrint('🔴 [StudentProfile] Failed to parse JSON string: $e');
+            debugPrint('🔴 [StudentProfile] Raw response: $responseData');
             throw Exception('Invalid response format');
           }
         } else {
           debugPrint(
-            '🔴 [JobDetails] Unexpected response data type: ${responseData.runtimeType}',
+            '🔴 [StudentProfile] Unexpected response data type: ${responseData.runtimeType}',
           );
           throw Exception('Unexpected response format');
         }
 
         // Validate response structure
-        if (!jsonData.containsKey('status')) {
+        if (!jsonData.containsKey('success')) {
           debugPrint(
-            '🔴 [JobDetails] Invalid response structure: missing "status" field',
+            '🔴 [StudentProfile] Invalid response structure: missing "success" field',
           );
-          debugPrint('🔴 [JobDetails] Available keys: ${jsonData.keys}');
-          throw Exception('Invalid response structure: missing status field');
+          debugPrint('🔴 [StudentProfile] Available keys: ${jsonData.keys}');
+          throw Exception('Invalid response structure: missing success field');
         }
 
         if (!jsonData.containsKey('data')) {
           debugPrint(
-            '🔴 [JobDetails] Invalid response structure: missing "data" field',
+            '🔴 [StudentProfile] Invalid response structure: missing "data" field',
           );
-          debugPrint('🔴 [JobDetails] Available keys: ${jsonData.keys}');
+          debugPrint('🔴 [StudentProfile] Available keys: ${jsonData.keys}');
           throw Exception('Invalid response structure: missing data field');
         }
 
-        // Check if status is true
-        final status = jsonData['status'];
-        if (status == false || status == 'false') {
+        // Check if success is true
+        final success = jsonData['success'];
+        if (success == false || success == 'false') {
           final message = jsonData['message'] ?? 'Unknown error';
-          debugPrint('🔴 [JobDetails] API returned error: $message');
+          debugPrint('🔴 [StudentProfile] API returned error: $message');
           throw Exception(message);
         }
 
-        debugPrint('🔵 [JobDetails] Job details fetched successfully');
-        debugPrint('🔵 [JobDetails] Response structure validated');
-        return jsonData;
+        debugPrint('🔵 [StudentProfile] Student profile fetched successfully');
+        debugPrint('🔵 [StudentProfile] Response structure validated');
+
+        return StudentProfileResponse.fromJson(jsonData);
       } else {
         debugPrint(
-          '🔴 [JobDetails] API failed with status: ${response.statusCode}',
+          '🔴 [StudentProfile] API failed with status: ${response.statusCode}',
         );
-        debugPrint('🔴 [JobDetails] Response data: ${response.data}');
-        throw Exception('Failed to fetch job details: ${response.statusCode}');
+        debugPrint('🔴 [StudentProfile] Response data: ${response.data}');
+        throw Exception(
+          'Failed to fetch student profile: ${response.statusCode}',
+        );
       }
     } catch (e) {
-      debugPrint('🔴 [JobDetails] Error fetching job details: $e');
-      debugPrint('🔴 [JobDetails] Error type: ${e.runtimeType}');
+      debugPrint('🔴 [StudentProfile] Error fetching student profile: $e');
+      debugPrint('🔴 [StudentProfile] Error type: ${e.runtimeType}');
 
       // Rethrow with more context if it's not already an Exception
       if (e is Exception) {

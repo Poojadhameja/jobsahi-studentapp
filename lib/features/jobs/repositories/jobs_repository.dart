@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../../shared/services/api_service.dart';
-import '../models/job.dart';
+import '../models/job.dart' hide CompanyInfo, JobStatistics;
 import '../models/job_detail_models.dart';
+import '../models/job_details_api_models.dart';
 
 /// Jobs API response model
 class JobsResponse {
@@ -151,54 +152,78 @@ class JobsRepositoryImpl implements JobsRepository {
   @override
   Future<JobDetailResponse> getJobDetails(int id) async {
     try {
-      debugPrint(
-        '🔵 [Repository] Fetching detailed job information for ID: $id',
+      debugPrint('🔵 Fetching job details for ID: $id');
+
+      // Use the new job details API
+      final jobDetailsResponse = await _apiService.getJobDetails(id.toString());
+
+      debugPrint('🔵 Job details API response received');
+      debugPrint('🔵 Job Title: ${jobDetailsResponse.jobInfo.title}');
+      debugPrint('🔵 Company: ${jobDetailsResponse.companyInfo.companyName}');
+
+      // Convert API response to legacy format for compatibility
+      final jobInfo = jobDetailsResponse.jobInfo;
+      final companyInfo = jobDetailsResponse.companyInfo;
+      final statistics = jobDetailsResponse.statistics;
+
+      // Create JobInfo for legacy compatibility
+      final jobInfoData = JobInfo(
+        id: jobInfo.id,
+        title: jobInfo.title,
+        description: jobInfo.description,
+        location: jobInfo.location,
+        skillsRequired: jobInfo.skillsRequired,
+        salaryMin: jobInfo.salaryMin.toDouble(),
+        salaryMax: jobInfo.salaryMax.toDouble(),
+        jobType: jobInfo.jobType,
+        experienceRequired: jobInfo.experienceRequired,
+        applicationDeadline: jobInfo.applicationDeadline,
+        isRemote: jobInfo.isRemote,
+        noOfVacancies: jobInfo.noOfVacancies,
+        status: jobInfo.status,
+        adminAction: jobInfo.adminAction,
+        createdAt: jobInfo.createdAt,
       );
 
-      // Check if user is authenticated
-      final isLoggedIn = await _apiService.isLoggedIn();
-      if (!isLoggedIn) {
-        debugPrint('🔴 [Repository] User not authenticated');
-        throw Exception('User must be logged in to view job details');
-      }
-
-      debugPrint('🔵 [Repository] User authenticated, calling API service');
-
-      final responseData = await _apiService.getJobDetails(id);
-
-      debugPrint('🔵 [Repository] API Response received');
-      debugPrint('🔵 [Repository] Response keys: ${responseData.keys}');
-
-      // Parse the response
-      final jobDetailResponse = JobDetailResponse.fromJson(responseData);
-
-      debugPrint(
-        '🔵 [Repository] Response parsed, status: ${jobDetailResponse.status}',
+      // Create CompanyInfo for legacy compatibility
+      final companyInfoData = CompanyInfo(
+        recruiterId: companyInfo.recruiterId,
+        companyName: companyInfo.companyName,
+        companyLogo: companyInfo.companyLogo,
+        industry: companyInfo.industry,
+        website: companyInfo.website,
+        location: companyInfo.location,
       );
 
-      if (!jobDetailResponse.status) {
-        debugPrint('🔴 [Repository] Job details API returned false status');
-        final errorMessage = jobDetailResponse.message.isNotEmpty
-            ? jobDetailResponse.message
-            : 'Failed to fetch job details';
-        debugPrint('🔴 [Repository] Error message: $errorMessage');
-        throw Exception(errorMessage);
-      }
-
-      debugPrint(
-        '🔵 [Repository] Job details fetched successfully for ID: $id',
-      );
-      debugPrint(
-        '🔵 [Repository] Job title: ${jobDetailResponse.data.jobInfo.title}',
-      );
-      debugPrint(
-        '🔵 [Repository] Company: ${jobDetailResponse.data.companyInfo.companyName}',
+      // Create JobStatistics for legacy compatibility
+      final statisticsData = JobStatistics(
+        totalViews: statistics.totalViews,
+        totalApplications: statistics.totalApplications,
+        pendingApplications: statistics.pendingApplications,
+        shortlistedApplications: statistics.shortlistedApplications,
+        selectedApplications: statistics.selectedApplications,
+        timesSaved: statistics.timesSaved,
       );
 
-      return jobDetailResponse;
+      // Create JobDetailData
+      final jobDetailData = JobDetailData(
+        jobInfo: jobInfoData,
+        companyInfo: companyInfoData,
+        statistics: statisticsData,
+      );
+
+      // Create final response
+      final response = JobDetailResponse(
+        status: jobDetailsResponse.status,
+        message: jobDetailsResponse.message,
+        data: jobDetailData,
+        timestamp: jobDetailsResponse.timestamp,
+      );
+
+      debugPrint('🔵 Job details converted to legacy format successfully');
+      return response;
     } catch (e) {
-      debugPrint('🔴 [Repository] Error fetching job details for ID $id: $e');
-      debugPrint('🔴 [Repository] Error type: ${e.runtimeType}');
+      debugPrint('🔴 Error fetching job details: $e');
       rethrow;
     }
   }

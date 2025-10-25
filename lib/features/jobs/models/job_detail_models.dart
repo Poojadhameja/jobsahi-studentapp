@@ -102,17 +102,31 @@ class JobInfo {
     required this.createdAt,
   });
 
+  /// Helper method to parse skills from different formats
+  static List<String> _parseSkills(dynamic skillsData) {
+    if (skillsData == null) return [];
+
+    if (skillsData is List) {
+      return skillsData.map((skill) => skill.toString()).toList();
+    } else if (skillsData is String) {
+      // Handle comma-separated string
+      return skillsData
+          .split(',')
+          .map((skill) => skill.trim())
+          .where((skill) => skill.isNotEmpty)
+          .toList();
+    }
+
+    return [];
+  }
+
   factory JobInfo.fromJson(Map<String, dynamic> json) {
     return JobInfo(
       id: json['id'] as int? ?? 0,
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       location: json['location'] as String? ?? '',
-      skillsRequired:
-          (json['skills_required'] as List<dynamic>?)
-              ?.map((skill) => skill.toString())
-              .toList() ??
-          [],
+      skillsRequired: _parseSkills(json['skills_required']),
       salaryMin: (json['salary_min'] as num?)?.toDouble() ?? 0.0,
       salaryMax: (json['salary_max'] as num?)?.toDouble() ?? 0.0,
       jobType: json['job_type'] as String? ?? '',
@@ -133,6 +147,7 @@ class JobInfo {
       'description': description,
       'location': location,
       'skills_required': skillsRequired,
+      'requirements': skillsRequired, // For backward compatibility with UI
       'salary_min': salaryMin,
       'salary_max': salaryMax,
       'job_type': jobType,
@@ -215,7 +230,7 @@ class JobInfo {
       title: title,
       description: description,
       location: location,
-      skillsRequired: skillsRequired.join(', '),
+      skillsRequired: skillsRequired,
       salaryMin: salaryMin.toString(),
       salaryMax: salaryMax.toString(),
       jobType: jobType,
