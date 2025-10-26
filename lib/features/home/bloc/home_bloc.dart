@@ -1,7 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'home_event.dart';
 import 'home_state.dart';
-import '../../../shared/data/job_data.dart';
 import '../../jobs/bloc/jobs_bloc.dart';
 import '../../jobs/bloc/jobs_event.dart' as jobs_events;
 import '../../jobs/bloc/jobs_state.dart' as jobs_states;
@@ -18,7 +17,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<LoadHomeDataEvent>(_onLoadHomeData);
     on<ChangeTabEvent>(_onChangeTab);
     on<SearchJobsEvent>(_onSearchJobs);
-    on<FilterJobsEvent>(_onFilterJobs);
     on<RefreshHomeDataEvent>(_onRefreshHomeData);
     on<ClearSearchEvent>(_onClearSearch);
   }
@@ -46,7 +44,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       await for (final jobsState in _jobsBloc.stream) {
         if (jobsState is jobs_states.JobsLoaded) {
           final recommendedJobs = jobsState.allJobs;
-          final filteredJobs = _filterJobs(recommendedJobs, '', 0);
+          final filteredJobs = recommendedJobs;
 
           emit(
             HomeLoaded(
@@ -88,11 +86,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       await for (final jobsState in _jobsBloc.stream) {
         if (jobsState is jobs_states.JobsLoaded) {
           final searchResults = jobsState.filteredJobs;
-          final filteredJobs = _filterJobs(
-            searchResults,
-            event.query,
-            currentState.selectedFilterIndex,
-          );
+          final filteredJobs = searchResults.where((job) {
+            final queryLower = event.query.toLowerCase();
+            return queryLower.isEmpty ||
+                job['title'].toString().toLowerCase().contains(queryLower) ||
+                job['company'].toString().toLowerCase().contains(queryLower) ||
+                job['location'].toString().toLowerCase().contains(queryLower);
+          }).toList();
 
           emit(
             currentState.copyWith(
@@ -109,25 +109,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  /// Handle filter jobs
-  void _onFilterJobs(FilterJobsEvent event, Emitter<HomeState> emit) {
-    if (state is HomeLoaded) {
-      final currentState = state as HomeLoaded;
-      final filteredJobs = _filterJobs(
-        currentState.recommendedJobs,
-        currentState.searchQuery,
-        event.filterIndex,
-      );
-
-      emit(
-        currentState.copyWith(
-          selectedFilterIndex: event.filterIndex,
-          filteredJobs: filteredJobs,
-        ),
-      );
-    }
-  }
-
   /// Handle refresh home data
   Future<void> _onRefreshHomeData(
     RefreshHomeDataEvent event,
@@ -141,49 +122,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   void _onClearSearch(ClearSearchEvent event, Emitter<HomeState> emit) {
     if (state is HomeLoaded) {
       final currentState = state as HomeLoaded;
-      final filteredJobs = _filterJobs(
-        currentState.recommendedJobs,
-        '',
-        currentState.selectedFilterIndex,
+      emit(
+        currentState.copyWith(
+          searchQuery: '',
+          filteredJobs: currentState.recommendedJobs,
+        ),
       );
-
-      emit(currentState.copyWith(searchQuery: '', filteredJobs: filteredJobs));
     }
-  }
-
-  /// Filter jobs based on search query and filter index
-  List<Map<String, dynamic>> _filterJobs(
-    List<Map<String, dynamic>> jobs,
-    String query,
-    int filterIndex,
-  ) {
-    List<Map<String, dynamic>> filteredJobs = List.from(jobs);
-
-    // Apply search filter
-    if (query.isNotEmpty) {
-      filteredJobs = filteredJobs.where((job) {
-        final title = job['title']?.toString().toLowerCase() ?? '';
-        final company = job['company']?.toString().toLowerCase() ?? '';
-        final location = job['location']?.toString().toLowerCase() ?? '';
-        final searchQuery = query.toLowerCase();
-
-        return title.contains(searchQuery) ||
-            company.contains(searchQuery) ||
-            location.contains(searchQuery);
-      }).toList();
-    }
-
-    // Apply category filter
-    if (filterIndex > 0 && filterIndex < JobData.filterOptions.length) {
-      final selectedFilter = JobData.filterOptions[filterIndex];
-      if (selectedFilter != 'All Jobs') {
-        filteredJobs = filteredJobs.where((job) {
-          final tags = job['tags'] as List<dynamic>? ?? [];
-          return tags.any((tag) => tag.toString().contains(selectedFilter));
-        }).toList();
-      }
-    }
-
-    return filteredJobs;
   }
 }

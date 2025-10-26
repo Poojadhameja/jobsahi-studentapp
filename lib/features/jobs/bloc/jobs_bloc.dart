@@ -20,7 +20,6 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     // Register event handlers
     on<LoadJobsEvent>(_onLoadJobs);
     on<SearchJobsEvent>(_onSearchJobs);
-    on<FilterJobsEvent>(_onFilterJobs);
     on<SaveJobEvent>(_onSaveJob);
     on<UnsaveJobEvent>(_onUnsaveJob);
     on<ApplyForJobEvent>(_onApplyForJob);
@@ -30,7 +29,6 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     on<ClearSearchEvent>(_onClearSearch);
     on<LoadJobDetailsEvent>(_onLoadJobDetails);
     on<ToggleJobBookmarkEvent>(_onToggleJobBookmark);
-    on<UpdateSearchResultsFilterEvent>(_onUpdateSearchResultsFilter);
     on<LoadSearchResultsEvent>(_onLoadSearchResults);
     on<LoadApplicationTrackerEvent>(_onLoadApplicationTracker);
     on<ViewApplicationEvent>(_onViewApplication);
@@ -307,27 +305,6 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     }
   }
 
-  /// Handle filter jobs
-  void _onFilterJobs(FilterJobsEvent event, Emitter<JobsState> emit) {
-    if (state is JobsLoaded) {
-      final currentState = state as JobsLoaded;
-      final filteredJobs = _filterJobs(
-        currentState.allJobs,
-        currentState.searchQuery,
-        event.categoryIndex,
-        event.filterIndex,
-      );
-
-      emit(
-        currentState.copyWith(
-          selectedCategoryIndex: event.categoryIndex,
-          selectedFilterIndex: event.filterIndex,
-          filteredJobs: filteredJobs,
-        ),
-      );
-    }
-  }
-
   /// Handle save job
   Future<void> _onSaveJob(SaveJobEvent event, Emitter<JobsState> emit) async {
     try {
@@ -505,63 +482,13 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   void _onClearSearch(ClearSearchEvent event, Emitter<JobsState> emit) {
     if (state is JobsLoaded) {
       final currentState = state as JobsLoaded;
-      final filteredJobs = _filterJobs(
-        currentState.allJobs,
-        '',
-        currentState.selectedCategoryIndex,
-        currentState.selectedFilterIndex,
+      emit(
+        currentState.copyWith(
+          searchQuery: '',
+          filteredJobs: currentState.allJobs,
+        ),
       );
-
-      emit(currentState.copyWith(searchQuery: '', filteredJobs: filteredJobs));
     }
-  }
-
-  /// Filter jobs based on search query, category, and filter
-  List<Map<String, dynamic>> _filterJobs(
-    List<Map<String, dynamic>> jobs,
-    String query,
-    int categoryIndex,
-    int filterIndex,
-  ) {
-    List<Map<String, dynamic>> filteredJobs = List.from(jobs);
-
-    // Apply search filter
-    if (query.isNotEmpty) {
-      filteredJobs = filteredJobs.where((job) {
-        final title = job['title']?.toString().toLowerCase() ?? '';
-        final company = job['company']?.toString().toLowerCase() ?? '';
-        final location = job['location']?.toString().toLowerCase() ?? '';
-        final searchQuery = query.toLowerCase();
-
-        return title.contains(searchQuery) ||
-            company.contains(searchQuery) ||
-            location.contains(searchQuery);
-      }).toList();
-    }
-
-    // Apply category filter
-    if (categoryIndex > 0 && categoryIndex < JobData.jobCategories.length) {
-      final selectedCategory = JobData.jobCategories[categoryIndex];
-      if (selectedCategory != 'All Jobs') {
-        filteredJobs = filteredJobs.where((job) {
-          final title = job['title']?.toString().toLowerCase() ?? '';
-          return title.contains(selectedCategory.toLowerCase());
-        }).toList();
-      }
-    }
-
-    // Apply additional filters
-    if (filterIndex > 0 && filterIndex < JobData.filterOptions.length) {
-      final selectedFilter = JobData.filterOptions[filterIndex];
-      if (selectedFilter != 'All Jobs') {
-        filteredJobs = filteredJobs.where((job) {
-          final tags = job['tags'] as List<dynamic>? ?? [];
-          return tags.any((tag) => tag.toString().contains(selectedFilter));
-        }).toList();
-      }
-    }
-
-    return filteredJobs;
   }
 
   /// Handle load job details
@@ -628,38 +555,24 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     }
   }
 
-  /// Handle update search results filter
-  void _onUpdateSearchResultsFilter(
-    UpdateSearchResultsFilterEvent event,
-    Emitter<JobsState> emit,
-  ) {
-    if (state is SearchResultsLoaded) {
-      final currentState = state as SearchResultsLoaded;
-      final filteredJobs = _filterJobsByQueryAndFilter(
-        currentState.searchQuery,
-        event.filterIndex,
-      );
-      emit(
-        currentState.copyWith(
-          selectedFilterIndex: event.filterIndex,
-          filteredJobs: filteredJobs,
-        ),
-      );
-    }
-  }
-
   /// Handle load search results
   void _onLoadSearchResults(
     LoadSearchResultsEvent event,
     Emitter<JobsState> emit,
   ) {
     try {
-      final filteredJobs = _filterJobsByQueryAndFilter(event.searchQuery, 0);
+      final queryLower = event.searchQuery.toLowerCase();
+      final filteredJobs = JobData.recommendedJobs.where((job) {
+        return queryLower.isEmpty ||
+            job['title'].toString().toLowerCase().contains(queryLower) ||
+            job['company'].toString().toLowerCase().contains(queryLower) ||
+            job['location'].toString().toLowerCase().contains(queryLower);
+      }).toList();
+
       emit(
         SearchResultsLoaded(
           searchQuery: event.searchQuery,
           filteredJobs: filteredJobs,
-          selectedFilterIndex: 0,
         ),
       );
     } catch (e) {
@@ -667,39 +580,6 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         JobsError(message: 'Failed to load search results: ${e.toString()}'),
       );
     }
-  }
-
-  /// Helper method to filter jobs by query and filter
-  List<Map<String, dynamic>> _filterJobsByQueryAndFilter(
-    String query,
-    int filterIndex,
-  ) {
-    final queryLower = query.toLowerCase();
-    final filterOptions = JobData.filterOptions;
-    final selectedFilter = filterIndex < filterOptions.length
-        ? filterOptions[filterIndex]
-        : 'All Jobs';
-
-    var filteredJobs = JobData.recommendedJobs.where((job) {
-      // Filter by search query
-      final matchesQuery =
-          queryLower.isEmpty ||
-          job['title'].toString().toLowerCase().contains(queryLower) ||
-          job['company'].toString().toLowerCase().contains(queryLower) ||
-          job['location'].toString().toLowerCase().contains(queryLower);
-
-      return matchesQuery;
-    }).toList();
-
-    // Apply filter
-    if (selectedFilter != 'All Jobs') {
-      filteredJobs = filteredJobs.where((job) {
-        final tags = job['tags'] as List<dynamic>? ?? [];
-        return tags.any((tag) => tag.toString().contains(selectedFilter));
-      }).toList();
-    }
-
-    return filteredJobs;
   }
 
   /// Handle load application tracker

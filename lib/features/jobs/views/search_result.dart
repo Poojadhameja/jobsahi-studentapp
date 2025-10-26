@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../shared/data/job_data.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
-import '../../../shared/widgets/cards/filter_chip.dart';
 import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
@@ -38,12 +36,10 @@ class _SearchResultScreenView extends StatelessWidget {
       builder: (context, state) {
         String searchQuery = '';
         List<Map<String, dynamic>> filteredJobs = [];
-        int selectedFilterIndex = 0;
 
         if (state is SearchResultsLoaded) {
           searchQuery = state.searchQuery;
           filteredJobs = state.filteredJobs;
-          selectedFilterIndex = state.selectedFilterIndex;
         }
 
         return Scaffold(
@@ -54,13 +50,8 @@ class _SearchResultScreenView extends StatelessWidget {
           ),
           body: Column(
             children: [
-              // Search info and filters
-              _buildSearchInfoAndFilters(
-                context,
-                searchQuery,
-                filteredJobs,
-                selectedFilterIndex,
-              ),
+              // Search info
+              _buildSearchInfoAndFilters(context, searchQuery, filteredJobs),
 
               // Results
               Expanded(child: _buildResults(context, filteredJobs)),
@@ -71,12 +62,11 @@ class _SearchResultScreenView extends StatelessWidget {
     );
   }
 
-  /// Builds the search info and filters section
+  /// Builds the search info section
   Widget _buildSearchInfoAndFilters(
     BuildContext context,
     String searchQuery,
     List<Map<String, dynamic>> filteredJobs,
-    int selectedFilterIndex,
   ) {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -85,10 +75,6 @@ class _SearchResultScreenView extends StatelessWidget {
         children: [
           // Search info
           _buildSearchInfo(searchQuery, filteredJobs),
-          const SizedBox(height: AppConstants.defaultPadding),
-
-          // Filter chips
-          _buildFilterChips(context, selectedFilterIndex),
         ],
       ),
     );
@@ -118,19 +104,6 @@ class _SearchResultScreenView extends StatelessWidget {
           style: const TextStyle(color: AppConstants.textSecondaryColor),
         ),
       ],
-    );
-  }
-
-  /// Builds the filter chips section
-  Widget _buildFilterChips(BuildContext context, int selectedFilterIndex) {
-    return HorizontalFilterChips(
-      filterOptions: JobData.filterOptions,
-      selectedIndex: selectedFilterIndex,
-      onFilterSelected: (index) {
-        context.read<JobsBloc>().add(
-          UpdateSearchResultsFilterEvent(filterIndex: index),
-        );
-      },
     );
   }
 
@@ -182,7 +155,7 @@ class _SearchResultScreenView extends StatelessWidget {
           ),
           const SizedBox(height: AppConstants.smallPadding),
           const Text(
-            'Try adjusting your search criteria or filters',
+            'Try adjusting your search criteria',
             style: TextStyle(color: AppConstants.textSecondaryColor),
             textAlign: TextAlign.center,
           ),

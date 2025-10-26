@@ -29,8 +29,6 @@ class JobsLoaded extends JobsState {
   final List<Map<String, dynamic>> savedJobs;
   final List<Map<String, dynamic>> appliedJobs;
   final String searchQuery;
-  final int selectedCategoryIndex;
-  final int selectedFilterIndex;
   final Set<String> savedJobIds;
 
   const JobsLoaded({
@@ -39,8 +37,6 @@ class JobsLoaded extends JobsState {
     required this.savedJobs,
     required this.appliedJobs,
     this.searchQuery = '',
-    this.selectedCategoryIndex = 0,
-    this.selectedFilterIndex = 0,
     required this.savedJobIds,
   });
 
@@ -51,8 +47,6 @@ class JobsLoaded extends JobsState {
     savedJobs,
     appliedJobs,
     searchQuery,
-    selectedCategoryIndex,
-    selectedFilterIndex,
     savedJobIds,
   ];
 
@@ -63,8 +57,6 @@ class JobsLoaded extends JobsState {
     List<Map<String, dynamic>>? savedJobs,
     List<Map<String, dynamic>>? appliedJobs,
     String? searchQuery,
-    int? selectedCategoryIndex,
-    int? selectedFilterIndex,
     Set<String>? savedJobIds,
   }) {
     return JobsLoaded(
@@ -73,9 +65,6 @@ class JobsLoaded extends JobsState {
       savedJobs: savedJobs ?? this.savedJobs,
       appliedJobs: appliedJobs ?? this.appliedJobs,
       searchQuery: searchQuery ?? this.searchQuery,
-      selectedCategoryIndex:
-          selectedCategoryIndex ?? this.selectedCategoryIndex,
-      selectedFilterIndex: selectedFilterIndex ?? this.selectedFilterIndex,
       savedJobIds: savedJobIds ?? this.savedJobIds,
     );
   }
@@ -154,26 +143,22 @@ class JobBookmarkToggled extends JobsState {
 class SearchResultsLoaded extends JobsState {
   final String searchQuery;
   final List<Map<String, dynamic>> filteredJobs;
-  final int selectedFilterIndex;
 
   const SearchResultsLoaded({
     required this.searchQuery,
     required this.filteredJobs,
-    required this.selectedFilterIndex,
   });
 
   @override
-  List<Object?> get props => [searchQuery, filteredJobs, selectedFilterIndex];
+  List<Object?> get props => [searchQuery, filteredJobs];
 
   SearchResultsLoaded copyWith({
     String? searchQuery,
     List<Map<String, dynamic>>? filteredJobs,
-    int? selectedFilterIndex,
   }) {
     return SearchResultsLoaded(
       searchQuery: searchQuery ?? this.searchQuery,
       filteredJobs: filteredJobs ?? this.filteredJobs,
-      selectedFilterIndex: selectedFilterIndex ?? this.selectedFilterIndex,
     );
   }
 }

@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../shared/data/job_data.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/cards/job_card.dart';
-import '../../../shared/widgets/cards/filter_chip.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -77,7 +75,7 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
     );
   }
 
-  /// Builds the search and filter section
+  /// Builds the search section
   Widget _buildSearchAndFilterSection() {
     return Container(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -85,14 +83,6 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
         children: [
           // Search bar
           _buildSearchBar(),
-          const SizedBox(height: AppConstants.defaultPadding),
-
-          // Category filters
-          _buildCategoryFilters(),
-          const SizedBox(height: AppConstants.smallPadding),
-
-          // Filter chips
-          _buildFilterChips(),
         ],
       ),
     );
@@ -125,84 +115,6 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
       onChanged: (value) {
         context.read<JobsBloc>().add(SearchJobsEvent(query: value));
       },
-    );
-  }
-
-  /// Builds the category filters
-  Widget _buildCategoryFilters() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Job Categories',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppConstants.textPrimaryColor,
-          ),
-        ),
-        const SizedBox(height: AppConstants.smallPadding),
-        BlocBuilder<JobsBloc, JobsState>(
-          builder: (context, state) {
-            final selectedCategoryIndex = state is JobsLoaded
-                ? state.selectedCategoryIndex
-                : 0;
-
-            return HorizontalFilterChips(
-              filterOptions: JobData.jobCategories,
-              selectedIndex: selectedCategoryIndex,
-              onFilterSelected: (index) {
-                final currentState = state as JobsLoaded;
-                context.read<JobsBloc>().add(
-                  FilterJobsEvent(
-                    categoryIndex: index,
-                    filterIndex: currentState.selectedFilterIndex,
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  /// Builds the filter chips
-  Widget _buildFilterChips() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Filters',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppConstants.textPrimaryColor,
-          ),
-        ),
-        const SizedBox(height: AppConstants.smallPadding),
-        BlocBuilder<JobsBloc, JobsState>(
-          builder: (context, state) {
-            final selectedFilterIndex = state is JobsLoaded
-                ? state.selectedFilterIndex
-                : 0;
-
-            return HorizontalFilterChips(
-              filterOptions: JobData.filterOptions,
-              selectedIndex: selectedFilterIndex,
-              onFilterSelected: (index) {
-                final currentState = state as JobsLoaded;
-                context.read<JobsBloc>().add(
-                  FilterJobsEvent(
-                    categoryIndex: currentState.selectedCategoryIndex,
-                    filterIndex: index,
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ],
     );
   }
 
@@ -276,7 +188,7 @@ class _SearchJobScreenState extends State<SearchJobScreen> {
           ),
           const SizedBox(height: AppConstants.smallPadding),
           const Text(
-            'Try adjusting your search criteria or filters',
+            'Try adjusting your search criteria',
             style: TextStyle(color: AppConstants.textSecondaryColor),
             textAlign: TextAlign.center,
           ),

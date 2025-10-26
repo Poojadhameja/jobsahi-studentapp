@@ -275,17 +275,6 @@ class AppConstants {
     'Carpenter',
   ];
 
-  /// Job Filter Options
-  static const List<String> jobFilterOptions = [
-    'Filter',
-    'Sort',
-    'Job Title',
-    'Experience',
-    'Location',
-    'Salary',
-    'Company',
-  ];
-
   /// Experience Levels
   static const List<String> experienceLevels = [
     'Fresher',

@@ -123,9 +123,6 @@ class JobData {
     },
   ];
 
-  /// Filter options for job search
-  static List<String> get filterOptions => AppConstants.jobFilterOptions;
-
   /// Job categories for filtering
   static List<String> get jobCategories => AppConstants.jobCategories;
 

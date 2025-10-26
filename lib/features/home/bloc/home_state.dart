@@ -24,14 +24,12 @@ class HomeLoading extends HomeState {
 /// Home loaded state
 class HomeLoaded extends HomeState {
   final int selectedTabIndex;
-  final int selectedFilterIndex;
   final String searchQuery;
   final List<Map<String, dynamic>> recommendedJobs;
   final List<Map<String, dynamic>> filteredJobs;
 
   const HomeLoaded({
     this.selectedTabIndex = 0,
-    this.selectedFilterIndex = 0,
     this.searchQuery = '',
     required this.recommendedJobs,
     required this.filteredJobs,
@@ -40,7 +38,6 @@ class HomeLoaded extends HomeState {
   @override
   List<Object?> get props => [
     selectedTabIndex,
-    selectedFilterIndex,
     searchQuery,
     recommendedJobs,
     filteredJobs,
@@ -49,14 +46,12 @@ class HomeLoaded extends HomeState {
   /// Copy with method for immutable state updates
   HomeLoaded copyWith({
     int? selectedTabIndex,
-    int? selectedFilterIndex,
     String? searchQuery,
     List<Map<String, dynamic>>? recommendedJobs,
     List<Map<String, dynamic>>? filteredJobs,
   }) {
     return HomeLoaded(
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
-      selectedFilterIndex: selectedFilterIndex ?? this.selectedFilterIndex,
       searchQuery: searchQuery ?? this.searchQuery,
       recommendedJobs: recommendedJobs ?? this.recommendedJobs,
       filteredJobs: filteredJobs ?? this.filteredJobs,

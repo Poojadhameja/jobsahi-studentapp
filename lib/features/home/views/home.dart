@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../shared/data/job_data.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/common/navigation_helper.dart';
 import '../../../shared/widgets/cards/job_card.dart';
-import '../../../shared/widgets/cards/filter_chip.dart';
 import '../../../shared/widgets/activity_tracker.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
@@ -46,8 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-        return ActivityTracker(
-            child: KeyboardDismissWrapper(
+    return ActivityTracker(
+      child: KeyboardDismissWrapper(
         child: BlocBuilder<HomeBloc, HomeState>(
           builder: (context, state) {
             if (state is HomeLoading) {
@@ -78,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               );
-    } else {
+            } else {
               // Show HomePage content
               return const HomePage();
             }
@@ -133,10 +131,6 @@ class _HomePageState extends State<HomePage> {
                 _buildBannerImage(),
                 const SizedBox(height: AppConstants.smallPadding),
 
-                // Filter chips
-                _buildFilterChips(state.selectedFilterIndex),
-                const SizedBox(height: AppConstants.smallPadding),
-
                 // Recommended jobs section
                 _buildRecommendedJobsSection(state.filteredJobs),
               ],
@@ -158,20 +152,136 @@ class _HomePageState extends State<HomePage> {
 
   /// Builds the banner image
   Widget _buildBannerImage() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-      child: Image.asset(AppConstants.homeBannerAsset),
+    return _buildResponsiveBanner();
+  }
+
+  /// Builds a responsive banner that adapts to different screen sizes
+  Widget _buildResponsiveBanner() {
+    return Builder(
+      builder: (context) {
+        final screenSize = MediaQuery.of(context).size;
+        final screenWidth = screenSize.width;
+        final screenHeight = screenSize.height;
+        final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+        final orientation = MediaQuery.of(context).orientation;
+
+        // Calculate responsive dimensions
+        final bannerDimensions = _calculateBannerDimensions(
+          screenWidth: screenWidth,
+          screenHeight: screenHeight,
+          devicePixelRatio: devicePixelRatio,
+          orientation: orientation,
+        );
+
+        return Container(
+          width: double.infinity,
+          height: bannerDimensions.height,
+          margin: EdgeInsets.symmetric(horizontal: bannerDimensions.margin),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            child: Image.asset(
+              AppConstants.homeBannerAsset,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: bannerDimensions.height,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildBannerErrorWidget(bannerDimensions.height);
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
-  /// Builds the filter chips section
-  Widget _buildFilterChips(int selectedFilterIndex) {
-    return HorizontalFilterChips(
-      filterOptions: JobData.filterOptions,
-      selectedIndex: selectedFilterIndex,
-      onFilterSelected: (index) {
-        context.read<HomeBloc>().add(FilterJobsEvent(filterIndex: index));
-      },
+  /// Calculates banner dimensions based on screen properties
+  ({double height, double margin}) _calculateBannerDimensions({
+    required double screenWidth,
+    required double screenHeight,
+    required double devicePixelRatio,
+    required Orientation orientation,
+  }) {
+    double bannerHeight;
+    double horizontalMargin;
+
+    // Determine device type and orientation
+    final isLandscape = orientation == Orientation.landscape;
+
+    if (screenWidth < 400) {
+      // Small phones (iPhone SE, etc.)
+      bannerHeight = isLandscape ? screenHeight * 0.25 : screenHeight * 0.16;
+      horizontalMargin = 0.0; // No margin for small phones
+    } else if (screenWidth < 600) {
+      // Medium phones and small tablets
+      bannerHeight = isLandscape ? screenHeight * 0.30 : screenHeight * 0.18;
+      horizontalMargin = 0.0; // No margin for medium phones
+    } else if (screenWidth < 900) {
+      // Tablets
+      bannerHeight = isLandscape ? screenHeight * 0.35 : screenHeight * 0.20;
+      horizontalMargin = 0.0; // No margin for tablets
+    } else {
+      // Desktop and large tablets
+      bannerHeight = isLandscape ? screenHeight * 0.40 : screenHeight * 0.22;
+      horizontalMargin = 0.5; // Almost no margin for desktop
+    }
+
+    // Adjust for high DPI screens
+    if (devicePixelRatio > 2.0) {
+      bannerHeight *= 1.05;
+    }
+
+    // Ensure reasonable bounds
+    bannerHeight = bannerHeight.clamp(80.0, 320.0);
+
+    return (height: bannerHeight, margin: horizontalMargin);
+  }
+
+  /// Builds error widget for banner when image fails to load
+  Widget _buildBannerErrorWidget(double height) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppConstants.primaryColor.withOpacity(0.1),
+            AppConstants.secondaryColor.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_not_supported_outlined,
+              size: 40,
+              color: AppConstants.textSecondaryColor,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Banner Image',
+              style: TextStyle(
+                color: AppConstants.textSecondaryColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
