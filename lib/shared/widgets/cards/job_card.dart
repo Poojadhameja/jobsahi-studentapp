@@ -46,6 +46,7 @@ class _JobCardState extends State<JobCard> {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Job header with company logo, title, company name, rating, and save button

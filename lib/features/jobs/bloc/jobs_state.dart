@@ -29,7 +29,10 @@ class JobsLoaded extends JobsState {
   final List<Map<String, dynamic>> savedJobs;
   final List<Map<String, dynamic>> appliedJobs;
   final String searchQuery;
+  final String selectedCategory;
+  final bool showFilters;
   final Set<String> savedJobIds;
+  final List<Map<String, dynamic>> featuredJobs;
 
   const JobsLoaded({
     required this.allJobs,
@@ -37,7 +40,10 @@ class JobsLoaded extends JobsState {
     required this.savedJobs,
     required this.appliedJobs,
     this.searchQuery = '',
+    this.selectedCategory = 'All',
+    this.showFilters = false,
     required this.savedJobIds,
+    required this.featuredJobs,
   });
 
   @override
@@ -47,7 +53,10 @@ class JobsLoaded extends JobsState {
     savedJobs,
     appliedJobs,
     searchQuery,
+    selectedCategory,
+    showFilters,
     savedJobIds,
+    featuredJobs,
   ];
 
   /// Copy with method for immutable state updates
@@ -57,7 +66,10 @@ class JobsLoaded extends JobsState {
     List<Map<String, dynamic>>? savedJobs,
     List<Map<String, dynamic>>? appliedJobs,
     String? searchQuery,
+    String? selectedCategory,
+    bool? showFilters,
     Set<String>? savedJobIds,
+    List<Map<String, dynamic>>? featuredJobs,
   }) {
     return JobsLoaded(
       allJobs: allJobs ?? this.allJobs,
@@ -65,7 +77,10 @@ class JobsLoaded extends JobsState {
       savedJobs: savedJobs ?? this.savedJobs,
       appliedJobs: appliedJobs ?? this.appliedJobs,
       searchQuery: searchQuery ?? this.searchQuery,
+      selectedCategory: selectedCategory ?? this.selectedCategory,
+      showFilters: showFilters ?? this.showFilters,
       savedJobIds: savedJobIds ?? this.savedJobIds,
+      featuredJobs: featuredJobs ?? this.featuredJobs,
     );
   }
 }

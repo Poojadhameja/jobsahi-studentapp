@@ -131,7 +131,9 @@ class _HomePageState extends State<HomePage> {
                 _buildBannerImage(),
                 const SizedBox(height: AppConstants.smallPadding),
 
-                // Recommended jobs section
+                // Jobs section (heading removed)
+                _buildFeaturedJobsSection(state.recommendedJobs),
+                const SizedBox(height: AppConstants.defaultPadding),
                 _buildRecommendedJobsSection(state.filteredJobs),
               ],
             ),
@@ -285,26 +287,180 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Builds the featured jobs section
+  Widget _buildFeaturedJobsSection(List<Map<String, dynamic>> jobs) {
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        if (state is! HomeLoaded) return const SizedBox.shrink();
+
+        // Use featured jobs from API if available, otherwise use first 4 regular jobs
+        final featuredJobs = state.featuredJobs.isNotEmpty
+            ? state.featuredJobs
+            : jobs.take(4).toList();
+
+        if (featuredJobs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4.0),
+              child: Text(
+                'Featured Jobs',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppConstants.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppConstants.smallPadding),
+            SizedBox(
+              height: 260, // Increased height to prevent overflow
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                itemCount: featuredJobs.length,
+                itemBuilder: (context, index) {
+                  final job = featuredJobs[index];
+                  return Container(
+                    width: 380, // Increased card width
+                    margin: const EdgeInsets.only(
+                      right: AppConstants.smallPadding,
+                    ),
+                    child: JobCard(
+                      job: job,
+                      onTap: () {
+                        // Navigate to job details
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// Builds the recommended jobs section
   Widget _buildRecommendedJobsSection(List<Map<String, dynamic>> jobs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section title
-        Text(
-          AppConstants.recommendedJobsText,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppConstants.successColor,
-          ),
-        ),
+        // Filter section
+        _buildFiltersSection(),
         const SizedBox(height: AppConstants.smallPadding),
-
         // Job list
         JobList(jobs: jobs),
       ],
     );
+  }
+
+  /// Builds the filters section
+  Widget _buildFiltersSection() {
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        if (state is! HomeLoaded) return const SizedBox.shrink();
+
+        return Row(
+          children: [
+            _buildFilterButton(context, state),
+            if (state.showFilters) ...[
+              const SizedBox(width: AppConstants.smallPadding),
+              _buildCategoryFilter(context, state),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  /// Builds the filter button
+  Widget _buildFilterButton(BuildContext context, HomeLoaded state) {
+    return InkWell(
+      onTap: () {
+        context.read<HomeBloc>().add(ToggleFiltersEvent());
+      },
+      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.defaultPadding,
+          vertical: AppConstants.smallPadding,
+        ),
+        decoration: BoxDecoration(
+          color: state.showFilters
+              ? AppConstants.primaryColor
+              : Colors.transparent,
+          border: Border.all(color: AppConstants.primaryColor),
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              state.showFilters ? Icons.clear : Icons.tune,
+              color: state.showFilters
+                  ? Colors.white
+                  : AppConstants.primaryColor,
+              size: 20,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              state.showFilters ? 'Clear' : 'Filter',
+              style: TextStyle(
+                color: state.showFilters
+                    ? Colors.white
+                    : AppConstants.primaryColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds the category filter dropdown
+  Widget _buildCategoryFilter(BuildContext context, HomeLoaded state) {
+    return Expanded(
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppConstants.borderColor),
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: state.selectedCategory,
+            hint: const Text('Categories'),
+            isExpanded: true,
+            items: _getJobCategories().map((category) {
+              return DropdownMenuItem<String>(
+                value: category,
+                child: Text(category),
+              );
+            }).toList(),
+            onChanged: (value) {
+              context.read<HomeBloc>().add(
+                FilterJobsEvent(category: value ?? 'All'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Get job categories for filtering
+  List<String> _getJobCategories() {
+    return AppConstants.jobCategories;
   }
 }
 

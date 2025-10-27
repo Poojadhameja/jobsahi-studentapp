@@ -379,6 +379,35 @@ class LoginResponse {
   }
 }
 
+/// Jobs API Response Model
+class JobsApiResponse {
+  final bool status;
+  final String message;
+  final int count;
+  final List<Map<String, dynamic>> data;
+  final String timestamp;
+
+  JobsApiResponse({
+    required this.status,
+    required this.message,
+    required this.count,
+    required this.data,
+    required this.timestamp,
+  });
+
+  factory JobsApiResponse.fromJson(Map<String, dynamic> json) {
+    return JobsApiResponse(
+      status: json['status'] ?? false,
+      message: json['message'] ?? '',
+      count: json['count'] ?? 0,
+      data: json['data'] != null
+          ? List<Map<String, dynamic>>.from(json['data'])
+          : [],
+      timestamp: json['timestamp'] ?? '',
+    );
+  }
+}
+
 /// Create account response model
 class CreateAccountResponse {
   final bool success;
@@ -415,6 +444,74 @@ extension CoursesApi on ApiService {
 
 /// Jobs API methods
 extension JobsApi on ApiService {
+  /// Get featured jobs
+  Future<JobsApiResponse> getFeaturedJobs() async {
+    try {
+      debugPrint('🔵 [Jobs] Fetching featured jobs');
+
+      final response = await get('/api/jobs/jobs.php?featured=true');
+
+      debugPrint(
+        '🔵 [Jobs] Featured Jobs API Response Status: ${response.statusCode}',
+      );
+      debugPrint('🔵 [Jobs] Featured Jobs API Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        // Handle different response types
+        Map<String, dynamic> jsonData;
+        if (responseData is Map<String, dynamic>) {
+          jsonData = responseData;
+          debugPrint('🔵 [Jobs] Featured Jobs Response is already a Map');
+        } else if (responseData is String) {
+          debugPrint(
+            '🔵 [Jobs] Featured Jobs Response is String, parsing JSON',
+          );
+          try {
+            jsonData = jsonDecode(responseData) as Map<String, dynamic>;
+            debugPrint('🔵 [Jobs] Featured Jobs JSON parsed successfully');
+          } catch (e) {
+            debugPrint('🔴 [Jobs] Featured Jobs JSON parsing failed: $e');
+            throw Exception('Failed to parse featured jobs response');
+          }
+        } else {
+          debugPrint(
+            '🔴 [Jobs] Featured Jobs Unexpected response type: ${responseData.runtimeType}',
+          );
+          throw Exception('Unexpected response format from server');
+        }
+
+        // Check if the response indicates success
+        if (jsonData['status'] == false) {
+          final message =
+              jsonData['message']?.toString() ?? 'No featured jobs found';
+          debugPrint('🔴 [Jobs] Featured Jobs API returned error: $message');
+          throw Exception(message);
+        }
+
+        // Parse the response
+        final jobsResponse = JobsApiResponse.fromJson(jsonData);
+        debugPrint('🔵 [Jobs] Featured jobs parsed successfully');
+        debugPrint(
+          '🔵 [Jobs] Featured Jobs Count: ${jobsResponse.data.length}',
+        );
+
+        return jobsResponse;
+      } else {
+        debugPrint(
+          '🔴 [Jobs] Featured Jobs API call failed with status: ${response.statusCode}',
+        );
+        throw Exception(
+          'Failed to fetch featured jobs: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      debugPrint('🔴 [Jobs] Error fetching featured jobs: $e');
+      rethrow;
+    }
+  }
+
   /// Get job details by ID
   /// Requires authentication token (Bearer token)
   Future<JobDetailsApiResponse> getJobDetails(String jobId) async {

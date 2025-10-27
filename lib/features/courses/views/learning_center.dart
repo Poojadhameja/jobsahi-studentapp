@@ -226,6 +226,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
           height: 240,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             itemCount: featuredCourses.length,
             itemBuilder: (context, index) {
               final course = featuredCourses[index];
@@ -266,30 +267,30 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
 
   Widget _buildFilterButton(BuildContext context) {
     final showFilters = _showFilters;
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding,
-        vertical: AppConstants.smallPadding,
-      ),
-      decoration: BoxDecoration(
-        color: showFilters ? AppConstants.primaryColor : Colors.transparent,
-        border: Border.all(color: AppConstants.primaryColor),
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-      ),
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _showFilters = !_showFilters;
-            if (!_showFilters) {
-              _selectedCategory = 'All';
-              context.read<CoursesBloc>().add(
-                FilterCoursesEvent(category: 'All'),
-              );
-            }
-          });
-        },
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _showFilters = !_showFilters;
+          if (!_showFilters) {
+            _selectedCategory = 'All';
+            context.read<CoursesBloc>().add(
+              FilterCoursesEvent(category: 'All'),
+            );
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.defaultPadding,
+          vertical: AppConstants.smallPadding,
+        ),
+        decoration: BoxDecoration(
+          color: showFilters ? AppConstants.primaryColor : Colors.transparent,
+          border: Border.all(color: AppConstants.primaryColor),
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,

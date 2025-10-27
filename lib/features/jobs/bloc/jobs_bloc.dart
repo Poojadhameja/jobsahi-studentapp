@@ -5,6 +5,7 @@ import 'jobs_event.dart';
 import 'jobs_state.dart';
 import '../../../shared/data/job_data.dart';
 import '../../../shared/data/user_data.dart';
+import '../../../shared/services/api_service.dart';
 import '../repositories/jobs_repository.dart';
 import '../models/job.dart';
 import '../models/job_detail_models.dart';
@@ -13,13 +14,17 @@ import '../models/job_detail_models.dart';
 /// Handles all job-related business logic
 class JobsBloc extends Bloc<JobsEvent, JobsState> {
   final JobsRepository _jobsRepository;
+  final ApiService _apiService;
 
-  JobsBloc({JobsRepository? jobsRepository})
+  JobsBloc({JobsRepository? jobsRepository, ApiService? apiService})
     : _jobsRepository = jobsRepository ?? _createDefaultRepository(),
+      _apiService = apiService ?? ApiService(),
       super(const JobsInitial()) {
     // Register event handlers
     on<LoadJobsEvent>(_onLoadJobs);
     on<SearchJobsEvent>(_onSearchJobs);
+    on<FilterJobsEvent>(_onFilterJobs);
+    on<ToggleFiltersEvent>(_onToggleFilters);
     on<SaveJobEvent>(_onSaveJob);
     on<UnsaveJobEvent>(_onUnsaveJob);
     on<ApplyForJobEvent>(_onApplyForJob);
@@ -61,6 +66,17 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     try {
       emit(const JobsLoading());
 
+      // Load featured jobs from API
+      List<Map<String, dynamic>> featuredJobs = [];
+      try {
+        final featuredResponse = await _apiService.getFeaturedJobs();
+        featuredJobs = featuredResponse.data; // Data is already in Map format
+        debugPrint('🔵 [Jobs] Loaded ${featuredJobs.length} featured jobs');
+      } catch (e) {
+        debugPrint('🔴 [Jobs] Failed to load featured jobs: $e');
+        // Continue with empty featured jobs list
+      }
+
       // Fetch jobs from API
       final jobsResponse = await _jobsRepository.getJobs();
 
@@ -79,6 +95,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             savedJobs: savedJobs,
             appliedJobs: appliedJobs,
             savedJobIds: savedJobIds,
+            featuredJobs: featuredJobs,
           ),
         );
       } else {
@@ -104,6 +121,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             savedJobs: savedJobs,
             appliedJobs: appliedJobs,
             savedJobIds: savedJobIds,
+            featuredJobs: [],
           ),
         );
       } else {
@@ -261,6 +279,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             appliedJobs: [],
             savedJobIds: UserData.savedJobIds.toSet(),
             searchQuery: event.query,
+            featuredJobs: [],
           ),
         );
       }
@@ -296,6 +315,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
               appliedJobs: [],
               savedJobIds: UserData.savedJobIds.toSet(),
               searchQuery: event.query,
+              featuredJobs: [],
             ),
           );
         }
@@ -303,6 +323,62 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         emit(JobsError(message: 'Failed to search jobs: ${e.toString()}'));
       }
     }
+  }
+
+  /// Handle filter jobs
+  Future<void> _onFilterJobs(
+    FilterJobsEvent event,
+    Emitter<JobsState> emit,
+  ) async {
+    if (state is! JobsLoaded) return;
+
+    final currentState = state as JobsLoaded;
+    final filteredJobs = _filterJobs(currentState.allJobs, event.category);
+
+    emit(
+      currentState.copyWith(
+        filteredJobs: filteredJobs,
+        selectedCategory: event.category,
+      ),
+    );
+  }
+
+  /// Filter jobs by category
+  List<Map<String, dynamic>> _filterJobs(
+    List<Map<String, dynamic>> jobs,
+    String category,
+  ) {
+    if (category == 'All') {
+      return jobs;
+    }
+
+    return jobs.where((job) {
+      final jobCategory = job['category']?.toString().toLowerCase() ?? '';
+      return jobCategory.contains(category.toLowerCase());
+    }).toList();
+  }
+
+  /// Handle toggle filters
+  Future<void> _onToggleFilters(
+    ToggleFiltersEvent event,
+    Emitter<JobsState> emit,
+  ) async {
+    if (state is! JobsLoaded) return;
+
+    final currentState = state as JobsLoaded;
+    final newShowFilters = !currentState.showFilters;
+
+    emit(
+      currentState.copyWith(
+        showFilters: newShowFilters,
+        selectedCategory: newShowFilters
+            ? currentState.selectedCategory
+            : 'All',
+        filteredJobs: newShowFilters
+            ? currentState.filteredJobs
+            : currentState.allJobs,
+      ),
+    );
   }
 
   /// Handle save job
@@ -434,6 +510,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           savedJobs: savedJobs,
           appliedJobs: [],
           savedJobIds: savedJobIds,
+          featuredJobs: [],
         ),
       );
     } catch (e) {
@@ -462,6 +539,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           savedJobs: [],
           appliedJobs: appliedJobs,
           savedJobIds: UserData.savedJobIds.toSet(),
+          featuredJobs: [],
         ),
       );
     } catch (e) {

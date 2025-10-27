@@ -24,6 +24,24 @@ class SearchJobsEvent extends JobsEvent {
   List<Object?> get props => [query];
 }
 
+/// Filter jobs event
+class FilterJobsEvent extends JobsEvent {
+  final String category;
+
+  const FilterJobsEvent({required this.category});
+
+  @override
+  List<Object?> get props => [category];
+}
+
+/// Toggle filters event
+class ToggleFiltersEvent extends JobsEvent {
+  const ToggleFiltersEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
 /// Save job event
 class SaveJobEvent extends JobsEvent {
   final String jobId;

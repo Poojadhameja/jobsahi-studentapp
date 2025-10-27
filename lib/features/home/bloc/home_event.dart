@@ -33,6 +33,24 @@ class SearchJobsEvent extends HomeEvent {
   List<Object?> get props => [query];
 }
 
+/// Filter jobs event
+class FilterJobsEvent extends HomeEvent {
+  final String category;
+
+  const FilterJobsEvent({required this.category});
+
+  @override
+  List<Object?> get props => [category];
+}
+
+/// Toggle filters event
+class ToggleFiltersEvent extends HomeEvent {
+  const ToggleFiltersEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
 /// Refresh home data event
 class RefreshHomeDataEvent extends HomeEvent {
   const RefreshHomeDataEvent();

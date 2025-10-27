@@ -95,8 +95,7 @@ class AppConstants {
   static const String searchPlaceholder = 'नौकरी खोजें';
   static const String savedJobsText = 'सेव की गई नौकरियाँ';
   static const String appliedJobsText = 'आवेदन की गई नौकरियाँ';
-  static const String recommendedJobsText =
-      'Recommended jobs (अनुशंसित नौकरियाँ)';
+  static const String recommendedJobsText = 'Jobs (नौकरियाँ)';
   static const String applyJobText = 'Apply This Job';
   static const String saveText = 'Save';
   static const String savedText = 'Saved';
@@ -266,13 +265,53 @@ class AppConstants {
 
   /// Job Categories
   static const List<String> jobCategories = [
-    'All Jobs',
-    'Electrician',
-    'Fitter',
-    'Welder',
-    'Mechanic',
-    'Plumber',
-    'Carpenter',
+    'All',
+    'Engineering',
+    'Mechanical Engineering',
+    'Electrical Engineering',
+    'Civil Engineering',
+    'Computer Science',
+    'Electronics Engineering',
+    'Chemical Engineering',
+    'Aerospace Engineering',
+    'Automobile Engineering',
+    'IT/Software',
+    'Software Development',
+    'Web Development',
+    'Mobile Development',
+    'Data Science',
+    'AI/ML',
+    'Cybersecurity',
+    'Cloud Computing',
+    'DevOps',
+    'Manufacturing',
+    'Production',
+    'Quality Control',
+    'Quality Assurance',
+    'Maintenance',
+    'Welding',
+    'Machining',
+    'CNC',
+    'Tool Making',
+    'Fabrication',
+    'Assembly',
+    'Design',
+    'CAD/CAM',
+    'Project Management',
+    'Supply Chain',
+    'Logistics',
+    'Healthcare',
+    'Education',
+    'Finance',
+    'Banking',
+    'Insurance',
+    'Marketing',
+    'Digital Marketing',
+    'Sales',
+    'Business Development',
+    'HR',
+    'Administration',
+    'General',
   ];
 
   /// Experience Levels
