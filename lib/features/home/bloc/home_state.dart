@@ -30,6 +30,8 @@ class HomeLoaded extends HomeState {
   final List<Map<String, dynamic>> recommendedJobs;
   final List<Map<String, dynamic>> filteredJobs;
   final List<Map<String, dynamic>> featuredJobs;
+  final Set<String> savedJobIds;
+  final List<Map<String, dynamic>> allJobs;
 
   const HomeLoaded({
     this.selectedTabIndex = 0,
@@ -39,6 +41,8 @@ class HomeLoaded extends HomeState {
     required this.recommendedJobs,
     required this.filteredJobs,
     required this.featuredJobs,
+    this.savedJobIds = const {},
+    this.allJobs = const [],
   });
 
   @override
@@ -50,6 +54,8 @@ class HomeLoaded extends HomeState {
     recommendedJobs,
     filteredJobs,
     featuredJobs,
+    savedJobIds,
+    allJobs,
   ];
 
   /// Copy with method for immutable state updates
@@ -61,6 +67,8 @@ class HomeLoaded extends HomeState {
     List<Map<String, dynamic>>? recommendedJobs,
     List<Map<String, dynamic>>? filteredJobs,
     List<Map<String, dynamic>>? featuredJobs,
+    Set<String>? savedJobIds,
+    List<Map<String, dynamic>>? allJobs,
   }) {
     return HomeLoaded(
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
@@ -70,6 +78,8 @@ class HomeLoaded extends HomeState {
       recommendedJobs: recommendedJobs ?? this.recommendedJobs,
       filteredJobs: filteredJobs ?? this.filteredJobs,
       featuredJobs: featuredJobs ?? this.featuredJobs,
+      savedJobIds: savedJobIds ?? this.savedJobIds,
+      allJobs: allJobs ?? this.allJobs,
     );
   }
 }

@@ -96,7 +96,34 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+  TabController? _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      animationDuration: const Duration(milliseconds: 400),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
+  }
+
+  TabController get tabController {
+    _tabController ??= TabController(
+      length: 2,
+      vsync: this,
+      animationDuration: const Duration(milliseconds: 400),
+    );
+    return _tabController!;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<HomeBloc, HomeState>(
@@ -118,23 +145,32 @@ class _HomePageState extends State<HomePage> {
 
         if (state is HomeLoaded) {
           return SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: Column(
               children: [
-                // Greeting section
-                _buildGreetingSection(),
-                const SizedBox(height: AppConstants.smallPadding),
-
-                // Action buttons section removed
-
-                // Banner image
-                _buildBannerImage(),
-                const SizedBox(height: AppConstants.smallPadding),
-
-                // Jobs section (heading removed)
-                _buildFeaturedJobsSection(state.recommendedJobs),
-                const SizedBox(height: AppConstants.defaultPadding),
-                _buildRecommendedJobsSection(state.filteredJobs),
+                // Greeting and Banner (fixed at top)
+                Padding(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: Column(
+                    children: [
+                      _buildGreetingSection(),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      _buildBannerImage(),
+                    ],
+                  ),
+                ),
+                // Tab Bar (fixed)
+                _buildTabBar(),
+                // Tab Bar View
+                Expanded(
+                  child: TabBarView(
+                    controller: tabController,
+                    physics: const ClampingScrollPhysics(),
+                    children: [
+                      _buildAllJobsTab(state),
+                      _buildSavedJobsTab(state),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
@@ -145,16 +181,122 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Handle save toggle for a job
+  void _handleSaveToggle(Map<String, dynamic> job) {
+    final jobId = job['id']?.toString();
+    if (jobId == null) return;
+
+    final currentState = context.read<HomeBloc>().state;
+    if (currentState is HomeLoaded) {
+      final isCurrentlySaved = currentState.savedJobIds.contains(jobId);
+
+      if (isCurrentlySaved) {
+        context.read<HomeBloc>().add(UnsaveJobEvent(jobId: jobId));
+      } else {
+        context.read<HomeBloc>().add(SaveJobEvent(jobId: jobId));
+      }
+    }
+  }
+
   /// Builds the greeting section
   Widget _buildGreetingSection() {
     final userName = UserData.currentUser['name'] as String? ?? 'User';
 
-    return Text('Hi $userName,', style: AppConstants.headingStyle);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text('Hi $userName,', style: AppConstants.headingStyle),
+    );
   }
 
   /// Builds the banner image
   Widget _buildBannerImage() {
     return _buildResponsiveBanner();
+  }
+
+  /// Builds the tab bar
+  Widget _buildTabBar() {
+    return Container(
+      color: AppConstants.cardBackgroundColor,
+      child: TabBar(
+        controller: tabController,
+        labelColor: AppConstants.primaryColor,
+        unselectedLabelColor: AppConstants.textSecondaryColor,
+        indicatorColor: AppConstants.primaryColor,
+        indicatorWeight: 3,
+        tabs: const [
+          Tab(text: 'All Jobs'),
+          Tab(text: 'Saved Jobs'),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the All Jobs tab
+  Widget _buildAllJobsTab(HomeLoaded state) {
+    return _buildRecommendedJobsSection(state.filteredJobs);
+  }
+
+  /// Builds the Saved Jobs tab
+  Widget _buildSavedJobsTab(HomeLoaded state) {
+    if (state.savedJobIds.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.bookmark_border,
+              size: 80,
+              color: AppConstants.textSecondaryColor,
+            ),
+            const SizedBox(height: AppConstants.defaultPadding),
+            Text(
+              'No saved jobs',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppConstants.textPrimaryColor,
+              ),
+            ),
+            const SizedBox(height: AppConstants.smallPadding),
+            Text(
+              'Save jobs to view them here',
+              style: TextStyle(color: AppConstants.textSecondaryColor),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final savedJobs = state.allJobs
+        .where((job) => state.savedJobIds.contains(job['id']?.toString()))
+        .toList();
+
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.defaultPadding,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final job = savedJobs[index];
+              return JobCard(
+                job: job,
+                onTap: () {
+                  NavigationHelper.navigateTo(
+                    AppRoutes.jobDetailsWithId(job['id']),
+                  );
+                },
+                onSaveToggle: () {
+                  _handleSaveToggle(job);
+                },
+                isSaved: true,
+              );
+            }, childCount: savedJobs.length),
+          ),
+        ),
+      ],
+    );
   }
 
   /// Builds a responsive banner that adapts to different screen sizes
@@ -287,76 +429,47 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Builds the featured jobs section
-  Widget _buildFeaturedJobsSection(List<Map<String, dynamic>> jobs) {
-    return BlocBuilder<HomeBloc, HomeState>(
-      builder: (context, state) {
-        if (state is! HomeLoaded) return const SizedBox.shrink();
-
-        // Use featured jobs from API if available, otherwise use first 4 regular jobs
-        final featuredJobs = state.featuredJobs.isNotEmpty
-            ? state.featuredJobs
-            : jobs.take(4).toList();
-
-        if (featuredJobs.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.0),
-              child: Text(
-                'Featured Jobs',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppConstants.primaryColor,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppConstants.smallPadding),
-            SizedBox(
-              height: 260, // Increased height to prevent overflow
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                itemCount: featuredJobs.length,
-                itemBuilder: (context, index) {
-                  final job = featuredJobs[index];
-                  return Container(
-                    width: 380, // Increased card width
-                    margin: const EdgeInsets.only(
-                      right: AppConstants.smallPadding,
-                    ),
-                    child: JobCard(
-                      job: job,
-                      onTap: () {
-                        // Navigate to job details
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   /// Builds the recommended jobs section
   Widget _buildRecommendedJobsSection(List<Map<String, dynamic>> jobs) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Filter section
-        _buildFiltersSection(),
-        const SizedBox(height: AppConstants.smallPadding),
-        // Job list
-        JobList(jobs: jobs),
+    return CustomScrollView(
+      slivers: [
+        // Filter section as SliverToBoxAdapter
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: _buildFiltersSection(),
+          ),
+        ),
+        const SliverToBoxAdapter(
+          child: SizedBox(height: AppConstants.smallPadding),
+        ),
+        // Job list as SliverList
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.defaultPadding,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final job = jobs[index];
+              return JobCard(
+                job: job,
+                onTap: () {
+                  NavigationHelper.navigateTo(
+                    AppRoutes.jobDetailsWithId(job['id']),
+                  );
+                },
+                onSaveToggle: () {
+                  _handleSaveToggle(job);
+                },
+                isSaved:
+                    BlocProvider.of<HomeBloc>(context).state is HomeLoaded &&
+                    (BlocProvider.of<HomeBloc>(context).state as HomeLoaded)
+                        .savedJobIds
+                        .contains(job['id']?.toString()),
+              );
+            }, childCount: jobs.length),
+          ),
+        ),
       ],
     );
   }
@@ -470,7 +583,18 @@ class JobList extends StatelessWidget {
   /// List of jobs to display
   final List<Map<String, dynamic>> jobs;
 
-  const JobList({super.key, required this.jobs});
+  /// Callback when save button is toggled
+  final Function(Map<String, dynamic>)? onSaveToggle;
+
+  /// Function to check if a job is saved
+  final bool Function(Map<String, dynamic>)? isSaved;
+
+  const JobList({
+    super.key,
+    required this.jobs,
+    this.onSaveToggle,
+    this.isSaved,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -485,6 +609,10 @@ class JobList extends StatelessWidget {
                   AppRoutes.jobDetailsWithId(job['id']),
                 );
               },
+              onSaveToggle: onSaveToggle != null
+                  ? () => onSaveToggle!(job)
+                  : null,
+              isSaved: isSaved != null ? isSaved!(job) : false,
             ),
           )
           .toList(),

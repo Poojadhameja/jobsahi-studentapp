@@ -25,6 +25,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<ToggleFiltersEvent>(_onToggleFilters);
     on<RefreshHomeDataEvent>(_onRefreshHomeData);
     on<ClearSearchEvent>(_onClearSearch);
+    on<SaveJobEvent>(_onSaveJob);
+    on<UnsaveJobEvent>(_onUnsaveJob);
   }
 
   /// Create default JobsBloc instance
@@ -63,11 +65,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           final recommendedJobs = jobsState.allJobs;
           final filteredJobs = recommendedJobs;
 
+          final savedJobIds = state is HomeLoaded
+              ? (state as HomeLoaded).savedJobIds
+              : <String>{};
+
           emit(
             HomeLoaded(
               recommendedJobs: recommendedJobs,
               filteredJobs: filteredJobs,
               featuredJobs: featuredJobs,
+              savedJobIds: savedJobIds,
+              allJobs: jobsState.allJobs,
             ),
           );
           break; // Exit the stream after getting the data
@@ -191,6 +199,28 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             : currentState.recommendedJobs,
       ),
     );
+  }
+
+  /// Handle save job
+  void _onSaveJob(SaveJobEvent event, Emitter<HomeState> emit) {
+    if (state is! HomeLoaded) return;
+
+    final currentState = state as HomeLoaded;
+    final newSavedJobIds = Set<String>.from(currentState.savedJobIds);
+    newSavedJobIds.add(event.jobId);
+
+    emit(currentState.copyWith(savedJobIds: newSavedJobIds));
+  }
+
+  /// Handle unsave job
+  void _onUnsaveJob(UnsaveJobEvent event, Emitter<HomeState> emit) {
+    if (state is! HomeLoaded) return;
+
+    final currentState = state as HomeLoaded;
+    final newSavedJobIds = Set<String>.from(currentState.savedJobIds);
+    newSavedJobIds.remove(event.jobId);
+
+    emit(currentState.copyWith(savedJobIds: newSavedJobIds));
   }
 
   /// Filter jobs by category

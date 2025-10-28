@@ -17,7 +17,19 @@ class JobCard extends StatefulWidget {
   /// Callback function when the card is tapped
   final VoidCallback? onTap;
 
-  const JobCard({super.key, required this.job, this.onTap});
+  /// Callback function when save button is toggled
+  final VoidCallback? onSaveToggle;
+
+  /// Whether this job is saved
+  final bool isSaved;
+
+  const JobCard({
+    super.key,
+    required this.job,
+    this.onTap,
+    this.onSaveToggle,
+    this.isSaved = false,
+  });
 
   @override
   State<JobCard> createState() => _JobCardState();
@@ -28,48 +40,44 @@ class _JobCardState extends State<JobCard> {
   Widget build(BuildContext context) {
     final job = widget.job;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppConstants.cardBackgroundColor,
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Job header with company logo, title, company name, rating, and save button
-            _buildJobHeader(job),
-            const SizedBox(height: 8),
+    return Card(
+      elevation: 2,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Job header with company logo, title, company name, rating, and save button
+              _buildJobHeader(job),
+              const SizedBox(height: 8),
 
-            // Job tags
-            _buildJobTags(job),
-            const SizedBox(height: 6),
+              // Job tags
+              _buildJobTags(job),
+              const SizedBox(height: 6),
 
-            // Salary and rating
-            Row(
-              children: [
-                _buildSalaryInfo(job),
-                const SizedBox(width: 8),
-                _buildRatingInfo(job),
-              ],
-            ),
-            const SizedBox(height: 6),
+              // Salary and rating
+              Row(
+                children: [
+                  Flexible(child: _buildSalaryInfo(job)),
+                  const SizedBox(width: 8),
+                  _buildRatingInfo(job),
+                ],
+              ),
+              const SizedBox(height: 6),
 
-            // Location and skills
-            _buildLocationAndSkills(job),
-          ],
+              // Location and skills
+              _buildLocationAndSkills(job),
+            ],
+          ),
         ),
       ),
     );
@@ -95,26 +103,49 @@ class _JobCardState extends State<JobCard> {
               Text(
                 job['title'] ?? '',
                 style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
+              const SizedBox(height: 2),
               Text(
                 job['company'] ?? '',
                 style: const TextStyle(color: AppConstants.accentColor),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ],
           ),
         ),
 
-        // Posted Date and Deadline in column layout
+        // Save button and Posted Date/Deadline in column layout
         Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Deadline (top)
+            // Save button (top)
+            if (widget.onSaveToggle != null)
+              IconButton(
+                icon: Icon(
+                  widget.isSaved ? Icons.bookmark : Icons.bookmark_border,
+                  color: widget.isSaved
+                      ? AppConstants.primaryColor
+                      : Colors.grey,
+                  size: 24,
+                ),
+                onPressed: widget.onSaveToggle,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            if (widget.onSaveToggle != null &&
+                (job['application_deadline'] != null ||
+                    job['created_at'] != null))
+              const SizedBox(height: 4),
+            // Deadline
             if (job['application_deadline'] != null &&
                 job['application_deadline'].toString().isNotEmpty)
               _buildDeadlineBadge(job['application_deadline']),
 
-            // Posted Date (bottom)
+            // Posted Date
             if (job['created_at'] != null &&
                 job['created_at'].toString().isNotEmpty) ...[
               if (job['application_deadline'] != null &&
@@ -175,6 +206,8 @@ class _JobCardState extends State<JobCard> {
         fontWeight: FontWeight.w700,
         color: Color(0xFF10B981), // Primary green color
       ),
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
     );
   }
 

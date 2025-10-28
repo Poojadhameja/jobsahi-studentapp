@@ -66,3 +66,23 @@ class ClearSearchEvent extends HomeEvent {
   @override
   List<Object?> get props => [];
 }
+
+/// Save job event
+class SaveJobEvent extends HomeEvent {
+  final String jobId;
+
+  const SaveJobEvent({required this.jobId});
+
+  @override
+  List<Object?> get props => [jobId];
+}
+
+/// Unsave job event
+class UnsaveJobEvent extends HomeEvent {
+  final String jobId;
+
+  const UnsaveJobEvent({required this.jobId});
+
+  @override
+  List<Object?> get props => [jobId];
+}
