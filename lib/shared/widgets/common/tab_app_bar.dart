@@ -23,8 +23,8 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       leading: IconButton(
         onPressed: onBackPressed ?? () => context.go('/home'),
-        icon: const Icon(
-          Icons.arrow_back,
+        icon: Icon(
+          onBackPressed != null ? Icons.arrow_back : Icons.menu,
           color: AppConstants.primaryColor,
           size: 24,
         ),

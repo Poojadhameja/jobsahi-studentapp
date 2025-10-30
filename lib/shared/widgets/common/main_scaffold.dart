@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/router/app_router.dart';
 import 'bottom_navigation.dart';
 import 'tab_navigation_manager.dart';
 import 'custom_app_bar.dart';
 import 'tab_app_bar.dart';
+import 'search_filter_bar.dart';
 
 class MainScaffold extends StatefulWidget {
   final Widget child;
@@ -73,13 +73,10 @@ class _MainScaffoldState extends State<MainScaffold> {
   PreferredSizeWidget? _buildAppBar(int currentIndex) {
     switch (currentIndex) {
       case 0:
-        // Home tab - show hamburger menu, search, and notification
+        // Home tab - show hamburger menu, search, and filter icon
         return CustomAppBar(
-          showSearchBar: true,
           showMenuButton: true,
-          showNotificationIcon: true,
-          onSearch: _onSearch,
-          onNotificationPressed: _onNotificationPressed,
+          customTitle: _buildHomeAppBarTitle(context),
         );
       case 1:
         // Learning tab - show title with back button
@@ -171,14 +168,8 @@ class _MainScaffoldState extends State<MainScaffold> {
     );
   }
 
-  /// Handle search functionality
-  static void _onSearch(String query) {
-    // Navigate to search results screen
-    AppRouter.push('/jobs/search?query=${Uri.encodeComponent(query)}');
-  }
-
-  /// Handle notification icon tap
-  void _onNotificationPressed() {
-    context.push('/settings/notifications');
+  /// Build home app bar title with search and filter
+  Widget _buildHomeAppBarTitle(BuildContext context) {
+    return SearchFilterBarWithBloc();
   }
 }

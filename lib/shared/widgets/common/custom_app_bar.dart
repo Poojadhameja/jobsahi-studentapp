@@ -16,6 +16,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Whether to show the notification icon
   final bool showNotificationIcon;
 
+  /// Title to display
+  final String? title;
+
+  /// Custom title widget (takes precedence over title)
+  final Widget? customTitle;
+
   /// Callback function when search is performed
   final Function(String)? onSearch;
 
@@ -30,6 +36,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showSearchBar = false,
     this.showMenuButton = false,
     this.showNotificationIcon = false,
+    this.title,
+    this.customTitle,
     this.onSearch,
     this.onNotificationPressed,
     this.backgroundColor,
@@ -45,6 +53,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight:
           kToolbarHeight + 16, // Add 16px total height (8px top + 8px bottom)
       titleSpacing: 0,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5)),
+        ),
+      ),
       leading: showMenuButton
           ? IconButton(
               icon: const Icon(
@@ -63,8 +76,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             )
           : null,
-      title: showSearchBar ? _buildSearchBar() : null,
-      centerTitle: !showSearchBar,
+      title:
+          customTitle ??
+          (showSearchBar
+              ? _buildSearchBar()
+              : (title != null ? Text(title!) : null)),
+      centerTitle: customTitle == null && !showSearchBar,
       actions: showNotificationIcon
           ? [
               Padding(

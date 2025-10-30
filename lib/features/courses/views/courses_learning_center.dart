@@ -10,6 +10,8 @@ import '../../../shared/widgets/cards/course_card.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/common/navigation_helper.dart';
+import '../../../shared/widgets/common/custom_tab_structure.dart';
+import '../../../shared/widgets/common/empty_state_widget.dart';
 import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
@@ -36,9 +38,7 @@ class _LearningCenterPageView extends StatefulWidget {
       _LearningCenterPageViewState();
 }
 
-class _LearningCenterPageViewState extends State<_LearningCenterPageView>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
+class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
   String? _selectedCategory;
@@ -46,13 +46,11 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -74,11 +72,13 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
           child: Column(
             children: [
               _buildSearchBar(),
-              _buildTabBar(),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
+                child: CustomTabStructure(
+                  tabs: const [
+                    TabConfig(title: 'Learning Center'),
+                    TabConfig(title: 'Saved Courses'),
+                  ],
+                  tabContents: [
                     _buildLearningCenterTab(context, state),
                     const SavedCoursesPage(),
                   ],
@@ -121,23 +121,6 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
             vertical: 12,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTabBar() {
-    return Container(
-      color: AppConstants.cardBackgroundColor,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: AppConstants.primaryColor,
-        unselectedLabelColor: AppConstants.textSecondaryColor,
-        indicatorColor: AppConstants.primaryColor,
-        indicatorWeight: 3,
-        tabs: const [
-          Tab(text: 'Learning Center'),
-          Tab(text: 'Saved Courses'),
-        ],
       ),
     );
   }
@@ -191,59 +174,12 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         children: [
           if (!isSearching) ...[
-            _buildFeaturedSection(context, state),
-            const SizedBox(height: AppConstants.defaultPadding),
             _buildFiltersSection(context, state),
             const SizedBox(height: AppConstants.defaultPadding),
           ],
           _buildCoursesSection(context, state),
         ],
       ),
-    );
-  }
-
-  Widget _buildFeaturedSection(BuildContext context, CoursesState state) {
-    List<Map<String, dynamic>> featuredCourses = [];
-    if (state is CoursesLoaded) {
-      featuredCourses = state.allCourses;
-    } else {
-      featuredCourses = [];
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Featured By Top Institutes',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppConstants.primaryColor,
-          ),
-        ),
-        const SizedBox(height: AppConstants.smallPadding),
-        SizedBox(
-          height: 240,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: featuredCourses.length,
-            itemBuilder: (context, index) {
-              final course = featuredCourses[index];
-              return Container(
-                width: 315,
-                margin: const EdgeInsets.only(right: AppConstants.smallPadding),
-                child: CourseCard(
-                  course: course,
-                  onTap: () => _navigateToCourseDetails(course),
-                  onSaveToggle: () =>
-                      _onSaveToggle(context, state, course['id']),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
     );
   }
 
@@ -358,17 +294,10 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView>
     }
 
     if (courses.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(AppConstants.largePadding),
-          child: Text(
-            'No courses found',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppConstants.textSecondaryColor,
-            ),
-          ),
-        ),
+      return const EmptyStateWidget(
+        icon: Icons.school_outlined,
+        title: 'No courses found',
+        subtitle: 'Try adjusting your search criteria or filters',
       );
     }
 

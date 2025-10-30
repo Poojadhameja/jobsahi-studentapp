@@ -27,6 +27,8 @@ class HomeLoaded extends HomeState {
   final String searchQuery;
   final String selectedCategory;
   final bool showFilters;
+  final Map<String, String?>
+  activeFilters; // 'fields', 'salary', 'location' -> value
   final List<Map<String, dynamic>> recommendedJobs;
   final List<Map<String, dynamic>> filteredJobs;
   final List<Map<String, dynamic>> featuredJobs;
@@ -38,6 +40,7 @@ class HomeLoaded extends HomeState {
     this.searchQuery = '',
     this.selectedCategory = 'All',
     this.showFilters = false,
+    this.activeFilters = const {},
     required this.recommendedJobs,
     required this.filteredJobs,
     required this.featuredJobs,
@@ -51,6 +54,7 @@ class HomeLoaded extends HomeState {
     searchQuery,
     selectedCategory,
     showFilters,
+    activeFilters,
     recommendedJobs,
     filteredJobs,
     featuredJobs,
@@ -64,6 +68,7 @@ class HomeLoaded extends HomeState {
     String? searchQuery,
     String? selectedCategory,
     bool? showFilters,
+    Map<String, String?>? activeFilters,
     List<Map<String, dynamic>>? recommendedJobs,
     List<Map<String, dynamic>>? filteredJobs,
     List<Map<String, dynamic>>? featuredJobs,
@@ -75,6 +80,7 @@ class HomeLoaded extends HomeState {
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       showFilters: showFilters ?? this.showFilters,
+      activeFilters: activeFilters ?? this.activeFilters,
       recommendedJobs: recommendedJobs ?? this.recommendedJobs,
       filteredJobs: filteredJobs ?? this.filteredJobs,
       featuredJobs: featuredJobs ?? this.featuredJobs,

@@ -45,6 +45,7 @@ class _JobCardState extends State<JobCard> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        side: const BorderSide(color: Colors.grey, width: 0.5),
       ),
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -252,27 +253,36 @@ class _JobCardState extends State<JobCard> {
           children: [
             // Location
             Expanded(
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    size: 14,
-                    color: AppConstants.textSecondaryColor,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      job['location'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppConstants.textPrimaryColor,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 10,
+                      color: AppConstants.textSecondaryColor,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 3),
+                    Expanded(
+                      child: Text(
+                        job['location'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500,
+                          color: AppConstants.textPrimaryColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             // Views
@@ -294,16 +304,16 @@ class _JobCardState extends State<JobCard> {
       children: [
         ...skills.take(3).map<Widget>((skill) {
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(5),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Text(
               skill.toString().trim(),
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w500,
                 color: AppConstants.textPrimaryColor,
               ),
@@ -312,16 +322,16 @@ class _JobCardState extends State<JobCard> {
         }),
         if (skills.length > 3)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(5),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Text(
               '+${skills.length - 3} more',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 9,
                 color: AppConstants.textSecondaryColor,
                 fontStyle: FontStyle.italic,
               ),
@@ -352,7 +362,7 @@ class _JobCardState extends State<JobCard> {
     if (job['no_of_vacancies'] != null && job['no_of_vacancies'] > 0) {
       detailWidgets.add(
         _buildDetailChip(
-          Icons.people_outline,
+          Icons.people_alt_outlined,
           'Vacancies',
           job['no_of_vacancies'].toString(),
           AppConstants.textSecondaryColor,
@@ -364,7 +374,7 @@ class _JobCardState extends State<JobCard> {
     if (job['status'] != null && job['status'].toString().isNotEmpty) {
       detailWidgets.add(
         _buildDetailChip(
-          Icons.info_outline,
+          Icons.info_outline_rounded,
           'Status',
           job['status'].toString(),
           _getStatusColor(job['status'].toString()),
@@ -380,10 +390,10 @@ class _JobCardState extends State<JobCard> {
   /// Builds a views chip with icon and text
   Widget _buildViewsChip(String views) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
@@ -391,14 +401,14 @@ class _JobCardState extends State<JobCard> {
         children: [
           Icon(
             Icons.visibility_outlined,
-            size: 12,
+            size: 10,
             color: AppConstants.textSecondaryColor,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 3),
           Text(
             views,
             style: const TextStyle(
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w500,
               color: AppConstants.textPrimaryColor,
             ),
@@ -416,21 +426,21 @@ class _JobCardState extends State<JobCard> {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AppConstants.textSecondaryColor),
-          const SizedBox(width: 4),
+          Icon(icon, size: 10, color: AppConstants.textSecondaryColor),
+          const SizedBox(width: 3),
           Text(
             label.isEmpty ? value : '$label: $value',
             style: const TextStyle(
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w500,
               color: AppConstants.textPrimaryColor,
             ),

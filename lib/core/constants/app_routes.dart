@@ -101,12 +101,6 @@ class AppRoutes {
   static const String profileBuilderStep3 = '/profile/builder/step3';
 
   // ==================== JOBS ROUTES ====================
-  /// Job search screen
-  static const String searchJob = '/jobs/search';
-
-  /// Job search results
-  static const String searchResult = '/jobs/search/results';
-
   /// Job details screen with dynamic ID
   static const String jobDetails = '/jobs/details/:id';
 

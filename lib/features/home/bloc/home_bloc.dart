@@ -27,6 +27,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<ClearSearchEvent>(_onClearSearch);
     on<SaveJobEvent>(_onSaveJob);
     on<UnsaveJobEvent>(_onUnsaveJob);
+    on<ApplyFilterEvent>(_onApplyFilter);
+    on<ClearFilterEvent>(_onClearFilter);
+    on<ClearAllFiltersEvent>(_onClearAllFilters);
   }
 
   /// Create default JobsBloc instance
@@ -112,13 +115,23 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       await for (final jobsState in _jobsBloc.stream) {
         if (jobsState is jobs_states.JobsLoaded) {
           final searchResults = jobsState.filteredJobs;
-          final filteredJobs = searchResults.where((job) {
+
+          // Apply search query to jobs
+          var filteredJobs = searchResults.where((job) {
             final queryLower = event.query.toLowerCase();
             return queryLower.isEmpty ||
                 job['title'].toString().toLowerCase().contains(queryLower) ||
                 job['company'].toString().toLowerCase().contains(queryLower) ||
                 job['location'].toString().toLowerCase().contains(queryLower);
           }).toList();
+
+          // Apply active filters on top of search results
+          if (currentState.activeFilters.isNotEmpty) {
+            filteredJobs = _applyMultipleFilters(
+              filteredJobs,
+              currentState.activeFilters,
+            );
+          }
 
           emit(
             currentState.copyWith(
@@ -221,6 +234,201 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     newSavedJobIds.remove(event.jobId);
 
     emit(currentState.copyWith(savedJobIds: newSavedJobIds));
+  }
+
+  /// Handle apply filter
+  void _onApplyFilter(ApplyFilterEvent event, Emitter<HomeState> emit) {
+    if (state is! HomeLoaded) return;
+
+    final currentState = state as HomeLoaded;
+
+    // Start with recommended jobs or search results
+    var baseJobs = currentState.searchQuery.isNotEmpty
+        ? currentState.recommendedJobs.where((job) {
+            final queryLower = currentState.searchQuery.toLowerCase();
+            return job['title'].toString().toLowerCase().contains(queryLower) ||
+                job['company'].toString().toLowerCase().contains(queryLower) ||
+                job['location'].toString().toLowerCase().contains(queryLower);
+          }).toList()
+        : currentState.recommendedJobs;
+
+    // If clicking the same filter again with same value, clear it
+    final currentValue = currentState.activeFilters[event.filterType];
+    if (currentValue == event.filterValue) {
+      // Clear this specific filter
+      final newFilters = Map<String, String?>.from(currentState.activeFilters);
+      newFilters.remove(event.filterType);
+
+      // Reapply remaining filters on base jobs
+      final filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+
+      emit(
+        currentState.copyWith(
+          activeFilters: newFilters,
+          filteredJobs: filteredJobs,
+        ),
+      );
+      return;
+    }
+
+    // Apply the filter
+    final newFilters = Map<String, String?>.from(currentState.activeFilters);
+    newFilters[event.filterType] = event.filterValue;
+
+    // Apply filters on base jobs
+    final filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+
+    emit(
+      currentState.copyWith(
+        activeFilters: newFilters,
+        filteredJobs: filteredJobs,
+      ),
+    );
+  }
+
+  /// Handle clear specific filter
+  void _onClearFilter(ClearFilterEvent event, Emitter<HomeState> emit) {
+    if (state is! HomeLoaded) return;
+
+    final currentState = state as HomeLoaded;
+    final newFilters = Map<String, String?>.from(currentState.activeFilters);
+    newFilters.remove(event.filterType);
+
+    // Start with recommended jobs or search results
+    var baseJobs = currentState.searchQuery.isNotEmpty
+        ? currentState.recommendedJobs.where((job) {
+            final queryLower = currentState.searchQuery.toLowerCase();
+            return job['title'].toString().toLowerCase().contains(queryLower) ||
+                job['company'].toString().toLowerCase().contains(queryLower) ||
+                job['location'].toString().toLowerCase().contains(queryLower);
+          }).toList()
+        : currentState.recommendedJobs;
+
+    // Apply remaining filters on base jobs
+    final filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+
+    emit(
+      currentState.copyWith(
+        activeFilters: newFilters,
+        filteredJobs: filteredJobs,
+      ),
+    );
+  }
+
+  /// Handle clear all filters
+  void _onClearAllFilters(ClearAllFiltersEvent event, Emitter<HomeState> emit) {
+    if (state is! HomeLoaded) return;
+
+    final currentState = state as HomeLoaded;
+
+    // If search query exists, show search results; otherwise show all jobs
+    final filteredJobs = currentState.searchQuery.isNotEmpty
+        ? currentState.recommendedJobs.where((job) {
+            final queryLower = currentState.searchQuery.toLowerCase();
+            return job['title'].toString().toLowerCase().contains(queryLower) ||
+                job['company'].toString().toLowerCase().contains(queryLower) ||
+                job['location'].toString().toLowerCase().contains(queryLower);
+          }).toList()
+        : currentState.recommendedJobs;
+
+    emit(currentState.copyWith(activeFilters: {}, filteredJobs: filteredJobs));
+  }
+
+  /// Apply multiple filters to jobs list in combination
+  List<Map<String, dynamic>> _applyMultipleFilters(
+    List<Map<String, dynamic>> jobs,
+    Map<String, String?> filters,
+  ) {
+    if (filters.isEmpty) {
+      return jobs;
+    }
+
+    var filteredJobs = jobs;
+
+    for (final entry in filters.entries) {
+      final filterType = entry.key;
+      final filterValue = entry.value;
+
+      if (filterValue == null || filterValue.isEmpty) {
+        continue;
+      }
+
+      filteredJobs = _applyFilter(filteredJobs, filterType, filterValue);
+    }
+
+    return filteredJobs;
+  }
+
+  /// Apply filter to jobs list
+  List<Map<String, dynamic>> _applyFilter(
+    List<Map<String, dynamic>> jobs,
+    String filterType,
+    String? filterValue,
+  ) {
+    if (filterValue == null || filterValue.isEmpty) {
+      return jobs;
+    }
+
+    switch (filterType) {
+      case 'fields':
+        return jobs.where((job) {
+          final title = job['title']?.toString().toLowerCase() ?? '';
+          final description =
+              job['description']?.toString().toLowerCase() ?? '';
+          final filterLower = filterValue.toLowerCase();
+          return title.contains(filterLower) ||
+              description.contains(filterLower);
+        }).toList();
+
+      case 'salary':
+        return jobs.where((job) {
+          final salary = job['salary']?.toString() ?? '';
+          final filterLower = filterValue.toLowerCase();
+          return salary.toLowerCase().contains(filterLower);
+        }).toList();
+
+      case 'location':
+        return jobs.where((job) {
+          final location = job['location']?.toString().toLowerCase() ?? '';
+          final filterLower = filterValue.toLowerCase();
+          return location.contains(filterLower);
+        }).toList();
+
+      case 'job_type':
+        return jobs.where((job) {
+          final jobType =
+              job['job_type_display']?.toString() ??
+              job['job_type']?.toString() ??
+              '';
+          final normalizedType = jobType.toLowerCase();
+          final filterLower = filterValue.toLowerCase();
+
+          if (filterLower == 'full-time') {
+            return normalizedType.contains('full');
+          } else if (filterLower == 'part-time') {
+            return normalizedType.contains('part');
+          } else if (filterLower == 'internship') {
+            return normalizedType.contains('intern');
+          }
+          return false;
+        }).toList();
+
+      case 'work_mode':
+        return jobs.where((job) {
+          final isRemote = job['is_remote'] ?? false;
+          final filterLower = filterValue.toLowerCase();
+
+          if (filterLower == 'remote') {
+            return isRemote;
+          } else if (filterLower == 'on-site') {
+            return !isRemote;
+          }
+          return false;
+        }).toList();
+
+      default:
+        return jobs;
+    }
   }
 
   /// Filter jobs by category

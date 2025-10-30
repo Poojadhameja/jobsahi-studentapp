@@ -27,8 +27,6 @@ import '../../features/home/views/home.dart';
 
 // Import MainScaffold for ShellRoute
 import '../../shared/widgets/common/main_scaffold.dart';
-import '../../features/jobs/views/search_job.dart';
-import '../../features/jobs/views/search_result.dart';
 import '../../features/jobs/views/job_details.dart';
 import '../../features/jobs/views/saved_jobs.dart';
 import '../../features/jobs/views/application_tracker.dart';
@@ -63,7 +61,7 @@ import '../../features/settings/views/terms_conditions.dart';
 import '../../features/settings/views/notification_permission.dart';
 
 // Course screens
-import '../../features/courses/views/learning_center.dart';
+import '../../features/courses/views/courses_learning_center.dart';
 import '../../features/courses/views/course_details.dart';
 import '../../features/courses/views/saved_courses.dart';
 
@@ -482,18 +480,6 @@ class AppRouter {
       ),
 
       // ==================== JOBS ROUTES ====================
-      GoRoute(
-        path: AppRoutes.searchJob,
-        name: 'searchJob',
-        builder: (context, state) => const SearchJobScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.searchResult,
-        name: 'searchResult',
-        builder: (context, state) => const SearchResultScreen(),
-      ),
-
       GoRoute(
         path: AppRoutes.jobDetails,
         name: 'jobDetails',

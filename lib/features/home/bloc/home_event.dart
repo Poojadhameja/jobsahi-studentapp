@@ -86,3 +86,32 @@ class UnsaveJobEvent extends HomeEvent {
   @override
   List<Object?> get props => [jobId];
 }
+
+/// Apply filter event
+class ApplyFilterEvent extends HomeEvent {
+  final String filterType; // 'fields', 'salary', 'location'
+  final String? filterValue;
+
+  const ApplyFilterEvent({required this.filterType, this.filterValue});
+
+  @override
+  List<Object?> get props => [filterType, filterValue];
+}
+
+/// Clear all filters event
+class ClearAllFiltersEvent extends HomeEvent {
+  const ClearAllFiltersEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// Clear specific filter event
+class ClearFilterEvent extends HomeEvent {
+  final String filterType;
+
+  const ClearFilterEvent({required this.filterType});
+
+  @override
+  List<Object?> get props => [filterType];
+}
