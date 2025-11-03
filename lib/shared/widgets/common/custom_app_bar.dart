@@ -50,6 +50,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           backgroundColor ??
           AppConstants.cardBackgroundColor, // Match home page background
       elevation: 0,
+      scrolledUnderElevation: 0, // Prevent color change on scroll
+      surfaceTintColor: Colors.transparent, // Prevent tint on scroll
       toolbarHeight:
           kToolbarHeight + 16, // Add 16px total height (8px top + 8px bottom)
       titleSpacing: 0,

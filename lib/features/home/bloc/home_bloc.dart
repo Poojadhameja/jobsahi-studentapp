@@ -68,9 +68,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           final recommendedJobs = jobsState.allJobs;
           final filteredJobs = recommendedJobs;
 
-          final savedJobIds = state is HomeLoaded
-              ? (state as HomeLoaded).savedJobIds
-              : <String>{};
+          // Initialize saved job IDs from JobsBloc so icons reflect server state after refresh
+          final savedJobIds = jobsState.savedJobIds;
 
           emit(
             HomeLoaded(
@@ -215,25 +214,55 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   /// Handle save job
-  void _onSaveJob(SaveJobEvent event, Emitter<HomeState> emit) {
+  Future<void> _onSaveJob(SaveJobEvent event, Emitter<HomeState> emit) async {
     if (state is! HomeLoaded) return;
 
     final currentState = state as HomeLoaded;
-    final newSavedJobIds = Set<String>.from(currentState.savedJobIds);
-    newSavedJobIds.add(event.jobId);
-
-    emit(currentState.copyWith(savedJobIds: newSavedJobIds));
+    
+    try {
+      debugPrint('🔵 [HomeBloc] Saving job with ID: ${event.jobId}');
+      
+      // Call JobsBloc to save job via API
+      _jobsBloc.add(jobs_events.SaveJobEvent(jobId: event.jobId));
+      
+      // Update local state immediately for better UX
+      final newSavedJobIds = Set<String>.from(currentState.savedJobIds);
+      newSavedJobIds.add(event.jobId);
+      
+      emit(currentState.copyWith(savedJobIds: newSavedJobIds));
+      
+      debugPrint('✅ [HomeBloc] Job save event dispatched to JobsBloc');
+    } catch (e) {
+      debugPrint('🔴 [HomeBloc] Error saving job: $e');
+      // Revert state if error occurs
+      emit(currentState);
+    }
   }
 
   /// Handle unsave job
-  void _onUnsaveJob(UnsaveJobEvent event, Emitter<HomeState> emit) {
+  Future<void> _onUnsaveJob(UnsaveJobEvent event, Emitter<HomeState> emit) async {
     if (state is! HomeLoaded) return;
 
     final currentState = state as HomeLoaded;
-    final newSavedJobIds = Set<String>.from(currentState.savedJobIds);
-    newSavedJobIds.remove(event.jobId);
+    
+    try {
+      debugPrint('🔵 [HomeBloc] Unsaving job with ID: ${event.jobId}');
+      
+      // Call JobsBloc to unsave job (if API supports it, otherwise just update local state)
+      _jobsBloc.add(jobs_events.UnsaveJobEvent(jobId: event.jobId));
+      
+      // Update local state immediately
+      final newSavedJobIds = Set<String>.from(currentState.savedJobIds);
+      newSavedJobIds.remove(event.jobId);
 
-    emit(currentState.copyWith(savedJobIds: newSavedJobIds));
+      emit(currentState.copyWith(savedJobIds: newSavedJobIds));
+      
+      debugPrint('✅ [HomeBloc] Job unsave event dispatched');
+    } catch (e) {
+      debugPrint('🔴 [HomeBloc] Error unsaving job: $e');
+      // Revert state if error occurs
+      emit(currentState);
+    }
   }
 
   /// Handle apply filter

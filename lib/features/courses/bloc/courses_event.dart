@@ -25,12 +25,28 @@ class SearchCoursesEvent extends CoursesEvent {
 
 /// Filter courses event
 class FilterCoursesEvent extends CoursesEvent {
-  final String category;
+  final String? category;
+  final String? level;
+  final String? duration;
+  final String? institute;
 
-  const FilterCoursesEvent({required this.category});
+  const FilterCoursesEvent({
+    this.category,
+    this.level,
+    this.duration,
+    this.institute,
+  });
 
   @override
-  List<Object?> get props => [category];
+  List<Object?> get props => [category, level, duration, institute];
+}
+
+/// Clear all filters event
+class ClearAllFiltersEvent extends CoursesEvent {
+  const ClearAllFiltersEvent();
+
+  @override
+  List<Object?> get props => [];
 }
 
 /// Save course event
@@ -90,6 +106,14 @@ class RefreshCoursesEvent extends CoursesEvent {
 /// Clear search event
 class ClearSearchEvent extends CoursesEvent {
   const ClearSearchEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// Toggle filters event
+class ToggleFiltersEvent extends CoursesEvent {
+  const ToggleFiltersEvent();
 
   @override
   List<Object?> get props => [];

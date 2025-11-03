@@ -16,8 +16,6 @@ import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
-import '../../../core/di/injection_container.dart';
-
 import 'saved_courses.dart';
 
 class LearningCenterPage extends StatelessWidget {
@@ -25,10 +23,15 @@ class LearningCenterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<CoursesBloc>()..add(LoadCoursesEvent()),
-      child: _LearningCenterPageView(),
-    );
+    // Use the root-level bloc instead of creating a new one
+    // Load courses when page is first accessed
+    final bloc = context.read<CoursesBloc>();
+    // Only load if not already loaded
+    if (bloc.state is! CoursesLoaded) {
+      bloc.add(LoadCoursesEvent());
+    }
+
+    return _LearningCenterPageView();
   }
 }
 
@@ -39,98 +42,73 @@ class _LearningCenterPageView extends StatefulWidget {
 }
 
 class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
-  final TextEditingController _searchController = TextEditingController();
-  bool _showFilters = false;
-  String? _selectedCategory;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _onSearchChanged() {
-    final query = _searchController.text;
-    if (query.isEmpty) {
-      context.read<CoursesBloc>().add(ClearSearchEvent());
-    } else {
-      context.read<CoursesBloc>().add(SearchCoursesEvent(query: query));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CoursesBloc, CoursesState>(
       builder: (context, state) {
         return KeyboardDismissWrapper(
-          child: Column(
-            children: [
-              _buildSearchBar(),
-              Expanded(
-                child: CustomTabStructure(
-                  tabs: const [
-                    TabConfig(title: 'Learning Center'),
-                    TabConfig(title: 'Saved Courses'),
-                  ],
-                  tabContents: [
-                    _buildLearningCenterTab(context, state),
-                    const SavedCoursesPage(),
+          child: Container(
+            color: Colors.white,
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      child: CustomTabStructure(
+                        tabs: const [
+                          TabConfig(title: 'All Courses'),
+                          TabConfig(title: 'Saved Courses'),
+                        ],
+                        tabContents: [
+                          _buildLearningCenterTab(context, state),
+                          const SavedCoursesPage(),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
+                // Filter chips overlay - positioned above everything with animation
+                // Position right after tab bar border (same as jobs section: 48 + 8 = 56)
+                Positioned(
+                  top:
+                      56, // Tab bar height (48px) + bottom padding (8px) = 56px
+                  left: 0,
+                  right: 0,
+                  child: BlocBuilder<CoursesBloc, CoursesState>(
+                    builder: (context, state) {
+                      if (state is CoursesLoaded) {
+                        final showFilters = state.showFilters;
+                        return TweenAnimationBuilder<double>(
+                          tween: Tween(
+                            begin: 0.0,
+                            end: showFilters ? 1.0 : 0.0,
+                          ),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          builder: (context, value, child) {
+                            return ClipRect(
+                              child: Transform.translate(
+                                offset: Offset(0, -80 * (1 - value)),
+                                child: Opacity(opacity: value, child: child),
+                              ),
+                            );
+                          },
+                          child: _buildFilterChips(context, state),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      margin: const EdgeInsets.all(AppConstants.defaultPadding),
-      decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: _searchController,
-        decoration: const InputDecoration(
-          hintText: 'Courses search kare',
-          hintStyle: TextStyle(color: AppConstants.textSecondaryColor),
-          prefixIcon: Icon(
-            Icons.search,
-            color: AppConstants.textSecondaryColor,
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: AppConstants.defaultPadding,
-            vertical: 12,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildLearningCenterTab(BuildContext context, CoursesState state) {
-    bool isSearching = false;
-    if (state is CoursesLoaded) {
-      isSearching = state.searchQuery.isNotEmpty;
-    }
-
     // Handle error state
     if (state is CoursesError) {
       return NoInternetErrorWidget(
@@ -170,185 +148,444 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
         // Wait for the API call to complete
         await Future.delayed(const Duration(milliseconds: 500));
       },
-      child: ListView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        children: [
-          if (!isSearching) ...[
-            _buildFiltersSection(context, state),
-            const SizedBox(height: AppConstants.defaultPadding),
-          ],
-          _buildCoursesSection(context, state),
-        ],
-      ),
+      child: _buildCoursesContent(context, state),
     );
   }
 
-  Widget _buildFiltersSection(BuildContext context, CoursesState state) {
-    final bool showFilters = _showFilters;
+  Widget _buildCoursesContent(BuildContext context, CoursesState state) {
+    // Check if courses are empty and show empty state
+    if (state is CoursesLoaded && state.filteredCourses.isEmpty) {
+      final hasActiveFilters =
+          state.searchQuery.isNotEmpty || state.hasActiveFilters();
 
-    return Column(
-      children: [
-        Row(
-          children: [
-            _buildFilterButton(context),
-            if (showFilters) ...[
-              const SizedBox(width: AppConstants.smallPadding),
-              _buildCategoryFilter(context, state),
-            ],
-          ],
+      return EmptyStateWidget(
+        icon: Icons.school_outlined,
+        title: 'No courses found',
+        subtitle: 'Try adjusting your search or filters',
+        actionButton: hasActiveFilters
+            ? ElevatedButton(
+                onPressed: () {
+                  final bloc = context.read<CoursesBloc>();
+                  bloc.add(const ClearSearchEvent());
+                  bloc.add(const ClearAllFiltersEvent());
+                  // Do not toggle filters visibility here; keep chips section open
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.borderRadius,
+                    ),
+                  ),
+                ),
+                child: const Text('Clear All'),
+              )
+            : null,
+      );
+    }
+
+    final filterPadding = (state is CoursesLoaded && state.showFilters)
+        ? 92.0
+        : 12.0;
+
+    return CustomScrollView(
+      slivers: [
+        // Animated spacing at top (same as jobs section)
+        SliverToBoxAdapter(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: filterPadding - 12,
+          ),
+        ),
+        // Course list as SliverList
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppConstants.defaultPadding,
+            12,
+            AppConstants.defaultPadding,
+            0,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (state is CoursesLoaded) {
+                  final courses = state.filteredCourses;
+                  if (index >= courses.length) return null;
+                  final course = courses[index];
+                  return Container(
+                    margin: const EdgeInsets.only(
+                      bottom: AppConstants.smallPadding,
+                    ),
+                    child: CourseCard(
+                      course: course,
+                      onTap: () {
+                        NavigationHelper.navigateTo(
+                          AppRoutes.courseDetailsWithId(course['id']),
+                        );
+                      },
+                      onSaveToggle: () {
+                        final courseId = course['id']?.toString();
+                        if (courseId != null) {
+                          final isSaved = state.savedCourseIds.contains(
+                            courseId,
+                          );
+                          if (isSaved) {
+                            context.read<CoursesBloc>().add(
+                              UnsaveCourseEvent(courseId: courseId),
+                            );
+                          } else {
+                            context.read<CoursesBloc>().add(
+                              SaveCourseEvent(courseId: courseId),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  );
+                }
+                return null;
+              },
+              childCount: state is CoursesLoaded
+                  ? state.filteredCourses.length
+                  : 0,
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildFilterButton(BuildContext context) {
-    final showFilters = _showFilters;
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _showFilters = !_showFilters;
-          if (!_showFilters) {
-            _selectedCategory = 'All';
-            context.read<CoursesBloc>().add(
-              FilterCoursesEvent(category: 'All'),
-            );
-          }
-        });
+  Widget _buildFilterChips(BuildContext context, CoursesState state) {
+    if (state is! CoursesLoaded) return const SizedBox.shrink();
+
+    final currentState = state;
+
+    return GestureDetector(
+      onHorizontalDragUpdate: (_) {
+        // Consume horizontal drag gestures to prevent tab switching (same as jobs section)
       },
+      child: Container(
+        height: 80.0, // Same as jobs section
+        decoration: const BoxDecoration(
+          color: AppConstants.cardBackgroundColor,
+          border: Border(
+            top: BorderSide(color: Colors.grey, width: 0.5),
+            bottom: BorderSide(color: Colors.grey, width: 0.5),
+          ),
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Container(
+            height: 70.0, // Same as jobs section
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(width: AppConstants.defaultPadding),
+                  // Category Chip
+                  _buildFilterChip(
+                    context: context,
+                    label: 'Category',
+                    icon: Icons.category_outlined,
+                    isActive: currentState.selectedCategory != 'All',
+                    onTap: () => _showFilterBottomSheet(
+                      context,
+                      'Category',
+                      AppConstants.courseCategories,
+                      currentState.selectedCategory,
+                      (value) => context.read<CoursesBloc>().add(
+                        FilterCoursesEvent(category: value),
+                      ),
+                    ),
+                    onRemove: currentState.selectedCategory != 'All'
+                        ? () => context.read<CoursesBloc>().add(
+                            FilterCoursesEvent(category: 'All'),
+                          )
+                        : null,
+                    activeValue: currentState.selectedCategory != 'All'
+                        ? currentState.selectedCategory
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Level Chip
+                  _buildFilterChip(
+                    context: context,
+                    label: 'Levels',
+                    icon: Icons.trending_up_outlined,
+                    isActive: currentState.selectedLevel != 'All',
+                    onTap: () => _showFilterBottomSheet(
+                      context,
+                      'Levels',
+                      AppConstants.courseLevels,
+                      currentState.selectedLevel,
+                      (value) => context.read<CoursesBloc>().add(
+                        FilterCoursesEvent(level: value),
+                      ),
+                    ),
+                    onRemove: currentState.selectedLevel != 'All'
+                        ? () => context.read<CoursesBloc>().add(
+                            FilterCoursesEvent(level: 'All'),
+                          )
+                        : null,
+                    activeValue: currentState.selectedLevel != 'All'
+                        ? currentState.selectedLevel
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Duration Chip
+                  _buildFilterChip(
+                    context: context,
+                    label: 'Duration',
+                    icon: Icons.schedule_outlined,
+                    isActive: currentState.selectedDuration != 'All',
+                    onTap: () => _showFilterBottomSheet(
+                      context,
+                      'Duration',
+                      AppConstants.courseDurations,
+                      currentState.selectedDuration,
+                      (value) => context.read<CoursesBloc>().add(
+                        FilterCoursesEvent(duration: value),
+                      ),
+                    ),
+                    onRemove: currentState.selectedDuration != 'All'
+                        ? () => context.read<CoursesBloc>().add(
+                            FilterCoursesEvent(duration: 'All'),
+                          )
+                        : null,
+                    activeValue: currentState.selectedDuration != 'All'
+                        ? currentState.selectedDuration
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Institute Chip
+                  _buildFilterChip(
+                    context: context,
+                    label: 'Institute',
+                    icon: Icons.school_outlined,
+                    isActive: currentState.selectedInstitute != 'All',
+                    onTap: () => _showFilterBottomSheet(
+                      context,
+                      'Institute',
+                      AppConstants.courseInstitutes,
+                      currentState.selectedInstitute,
+                      (value) => context.read<CoursesBloc>().add(
+                        FilterCoursesEvent(institute: value),
+                      ),
+                    ),
+                    onRemove: currentState.selectedInstitute != 'All'
+                        ? () => context.read<CoursesBloc>().add(
+                            FilterCoursesEvent(institute: 'All'),
+                          )
+                        : null,
+                    activeValue: currentState.selectedInstitute != 'All'
+                        ? currentState.selectedInstitute
+                        : null,
+                  ),
+                  SizedBox(width: AppConstants.defaultPadding),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+    VoidCallback? onRemove,
+    String? activeValue,
+  }) {
+    return InkWell(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppConstants.defaultPadding,
+        height: 48, // Same as jobs section
+        padding: EdgeInsets.symmetric(
+          horizontal: isActive ? 8 : 12, // Same as jobs section
           vertical: AppConstants.smallPadding,
         ),
         decoration: BoxDecoration(
-          color: showFilters ? AppConstants.primaryColor : Colors.transparent,
-          border: Border.all(color: AppConstants.primaryColor),
+          color: isActive ? AppConstants.primaryColor : Colors.transparent,
+          border: Border.all(
+            color: isActive
+                ? AppConstants.primaryColor
+                : AppConstants.primaryColor.withOpacity(0.5),
+            width: isActive ? 2 : 1,
+          ),
           borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              showFilters ? Icons.clear : Icons.tune,
-              color: showFilters ? Colors.white : AppConstants.primaryColor,
-              size: 20,
+              icon,
+              color: isActive ? Colors.white : AppConstants.primaryColor,
+              size: 16, // Same as jobs section
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Text(
-              showFilters ? 'Clear' : 'Filter',
+              _truncateText(activeValue ?? label, 15),
               style: TextStyle(
-                color: showFilters ? Colors.white : AppConstants.primaryColor,
+                color: isActive ? Colors.white : AppConstants.primaryColor,
+                fontSize: 14,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
+            if (isActive && onRemove != null) ...[
+              const SizedBox(width: 6),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onRemove,
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.close, color: Colors.white, size: 14),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCategoryFilter(BuildContext context, CoursesState state) {
-    String? selectedCategory = _selectedCategory;
-
-    return Expanded(
-      child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppConstants.borderColor),
-          borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: selectedCategory,
-            hint: const Text('Categories'),
-            isExpanded: true,
-            items: _getCourseCategories().map((category) {
-              return DropdownMenuItem<String>(
-                value: category,
-                child: Text(category),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedCategory = value ?? 'All';
-              });
-              context.read<CoursesBloc>().add(
-                FilterCoursesEvent(category: _selectedCategory ?? 'All'),
-              );
-            },
-          ),
-        ),
-      ),
-    );
+  /// Truncate text to max length with ellipsis
+  String _truncateText(String text, int maxLength) {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return '${text.substring(0, maxLength)}...';
   }
 
-  Widget _buildCoursesSection(BuildContext context, CoursesState state) {
-    List<Map<String, dynamic>> courses = [];
-    if (state is CoursesLoaded) {
-      courses = state.filteredCourses;
-    } else {
-      courses = [];
-    }
-
-    if (courses.isEmpty) {
-      return const EmptyStateWidget(
-        icon: Icons.school_outlined,
-        title: 'No courses found',
-        subtitle: 'Try adjusting your search criteria or filters',
-      );
-    }
-
-    return Column(
-      children: courses.map((course) {
+  void _showFilterBottomSheet(
+    BuildContext context,
+    String title,
+    List<String> options,
+    String selectedValue,
+    Function(String) onSelect,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
         return Container(
-          margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
-          child: CourseCard(
-            course: course,
-            onTap: () => _navigateToCourseDetails(course),
-            onSaveToggle: () => _onSaveToggle(context, state, course['id']),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(
+            AppConstants.defaultPadding,
+            24,
+            AppConstants.defaultPadding,
+            32,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Select $title',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppConstants.textPrimaryColor,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final option = options[index];
+                    final isSelected = option == selectedValue;
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        onSelect(option);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppConstants.primaryColor.withValues(alpha: 0.1)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isSelected
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: isSelected
+                                  ? AppConstants.primaryColor
+                                  : AppConstants.textSecondaryColor,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                option,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: isSelected
+                                      ? AppConstants.primaryColor
+                                      : AppConstants.textPrimaryColor,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         );
-      }).toList(),
+      },
     );
-  }
-
-  void _navigateToCourseDetails(Map<String, dynamic> course) {
-    // Use NavigationHelper for proper stack navigation
-    NavigationHelper.navigateTo(AppRoutes.courseDetailsWithId(course['id']));
-  }
-
-  void _onSaveToggle(
-    BuildContext context,
-    CoursesState state,
-    String courseId,
-  ) {
-    final bloc = context.read<CoursesBloc>();
-    if (state is CoursesLoaded) {
-      final isSaved = state.savedCourseIds.contains(courseId);
-      if (isSaved) {
-        bloc.add(UnsaveCourseEvent(courseId: courseId));
-      } else {
-        bloc.add(SaveCourseEvent(courseId: courseId));
-      }
-    }
-  }
-
-  /// Get course categories for filtering
-  List<String> _getCourseCategories() {
-    return [
-      'All',
-      'Electrical',
-      'Mechanical',
-      'Welding',
-      'Machining',
-      'Turning',
-      'Woodwork',
-      'Plumbing',
-      'Drafting',
-      'General',
-    ];
   }
 }

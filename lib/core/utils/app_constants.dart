@@ -218,10 +218,11 @@ class AppConstants {
 
   /// API Endpoints
   /// Local development base URL
-  // static const String baseUrl = 'http://localhost/jobsahi-API/api/';
+  static const String baseUrl = 'http://localhost/jobsahi-API/api/';
 
   /// Production server base URL
-  static const String baseUrl = 'https://beige-jaguar-560051.hostingersite.com/api';
+  // static const String baseUrl =
+  // 'https://beige-jaguar-560051.hostingersite.com/api';
 
   /// Use device-to-PC LAN IP if testing on a real device
   // static const String lanBaseUrl = 'http://10.167.188.31:8000/api';
@@ -236,6 +237,11 @@ class AppConstants {
 
   // Student Profile
   static const String studentProfileEndpoint = '/student/profile.php';
+
+  // Jobs
+  static const String saveJobEndpoint = '/jobs/save_job.php';
+  static const String unsaveJobEndpoint = '/jobs/unsave_job.php';
+  static const String getSavedJobsEndpoint = '/student/get_saved_jobs.php';
 
   // Other (placeholders)
   static const String signupEndpoint = '/auth/signup';
@@ -261,6 +267,33 @@ class AppConstants {
     'Beginner',
     'Intermediate',
     'Advanced',
+  ];
+
+  /// Course Durations
+  static const List<String> courseDurations = [
+    'All',
+    '1 Month',
+    '2 Months',
+    '3 Months',
+    '4 Months',
+    '5 Months',
+    '6 Months',
+    '8 Months',
+    '10 Months',
+    '12 Months',
+  ];
+
+  /// Course Institutes
+  static const List<String> courseInstitutes = [
+    'All',
+    'Bharat Heavy Electricals Ltd.',
+    'Maruti Suzuki Training Institute',
+    'Tata Motors Training Center',
+    'Mahindra Training Institute',
+    'Hero MotoCorp Training Center',
+    'Hindustan Unilever Training Institute',
+    'L&T Construction Training Center',
+    'Bharat Forge Training Institute',
   ];
 
   /// Job Categories

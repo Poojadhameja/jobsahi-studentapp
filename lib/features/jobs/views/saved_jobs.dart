@@ -40,10 +40,75 @@ class _SavedJobsScreenView extends StatelessWidget {
               backgroundColor: AppConstants.successColor,
             ),
           );
+          // Reload saved jobs after removal
+          context.read<JobsBloc>().add(const LoadSavedJobsEvent());
+        } else if (state is JobUnsavedState) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Job unsaved successfully'),
+              backgroundColor: AppConstants.successColor,
+            ),
+          );
+          // Reload saved jobs after unsaving
+          context.read<JobsBloc>().add(const LoadSavedJobsEvent());
         }
       },
       child: BlocBuilder<JobsBloc, JobsState>(
         builder: (context, state) {
+          // Show loading state
+          if (state is JobsLoading) {
+            return Scaffold(
+              backgroundColor: AppConstants.backgroundColor,
+              appBar: const SimpleAppBar(
+                title: 'Saved jobs',
+                showBackButton: true,
+              ),
+              body: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          // Show error state
+          if (state is JobsError) {
+            return Scaffold(
+              backgroundColor: AppConstants.backgroundColor,
+              appBar: const SimpleAppBar(
+                title: 'Saved jobs',
+                showBackButton: true,
+              ),
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: AppConstants.textSecondaryColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<JobsBloc>().add(const LoadSavedJobsEvent());
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // Get saved jobs from state
           List<Map<String, dynamic>> savedJobs = [];
 
           if (state is SavedJobsLoaded) {
@@ -57,27 +122,69 @@ class _SavedJobsScreenView extends StatelessWidget {
               showBackButton: true,
             ),
             body: savedJobs.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No saved jobs found',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppConstants.textSecondaryColor,
-                      ),
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.bookmark_border,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'No saved jobs',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppConstants.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Save jobs to view them here',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                    itemCount: savedJobs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final job = savedJobs[index];
-                      return JobCard(
-                        job: job,
-                        onTap: () =>
-                            context.go(AppRoutes.jobDetailsWithId(job['id'])),
-                      );
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      context.read<JobsBloc>().add(const LoadSavedJobsEvent());
+                      // Wait a bit for the state to update
+                      await Future.delayed(const Duration(milliseconds: 500));
                     },
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                      itemCount: savedJobs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final job = savedJobs[index];
+                        return JobCard(
+                          job: job,
+                          onTap: () => context.go(
+                            AppRoutes.jobDetailsWithId(job['id']?.toString() ?? ''),
+                          ),
+                          onSaveToggle: () {
+                            // Handle unsave job
+                            final jobId = job['id']?.toString();
+                            if (jobId != null) {
+                              context.read<JobsBloc>().add(
+                                    UnsaveJobEvent(jobId: jobId),
+                                  );
+                              // Reload saved jobs after unsaving
+                              context.read<JobsBloc>().add(
+                                    const LoadSavedJobsEvent(),
+                                  );
+                            }
+                          },
+                          isSaved: true,
+                        );
+                      },
+                    ),
                   ),
           );
         },

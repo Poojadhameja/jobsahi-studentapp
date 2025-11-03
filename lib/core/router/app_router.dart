@@ -484,7 +484,8 @@ class AppRouter {
         path: AppRoutes.jobDetails,
         name: 'jobDetails',
         builder: (context, state) {
-          final id = state.pathParameters['id'];
+          // Safely extract ID from path parameters
+          final id = state.pathParameters['id'] ?? '';
           debugPrint('🔵 [Router] Job details route - ID from URL: $id');
           debugPrint('🔵 [Router] Full path: ${state.uri}');
           debugPrint('🔵 [Router] Path parameters: ${state.pathParameters}');

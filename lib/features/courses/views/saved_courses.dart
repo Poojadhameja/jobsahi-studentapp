@@ -19,10 +19,9 @@ class SavedCoursesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<CoursesBloc>()..add(LoadSavedCoursesEvent()),
-      child: const _SavedCoursesPageView(),
-    );
+    // Use existing bloc from context - don't create a new one
+    // This ensures saved courses state is shared across the app
+    return const _SavedCoursesPageView();
   }
 }
 

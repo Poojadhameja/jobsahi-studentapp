@@ -13,6 +13,9 @@ import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
 import '../../courses/bloc/courses_bloc.dart';
 import '../../courses/bloc/courses_event.dart' as courses;
+import '../../jobs/bloc/jobs_bloc.dart';
+import '../../jobs/bloc/jobs_event.dart' as jobs_events;
+import '../../jobs/bloc/jobs_state.dart' as jobs_states;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -107,6 +110,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       vsync: this,
       animationDuration: const Duration(milliseconds: 400),
     );
+
+    // Removed auto-loading saved jobs on tab switch to avoid redundant API calls
   }
 
   @override
@@ -114,6 +119,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _tabController?.dispose();
     super.dispose();
   }
+
 
   TabController get tabController {
     _tabController ??= TabController(
@@ -256,80 +262,134 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   /// Builds the Saved Jobs tab
   Widget _buildSavedJobsTab(HomeLoaded state) {
-    if (state.savedJobIds.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.bookmark_border,
-              size: 80,
-              color: AppConstants.textSecondaryColor,
-            ),
-            const SizedBox(height: AppConstants.defaultPadding),
-            Text(
-              'No saved jobs',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppConstants.textPrimaryColor,
-              ),
-            ),
-            const SizedBox(height: AppConstants.smallPadding),
-            Text(
-              'Save jobs to view them here',
-              style: TextStyle(color: AppConstants.textSecondaryColor),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final savedJobs = state.allJobs
-        .where((job) => state.savedJobIds.contains(job['id']?.toString()))
-        .toList();
-
     final currentState = context.read<HomeBloc>().state;
     final filterPadding =
         (currentState is HomeLoaded && currentState.showFilters) ? 92.0 : 12.0;
 
-    return CustomScrollView(
-      slivers: [
-        // Animated spacing at top
-        SliverToBoxAdapter(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            height: filterPadding - 12,
+    // Use BlocBuilder to listen to JobsBloc for saved jobs from API
+    return BlocBuilder<JobsBloc, jobs_states.JobsState>(
+      builder: (context, jobsState) {
+        // Show loading state
+        if (jobsState is jobs_states.JobsLoading) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading saved jobs...',
+                  style: TextStyle(color: AppConstants.textSecondaryColor),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Get saved jobs from API response
+        List<Map<String, dynamic>> savedJobs = [];
+        if (jobsState is jobs_states.SavedJobsLoaded) {
+          savedJobs = jobsState.savedJobs;
+        } else {
+          // Fallback: use jobs from HomeBloc state filtered by savedJobIds
+          savedJobs = state.allJobs
+              .where((job) {
+                final jobId = job['id'] is int
+                    ? job['id'].toString()
+                    : job['id']?.toString() ?? '';
+                return state.savedJobIds.contains(jobId);
+              })
+              .toList();
+        }
+
+        // Show empty state
+        if (savedJobs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.bookmark_border,
+                  size: 80,
+                  color: AppConstants.textSecondaryColor,
+                ),
+                const SizedBox(height: AppConstants.defaultPadding),
+                const Text(
+                  'No saved jobs',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.primaryColor,
+                  ),
+                ),
+                const SizedBox(height: AppConstants.smallPadding),
+                Text(
+                  'Save jobs to view them here',
+                  style: TextStyle(color: AppConstants.textSecondaryColor),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Show saved jobs list
+        return RefreshIndicator(
+          onRefresh: () async {
+            context.read<JobsBloc>().add(const jobs_events.LoadSavedJobsEvent());
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: CustomScrollView(
+            slivers: [
+              // Animated spacing at top
+              SliverToBoxAdapter(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  height: filterPadding - 12,
+                ),
+              ),
+              // Job list as SliverList
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppConstants.defaultPadding,
+                  12,
+                  AppConstants.defaultPadding,
+                  0,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final job = savedJobs[index];
+                    // Safely extract job ID
+                    final jobId = job['id'] is int
+                        ? job['id'].toString()
+                        : job['id']?.toString() ?? '';
+                    return JobCard(
+                      job: job,
+                      onTap: () {
+                        if (jobId.isNotEmpty) {
+                          NavigationHelper.navigateTo(
+                            AppRoutes.jobDetailsWithId(jobId),
+                          );
+                        }
+                      },
+                      onSaveToggle: () {
+                        _handleSaveToggle(job);
+                        // Reload saved jobs after toggle
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          context.read<JobsBloc>().add(
+                                const jobs_events.LoadSavedJobsEvent(),
+                              );
+                        });
+                      },
+                      isSaved: true,
+                    );
+                  }, childCount: savedJobs.length),
+                ),
+              ),
+            ],
           ),
-        ),
-        // Job list as SliverList
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppConstants.defaultPadding,
-            12,
-            AppConstants.defaultPadding,
-            0,
-          ),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final job = savedJobs[index];
-              return JobCard(
-                job: job,
-                onTap: () {
-                  NavigationHelper.navigateTo(
-                    AppRoutes.jobDetailsWithId(job['id']),
-                  );
-                },
-                onSaveToggle: () {
-                  _handleSaveToggle(job);
-                },
-                isSaved: true,
-              );
-            }, childCount: savedJobs.length),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -401,9 +461,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   return JobCard(
                     job: job,
                     onTap: () {
-                      NavigationHelper.navigateTo(
-                        AppRoutes.jobDetailsWithId(job['id']),
-                      );
+                      // Safely extract job ID
+                      final jobId = job['id'] is int
+                          ? job['id'].toString()
+                          : job['id']?.toString() ?? '';
+                      if (jobId.isNotEmpty) {
+                        NavigationHelper.navigateTo(
+                          AppRoutes.jobDetailsWithId(jobId),
+                        );
+                      }
                     },
                     onSaveToggle: () {
                       _handleSaveToggle(job);
@@ -514,6 +580,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final isActive =
         state.activeFilters.containsKey(filterType) &&
         state.activeFilters[filterType] != null;
+    final activeValue = state.activeFilters[filterType];
 
     return InkWell(
       onTap: () {
@@ -547,13 +614,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               size: 16,
             ),
             const SizedBox(width: 6),
-            // Text
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? Colors.white : AppConstants.primaryColor,
-                fontSize: 14,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+            // Text - show active value if available, otherwise show label
+            // Truncate to 15 characters with ellipsis
+            Flexible(
+              child: Text(
+                _truncateText(activeValue ?? label, 15),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isActive ? Colors.white : AppConstants.primaryColor,
+                  fontSize: 14,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                ),
               ),
             ),
             // Right side: Cross icon (only when active)
@@ -581,6 +652,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  /// Truncate text to max length with ellipsis
+  String _truncateText(String text, int maxLength) {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return '${text.substring(0, maxLength)}...';
+  }
+
   /// Shows filter modal for selecting filter value
   void _showFilterModal(BuildContext context, String filterType, String label) {
     final state = context.read<HomeBloc>().state;
@@ -588,9 +667,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
         return _FilterModalContent(
           filterType: filterType,
@@ -658,9 +736,14 @@ class JobList extends StatelessWidget {
               job: job,
               onTap: () {
                 // Navigate to job details screen using NavigationHelper
-                NavigationHelper.navigateTo(
-                  AppRoutes.jobDetailsWithId(job['id']),
-                );
+                final jobId = job['id'] is int
+                    ? job['id'].toString()
+                    : job['id']?.toString() ?? '';
+                if (jobId.isNotEmpty) {
+                  NavigationHelper.navigateTo(
+                    AppRoutes.jobDetailsWithId(jobId),
+                  );
+                }
               },
               onSaveToggle: onSaveToggle != null
                   ? () => onSaveToggle!(job)
@@ -759,121 +842,134 @@ class _FilterModalContentState extends State<_FilterModalContent> {
     return options.toList()..sort();
   }
 
+  List<String> getPredefinedOptions() {
+    // Return predefined options based on filter type (same as courses section pattern)
+    switch (widget.filterType) {
+      case 'job_type':
+        return ['All', 'Full-Time', 'Part-Time', 'Internship'];
+      case 'work_mode':
+        return ['All', 'Remote', 'On-site'];
+      default:
+        // For dynamic filters (fields, salary, location), use getFilterOptions
+        return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final options = getFilterOptions();
-
+    // Use predefined options if available, otherwise use dynamic options
+    final predefinedOptions = getPredefinedOptions();
+    final dynamicOptions = getFilterOptions();
+    final options = predefinedOptions.isNotEmpty 
+        ? predefinedOptions 
+        : ['All', ...dynamicOptions];
+    
+    final currentSelectedValue = selectedValue ?? widget.currentValue;
+    
     return Container(
-      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(
+        AppConstants.defaultPadding,
+        24,
+        AppConstants.defaultPadding,
+        32,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Dropdown and Clear button in same row
-          Row(
-            children: [
-              // Dropdown for selecting filter value
-              Expanded(
-                child: Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppConstants.borderColor),
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.borderRadius,
-                    ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String?>(
-                      value: selectedValue,
-                      hint: Text('All ${widget.label}'),
-                      isExpanded: true,
-                      items: [
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text('All ${widget.label}'),
-                        ),
-                        ...options.map((option) {
-                          return DropdownMenuItem<String?>(
-                            value: option,
-                            child: Text(option),
-                          );
-                        }),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          selectedValue = value;
-                        });
-
-                        // Apply the filter
-                        context.read<HomeBloc>().add(
-                          ApplyFilterEvent(
-                            filterType: widget.filterType,
-                            filterValue: value,
-                          ),
-                        );
-
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              // Clear button (if filter is active)
-              if (selectedValue != null || widget.currentValue != null) ...[
-                const SizedBox(width: 8),
-                InkWell(
+          const SizedBox(height: 20),
+          Text(
+            'Select ${widget.label}',
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppConstants.textPrimaryColor,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const BouncingScrollPhysics(),
+              itemCount: options.length,
+              itemBuilder: (context, index) {
+                final option = options[index];
+                final isSelected = option == currentSelectedValue || 
+                    (option == 'All' && currentSelectedValue == null);
+                
+                return InkWell(
                   onTap: () {
+                    final valueToApply = option == 'All' ? null : option;
                     context.read<HomeBloc>().add(
-                      ClearFilterEvent(filterType: widget.filterType),
+                      ApplyFilterEvent(
+                        filterType: widget.filterType,
+                        filterValue: valueToApply,
+                      ),
                     );
                     Navigator.pop(context);
                   },
+                  borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    height: 48,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 8,
+                      vertical: 16,
                     ),
+                    margin: const EdgeInsets.only(bottom: 4),
                     decoration: BoxDecoration(
-                      color: AppConstants.primaryColor,
-                      borderRadius: BorderRadius.circular(8),
+                      color: isSelected
+                          ? AppConstants.primaryColor.withOpacity(0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Row(
                       children: [
-                        Icon(Icons.close, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
-                        Text(
-                          'Clear',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                        Icon(
+                          isSelected
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          color: isSelected
+                              ? AppConstants.primaryColor
+                              : AppConstants.textSecondaryColor,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            option,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: isSelected
+                                  ? AppConstants.primaryColor
+                                  : AppConstants.textPrimaryColor,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ],
+                );
+              },
+            ),
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );

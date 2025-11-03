@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/job_details_api_models.dart';
 
 /// Jobs states
 abstract class JobsState extends Equatable {
@@ -215,14 +216,24 @@ class ApplyForMoreJobsState extends JobsState {
 /// Saved jobs loaded state
 class SavedJobsLoaded extends JobsState {
   final List<Map<String, dynamic>> savedJobs;
+  final PaginationInfo? pagination;
 
-  const SavedJobsLoaded({required this.savedJobs});
+  const SavedJobsLoaded({
+    required this.savedJobs,
+    this.pagination,
+  });
 
   @override
-  List<Object?> get props => [savedJobs];
+  List<Object?> get props => [savedJobs, pagination];
 
-  SavedJobsLoaded copyWith({List<Map<String, dynamic>>? savedJobs}) {
-    return SavedJobsLoaded(savedJobs: savedJobs ?? this.savedJobs);
+  SavedJobsLoaded copyWith({
+    List<Map<String, dynamic>>? savedJobs,
+    PaginationInfo? pagination,
+  }) {
+    return SavedJobsLoaded(
+      savedJobs: savedJobs ?? this.savedJobs,
+      pagination: pagination ?? this.pagination,
+    );
   }
 }
 

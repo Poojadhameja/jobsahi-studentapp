@@ -29,6 +29,10 @@ class CoursesLoaded extends CoursesState {
   final List<Map<String, dynamic>> enrolledCourses;
   final String searchQuery;
   final String selectedCategory;
+  final String selectedLevel;
+  final String selectedDuration;
+  final String selectedInstitute;
+  final bool showFilters;
   final Set<String> savedCourseIds;
   final Set<String> enrolledCourseIds;
 
@@ -39,6 +43,10 @@ class CoursesLoaded extends CoursesState {
     required this.enrolledCourses,
     this.searchQuery = '',
     this.selectedCategory = 'All',
+    this.selectedLevel = 'All',
+    this.selectedDuration = 'All',
+    this.selectedInstitute = 'All',
+    this.showFilters = false,
     required this.savedCourseIds,
     required this.enrolledCourseIds,
   });
@@ -51,6 +59,10 @@ class CoursesLoaded extends CoursesState {
     enrolledCourses,
     searchQuery,
     selectedCategory,
+    selectedLevel,
+    selectedDuration,
+    selectedInstitute,
+    showFilters,
     savedCourseIds,
     enrolledCourseIds,
   ];
@@ -63,6 +75,10 @@ class CoursesLoaded extends CoursesState {
     List<Map<String, dynamic>>? enrolledCourses,
     String? searchQuery,
     String? selectedCategory,
+    String? selectedLevel,
+    String? selectedDuration,
+    String? selectedInstitute,
+    bool? showFilters,
     Set<String>? savedCourseIds,
     Set<String>? enrolledCourseIds,
   }) {
@@ -73,9 +89,21 @@ class CoursesLoaded extends CoursesState {
       enrolledCourses: enrolledCourses ?? this.enrolledCourses,
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategory: selectedCategory ?? this.selectedCategory,
+      selectedLevel: selectedLevel ?? this.selectedLevel,
+      selectedDuration: selectedDuration ?? this.selectedDuration,
+      selectedInstitute: selectedInstitute ?? this.selectedInstitute,
+      showFilters: showFilters ?? this.showFilters,
       savedCourseIds: savedCourseIds ?? this.savedCourseIds,
       enrolledCourseIds: enrolledCourseIds ?? this.enrolledCourseIds,
     );
+  }
+
+  /// Check if any filter is active
+  bool hasActiveFilters() {
+    return selectedCategory != 'All' ||
+        selectedLevel != 'All' ||
+        selectedDuration != 'All' ||
+        selectedInstitute != 'All';
   }
 }
 

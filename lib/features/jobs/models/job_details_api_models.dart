@@ -252,3 +252,428 @@ class JobDetailsApiResponse {
     };
   }
 }
+
+/// Saved Job Data Model
+class SavedJobData {
+  final int savedJobId;
+  final int jobId;
+  final String jobTitle;
+  final int studentId;
+  final String savedAt;
+
+  const SavedJobData({
+    required this.savedJobId,
+    required this.jobId,
+    required this.jobTitle,
+    required this.studentId,
+    required this.savedAt,
+  });
+
+  factory SavedJobData.fromJson(Map<String, dynamic> json) {
+    return SavedJobData(
+      savedJobId: json['saved_job_id'] ?? 0,
+      jobId: json['job_id'] ?? 0,
+      jobTitle: json['job_title']?.toString() ?? '',
+      studentId: json['student_id'] ?? 0,
+      savedAt: json['saved_at']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'saved_job_id': savedJobId,
+      'job_id': jobId,
+      'job_title': jobTitle,
+      'student_id': studentId,
+      'saved_at': savedAt,
+    };
+  }
+}
+
+/// Save Job API Response Model
+/// Handles all response scenarios: success, already saved, job not found, invalid token
+class SaveJobResponse {
+  final bool status;
+  final String message;
+  final SavedJobData? data;
+  final bool? alreadySaved;
+  final String? timestamp;
+
+  const SaveJobResponse({
+    required this.status,
+    required this.message,
+    this.data,
+    this.alreadySaved,
+    this.timestamp,
+  });
+
+  factory SaveJobResponse.fromJson(Map<String, dynamic> json) {
+    return SaveJobResponse(
+      status: json['status'] ?? false,
+      message: json['message']?.toString() ?? '',
+      data: json['data'] != null
+          ? SavedJobData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+      alreadySaved: json['already_saved'] as bool?,
+      timestamp: json['timestamp']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'message': message,
+      if (data != null) 'data': data!.toJson(),
+      if (alreadySaved != null) 'already_saved': alreadySaved,
+      if (timestamp != null) 'timestamp': timestamp,
+    };
+  }
+
+  /// Check if job was successfully saved
+  bool get isSuccess => status && data != null;
+
+  /// Check if job is already saved
+  bool get isAlreadySaved => alreadySaved == true;
+
+  /// Check if job was not found
+  bool get isJobNotFound =>
+      !status && message.toLowerCase().contains('not found');
+
+  /// Check if token is invalid
+  bool get isInvalidToken =>
+      !status && message.toLowerCase().contains('invalid token');
+}
+
+/// Unsave Job Data Model
+class UnsaveJobData {
+  final int jobId;
+  final String jobTitle;
+  final int studentId;
+
+  const UnsaveJobData({
+    required this.jobId,
+    required this.jobTitle,
+    required this.studentId,
+  });
+
+  factory UnsaveJobData.fromJson(Map<String, dynamic> json) {
+    return UnsaveJobData(
+      jobId: json['job_id'] ?? 0,
+      jobTitle: json['job_title']?.toString() ?? '',
+      studentId: json['student_id'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'job_id': jobId,
+      'job_title': jobTitle,
+      'student_id': studentId,
+    };
+  }
+}
+
+/// Unsave Job API Response Model
+class UnsaveJobResponse {
+  final bool status;
+  final String message;
+  final UnsaveJobData? data;
+  final String? timestamp;
+
+  const UnsaveJobResponse({
+    required this.status,
+    required this.message,
+    this.data,
+    this.timestamp,
+  });
+
+  factory UnsaveJobResponse.fromJson(Map<String, dynamic> json) {
+    return UnsaveJobResponse(
+      status: json['status'] ?? false,
+      message: json['message']?.toString() ?? '',
+      data: json['data'] != null
+          ? UnsaveJobData.fromJson(json['data'] as Map<String, dynamic>)
+          : null,
+      timestamp: json['timestamp']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'message': message,
+      if (data != null) 'data': data!.toJson(),
+      if (timestamp != null) 'timestamp': timestamp,
+    };
+  }
+
+  bool get isSuccess => status && data != null;
+  bool get isJobNotSaved =>
+      !status &&
+      (message.toLowerCase().contains('not saved') ||
+          message.toLowerCase().contains("doesn't exist"));
+}
+
+/// Saved Job Company Information
+class SavedJobCompany {
+  final String companyName;
+  final String companyLogo;
+  final String industry;
+  final String website;
+
+  const SavedJobCompany({
+    required this.companyName,
+    required this.companyLogo,
+    required this.industry,
+    required this.website,
+  });
+
+  factory SavedJobCompany.fromJson(Map<String, dynamic> json) {
+    return SavedJobCompany(
+      companyName: json['company_name']?.toString() ?? '',
+      companyLogo: json['company_logo']?.toString() ?? '',
+      industry: json['industry']?.toString() ?? '',
+      website: json['website']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'company_name': companyName,
+      'company_logo': companyLogo,
+      'industry': industry,
+      'website': website,
+    };
+  }
+}
+
+/// Saved Job Data from API
+class SavedJobItem {
+  final int savedJobId;
+  final int jobId;
+  final String title;
+  final String description;
+  final String location;
+  final List<String> skillsRequired;
+  final int salaryMin;
+  final int salaryMax;
+  final String jobType;
+  final String experienceRequired;
+  final String applicationDeadline;
+  final bool isRemote;
+  final int noOfVacancies;
+  final String status;
+  final String jobCreatedAt;
+  final String savedAt;
+  final SavedJobCompany company;
+
+  const SavedJobItem({
+    required this.savedJobId,
+    required this.jobId,
+    required this.title,
+    required this.description,
+    required this.location,
+    required this.skillsRequired,
+    required this.salaryMin,
+    required this.salaryMax,
+    required this.jobType,
+    required this.experienceRequired,
+    required this.applicationDeadline,
+    required this.isRemote,
+    required this.noOfVacancies,
+    required this.status,
+    required this.jobCreatedAt,
+    required this.savedAt,
+    required this.company,
+  });
+
+  factory SavedJobItem.fromJson(Map<String, dynamic> json) {
+    return SavedJobItem(
+      savedJobId: json['saved_job_id'] ?? 0,
+      jobId: json['job_id'] ?? 0,
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      location: json['location']?.toString() ?? '',
+      skillsRequired: _parseSkills(json['skills_required']),
+      salaryMin: json['salary_min'] ?? 0,
+      salaryMax: json['salary_max'] ?? 0,
+      jobType: json['job_type']?.toString() ?? '',
+      experienceRequired: json['experience_required']?.toString() ?? '',
+      applicationDeadline: json['application_deadline']?.toString() ?? '',
+      isRemote: json['is_remote'] ?? false,
+      noOfVacancies: json['no_of_vacancies'] ?? 0,
+      status: json['status']?.toString() ?? '',
+      jobCreatedAt: json['job_created_at']?.toString() ?? '',
+      savedAt: json['saved_at']?.toString() ?? '',
+      company: SavedJobCompany.fromJson(
+        json['company'] as Map<String, dynamic>? ?? {},
+      ),
+    );
+  }
+
+  static List<String> _parseSkills(dynamic skillsData) {
+    if (skillsData == null) return [];
+    if (skillsData is List) {
+      return skillsData.map((skill) => skill.toString()).toList();
+    } else if (skillsData is String) {
+      return skillsData
+          .split(',')
+          .map((skill) => skill.trim())
+          .where((skill) => skill.isNotEmpty)
+          .toList();
+    }
+    return [];
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'saved_job_id': savedJobId,
+      'job_id': jobId,
+      'title': title,
+      'description': description,
+      'location': location,
+      'skills_required': skillsRequired,
+      'salary_min': salaryMin,
+      'salary_max': salaryMax,
+      'job_type': jobType,
+      'experience_required': experienceRequired,
+      'application_deadline': applicationDeadline,
+      'is_remote': isRemote,
+      'no_of_vacancies': noOfVacancies,
+      'status': status,
+      'job_created_at': jobCreatedAt,
+      'saved_at': savedAt,
+      'company': company.toJson(),
+    };
+  }
+
+  /// Convert to Map format with deep conversion to avoid LinkedMap/IdentityMap issues
+  Map<String, dynamic> toMap() {
+    dynamic _deepConvert(dynamic value) {
+      if (value is Map) {
+        return Map<String, dynamic>.from(
+          value.map((k, v) => MapEntry(k.toString(), _deepConvert(v)))
+        );
+      } else if (value is List) {
+        return value.map((e) => _deepConvert(e)).toList();
+      }
+      return value;
+    }
+
+    final baseMap = {
+      'id': jobId.toString(),
+      'saved_job_id': savedJobId.toString(),
+      'title': title,
+      'description': description,
+      'location': location,
+      'skills_required': skillsRequired,
+      'skillsList': skillsRequired,
+      'salary_min': salaryMin,
+      'salary_max': salaryMax,
+      'salaryMin': salaryMin.toString(),
+      'salaryMax': salaryMax.toString(),
+      'job_type': jobType,
+      'jobType': jobType,
+      'experience_required': experienceRequired,
+      'experienceRequired': experienceRequired,
+      'application_deadline': applicationDeadline,
+      'applicationDeadline': applicationDeadline,
+      'is_remote': isRemote,
+      'isRemote': isRemote,
+      'no_of_vacancies': noOfVacancies,
+      'noOfVacancies': noOfVacancies,
+      'status': status,
+      'created_at': jobCreatedAt,
+      'saved_at': savedAt,
+      'company_name': company.companyName,
+      'company_logo': company.companyLogo,
+      'company': {
+        'company_name': company.companyName,
+        'company_logo': company.companyLogo,
+        'industry': company.industry,
+        'website': company.website,
+      },
+      'is_saved': true,
+    };
+
+    return _deepConvert(baseMap) as Map<String, dynamic>;
+  }
+}
+
+/// Pagination Information
+class PaginationInfo {
+  final int total;
+  final int limit;
+  final int offset;
+  final bool hasMore;
+
+  const PaginationInfo({
+    required this.total,
+    required this.limit,
+    required this.offset,
+    required this.hasMore,
+  });
+
+  factory PaginationInfo.fromJson(Map<String, dynamic> json) {
+    return PaginationInfo(
+      total: json['total'] ?? 0,
+      limit: json['limit'] ?? 20,
+      offset: json['offset'] ?? 0,
+      hasMore: json['has_more'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'total': total,
+      'limit': limit,
+      'offset': offset,
+      'has_more': hasMore,
+    };
+  }
+}
+
+/// Get Saved Jobs API Response Model
+class SavedJobsResponse {
+  final bool status;
+  final String message;
+  final List<SavedJobItem> data;
+  final PaginationInfo? pagination;
+  final String? timestamp;
+
+  const SavedJobsResponse({
+    required this.status,
+    required this.message,
+    required this.data,
+    this.pagination,
+    this.timestamp,
+  });
+
+  factory SavedJobsResponse.fromJson(Map<String, dynamic> json) {
+    return SavedJobsResponse(
+      status: json['status'] ?? false,
+      message: json['message']?.toString() ?? '',
+      data: json['data'] != null
+          ? (json['data'] as List<dynamic>)
+              .map((item) =>
+                  SavedJobItem.fromJson(item as Map<String, dynamic>))
+              .toList()
+          : [],
+      pagination: json['pagination'] != null
+          ? PaginationInfo.fromJson(
+              json['pagination'] as Map<String, dynamic>)
+          : null,
+      timestamp: json['timestamp']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'message': message,
+      'data': data.map((item) => item.toJson()).toList(),
+      if (pagination != null) 'pagination': pagination!.toJson(),
+      if (timestamp != null) 'timestamp': timestamp,
+    };
+  }
+}

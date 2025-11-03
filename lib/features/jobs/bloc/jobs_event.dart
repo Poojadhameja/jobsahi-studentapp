@@ -74,10 +74,13 @@ class ApplyForJobEvent extends JobsEvent {
 
 /// Load saved jobs event
 class LoadSavedJobsEvent extends JobsEvent {
-  const LoadSavedJobsEvent();
+  final int? limit;
+  final int? offset;
+
+  const LoadSavedJobsEvent({this.limit, this.offset});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [limit, offset];
 }
 
 /// Load applied jobs event

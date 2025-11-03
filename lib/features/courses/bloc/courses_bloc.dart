@@ -16,6 +16,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<LoadCoursesEvent>(_onLoadCourses);
     on<SearchCoursesEvent>(_onSearchCourses);
     on<FilterCoursesEvent>(_onFilterCourses);
+    on<ClearAllFiltersEvent>(_onClearAllFilters);
     on<SaveCourseEvent>(_onSaveCourse);
     on<UnsaveCourseEvent>(_onUnsaveCourse);
     on<EnrollInCourseEvent>(_onEnrollInCourse);
@@ -24,6 +25,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<RefreshCoursesEvent>(_onRefreshCourses);
     on<ClearSearchEvent>(_onClearSearch);
     on<LoadCourseDetailsEvent>(_onLoadCourseDetails);
+    on<ToggleFiltersEvent>(_onToggleFilters);
   }
 
   /// Handle load courses
@@ -57,6 +59,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           enrolledCourses: enrolledCourses,
           savedCourseIds: savedCourseIds,
           enrolledCourseIds: enrolledCourseIds,
+          selectedCategory: 'All',
+          selectedLevel: 'All',
+          selectedDuration: 'All',
+          selectedInstitute: 'All',
         ),
       );
     } catch (e) {
@@ -73,6 +79,9 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         currentState.allCourses,
         event.query,
         currentState.selectedCategory,
+        currentState.selectedLevel,
+        currentState.selectedDuration,
+        currentState.selectedInstitute,
       );
 
       emit(
@@ -88,15 +97,57 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
   void _onFilterCourses(FilterCoursesEvent event, Emitter<CoursesState> emit) {
     if (state is CoursesLoaded) {
       final currentState = state as CoursesLoaded;
+
+      // Update selected filters (keep existing if new one is not provided)
+      final updatedCategory = event.category ?? currentState.selectedCategory;
+      final updatedLevel = event.level ?? currentState.selectedLevel;
+      final updatedDuration = event.duration ?? currentState.selectedDuration;
+      final updatedInstitute =
+          event.institute ?? currentState.selectedInstitute;
+
       final filteredCourses = _filterCourses(
         currentState.allCourses,
         currentState.searchQuery,
-        event.category,
+        updatedCategory,
+        updatedLevel,
+        updatedDuration,
+        updatedInstitute,
       );
 
       emit(
         currentState.copyWith(
-          selectedCategory: event.category,
+          selectedCategory: updatedCategory,
+          selectedLevel: updatedLevel,
+          selectedDuration: updatedDuration,
+          selectedInstitute: updatedInstitute,
+          filteredCourses: filteredCourses,
+        ),
+      );
+    }
+  }
+
+  /// Handle clear all filters
+  void _onClearAllFilters(
+    ClearAllFiltersEvent event,
+    Emitter<CoursesState> emit,
+  ) {
+    if (state is CoursesLoaded) {
+      final currentState = state as CoursesLoaded;
+      final filteredCourses = _filterCourses(
+        currentState.allCourses,
+        currentState.searchQuery,
+        'All',
+        'All',
+        'All',
+        'All',
+      );
+
+      emit(
+        currentState.copyWith(
+          selectedCategory: 'All',
+          selectedLevel: 'All',
+          selectedDuration: 'All',
+          selectedInstitute: 'All',
           filteredCourses: filteredCourses,
         ),
       );
@@ -120,8 +171,16 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         );
         updatedSavedCourseIds.add(event.courseId);
 
-        // Find the course to add to saved courses
-        final courseToSave = currentState.allCourses.firstWhere(
+        // Update isSaved flag in allCourses and filteredCourses
+        final updatedAllCourses = currentState.allCourses.map((course) {
+          if (course['id'] == event.courseId) {
+            return {...course, 'isSaved': true};
+          }
+          return course;
+        }).toList();
+
+        // Find the course to add to saved courses from updated list
+        final courseToSave = updatedAllCourses.firstWhere(
           (course) => course['id'] == event.courseId,
           orElse: () => {},
         );
@@ -132,15 +191,24 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           );
           updatedSavedCourses.add(courseToSave);
 
+          // Rebuild filteredCourses with updated isSaved flag
+          final updatedFilteredCourses = _filterCourses(
+            updatedAllCourses,
+            currentState.searchQuery,
+            currentState.selectedCategory,
+            currentState.selectedLevel,
+            currentState.selectedDuration,
+            currentState.selectedInstitute,
+          );
+
           emit(
             currentState.copyWith(
+              allCourses: updatedAllCourses,
+              filteredCourses: updatedFilteredCourses,
               savedCourses: updatedSavedCourses,
               savedCourseIds: updatedSavedCourseIds,
             ),
           );
-
-          // Emit success state
-          emit(CourseSavedState(courseId: event.courseId));
         }
       }
     } catch (e) {
@@ -169,15 +237,32 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
             .where((course) => course['id'] != event.courseId)
             .toList();
 
+        // Update isSaved flag in allCourses and filteredCourses
+        final updatedAllCourses = currentState.allCourses.map((course) {
+          if (course['id'] == event.courseId) {
+            return {...course, 'isSaved': false};
+          }
+          return course;
+        }).toList();
+
+        // Rebuild filteredCourses with updated isSaved flag
+        final updatedFilteredCourses = _filterCourses(
+          updatedAllCourses,
+          currentState.searchQuery,
+          currentState.selectedCategory,
+          currentState.selectedLevel,
+          currentState.selectedDuration,
+          currentState.selectedInstitute,
+        );
+
         emit(
           currentState.copyWith(
+            allCourses: updatedAllCourses,
+            filteredCourses: updatedFilteredCourses,
             savedCourses: updatedSavedCourses,
             savedCourseIds: updatedSavedCourseIds,
           ),
         );
-
-        // Emit success state
-        emit(CourseUnsavedState(courseId: event.courseId));
       }
     } catch (e) {
       emit(CoursesError(message: 'Failed to unsave course: ${e.toString()}'));
@@ -260,6 +345,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           enrolledCourses: [],
           savedCourseIds: savedCourseIds,
           enrolledCourseIds: <String>{},
+          selectedCategory: 'All',
+          selectedLevel: 'All',
+          selectedDuration: 'All',
+          selectedInstitute: 'All',
         ),
       );
     } catch (e) {
@@ -291,6 +380,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           enrolledCourses: enrolledCourses,
           savedCourseIds: <String>{},
           enrolledCourseIds: <String>{},
+          selectedCategory: 'All',
+          selectedLevel: 'All',
+          selectedDuration: 'All',
+          selectedInstitute: 'All',
         ),
       );
     } catch (e) {
@@ -319,6 +412,9 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         currentState.allCourses,
         '',
         currentState.selectedCategory,
+        currentState.selectedLevel,
+        currentState.selectedDuration,
+        currentState.selectedInstitute,
       );
 
       emit(
@@ -330,30 +426,62 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     }
   }
 
-  /// Filter courses based on search query and category
+  /// Filter courses based on search query and all filters
+  /// All filters work together in combination with search
   List<Map<String, dynamic>> _filterCourses(
     List<Map<String, dynamic>> courses,
     String query,
     String category,
+    String level,
+    String duration,
+    String institute,
   ) {
     List<Map<String, dynamic>> filteredCourses = List.from(courses);
 
-    // Apply search filter
+    // Apply search filter - searches across multiple fields including filter-related fields
     if (query.isNotEmpty) {
+      final searchQuery = query.toLowerCase().trim();
       filteredCourses = filteredCourses.where((course) {
+        // Search in title fields
         final title = course['title']?.toString().toLowerCase() ?? '';
-        final instructor = course['instructor']?.toString().toLowerCase() ?? '';
+        final titleEnglish =
+            course['titleEnglish']?.toString().toLowerCase() ?? '';
+
+        // Search in description
         final description =
             course['description']?.toString().toLowerCase() ?? '';
-        final searchQuery = query.toLowerCase();
 
+        // Search in instructor
+        final instructor = course['instructor']?.toString().toLowerCase() ?? '';
+
+        // Search in category (filter field)
+        final courseCategory =
+            course['category']?.toString().toLowerCase() ?? '';
+
+        // Search in level (filter field)
+        final courseLevel = course['level']?.toString().toLowerCase() ?? '';
+
+        // Search in duration (filter field)
+        final courseDuration =
+            course['duration']?.toString().toLowerCase() ?? '';
+
+        // Search in institute (filter field)
+        final courseInstitute =
+            course['institute']?.toString().toLowerCase() ?? '';
+
+        // Return true if search query matches any field
         return title.contains(searchQuery) ||
+            titleEnglish.contains(searchQuery) ||
+            description.contains(searchQuery) ||
             instructor.contains(searchQuery) ||
-            description.contains(searchQuery);
+            courseCategory.contains(searchQuery) ||
+            courseLevel.contains(searchQuery) ||
+            courseDuration.contains(searchQuery) ||
+            courseInstitute.contains(searchQuery);
       }).toList();
     }
 
-    // Apply category filter
+    // Apply category filter (works with search)
     if (category != 'All') {
       filteredCourses = filteredCourses.where((course) {
         final courseCategory = course['category']?.toString() ?? '';
@@ -361,6 +489,32 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
       }).toList();
     }
 
+    // Apply level filter (works with search and category)
+    if (level != 'All') {
+      filteredCourses = filteredCourses.where((course) {
+        final courseLevel = course['level']?.toString() ?? '';
+        return courseLevel == level;
+      }).toList();
+    }
+
+    // Apply duration filter (works with search, category, and level)
+    if (duration != 'All') {
+      filteredCourses = filteredCourses.where((course) {
+        final courseDuration = course['duration']?.toString() ?? '';
+        return courseDuration == duration;
+      }).toList();
+    }
+
+    // Apply institute filter (works with all previous filters and search)
+    if (institute != 'All') {
+      filteredCourses = filteredCourses.where((course) {
+        final courseInstitute = course['institute']?.toString() ?? '';
+        return courseInstitute == institute;
+      }).toList();
+    }
+
+    // All filters and search work together in combination
+    // Result: courses that match search query AND category AND level AND duration AND institute
     return filteredCourses;
   }
 
@@ -421,6 +575,40 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
             message: 'Failed to load course details: ${e.toString()}',
           ),
         );
+      }
+    }
+  }
+
+  /// Handle toggle filters event
+  void _onToggleFilters(ToggleFiltersEvent event, Emitter<CoursesState> emit) {
+    if (state is CoursesLoaded) {
+      final currentState = state as CoursesLoaded;
+      final newShowFilters = !currentState.showFilters;
+
+      // If closing filters, clear all active filters
+      if (!newShowFilters && currentState.hasActiveFilters()) {
+        final filteredCourses = _filterCourses(
+          currentState.allCourses,
+          currentState.searchQuery,
+          'All',
+          'All',
+          'All',
+          'All',
+        );
+
+        emit(
+          currentState.copyWith(
+            showFilters: newShowFilters,
+            selectedCategory: 'All',
+            selectedLevel: 'All',
+            selectedDuration: 'All',
+            selectedInstitute: 'All',
+            filteredCourses: filteredCourses,
+          ),
+        );
+      } else {
+        // Just toggle visibility if opening or if no active filters
+        emit(currentState.copyWith(showFilters: newShowFilters));
       }
     }
   }

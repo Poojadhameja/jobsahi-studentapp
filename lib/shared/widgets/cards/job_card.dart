@@ -36,6 +36,36 @@ class JobCard extends StatefulWidget {
 }
 
 class _JobCardState extends State<JobCard> {
+  /// Safely extracts company name from job data
+  /// Handles both string and nested map formats
+  String _getCompanyName(Map<String, dynamic> job) {
+    // First try company_name (flat string from SavedJobItem.toMap())
+    if (job['company_name'] != null) {
+      final name = job['company_name'];
+      if (name is String) return name;
+      return name.toString();
+    }
+    
+    // Then try company as string
+    final company = job['company'];
+    if (company == null) return '';
+    
+    // If company is a Map/LinkedMap, extract company_name
+    if (company is Map) {
+      final companyName = company['company_name'];
+      if (companyName != null) {
+        if (companyName is String) return companyName;
+        return companyName.toString();
+      }
+    }
+    
+    // If company is already a string, return it
+    if (company is String) return company;
+    
+    // Fallback: convert to string
+    return company.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     final job = widget.job;
@@ -102,14 +132,14 @@ class _JobCardState extends State<JobCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                job['title'] ?? '',
+                job['title']?.toString() ?? '',
                 style: const TextStyle(fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
               ),
               const SizedBox(height: 2),
               Text(
-                job['company'] ?? '',
+                _getCompanyName(job),
                 style: const TextStyle(color: AppConstants.accentColor),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
@@ -200,8 +230,10 @@ class _JobCardState extends State<JobCard> {
 
   /// Builds the salary information section
   Widget _buildSalaryInfo(Map<String, dynamic> job) {
+    final salary = job['salary'];
+    final salaryText = salary != null ? salary.toString() : '';
     return Text(
-      job['salary'] ?? '',
+      salaryText,
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w700,
@@ -271,7 +303,7 @@ class _JobCardState extends State<JobCard> {
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(
-                        job['location'] ?? '',
+                        job['location']?.toString() ?? '',
                         style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w500,

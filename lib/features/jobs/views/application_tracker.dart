@@ -44,6 +44,37 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
   final bool isFromProfile;
 
   const _ApplicationTrackerScreenView({required this.isFromProfile});
+
+  /// Safely extracts company name from job data
+  /// Handles both string and nested map formats
+  String _getCompanyName(Map<String, dynamic> job, [String fallback = '']) {
+    // First try company_name (flat string from SavedJobItem.toMap())
+    if (job['company_name'] != null) {
+      final name = job['company_name'];
+      if (name is String && name.isNotEmpty) return name;
+      if (name != null) return name.toString();
+    }
+    
+    // Then try company as string
+    final company = job['company'];
+    if (company == null) return fallback;
+    
+    // If company is a Map/LinkedMap, extract company_name
+    if (company is Map) {
+      final companyName = company['company_name'];
+      if (companyName != null) {
+        if (companyName is String && companyName.isNotEmpty) return companyName;
+        if (companyName != null) return companyName.toString();
+      }
+    }
+    
+    // If company is already a string, return it
+    if (company is String) return company;
+    
+    // Fallback: convert to string or use provided fallback
+    return fallback.isNotEmpty ? fallback : company.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<JobsBloc, JobsState>(
@@ -184,13 +215,13 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 16),
           child: _buildAppliedJobCard(
             context: context,
-            jobTitle: job['title'] ?? 'Job Title',
-            companyName: job['company'] ?? 'Company Name',
-            location: job['location'] ?? 'Location',
-            experience: job['experience'] ?? 'Fresher',
-            appliedDate: job['appliedDate'] ?? 'Applied Date',
-            positions: job['positions'] ?? 'Positions',
-            applicationId: job['id'] ?? '$index',
+            jobTitle: job['title']?.toString() ?? 'Job Title',
+            companyName: _getCompanyName(job, 'Company Name'),
+            location: job['location']?.toString() ?? 'Location',
+            experience: job['experience']?.toString() ?? 'Fresher',
+            appliedDate: job['appliedDate']?.toString() ?? 'Applied Date',
+            positions: job['positions']?.toString() ?? 'Positions',
+            applicationId: job['id']?.toString() ?? '$index',
           ),
         );
       },
@@ -405,7 +436,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
                         children: [
                           // Job Title
                           Text(
-                            job['title'] ?? 'इलेक्ट्रीशियन अप्रेंटिस',
+                            job['title']?.toString() ?? 'इलेक्ट्रीशियन अप्रेंटिस',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -416,7 +447,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
 
                           // Company Name
                           Text(
-                            job['company'] ?? 'Ashok Leyland',
+                            _getCompanyName(job, 'Ashok Leyland'),
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF5C9A24), // Light green color
@@ -427,7 +458,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
 
                           // Location
                           Text(
-                            job['location'] ?? 'Location Bhopal',
+                            job['location']?.toString() ?? 'Location Bhopal',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF0B537D), // Dark grey color
@@ -519,7 +550,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          (job['company'] ?? 'W').substring(0, 1).toUpperCase(),
+                          _getCompanyName(job, 'W').substring(0, 1).toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -537,7 +568,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
                         children: [
                           // Job Title
                           Text(
-                            job['title'] ?? 'इलेक्ट्रीशियन अप्रेंटिस',
+                            job['title']?.toString() ?? 'इलेक्ट्रीशियन अप्रेंटिस',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -548,7 +579,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
 
                           // Company Name
                           Text(
-                            job['company'] ?? 'Ashok Leyland',
+                            _getCompanyName(job, 'Ashok Leyland'),
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF5C9A24), // Light green color
@@ -559,7 +590,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
 
                           // Job Type
                           Text(
-                            job['type'] ?? 'Full Time',
+                            job['type']?.toString() ?? 'Full Time',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF0B537D), // Dark grey color

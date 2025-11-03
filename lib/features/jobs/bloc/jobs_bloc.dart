@@ -83,10 +83,45 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       if (jobsResponse.status) {
         // Convert Job objects to Map format for compatibility with existing UI
         final allJobs = jobsResponse.data.map((job) => _jobToMap(job)).toList();
-        final savedJobs = JobData.savedJobs; // Keep existing saved jobs for now
-        final appliedJobs =
-            JobData.appliedJobs; // Keep existing applied jobs for now
-        final savedJobIds = UserData.savedJobIds.toSet();
+        
+        // Load saved jobs from API automatically
+        List<Map<String, dynamic>> savedJobs = [];
+        Set<String> savedJobIds = <String>{};
+        
+        try {
+          debugPrint('🔵 [Jobs] Loading saved jobs from API...');
+          final savedJobsResponse = await _jobsRepository.getSavedJobs();
+          
+          if (savedJobsResponse.status) {
+        // Convert SavedJobItem to Map format - toMap() already handles deep conversion
+        savedJobs = savedJobsResponse.data.map((item) => item.toMap()).toList();
+            
+            // Extract saved job IDs
+            savedJobIds = savedJobsResponse.data
+                .map((item) => item.jobId.toString())
+                .toSet();
+            
+            debugPrint(
+              '✅ [Jobs] Loaded ${savedJobs.length} saved jobs from API',
+            );
+          } else {
+            debugPrint(
+              '⚠️ [Jobs] Saved jobs API returned status false: ${savedJobsResponse.message}',
+            );
+            // Fallback to mock data
+            savedJobs = JobData.savedJobs;
+            savedJobIds = UserData.savedJobIds.toSet();
+          }
+        } catch (e) {
+          debugPrint(
+            '⚠️ [Jobs] Failed to load saved jobs from API: $e, using fallback',
+          );
+          // Fallback to mock data if API fails
+          savedJobs = JobData.savedJobs;
+          savedJobIds = UserData.savedJobIds.toSet();
+        }
+        
+        final appliedJobs = JobData.appliedJobs; // Keep existing applied jobs for now
 
         emit(
           JobsLoaded(
@@ -110,9 +145,25 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         // Use mock data as fallback when user is not authenticated
         debugPrint('🔵 User not authenticated, using mock data as fallback');
         final allJobs = JobData.recommendedJobs;
-        final savedJobs = JobData.savedJobs;
+        
+        // Try to load saved jobs even in fallback mode (might work if partially authenticated)
+        List<Map<String, dynamic>> savedJobs = JobData.savedJobs;
+        Set<String> savedJobIds = UserData.savedJobIds.toSet();
+        
+        try {
+          final savedJobsResponse = await _jobsRepository.getSavedJobs();
+          if (savedJobsResponse.status) {
+            savedJobs = savedJobsResponse.data.map((item) => item.toMap()).toList();
+            savedJobIds = savedJobsResponse.data
+                .map((item) => item.jobId.toString())
+                .toSet();
+            debugPrint('✅ Loaded saved jobs even in fallback mode');
+          }
+        } catch (savedJobsError) {
+          debugPrint('⚠️ Could not load saved jobs in fallback: $savedJobsError');
+        }
+        
         final appliedJobs = JobData.appliedJobs;
-        final savedJobIds = UserData.savedJobIds.toSet();
 
         emit(
           JobsLoaded(
@@ -384,35 +435,99 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   /// Handle save job
   Future<void> _onSaveJob(SaveJobEvent event, Emitter<JobsState> emit) async {
     try {
-      if (state is JobsLoaded) {
-        final currentState = state as JobsLoaded;
-        final updatedSavedJobIds = Set<String>.from(currentState.savedJobIds);
-        updatedSavedJobIds.add(event.jobId);
+      debugPrint('🔵 [JobsBloc] Saving job with ID: ${event.jobId}');
 
-        // Find the job to add to saved jobs
-        final jobToSave = currentState.allJobs.firstWhere(
-          (job) => job['id'] == event.jobId,
-          orElse: () => {},
-        );
+      // Parse jobId to int
+      final jobIdInt = int.tryParse(event.jobId);
+      if (jobIdInt == null) {
+        emit(JobsError(message: 'Invalid job ID: ${event.jobId}'));
+        return;
+      }
 
-        if (jobToSave.isNotEmpty) {
-          final updatedSavedJobs = List<Map<String, dynamic>>.from(
-            currentState.savedJobs,
+      // Call the repository to save the job via API
+      final saveJobResponse = await _jobsRepository.saveJob(jobIdInt);
+
+      // Handle different response scenarios
+      if (saveJobResponse.isSuccess) {
+        // Job saved successfully - update local state
+        if (state is JobsLoaded) {
+          final currentState = state as JobsLoaded;
+          final updatedSavedJobIds = Set<String>.from(currentState.savedJobIds);
+          updatedSavedJobIds.add(event.jobId);
+
+          // Find the job to add to saved jobs
+          final jobToSave = currentState.allJobs.firstWhere(
+            (job) => job['id']?.toString() == event.jobId,
+            orElse: () => {},
           );
-          updatedSavedJobs.add(jobToSave);
 
-          emit(
-            currentState.copyWith(
-              savedJobs: updatedSavedJobs,
-              savedJobIds: updatedSavedJobIds,
-            ),
-          );
+          if (jobToSave.isNotEmpty) {
+            final updatedSavedJobs = List<Map<String, dynamic>>.from(
+              currentState.savedJobs,
+            );
+            updatedSavedJobs.add(jobToSave);
+
+            emit(
+              currentState.copyWith(
+                savedJobs: updatedSavedJobs,
+                savedJobIds: updatedSavedJobIds,
+              ),
+            );
+          } else {
+            // Update saved job IDs even if job not found in current list
+            emit(
+              currentState.copyWith(
+                savedJobIds: updatedSavedJobIds,
+              ),
+            );
+          }
 
           // Emit success state
           emit(JobSavedState(jobId: event.jobId));
+          debugPrint('✅ [JobsBloc] Job saved successfully');
+        } else {
+          // Emit success state even if not in JobsLoaded state
+          emit(JobSavedState(jobId: event.jobId));
         }
+      } else if (saveJobResponse.isAlreadySaved) {
+        // Job is already saved - treat as success but show appropriate message
+        debugPrint('ℹ️ [JobsBloc] Job is already saved');
+        if (state is JobsLoaded) {
+          final currentState = state as JobsLoaded;
+          final updatedSavedJobIds = Set<String>.from(currentState.savedJobIds);
+          updatedSavedJobIds.add(event.jobId);
+
+          emit(
+            currentState.copyWith(
+              savedJobIds: updatedSavedJobIds,
+            ),
+          );
+        }
+        emit(JobSavedState(jobId: event.jobId));
+      } else if (saveJobResponse.isJobNotFound) {
+        // Job not found
+        emit(JobsError(
+          message: saveJobResponse.message.isNotEmpty
+              ? saveJobResponse.message
+              : 'Job not found or not available for saving',
+        ));
+      } else if (saveJobResponse.isInvalidToken) {
+        // Invalid token - authentication issue
+        emit(JobsError(
+          message: saveJobResponse.message.isNotEmpty
+              ? saveJobResponse.message
+              : 'Authentication failed. Please login again.',
+        ));
+      } else {
+        // Other error
+        emit(JobsError(
+          message: saveJobResponse.message.isNotEmpty
+              ? saveJobResponse.message
+              : 'Failed to save job',
+        ));
       }
     } catch (e) {
+      debugPrint('🔴 [JobsBloc] Error saving job: $e');
       emit(JobsError(message: 'Failed to save job: ${e.toString()}'));
     }
   }
@@ -423,26 +538,74 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     Emitter<JobsState> emit,
   ) async {
     try {
-      if (state is JobsLoaded) {
-        final currentState = state as JobsLoaded;
-        final updatedSavedJobIds = Set<String>.from(currentState.savedJobIds);
-        updatedSavedJobIds.remove(event.jobId);
+      debugPrint('🔵 [JobsBloc] Unsaving job with ID: ${event.jobId}');
 
-        final updatedSavedJobs = currentState.savedJobs
-            .where((job) => job['id'] != event.jobId)
-            .toList();
+      // Parse jobId to int
+      final jobIdInt = int.tryParse(event.jobId);
+      if (jobIdInt == null) {
+        emit(JobsError(message: 'Invalid job ID: ${event.jobId}'));
+        return;
+      }
 
-        emit(
-          currentState.copyWith(
-            savedJobs: updatedSavedJobs,
-            savedJobIds: updatedSavedJobIds,
-          ),
-        );
+      // Call the repository to unsave the job via API
+      final unsaveJobResponse = await _jobsRepository.unsaveJob(jobIdInt);
+
+      // Handle different response scenarios
+      if (unsaveJobResponse.isSuccess) {
+        // Job unsaved successfully - update local state
+        if (state is JobsLoaded) {
+          final currentState = state as JobsLoaded;
+          final updatedSavedJobIds = Set<String>.from(currentState.savedJobIds);
+          updatedSavedJobIds.remove(event.jobId);
+
+          final updatedSavedJobs = currentState.savedJobs
+              .where((job) => job['id']?.toString() != event.jobId)
+              .toList();
+
+          emit(
+            currentState.copyWith(
+              savedJobs: updatedSavedJobs,
+              savedJobIds: updatedSavedJobIds,
+            ),
+          );
+        }
 
         // Emit success state
         emit(JobUnsavedState(jobId: event.jobId));
+        debugPrint('✅ [JobsBloc] Job unsaved successfully');
+      } else if (unsaveJobResponse.isJobNotSaved) {
+        // Job is not saved or doesn't exist
+        debugPrint('⚠️ [JobsBloc] Job is not saved or doesn\'t exist');
+        
+        // Still update local state to remove from saved list
+        if (state is JobsLoaded) {
+          final currentState = state as JobsLoaded;
+          final updatedSavedJobIds = Set<String>.from(currentState.savedJobIds);
+          updatedSavedJobIds.remove(event.jobId);
+
+          final updatedSavedJobs = currentState.savedJobs
+              .where((job) => job['id']?.toString() != event.jobId)
+              .toList();
+
+          emit(
+            currentState.copyWith(
+              savedJobs: updatedSavedJobs,
+              savedJobIds: updatedSavedJobIds,
+            ),
+          );
+        }
+
+        emit(JobUnsavedState(jobId: event.jobId));
+      } else {
+        // Other error
+        emit(JobsError(
+          message: unsaveJobResponse.message.isNotEmpty
+              ? unsaveJobResponse.message
+              : 'Failed to unsave job',
+        ));
       }
     } catch (e) {
+      debugPrint('🔴 [JobsBloc] Error unsaving job: $e');
       emit(JobsError(message: 'Failed to unsave job: ${e.toString()}'));
     }
   }
@@ -495,26 +658,56 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   ) async {
     try {
       emit(const JobsLoading());
+      debugPrint('🔵 [JobsBloc] Loading saved jobs...');
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // Load saved jobs from mock data
-      final savedJobs = JobData.savedJobs;
-      final savedJobIds = UserData.savedJobIds.toSet();
-
-      emit(
-        JobsLoaded(
-          allJobs: [],
-          filteredJobs: savedJobs,
-          savedJobs: savedJobs,
-          appliedJobs: [],
-          savedJobIds: savedJobIds,
-          featuredJobs: [],
-        ),
+      // Call the repository to fetch saved jobs via API
+      final savedJobsResponse = await _jobsRepository.getSavedJobs(
+        limit: event.limit,
+        offset: event.offset,
       );
+
+      if (savedJobsResponse.status) {
+        // Convert SavedJobItem to Map format - toMap() already handles deep conversion
+        final savedJobs = savedJobsResponse.data.map((item) => item.toMap()).toList();
+
+        debugPrint(
+          '✅ [JobsBloc] Loaded ${savedJobs.length} saved jobs successfully',
+        );
+
+        emit(
+          SavedJobsLoaded(
+            savedJobs: savedJobs,
+            pagination: savedJobsResponse.pagination,
+          ),
+        );
+      } else {
+        debugPrint('🔴 [JobsBloc] Failed to load saved jobs: ${savedJobsResponse.message}');
+        emit(JobsError(
+          message: savedJobsResponse.message.isNotEmpty
+              ? savedJobsResponse.message
+              : 'Failed to load saved jobs',
+        ));
+      }
     } catch (e) {
-      emit(JobsError(message: 'Failed to load saved jobs: ${e.toString()}'));
+      debugPrint('🔴 [JobsBloc] Error loading saved jobs: $e');
+      
+      // Check if it's an authentication error
+      final errorMessage = e.toString();
+      if (errorMessage.contains('User must be logged in') ||
+          errorMessage.contains('Unauthorized') ||
+          errorMessage.contains('No token provided')) {
+        debugPrint('ℹ️ [JobsBloc] User not authenticated, using mock data as fallback');
+        // Use mock data as fallback when user is not authenticated
+        final savedJobs = JobData.savedJobs;
+
+        emit(
+          SavedJobsLoaded(
+            savedJobs: savedJobs,
+          ),
+        );
+      } else {
+        emit(JobsError(message: 'Failed to load saved jobs: ${e.toString()}'));
+      }
     }
   }
 
@@ -609,13 +802,22 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   }
 
   /// Handle toggle job bookmark
-  void _onToggleJobBookmark(
+  Future<void> _onToggleJobBookmark(
     ToggleJobBookmarkEvent event,
     Emitter<JobsState> emit,
-  ) {
+  ) async {
     try {
       final isCurrentlyBookmarked = UserData.savedJobIds.contains(event.jobId);
 
+      if (isCurrentlyBookmarked) {
+        // Call unsave job API
+        add(UnsaveJobEvent(jobId: event.jobId));
+      } else {
+        // Call save job API
+        add(SaveJobEvent(jobId: event.jobId));
+      }
+
+      // Update local state immediately for better UX
       if (isCurrentlyBookmarked) {
         UserData.savedJobIds.remove(event.jobId);
       } else {
@@ -629,6 +831,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         ),
       );
     } catch (e) {
+      debugPrint('🔴 [JobsBloc] Error toggling bookmark: $e');
       emit(JobsError(message: 'Failed to toggle bookmark: ${e.toString()}'));
     }
   }

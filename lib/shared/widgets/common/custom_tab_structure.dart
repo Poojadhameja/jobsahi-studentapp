@@ -70,14 +70,21 @@ class _CustomTabStructureState extends State<CustomTabStructure>
   /// Builds the tab bar
   Widget _buildTabBar() {
     return Container(
-      color: AppConstants.cardBackgroundColor,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: AppConstants.primaryColor,
-        unselectedLabelColor: AppConstants.textSecondaryColor,
-        indicatorColor: AppConstants.primaryColor,
-        indicatorWeight: 3,
-        tabs: widget.tabs.map((tab) => Tab(text: tab.title)).toList(),
+      decoration: const BoxDecoration(
+        color: AppConstants.cardBackgroundColor,
+        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8.0), // Gap between underline and border
+        child: TabBar(
+          controller: _tabController,
+          labelColor: AppConstants.primaryColor,
+          unselectedLabelColor: AppConstants.textSecondaryColor,
+          indicatorColor: AppConstants.primaryColor,
+          indicatorWeight: 3,
+          dividerColor: Colors.transparent, // Remove default divider
+          tabs: widget.tabs.map((tab) => Tab(text: tab.title)).toList(),
+        ),
       ),
     );
   }
