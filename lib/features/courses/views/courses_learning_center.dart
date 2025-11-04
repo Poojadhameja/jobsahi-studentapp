@@ -54,15 +54,27 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
                 Column(
                   children: [
                     Expanded(
-                      child: CustomTabStructure(
-                        tabs: const [
-                          TabConfig(title: 'All Courses'),
-                          TabConfig(title: 'Saved Courses'),
-                        ],
-                        tabContents: [
-                          _buildLearningCenterTab(context, state),
-                          const SavedCoursesPage(),
-                        ],
+                      child: DefaultTabController(
+                        length: 2,
+                        child: Builder(
+                          builder: (innerContext) {
+                            return CustomTabStructure(
+                              tabs: const [
+                                TabConfig(title: 'All Courses'),
+                                TabConfig(title: 'Saved Courses'),
+                              ],
+                              tabContents: [
+                                _buildLearningCenterTab(innerContext, state),
+                                SavedCoursesPage(
+                                  onBrowseAll: () {
+                                    final c = DefaultTabController.maybeOf(innerContext);
+                                    c?.animateTo(0);
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ],

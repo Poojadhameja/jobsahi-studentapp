@@ -9,6 +9,7 @@ abstract class CoursesRepository {
   Future<void> saveCourse(String courseId);
   Future<void> unsaveCourse(String courseId);
   Future<void> enrollInCourse(String courseId);
+  Future<SavedCoursesResult> getSavedCourses({int limit = 20, int offset = 0});
 }
 
 /// Courses Repository Implementation
@@ -110,14 +111,53 @@ class CoursesRepositoryImpl implements CoursesRepository {
 
   @override
   Future<void> saveCourse(String courseId) async {
-    // TODO: Implement save course API call when endpoint is available
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final id = int.tryParse(courseId);
+      if (id == null) throw Exception('Invalid course ID');
+
+      final response = await _apiService.saveCourse(courseId: id);
+      if (response.statusCode == 200) {
+        final json = response.data as Map<String, dynamic>;
+        final status = json['status'] == true;
+        if (!status) {
+          // Treat already saved as non-fatal success for idempotency
+          final alreadySaved = (json['already_saved'] == true) ||
+              (json['message']?.toString().toLowerCase().contains('already saved') ?? false);
+          if (!alreadySaved) {
+            throw Exception(json['message']?.toString() ?? 'Failed to save course');
+          }
+        }
+      } else {
+        throw Exception('Failed to save course: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
   Future<void> unsaveCourse(String courseId) async {
-    // TODO: Implement unsave course API call when endpoint is available
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final id = int.tryParse(courseId);
+      if (id == null) throw Exception('Invalid course ID');
+
+      final response = await _apiService.unsaveCourse(courseId: id);
+      if (response.statusCode == 200) {
+        final json = response.data as Map<String, dynamic>;
+        final status = json['status'] == true;
+        if (!status) {
+          // Treat not-saved as non-fatal success for idempotency
+          final notSaved = (json['message']?.toString().toLowerCase().contains("not saved") ?? false);
+          if (!notSaved) {
+            throw Exception(json['message']?.toString() ?? 'Failed to unsave course');
+          }
+        }
+      } else {
+        throw Exception('Failed to unsave course: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
@@ -125,4 +165,56 @@ class CoursesRepositoryImpl implements CoursesRepository {
     // TODO: Implement enroll in course API call when endpoint is available
     await Future.delayed(const Duration(seconds: 2));
   }
+
+  @override
+  Future<SavedCoursesResult> getSavedCourses({int limit = 20, int offset = 0}) async {
+    try {
+      final response = await _apiService.getSavedCourses(limit: limit, offset: offset);
+      if (response.statusCode == 200) {
+        final json = response.data as Map<String, dynamic>;
+        if (json['status'] == true) {
+          final List<dynamic> data = json['data'] ?? [];
+          final List<Map<String, dynamic>> courses = data.map((item) {
+            final map = Map<String, dynamic>.from(item as Map);
+            // Normalize to UI map
+            return <String, dynamic>{
+              'id': (map['course_id'] ?? '').toString(),
+              'title': map['title'] ?? map['course_title'] ?? '',
+              'description': map['description'] ?? '',
+              'duration': map['duration']?.toString() ?? '',
+              'mode': map['mode']?.toString() ?? '',
+              'fee': map['fee'],
+              'status': map['status']?.toString() ?? '',
+              'course_created_at': map['course_created_at']?.toString() ?? '',
+              'saved_at': map['saved_at']?.toString() ?? '',
+              'category': map['category_name']?.toString() ?? '',
+              'institute': map['institute_name']?.toString() ?? '',
+              'isSaved': true,
+            };
+          }).toList();
+
+          final ids = data
+              .map((item) => (item['course_id'] ?? '').toString())
+              .where((id) => id.isNotEmpty)
+              .toSet();
+
+          return SavedCoursesResult(courses: courses, savedCourseIds: ids);
+        } else {
+          throw Exception(json['message']?.toString() ?? 'Failed to load saved courses');
+        }
+      } else {
+        throw Exception('Failed to load saved courses: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+}
+
+/// Result for saved courses fetch
+class SavedCoursesResult {
+  final List<Map<String, dynamic>> courses;
+  final Set<String> savedCourseIds;
+
+  SavedCoursesResult({required this.courses, required this.savedCourseIds});
 }

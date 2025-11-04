@@ -30,25 +30,39 @@ class CustomTabStructure extends StatefulWidget {
 
 class _CustomTabStructureState extends State<CustomTabStructure>
     with TickerProviderStateMixin {
-  late TabController _tabController;
+  TabController? _tabController;
+  bool _ownsController = false;
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: widget.tabs.length, vsync: this);
-    _tabController.addListener(_onTabChanged);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Prefer an ambient DefaultTabController if available so external callers can control tabs
+    final ambient = DefaultTabController.maybeOf(context);
+    if (_tabController == null) {
+      if (ambient != null) {
+        _tabController = ambient;
+        _tabController!.addListener(_onTabChanged);
+        _ownsController = false;
+      } else {
+        _tabController = TabController(length: widget.tabs.length, vsync: this);
+        _tabController!.addListener(_onTabChanged);
+        _ownsController = true;
+      }
+    }
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
+    _tabController?.removeListener(_onTabChanged);
+    if (_ownsController) {
+      _tabController?.dispose();
+    }
     super.dispose();
   }
 
   void _onTabChanged() {
-    if (_tabController.indexIsChanging) {
-      widget.onTabChanged?.call(_tabController.index);
+    if (_tabController != null && _tabController!.indexIsChanging) {
+      widget.onTabChanged?.call(_tabController!.index);
     }
   }
 

@@ -15,18 +15,20 @@ import '../bloc/courses_state.dart';
 import '../../../core/di/injection_container.dart';
 
 class SavedCoursesPage extends StatelessWidget {
-  const SavedCoursesPage({super.key});
+  final VoidCallback? onBrowseAll;
+  const SavedCoursesPage({super.key, this.onBrowseAll});
 
   @override
   Widget build(BuildContext context) {
     // Use existing bloc from context - don't create a new one
     // This ensures saved courses state is shared across the app
-    return const _SavedCoursesPageView();
+    return _SavedCoursesPageView(onBrowseAll: onBrowseAll);
   }
 }
 
 class _SavedCoursesPageView extends StatelessWidget {
-  const _SavedCoursesPageView();
+  final VoidCallback? onBrowseAll;
+  const _SavedCoursesPageView({this.onBrowseAll});
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +83,13 @@ class _SavedCoursesPageView extends StatelessWidget {
             const SizedBox(height: AppConstants.largePadding),
             ElevatedButton(
               onPressed: () {
-                // Switch to Learning Center tab
-                DefaultTabController.of(context).animateTo(0);
+                // Prefer parent-provided callback (has correct controller context)
+                if (onBrowseAll != null) {
+                  onBrowseAll!();
+                } else {
+                  final controller = DefaultTabController.maybeOf(context);
+                  controller?.animateTo(0);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppConstants.primaryColor,

@@ -43,12 +43,30 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
       final courses = await _coursesRepository.getCourses();
 
       // Convert API courses to UI format
-      final allCourses = courses.map((course) => course.toUIMap()).toList();
+      var allCourses = courses.map((course) => course.toUIMap()).toList();
 
-      // Initialize empty saved and enrolled courses (will be managed by API when endpoints are available)
-      final savedCourses = <Map<String, dynamic>>[];
+      // Fetch saved courses and hydrate saved flags
+      Set<String> savedCourseIds = <String>{};
+      List<Map<String, dynamic>> savedCourses = <Map<String, dynamic>>[];
+      try {
+        final saved = await _coursesRepository.getSavedCourses();
+        savedCourseIds = saved.savedCourseIds;
+        savedCourses = saved.courses;
+      } catch (e) {
+        debugPrint('⚠️ Failed to load saved courses: $e');
+      }
+
+      // Mark isSaved on allCourses using savedCourseIds
+      allCourses = allCourses.map((c) {
+        final id = c['id']?.toString();
+        if (id != null && savedCourseIds.contains(id)) {
+          return {...c, 'isSaved': true};
+        }
+        return {...c, 'isSaved': c['isSaved'] == true};
+      }).toList();
+
+      // Initialize enrolled placeholders (no API yet)
       final enrolledCourses = <Map<String, dynamic>>[];
-      final savedCourseIds = <String>{};
       final enrolledCourseIds = <String>{};
 
       emit(
@@ -330,12 +348,9 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       emit(const CoursesLoading());
 
-      // TODO: Implement saved courses API call when endpoint is available
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      // For now, return empty saved courses
-      final savedCourses = <Map<String, dynamic>>[];
-      final savedCourseIds = <String>{};
+      final saved = await _coursesRepository.getSavedCourses();
+      final savedCourses = saved.courses;
+      final savedCourseIds = saved.savedCourseIds;
 
       emit(
         CoursesLoaded(

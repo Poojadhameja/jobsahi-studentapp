@@ -440,6 +440,49 @@ extension CoursesApi on ApiService {
       throw Exception('Failed to fetch courses: ${e.toString()}');
     }
   }
+
+  /// Save a course
+  Future<Response> saveCourse({required int courseId}) async {
+    try {
+      return await post(
+        '/courses/save_course.php',
+        data: {
+          'course_id': courseId,
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Unsave a course
+  Future<Response> unsaveCourse({required int courseId}) async {
+    try {
+      return await post(
+        '/courses/unsave_course.php',
+        data: {
+          'course_id': courseId,
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get saved courses
+  Future<Response> getSavedCourses({int limit = 20, int offset = 0}) async {
+    try {
+      return await get(
+        '/student/get_saved_courses.php',
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 /// Jobs API methods

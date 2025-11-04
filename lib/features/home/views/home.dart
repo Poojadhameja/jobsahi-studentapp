@@ -327,6 +327,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   'Save jobs to view them here',
                   style: TextStyle(color: AppConstants.textSecondaryColor),
                 ),
+                const SizedBox(height: AppConstants.defaultPadding),
+                ElevatedButton(
+                  onPressed: () {
+                    // Slide to All Jobs tab (index 0)
+                    tabController.animateTo(0);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Browse Jobs'),
+                ),
               ],
             ),
           );
