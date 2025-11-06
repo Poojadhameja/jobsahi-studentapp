@@ -8,6 +8,7 @@ class ProfileHeaderCard extends StatelessWidget {
   final String email;
   final String? location;
   final String? profileImagePath;
+  final String? bio;
   final VoidCallback? onTap;
   final bool showEditButton;
   final VoidCallback? onEditPressed;
@@ -19,6 +20,7 @@ class ProfileHeaderCard extends StatelessWidget {
     required this.email,
     this.location,
     this.profileImagePath,
+    this.bio,
     this.onTap,
     this.showEditButton = false,
     this.onEditPressed,
@@ -27,6 +29,8 @@ class ProfileHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasBio = bio != null && bio!.trim().isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -67,8 +71,8 @@ class ProfileHeaderCard extends StatelessWidget {
                     Stack(
                       children: [
                         Container(
-                          width: isCompact ? 60 : 80,
-                          height: isCompact ? 60 : 80,
+                          width: isCompact ? 48 : 60,
+                          height: isCompact ? 48 : 60,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 3),
@@ -81,15 +85,15 @@ class ProfileHeaderCard extends StatelessWidget {
                             ],
                           ),
                           child: CircleAvatar(
-                            radius: isCompact ? 27 : 37,
+                            radius: isCompact ? 20 : 26,
                             backgroundColor: Colors.white,
                             child: profileImagePath != null
                                 ? ClipOval(
                                     child: Image.asset(
                                       profileImagePath!,
                                       fit: BoxFit.cover,
-                                      width: isCompact ? 54 : 74,
-                                      height: isCompact ? 54 : 74,
+                                      width: isCompact ? 40 : 52,
+                                      height: isCompact ? 40 : 52,
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                             return _buildDefaultProfileImage(
@@ -103,11 +107,11 @@ class ProfileHeaderCard extends StatelessWidget {
                         ),
                         // Online Status Indicator
                         Positioned(
-                          bottom: 5,
-                          right: 5,
+                          bottom: 4,
+                          right: 4,
                           child: Container(
-                            width: isCompact ? 16 : 20,
-                            height: isCompact ? 16 : 20,
+                            width: isCompact ? 10 : 14,
+                            height: isCompact ? 10 : 14,
                             decoration: BoxDecoration(
                               color: AppConstants.successColor,
                               shape: BoxShape.circle,
@@ -128,7 +132,7 @@ class ProfileHeaderCard extends StatelessWidget {
                             name,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: isCompact ? 18 : 22,
+                              fontSize: isCompact ? 16 : 20,
                               fontWeight: FontWeight.bold,
                             ),
                             maxLines: 1,
@@ -139,7 +143,7 @@ class ProfileHeaderCard extends StatelessWidget {
                             email,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: isCompact ? 14 : 16,
+                              fontSize: isCompact ? 12 : 14,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -151,7 +155,7 @@ class ProfileHeaderCard extends StatelessWidget {
                                 Icon(
                                   Icons.location_on,
                                   color: Colors.white.withValues(alpha: 0.8),
-                                  size: isCompact ? 14 : 16,
+                                  size: isCompact ? 12 : 14,
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
@@ -161,7 +165,7 @@ class ProfileHeaderCard extends StatelessWidget {
                                       color: Colors.white.withValues(
                                         alpha: 0.8,
                                       ),
-                                      fontSize: isCompact ? 12 : 14,
+                                      fontSize: isCompact ? 11 : 13,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -185,7 +189,7 @@ class ProfileHeaderCard extends StatelessWidget {
                 ),
 
                 // Bio Section (only for non-compact mode)
-                if (!isCompact) ...[
+                if (!isCompact && hasBio) ...[
                   const SizedBox(height: AppConstants.defaultPadding),
                   Container(
                     width: double.infinity,
@@ -196,15 +200,29 @@ class ProfileHeaderCard extends StatelessWidget {
                         AppConstants.smallBorderRadius,
                       ),
                     ),
-                    child: Text(
-                      'Passionate about technology and innovation. Always learning and growing.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Profile Brief',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          bio!.trim(),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -221,7 +239,7 @@ class ProfileHeaderCard extends StatelessWidget {
       color: AppConstants.backgroundColor,
       child: Icon(
         Icons.person,
-        size: isCompact ? 30 : 40,
+        size: isCompact ? 22 : 30,
         color: AppConstants.textSecondaryColor,
       ),
     );

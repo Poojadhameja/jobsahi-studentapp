@@ -147,14 +147,31 @@ class ProfessionalInfo {
   });
 
   factory ProfessionalInfo.fromJson(Map<String, dynamic> json) {
+    // Handle experience field - can be either List or Object
+    List<Experience> experienceList = [];
+    final experienceData = json['experience'];
+
+    if (experienceData != null) {
+      if (experienceData is List) {
+        // If it's already a list, parse it directly
+        experienceList = experienceData
+            .map((exp) => Experience.fromJson(exp as Map<String, dynamic>))
+            .toList();
+      } else if (experienceData is Map<String, dynamic>) {
+        // If it's an object with 'details' field, extract the details array
+        final details = experienceData['details'];
+        if (details is List && details.isNotEmpty) {
+          experienceList = details
+              .map((exp) => Experience.fromJson(exp as Map<String, dynamic>))
+              .toList();
+        }
+      }
+    }
+
     return ProfessionalInfo(
       skills: json['skills'] ?? '',
       education: json['education'] ?? '',
-      experience:
-          (json['experience'] as List<dynamic>?)
-              ?.map((exp) => Experience.fromJson(exp))
-              .toList() ??
-          [],
+      experience: experienceList,
       projects:
           (json['projects'] as List<dynamic>?)
               ?.map((project) => Project.fromJson(project))
@@ -286,4 +303,3 @@ class StudentProfileMeta {
     );
   }
 }
-

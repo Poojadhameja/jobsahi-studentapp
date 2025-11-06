@@ -145,6 +145,9 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
   /// Profile Header Section
   Widget _buildProfileHeader(BuildContext context, ProfileDetailsLoaded state) {
     final user = state.userProfile;
+    final rawBio = user['bio'];
+    final String? profileBio =
+        rawBio is String && rawBio.trim().isNotEmpty ? rawBio.trim() : null;
 
     return Container(
       width: double.infinity,
@@ -202,8 +205,8 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
               Stack(
                 children: [
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 76,
+                    height: 76,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
@@ -216,15 +219,15 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                       ],
                     ),
                     child: CircleAvatar(
-                      radius: 47,
+                      radius: 32,
                       backgroundColor: Colors.white,
                       child: state.profileImagePath != null
                           ? ClipOval(
                               child: Image.asset(
                                 state.profileImagePath!,
                                 fit: BoxFit.cover,
-                                width: 94,
-                                height: 94,
+                                width: 64,
+                                height: 64,
                                 errorBuilder: (context, error, stackTrace) {
                                   return _buildDefaultProfileImage();
                                 },
@@ -235,11 +238,11 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                   ),
                   // Online Status Indicator
                   Positioned(
-                    bottom: 5,
-                    right: 5,
+                    bottom: 4,
+                    right: 4,
                     child: Container(
-                      width: 20,
-                      height: 20,
+                      width: 12,
+                      height: 12,
                       decoration: BoxDecoration(
                         color: AppConstants.successColor,
                         shape: BoxShape.circle,
@@ -259,7 +262,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                     user['name'] ?? 'User Name',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -269,7 +272,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                     user['email'] ?? 'user@email.com',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -280,14 +283,14 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                       Icon(
                         Icons.location_on,
                         color: Colors.white.withValues(alpha: 0.8),
-                        size: 16,
+                        size: 14,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         user['location'] ?? 'Location not set',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                       ),
                     ],
@@ -295,7 +298,43 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: AppConstants.largePadding),
+              if (profileBio != null) ...[
+                const SizedBox(height: AppConstants.defaultPadding),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.smallBorderRadius,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Profile Brief',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        profileBio,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: AppConstants.defaultPadding),
             ],
           ),
         ),
@@ -756,7 +795,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
       color: AppConstants.backgroundColor,
       child: const Icon(
         Icons.person,
-        size: 50,
+        size: 36,
         color: AppConstants.textSecondaryColor,
       ),
     );

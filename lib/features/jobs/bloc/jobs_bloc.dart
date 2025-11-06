@@ -9,6 +9,7 @@ import '../../../shared/services/api_service.dart';
 import '../repositories/jobs_repository.dart';
 import '../models/job.dart';
 import '../models/job_detail_models.dart';
+import '../../profile/models/student_profile.dart';
 
 /// Jobs BLoC
 /// Handles all job-related business logic
@@ -938,30 +939,64 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   }
 
   /// Handle load job application form
-  void _onLoadJobApplicationForm(
+  Future<void> _onLoadJobApplicationForm(
     LoadJobApplicationFormEvent event,
     Emitter<JobsState> emit,
-  ) {
+  ) async {
     try {
-      // Load user data and existing resume
-      final formData = {
-        'name': 'Rahul Kumar',
-        'email': 'rahul.kumar@email.com',
-        'phone': '+91 98765 43210',
+      final fallbackUser = UserData.currentUser;
+      final formData = <String, String>{
+        'name': fallbackUser['name']?.toString() ?? '',
+        'email': fallbackUser['email']?.toString() ?? '',
+        'phone': fallbackUser['phone']?.toString() ?? '',
       };
+      PlatformFile? resumeFile;
 
-      // Mock existing resume file
-      final existingResume = PlatformFile(
-        name: 'Rahul_Kumar_Resume_CV.pdf',
-        size: 398336, // 389 KB
-        path: '/path/to/existing/resume_cv.pdf',
-      );
+      try {
+        final profileResponse = await _apiService.getStudentProfile();
+        final profiles = profileResponse.data.profiles;
+
+        if (profiles.isNotEmpty) {
+          StudentProfile selectedProfile = profiles.first;
+          final fallbackId = fallbackUser['id']?.toString();
+          if (fallbackId != null && fallbackId.isNotEmpty) {
+            final matchingProfile = profiles.firstWhere(
+              (profile) => profile.userId.toString() == fallbackId,
+              orElse: () => selectedProfile,
+            );
+            selectedProfile = matchingProfile;
+          }
+
+          final personalInfo = selectedProfile.personalInfo;
+          if (personalInfo.userName.isNotEmpty) {
+            formData['name'] = personalInfo.userName;
+          }
+          if (personalInfo.email.isNotEmpty) {
+            formData['email'] = personalInfo.email;
+          }
+          if (personalInfo.phoneNumber.isNotEmpty) {
+            formData['phone'] = personalInfo.phoneNumber;
+          }
+
+          final resumePath = selectedProfile.documents.resume;
+          if (resumePath.isNotEmpty) {
+            final resumeName = resumePath.split('/').last;
+            resumeFile = PlatformFile(
+              name: resumeName,
+              size: 0,
+              path: resumePath,
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ [Jobs] Failed to load profile for job application: $e');
+      }
 
       emit(
         JobApplicationFormLoaded(
           job: event.job,
           formData: formData,
-          resumeFile: existingResume,
+          resumeFile: resumeFile,
         ),
       );
     } catch (e) {

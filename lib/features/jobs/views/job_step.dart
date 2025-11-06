@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../core/di/injection_container.dart';
+import '../../../shared/data/user_data.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -65,12 +66,32 @@ class _JobStepScreenViewState extends State<_JobStepScreenView> {
 
   /// Initialize controllers with BLoC state data
   void _initializeControllers() {
+    final fallbackUser = UserData.currentUser;
+    _nameController.text = fallbackUser['name']?.toString() ?? '';
+    _emailController.text = fallbackUser['email']?.toString() ?? '';
+    _phoneController.text = fallbackUser['phone']?.toString() ?? '';
+
     final state = context.read<JobsBloc>().state;
     if (state is JobApplicationFormLoaded) {
-      _nameController.text = state.formData['name'] ?? '';
-      _emailController.text = state.formData['email'] ?? '';
-      _phoneController.text = state.formData['phone'] ?? '';
+      _applyFormData(state.formData);
     }
+  }
+
+  void _applyFormData(Map<String, String> formData) {
+    final name = formData['name'] ?? '';
+    final email = formData['email'] ?? '';
+    final phone = formData['phone'] ?? '';
+
+    if (_nameController.text != name) {
+      _nameController.text = name;
+    }
+    if (_emailController.text != email) {
+      _emailController.text = email;
+    }
+    if (_phoneController.text != phone) {
+      _phoneController.text = phone;
+    }
+
   }
 
   @override
@@ -93,6 +114,8 @@ class _JobStepScreenViewState extends State<_JobStepScreenView> {
               backgroundColor: AppConstants.warningColor,
             ),
           );
+        } else if (state is JobApplicationFormLoaded) {
+          _applyFormData(state.formData);
         }
       },
       child: BlocBuilder<JobsBloc, JobsState>(

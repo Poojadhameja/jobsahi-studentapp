@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
 import '../../../shared/data/user_data.dart';
@@ -53,158 +54,16 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   ) async {
     try {
       emit(const ProfileLoading());
-
-      // Try to fetch from API first
-      try {
-        final apiService = ApiService();
-        final studentProfileResponse = await apiService.getStudentProfile();
-
-        if (studentProfileResponse.success &&
-            studentProfileResponse.data.profiles.isNotEmpty) {
-          final profile = studentProfileResponse.data.profiles.first;
-
-          // Convert API data to UI format
-          final userProfile = {
-            'id': profile.userId.toString(),
-            'name': profile.personalInfo.userName,
-            'email': profile.personalInfo.email,
-            'phone': profile.personalInfo.phoneNumber,
-            'location': profile.personalInfo.location,
-            'gender': profile.personalInfo.gender,
-            'dateOfBirth': profile.personalInfo.dateOfBirth,
-            'bio': profile.additionalInfo.bio,
-            'profileImage': null, // Will be handled separately
-            'portfolioLink': profile.socialLinks.portfolioLink,
-            'linkedinUrl': profile.socialLinks.linkedinUrl,
-            'aadharNumber': profile.documents.aadharNumber,
-            'languages': profile.professionalInfo.languages,
-            'jobType': profile.professionalInfo.jobType,
-            'trade': profile.professionalInfo.trade,
-            'graduationYear': profile.professionalInfo.graduationYear,
-            'cgpa': profile.professionalInfo.cgpa,
-          };
-
-          // Parse skills from comma-separated string
-          final skills = profile.professionalInfo.skills
-              .split(',')
-              .map((skill) => skill.trim())
-              .where((skill) => skill.isNotEmpty)
-              .toList();
-
-          // Convert experience data
-          final experience = profile.professionalInfo.experience
-              .map(
-                (exp) => {
-                  'company': exp.company,
-                  'position': exp.role,
-                  'startDate': exp.duration.split(' - ').first,
-                  'endDate': exp.duration.split(' - ').length > 1
-                      ? exp.duration.split(' - ').last
-                      : 'Present',
-                  'description': exp.description,
-                },
-              )
-              .toList();
-
-          // Convert education data
-          final education = [
-            {
-              'qualification': profile.professionalInfo.education,
-              'institute': 'Not specified',
-              'course': profile.professionalInfo.trade,
-              'passingYear': profile.professionalInfo.graduationYear,
-              'cgpa': profile.professionalInfo.cgpa,
-            },
-          ];
-
-          // Job preferences
-          final jobPreferences = {
-            'preferredJobTypes': [profile.professionalInfo.jobType],
-            'preferredLocation': profile.personalInfo.location,
-            'expectedSalary': 'Not specified',
-          };
-
-          // Initialize section expansion states (all collapsed by default)
-          final sectionExpansionStates = {
-            'profile': false,
-            'summary': false,
-            'education': false,
-            'skills': false,
-            'experience': false,
-            'certificates': false,
-            'resume': false,
-          };
-
-          // Convert documents to certificates format
-          final certificates = <Map<String, dynamic>>[];
-          if (profile.documents.resume.isNotEmpty) {
-            certificates.add({
-              'name': 'Resume.pdf',
-              'type': 'Resume',
-              'uploadDate': 'Recent',
-              'size': 0,
-              'extension': 'pdf',
-            });
-          }
-          if (profile.documents.certificates.isNotEmpty) {
-            certificates.add({
-              'name': 'Certificates.zip',
-              'type': 'Certificate',
-              'uploadDate': 'Recent',
-              'size': 0,
-              'extension': 'zip',
-            });
-          }
-
-          emit(
-            ProfileDetailsLoaded(
-              userProfile: userProfile,
-              skills: skills,
-              education: education,
-              experience: experience,
-              jobPreferences: jobPreferences,
-              sectionExpansionStates: sectionExpansionStates,
-              certificates: certificates,
-              profileImagePath: null,
-              profileImageName: null,
-              resumeFileName: profile.documents.resume.isNotEmpty
-                  ? 'Resume.pdf'
-                  : null,
-              lastResumeUpdatedDate: profile.status.modifiedAt,
-              resumeFileSize: 0,
-            ),
-          );
-          return;
-        }
-      } catch (e) {
-        // If API fails, fall back to mock data
-        print('API call failed, using mock data: $e');
-      }
-
-      // Fallback to mock data if API fails
-      final userProfile = UserData.currentUser;
-      final skills = List<String>.from(UserData.currentUser['skills'] ?? []);
-      final education = <Map<String, dynamic>>[]; // Empty for now
-      final experience = <Map<String, dynamic>>[]; // Empty for now
-      final jobPreferences = {
+      var userProfile = Map<String, dynamic>.from(UserData.currentUser);
+      var skills = List<String>.from(UserData.currentUser['skills'] ?? []);
+      var education = <Map<String, dynamic>>[];
+      var experience = <Map<String, dynamic>>[];
+      var jobPreferences = <String, dynamic>{
         'preferredJobTypes': UserData.currentUser['preferredJobTypes'] ?? [],
         'preferredLocation': UserData.currentUser['preferredLocation'] ?? '',
         'expectedSalary': UserData.currentUser['expectedSalary'] ?? '',
       };
-
-      // Initialize section expansion states (all collapsed by default)
-      final sectionExpansionStates = {
-        'profile': false,
-        'summary': false,
-        'education': false,
-        'skills': false,
-        'experience': false,
-        'certificates': false,
-        'resume': false,
-      };
-
-      // Initialize certificates
-      final certificates = [
+      var certificates = <Map<String, dynamic>>[
         {
           'name': 'ITI Certificate.pdf',
           'type': 'Certificate',
@@ -227,6 +86,158 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           'extension': 'jpg',
         },
       ];
+      String? profileImagePath = userProfile['profileImage'] as String?;
+      String? profileImageName = 'profile_photo.jpg';
+      String? resumeFileName = userProfile['resume_file_name'] as String?;
+      String? lastResumeUpdatedDate =
+          userProfile['resume_last_updated'] as String?;
+      final resumeFileSizeRaw = userProfile['resume_file_size'];
+      var resumeFileSize = 0;
+      if (resumeFileSizeRaw is num) {
+        resumeFileSize = resumeFileSizeRaw.toInt();
+      } else if (resumeFileSizeRaw is String) {
+        final parsedSize = int.tryParse(resumeFileSizeRaw);
+        if (parsedSize != null) {
+          resumeFileSize = parsedSize;
+        }
+      }
+      var loadedFromApi = false;
+
+      try {
+        final apiService = ApiService();
+        debugPrint('🔵 [ProfileBloc] Calling getStudentProfile API...');
+        final studentProfileResponse = await apiService.getStudentProfile();
+        final profiles = studentProfileResponse.data.profiles;
+
+        if (profiles.isNotEmpty) {
+          final StudentProfile profile = profiles.first;
+
+          debugPrint(
+            '🔵 [ProfileBloc] Profile fetched for user_id: ${profile.userId}',
+          );
+
+          final parsedSkills = profile.professionalInfo.skills
+              .split(',')
+              .map((skill) => skill.trim())
+              .where((skill) => skill.isNotEmpty)
+              .toList();
+
+          final parsedExperience = profile.professionalInfo.experience
+              .map(
+                (exp) => {
+                  'company': exp.company,
+                  'position': exp.role,
+                  'startDate': exp.duration.split(' - ').first,
+                  'endDate': exp.duration.split(' - ').length > 1
+                      ? exp.duration.split(' - ').last
+                      : 'Present',
+                  'description': exp.description,
+                },
+              )
+              .toList();
+
+          final parsedEducation = <Map<String, dynamic>>[
+            {
+              'qualification': profile.professionalInfo.education,
+              'institute': 'Not specified',
+              'course': profile.professionalInfo.trade,
+              'passingYear': profile.professionalInfo.graduationYear,
+              'cgpa': profile.professionalInfo.cgpa,
+            },
+          ];
+
+          final jobType = profile.professionalInfo.jobType;
+          final normalizedJobTypes =
+              jobType.isNotEmpty ? <String>[jobType] : <String>[];
+
+          final resumePath = profile.documents.resume;
+          resumeFileName =
+              resumePath.isNotEmpty ? resumePath.split('/').last : null;
+          lastResumeUpdatedDate = profile.status.modifiedAt;
+          resumeFileSize = 0;
+
+          certificates = [];
+          if (resumePath.isNotEmpty) {
+            certificates.add({
+              'name': resumeFileName ?? 'Resume.pdf',
+              'type': 'Resume',
+              'uploadDate': profile.status.modifiedAt,
+              'size': 0,
+              'extension': (resumeFileName ?? 'pdf').split('.').last,
+              'path': resumePath,
+            });
+          }
+
+          final certificatePath = profile.documents.certificates;
+          if (certificatePath.isNotEmpty) {
+            final certificateName = certificatePath.split('/').last;
+            certificates.add({
+              'name': certificateName,
+              'type': 'Certificate',
+              'uploadDate': profile.status.modifiedAt,
+              'size': 0,
+              'extension': certificateName.split('.').last,
+              'path': certificatePath,
+            });
+          }
+
+          userProfile = {
+            'id': profile.userId.toString(),
+            'name': profile.personalInfo.userName,
+            'email': profile.personalInfo.email,
+            'phone': profile.personalInfo.phoneNumber,
+            'location': profile.personalInfo.location,
+            'gender': profile.personalInfo.gender,
+            'dateOfBirth': profile.personalInfo.dateOfBirth,
+            'bio': profile.additionalInfo.bio,
+            'profileImage': null,
+            'portfolioLink': profile.socialLinks.portfolioLink,
+            'linkedinUrl': profile.socialLinks.linkedinUrl,
+            'aadharNumber': profile.documents.aadharNumber,
+            'languages': profile.professionalInfo.languages,
+            'jobType': profile.professionalInfo.jobType,
+            'trade': profile.professionalInfo.trade,
+            'graduationYear': profile.professionalInfo.graduationYear,
+            'cgpa': profile.professionalInfo.cgpa,
+          };
+
+          skills = parsedSkills;
+          experience = parsedExperience;
+          education = parsedEducation;
+          jobPreferences = {
+            'preferredJobTypes': normalizedJobTypes,
+            'preferredLocation': profile.personalInfo.location,
+            'expectedSalary': 'Not specified',
+          };
+          profileImagePath = null;
+          profileImageName = null;
+
+          debugPrint('✅ [ProfileBloc] Profile data loaded successfully from API');
+          debugPrint('🔵 [ProfileBloc] Skills count: ${skills.length}');
+          debugPrint('🔵 [ProfileBloc] Experience count: ${experience.length}');
+          loadedFromApi = true;
+        } else {
+          debugPrint('⚠️ [ProfileBloc] API returned an empty profile list');
+        }
+      } catch (e, stackTrace) {
+        debugPrint('🔴 [ProfileBloc] API call failed, using fallback data');
+        debugPrint('🔴 [ProfileBloc] Error: $e');
+        debugPrint('🔴 [ProfileBloc] StackTrace: $stackTrace');
+      }
+
+      final sectionExpansionStates = {
+        'profile': false,
+        'summary': false,
+        'education': false,
+        'skills': false,
+        'experience': false,
+        'certificates': false,
+        'resume': false,
+      };
+
+      if (!loadedFromApi) {
+        debugPrint('⚠️ [ProfileBloc] Loading mock/dummy data as fallback');
+      }
 
       emit(
         ProfileDetailsLoaded(
@@ -237,11 +248,11 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           jobPreferences: jobPreferences,
           sectionExpansionStates: sectionExpansionStates,
           certificates: certificates,
-          profileImagePath: userProfile['profileImage'],
-          profileImageName: 'profile_photo.jpg',
-          resumeFileName: userProfile['resume_file_name'],
-          lastResumeUpdatedDate: userProfile['resume_last_updated'],
-          resumeFileSize: userProfile['resume_file_size'] ?? 0,
+          profileImagePath: profileImagePath,
+          profileImageName: profileImageName,
+          resumeFileName: resumeFileName,
+          lastResumeUpdatedDate: lastResumeUpdatedDate,
+          resumeFileSize: resumeFileSize,
         ),
       );
     } catch (e) {

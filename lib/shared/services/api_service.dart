@@ -635,106 +635,82 @@ extension StudentProfileApi on ApiService {
   /// Get student profile data
   /// Requires authentication token (Bearer token)
   Future<StudentProfileResponse> getStudentProfile() async {
+    debugPrint('🔵 [StudentProfile] Fetching student profile data');
+
+    // Ensure user has a valid token before making the request
+    final userLoggedIn = await isLoggedIn();
+    if (!userLoggedIn) {
+      debugPrint('🔴 [StudentProfile] User not authenticated');
+      throw Exception('User must be logged in to view profile');
+    }
+
     try {
-      debugPrint('🔵 [StudentProfile] Fetching student profile data');
-
-      // Check if user is authenticated
-      final userLoggedIn = await isLoggedIn();
-      if (!userLoggedIn) {
-        debugPrint('🔴 [StudentProfile] User not authenticated');
-        throw Exception('User must be logged in to view profile');
-      }
-
-      debugPrint('🔵 [StudentProfile] User authenticated, making API call');
-      debugPrint(
-        '🔵 [StudentProfile] Endpoint: ${AppConstants.studentProfileEndpoint}',
-      );
-
       final response = await get(AppConstants.studentProfileEndpoint);
-
       debugPrint(
         '🔵 [StudentProfile] API Response Status: ${response.statusCode}',
-      );
-      debugPrint(
-        '🔵 [StudentProfile] API Response Headers: ${response.headers}',
       );
       debugPrint(
         '🔵 [StudentProfile] API Response Data Type: ${response.data.runtimeType}',
       );
 
-      if (response.statusCode == 200) {
-        final responseData = response.data;
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
 
-        // Handle different response types
-        Map<String, dynamic> jsonData;
-        if (responseData is Map<String, dynamic>) {
-          jsonData = responseData;
-          debugPrint('🔵 [StudentProfile] Response is already a Map');
-        } else if (responseData is String) {
-          debugPrint('🔵 [StudentProfile] Response is String, parsing JSON');
-          try {
-            jsonData = jsonDecode(responseData) as Map<String, dynamic>;
-            debugPrint('🔵 [StudentProfile] JSON parsed successfully');
-          } catch (e) {
-            debugPrint('🔴 [StudentProfile] Failed to parse JSON string: $e');
-            debugPrint('🔴 [StudentProfile] Raw response: $responseData');
-            throw Exception('Invalid response format');
-          }
-        } else {
-          debugPrint(
-            '🔴 [StudentProfile] Unexpected response data type: ${responseData.runtimeType}',
-          );
-          throw Exception('Unexpected response format');
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        try {
+          jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 [StudentProfile] Failed to decode JSON string: $e');
+          throw Exception('Invalid response format from server');
         }
-
-        // Validate response structure
-        if (!jsonData.containsKey('success')) {
-          debugPrint(
-            '🔴 [StudentProfile] Invalid response structure: missing "success" field',
-          );
-          debugPrint('🔴 [StudentProfile] Available keys: ${jsonData.keys}');
-          throw Exception('Invalid response structure: missing success field');
-        }
-
-        if (!jsonData.containsKey('data')) {
-          debugPrint(
-            '🔴 [StudentProfile] Invalid response structure: missing "data" field',
-          );
-          debugPrint('🔴 [StudentProfile] Available keys: ${jsonData.keys}');
-          throw Exception('Invalid response structure: missing data field');
-        }
-
-        // Check if success is true
-        final success = jsonData['success'];
-        if (success == false || success == 'false') {
-          final message = jsonData['message'] ?? 'Unknown error';
-          debugPrint('🔴 [StudentProfile] API returned error: $message');
-          throw Exception(message);
-        }
-
-        debugPrint('🔵 [StudentProfile] Student profile fetched successfully');
-        debugPrint('🔵 [StudentProfile] Response structure validated');
-
-        return StudentProfileResponse.fromJson(jsonData);
       } else {
         debugPrint(
-          '🔴 [StudentProfile] API failed with status: ${response.statusCode}',
+          '🔴 [StudentProfile] Unexpected response type: ${rawData.runtimeType}',
         );
-        debugPrint('🔴 [StudentProfile] Response data: ${response.data}');
-        throw Exception(
-          'Failed to fetch student profile: ${response.statusCode}',
-        );
+        throw Exception('Unexpected response format from server');
       }
+
+      final successFlag = jsonData['success'];
+      final statusFlag = jsonData['status'];
+      final isSuccess = successFlag == true ||
+          successFlag == 'true' ||
+          successFlag == 1 ||
+          statusFlag == true ||
+          statusFlag == 'true' ||
+          statusFlag == 1;
+
+      if (!isSuccess) {
+        final message = jsonData['message']?.toString() ??
+            'Failed to load student profile';
+        debugPrint('🔴 [StudentProfile] API returned failure: $message');
+        throw Exception(message);
+      }
+
+      final dataPayload = jsonData['data'];
+      if (dataPayload is! Map<String, dynamic>) {
+        debugPrint(
+          '🔴 [StudentProfile] Invalid payload: data is ${dataPayload.runtimeType}',
+        );
+        throw Exception('Invalid student profile payload');
+      }
+
+      final metaPayload = jsonData['meta'];
+      final normalized = <String, dynamic>{
+        'success': jsonData['success'] ?? true,
+        'message': jsonData['message'] ?? '',
+        'data': dataPayload,
+        'meta': metaPayload is Map<String, dynamic> ? metaPayload : <String, dynamic>{},
+      };
+
+      final result = StudentProfileResponse.fromJson(normalized);
+      debugPrint('🔵 [StudentProfile] Profiles fetched: '
+          '${result.data.profiles.length}');
+      return result;
     } catch (e) {
       debugPrint('🔴 [StudentProfile] Error fetching student profile: $e');
-      debugPrint('🔴 [StudentProfile] Error type: ${e.runtimeType}');
-
-      // Rethrow with more context if it's not already an Exception
-      if (e is Exception) {
-        rethrow;
-      } else {
-        throw Exception('Unexpected error: ${e.toString()}');
-      }
+      rethrow;
     }
   }
 }

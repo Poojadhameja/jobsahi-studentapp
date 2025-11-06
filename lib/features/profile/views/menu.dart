@@ -8,12 +8,32 @@ import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/loaders/jobsahi_loader.dart';
 import '../../../shared/widgets/profile/profile_header_card.dart';
 import '../../../shared/services/location_service.dart';
+import '../bloc/profile_bloc.dart';
+import '../bloc/profile_event.dart';
+import '../bloc/profile_state.dart';
 import '../../auth/bloc/auth_bloc.dart';
 import '../../auth/bloc/auth_event.dart';
 import '../../auth/bloc/auth_state.dart';
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
+
+  @override
+  State<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Trigger profile load when entering the menu if not already in progress/completed.
+    final profileBloc = context.read<ProfileBloc>();
+    final currentState = profileBloc.state;
+    if (currentState is! ProfileLoading &&
+        currentState is! ProfileDetailsLoaded) {
+      profileBloc.add(const LoadProfileDataEvent());
+    }
+  }
 
   /// Gets user's current location for display
   Future<String> _getUserLocation() async {
@@ -37,6 +57,32 @@ class MenuScreen extends StatelessWidget {
     } catch (e) {
       return 'Location not available';
     }
+  }
+
+  String? _extractLocation(dynamic locationValue) {
+    if (locationValue == null) {
+      return null;
+    }
+
+    final locationString = locationValue.toString().trim();
+    if (locationString.isEmpty || locationString.toLowerCase() == 'null') {
+      return null;
+    }
+
+    return locationString;
+  }
+
+  String? _extractBio(dynamic bioValue) {
+    if (bioValue == null) {
+      return null;
+    }
+
+    final bioString = bioValue.toString().trim();
+    if (bioString.isEmpty || bioString.toLowerCase() == 'null') {
+      return null;
+    }
+
+    return bioString;
   }
 
   @override
@@ -92,20 +138,107 @@ class MenuScreen extends StatelessWidget {
 
   /// Builds the profile header section
   Widget _buildProfileHeader(BuildContext context) {
-    final user = UserData.currentUser;
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, state) {
+        if (state is ProfileLoading) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppConstants.largePadding),
+            child: JobsahiLoader(
+              size: 48,
+              strokeWidth: 3,
+              message: 'Loading profile...',
+              showMessage: true,
+            ),
+          );
+        }
 
-    return ProfileHeaderCard(
-      name: user['name'] ?? 'User Name',
-      email: user['email'] ?? 'user@email.com',
-      location: 'Location not available', // Will be updated by FutureBuilder
-      profileImagePath: user['profileImage'],
-      onTap: () {
-        // Navigate to profile details when profile header is tapped
-        context.push(AppRoutes.profileDetails);
-      },
-      showEditButton: true,
-      onEditPressed: () {
-        context.push(AppRoutes.profileEdit);
+        if (state is ProfileDetailsLoaded) {
+          final userProfile = state.userProfile;
+          final location = _extractLocation(userProfile['location']);
+
+          Widget headerCard(String? resolvedLocation) {
+            return ProfileHeaderCard(
+              name: userProfile['name']?.toString().isNotEmpty == true
+                  ? userProfile['name'] as String
+                  : (UserData.currentUser['name'] ?? 'User Name'),
+              email: userProfile['email']?.toString().isNotEmpty == true
+                  ? userProfile['email'] as String
+                  : (UserData.currentUser['email'] ?? 'user@email.com'),
+              location: resolvedLocation,
+              profileImagePath:
+                  state.profileImagePath ?? userProfile['profileImage'],
+              bio: _extractBio(userProfile['bio']),
+              onTap: () => context.push(AppRoutes.profileDetails),
+              showEditButton: true,
+              onEditPressed: () => context.push(AppRoutes.profileEdit),
+            );
+          }
+
+          if (location != null && location.isNotEmpty) {
+            return headerCard(location);
+          }
+
+          return FutureBuilder<String>(
+            future: _getUserLocation(),
+            builder: (context, snapshot) {
+              final detectedLocation = snapshot.connectionState ==
+                          ConnectionState.done &&
+                      snapshot.hasData &&
+                      snapshot.data!.isNotEmpty
+                  ? snapshot.data
+                  : null;
+              return headerCard(detectedLocation);
+            },
+          );
+        }
+
+        if (state is ProfileError) {
+          final fallbackUser = UserData.currentUser;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ProfileHeaderCard(
+                name: fallbackUser['name'] ?? 'User Name',
+                email: fallbackUser['email'] ?? 'user@email.com',
+                location: _extractLocation(fallbackUser['location'] ?? '') ??
+                    'Location not available',
+                profileImagePath: fallbackUser['profileImage'],
+                bio: _extractBio(fallbackUser['bio']),
+                onTap: () => context.push(AppRoutes.profileDetails),
+                showEditButton: true,
+                onEditPressed: () => context.push(AppRoutes.profileEdit),
+              ),
+              const SizedBox(height: AppConstants.smallPadding),
+              Text(
+                state.message,
+                style: const TextStyle(
+                  color: AppConstants.errorColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => context
+                    .read<ProfileBloc>()
+                    .add(const LoadProfileDataEvent()),
+                icon: const Icon(Icons.refresh, color: AppConstants.primaryColor),
+                label: const Text('Retry',
+                    style: TextStyle(color: AppConstants.primaryColor)),
+              ),
+            ],
+          );
+        }
+
+        // Default fallback while waiting for first state.
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: AppConstants.largePadding),
+          child: JobsahiLoader(
+            size: 48,
+            strokeWidth: 3,
+            message: 'Loading profile...',
+            showMessage: true,
+          ),
+        );
       },
     );
   }
