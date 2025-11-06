@@ -169,16 +169,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           resumeDownloadUrl = resumePath.isNotEmpty ? resumePath : null;
 
           certificates = [];
-          if (resumePath.isNotEmpty) {
-            certificates.add({
-              'name': resumeFileName ?? 'Resume.pdf',
-              'type': 'Resume',
-              'uploadDate': profile.status.modifiedAt,
-              'size': 0,
-              'extension': (resumeFileName ?? 'pdf').split('.').last,
-              'path': resumePath,
-            });
-          }
 
           final certificatePath = profile.documents.certificates;
           if (certificatePath.isNotEmpty) {
@@ -245,8 +235,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         'education': false,
         'skills': false,
         'experience': false,
-        'certificates': false,
         'resume': false,
+        'certificates': false,
       };
 
       if (!loadedFromApi) {
@@ -472,6 +462,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       updatedProfile['name'] = event.name;
       updatedProfile['email'] = event.email;
       updatedProfile['location'] = event.location;
+      updatedProfile['bio'] = event.bio;
 
       emit(currentState.copyWith(userProfile: updatedProfile));
     }
@@ -493,21 +484,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
               (cert) =>
                   (cert['type'] ?? '').toString().toLowerCase() == 'resume',
             );
-
-      if (sanitizedName.isNotEmpty) {
-        updatedCertificates.insert(0, {
-          'name': sanitizedName,
-          'type': 'Resume',
-          'uploadDate': sanitizedDate.isNotEmpty
-              ? sanitizedDate
-              : 'Not specified',
-          'size': 0,
-          'extension': sanitizedName.contains('.')
-              ? sanitizedName.split('.').last
-              : 'file',
-          if (sanitizedUrl.isNotEmpty) 'path': sanitizedUrl,
-        });
-      }
 
       emit(
         currentState.copyWith(

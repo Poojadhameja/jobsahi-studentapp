@@ -445,6 +445,9 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     final locationController = TextEditingController(
       text: state.userProfile['location']?.toString() ?? '',
     );
+    final bioController = TextEditingController(
+      text: state.userProfile['bio']?.toString() ?? '',
+    );
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -524,6 +527,16 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                           return null;
                         },
                       ),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      TextFormField(
+                        controller: bioController,
+                        decoration: const InputDecoration(
+                          labelText: 'Profile Brief',
+                          hintText: 'Write a short summary about yourself',
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLines: 4,
+                      ),
                       const SizedBox(height: AppConstants.largePadding),
                       SizedBox(
                         width: double.infinity,
@@ -536,12 +549,14 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                             final updatedEmail = emailController.text.trim();
                             final updatedLocation = locationController.text
                                 .trim();
+                            final updatedBio = bioController.text.trim();
 
                             bloc.add(
                               UpdateProfileHeaderInlineEvent(
                                 name: updatedName,
                                 email: updatedEmail,
                                 location: updatedLocation,
+                                bio: updatedBio.isNotEmpty ? updatedBio : null,
                               ),
                             );
                             Navigator.of(sheetContext).pop();
@@ -600,14 +615,19 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
               bloc: bloc,
               initialEducation: state.education,
             );
+          case 'resume':
+            return _buildResumeEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              resumeFileName: state.resumeFileName,
+              lastUpdated: state.lastResumeUpdatedDate,
+              downloadUrl: state.resumeDownloadUrl,
+            );
           case 'certificates':
             return _buildCertificatesEditSheet(
               parentContext: context,
               bloc: bloc,
               initialCertificates: state.certificates,
-              initialResumeName: state.resumeFileName,
-              initialResumeUpdated: state.lastResumeUpdatedDate,
-              initialResumeUrl: state.resumeDownloadUrl,
             );
           case 'contact':
             return _buildContactEditSheet(
@@ -1117,16 +1137,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         .map((edu) => Map<String, dynamic>.from(edu))
         .toList();
 
-    if (educationDrafts.isEmpty) {
-      educationDrafts.add({
-        'qualification': '',
-        'institute': '',
-        'course': '',
-        'passingYear': '',
-        'cgpa': '',
-      });
-    }
-
     return StatefulBuilder(
       builder: (context, setModalState) {
         final viewInsets = MediaQuery.of(context).viewInsets.bottom;
@@ -1146,9 +1156,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         void deleteEducation(int index) {
           setModalState(() {
             educationDrafts.removeAt(index);
-            if (educationDrafts.isEmpty) {
-              addEducation();
-            }
           });
         }
 
@@ -1167,6 +1174,25 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                       title: 'Edit Education',
                     ),
                     const SizedBox(height: AppConstants.defaultPadding),
+                    if (educationDrafts.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(
+                          AppConstants.defaultPadding,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppConstants.backgroundColor,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                        child: const Text(
+                          'No education added yet. Use the button below to add your education history.',
+                          style: TextStyle(
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      ),
                     ...List.generate(educationDrafts.length, (index) {
                       final education = educationDrafts[index];
                       return Container(
@@ -1371,37 +1397,152 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     );
   }
 
+  Widget _buildResumeEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    String? resumeFileName,
+    String? lastUpdated,
+    String? downloadUrl,
+  }) {
+    final nameController = TextEditingController(text: resumeFileName ?? '');
+    final dateController = TextEditingController(text: lastUpdated ?? '');
+    final urlController = TextEditingController(text: downloadUrl ?? '');
+    final formKey = GlobalKey<FormState>();
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+        String? validateUrl(String? value) {
+          final trimmed = value?.trim() ?? '';
+          if (trimmed.isEmpty) {
+            return null;
+          }
+          final uri = Uri.tryParse(trimmed);
+          if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+            return 'Enter a valid URL starting with http or https';
+          }
+          return null;
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSheetHeader(context: context, title: 'Edit Resume'),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Resume File Name',
+                          hintText: 'Resume.pdf',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      TextFormField(
+                        controller: dateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Last Updated',
+                          hintText: 'e.g., 15 July 2024',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      TextFormField(
+                        controller: urlController,
+                        decoration: const InputDecoration(
+                          labelText: 'Resume URL (optional)',
+                          hintText: 'https://example.com/resume.pdf',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.url,
+                        validator: validateUrl,
+                      ),
+                      const SizedBox(height: AppConstants.largePadding),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+                            final name = nameController.text.trim();
+                            final updated = dateController.text.trim();
+                            final url = urlController.text.trim();
+                            final hasOtherValues =
+                                updated.isNotEmpty || url.isNotEmpty;
+
+                            if (name.isEmpty && hasOtherValues) {
+                              ScaffoldMessenger.of(parentContext).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Resume name is required when other details are provided.',
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              return;
+                            }
+
+                            bloc.add(
+                              UpdateProfileResumeInlineEvent(
+                                fileName: name,
+                                lastUpdated: updated.isNotEmpty
+                                    ? updated
+                                    : null,
+                                downloadUrl: url.isNotEmpty ? url : null,
+                              ),
+                            );
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                              const SnackBar(
+                                content: Text('Resume details updated.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          child: const Text('Save Changes'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCertificatesEditSheet({
     required BuildContext parentContext,
     required ProfileBloc bloc,
     required List<Map<String, dynamic>> initialCertificates,
-    String? initialResumeName,
-    String? initialResumeUpdated,
-    String? initialResumeUrl,
   }) {
-    final resumeFormKey = GlobalKey<FormState>();
-    final resumeNameController = TextEditingController(
-      text: initialResumeName ?? '',
-    );
-    final resumeUpdatedController = TextEditingController(
-      text: initialResumeUpdated ?? '',
-    );
-    final resumeUrlController = TextEditingController(
-      text: initialResumeUrl ?? '',
-    );
-
     final certificateDrafts = initialCertificates
-        .where(
-          (cert) => (cert['type'] ?? '').toString().toLowerCase() != 'resume',
-        )
         .map((cert) => Map<String, dynamic>.from(cert))
         .toList();
 
-    final addCertificateFormKey = GlobalKey<FormState>();
-    final newCertificateNameController = TextEditingController();
-    final newCertificateDateController = TextEditingController();
-    final newCertificateUrlController = TextEditingController();
-    String newCertificateType = 'Certificate';
+    if (certificateDrafts.isEmpty) {
+      certificateDrafts.add({
+        'name': '',
+        'type': 'Certificate',
+        'uploadDate': '',
+        'path': '',
+        'extension': '',
+        'size': 0,
+      });
+    }
 
     const certificateTypes = ['Certificate', 'License', 'ID Proof', 'Other'];
 
@@ -1423,59 +1564,41 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
       return 'file';
     }
 
+    String? validateUrl(String? value) {
+      final trimmed = value?.trim() ?? '';
+      if (trimmed.isEmpty) {
+        return null;
+      }
+      final uri = Uri.tryParse(trimmed);
+      if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+        return 'Enter a valid URL starting with http or https';
+      }
+      return null;
+    }
+
     return StatefulBuilder(
       builder: (context, setModalState) {
         final viewInsets = MediaQuery.of(context).viewInsets.bottom;
 
-        String? validateUrl(String? value) {
-          final trimmed = value?.trim() ?? '';
-          if (trimmed.isEmpty) {
-            return null;
-          }
-          final uri = Uri.tryParse(trimmed);
-          if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-            return 'Enter a valid URL starting with http or https';
-          }
-          return null;
-        }
-
-        void addCertificateEntry() {
-          if (!addCertificateFormKey.currentState!.validate()) {
-            return;
-          }
-          final name = newCertificateNameController.text.trim();
-          final uploadDate = newCertificateDateController.text.trim();
-          final url = newCertificateUrlController.text.trim();
-          final extension = inferExtensionFromInputs(name: name, url: url);
-
+        void addCertificate() {
           setModalState(() {
             certificateDrafts.add({
-              'name': name,
-              'type': newCertificateType,
-              'uploadDate': uploadDate.isNotEmpty
-                  ? uploadDate
-                  : 'Not specified',
-              if (url.isNotEmpty) 'path': url,
-              'extension': extension,
+              'name': '',
+              'type': 'Certificate',
+              'uploadDate': '',
+              'path': '',
+              'extension': '',
               'size': 0,
             });
-            newCertificateNameController.clear();
-            newCertificateDateController.clear();
-            newCertificateUrlController.clear();
-            newCertificateType = 'Certificate';
           });
-
-          ScaffoldMessenger.of(parentContext).showSnackBar(
-            const SnackBar(
-              content: Text('Certificate added to the list.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
         }
 
-        void removeCertificateAt(int index) {
+        void removeCertificate(int index) {
           setModalState(() {
             certificateDrafts.removeAt(index);
+            if (certificateDrafts.isEmpty) {
+              addCertificate();
+            }
           });
         }
 
@@ -1491,156 +1614,18 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                   children: [
                     _buildSheetHeader(
                       context: context,
-                      title: 'Manage Certificates & Resume',
+                      title: 'Manage Certificates',
                     ),
                     const SizedBox(height: AppConstants.defaultPadding),
-                    const Text(
-                      'Resume Details',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    Form(
-                      key: resumeFormKey,
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: resumeNameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Resume File Name',
-                              border: OutlineInputBorder(),
-                              hintText: 'Resume.pdf',
-                            ),
-                            validator: (value) {
-                              final trimmed = value?.trim() ?? '';
-                              final hasOtherValues =
-                                  resumeUpdatedController.text
-                                      .trim()
-                                      .isNotEmpty ||
-                                  resumeUrlController.text.trim().isNotEmpty;
-                              if (trimmed.isEmpty && hasOtherValues) {
-                                return 'Resume name is required.';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: AppConstants.smallPadding),
-                          TextFormField(
-                            controller: resumeUpdatedController,
-                            decoration: const InputDecoration(
-                              labelText: 'Last Updated',
-                              hintText: 'e.g., 15 July 2024',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: AppConstants.smallPadding),
-                          TextFormField(
-                            controller: resumeUrlController,
-                            decoration: const InputDecoration(
-                              labelText: 'Resume URL (optional)',
-                              hintText: 'https://example.com/resume.pdf',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.url,
-                            validator: validateUrl,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.largePadding),
-                    const Text(
-                      'Add Certificate',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    Form(
-                      key: addCertificateFormKey,
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: newCertificateNameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Certificate Name',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Certificate name is required';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: AppConstants.smallPadding),
-                          DropdownButtonFormField<String>(
-                            value: newCertificateType,
-                            items: certificateTypes
-                                .map(
-                                  (type) => DropdownMenuItem<String>(
-                                    value: type,
-                                    child: Text(type),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value == null) return;
-                              setModalState(() {
-                                newCertificateType = value;
-                              });
-                            },
-                            decoration: const InputDecoration(
-                              labelText: 'Certificate Type',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: AppConstants.smallPadding),
-                          TextFormField(
-                            controller: newCertificateDateController,
-                            decoration: const InputDecoration(
-                              labelText: 'Achievement Date',
-                              hintText: 'e.g., 10 July 2024',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: AppConstants.smallPadding),
-                          TextFormField(
-                            controller: newCertificateUrlController,
-                            decoration: const InputDecoration(
-                              labelText: 'Certificate URL (optional)',
-                              hintText: 'https://example.com/certificate.pdf',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.url,
-                            validator: validateUrl,
-                          ),
-                          const SizedBox(height: AppConstants.smallPadding),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: addCertificateEntry,
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add to list'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.largePadding),
-                    const Text(
-                      'Existing Certificates',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    if (certificateDrafts.isEmpty)
-                      Container(
-                        width: double.infinity,
+                    ...List.generate(certificateDrafts.length, (index) {
+                      final certificate = certificateDrafts[index];
+                      final selectedType =
+                          certificate['type']?.toString() ?? 'Certificate';
+
+                      return Container(
+                        margin: const EdgeInsets.only(
+                          bottom: AppConstants.defaultPadding,
+                        ),
                         padding: const EdgeInsets.all(
                           AppConstants.defaultPadding,
                         ),
@@ -1649,133 +1634,205 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                           borderRadius: BorderRadius.circular(
                             AppConstants.borderRadius,
                           ),
+                          border: Border.all(color: AppConstants.borderColor),
                         ),
-                        child: const Text(
-                          'No certificates added yet. Use the form above to add one.',
-                          style: TextStyle(
-                            color: AppConstants.textSecondaryColor,
-                          ),
-                        ),
-                      )
-                    else
-                      Column(
-                        children: List.generate(certificateDrafts.length, (
-                          index,
-                        ) {
-                          final certificate = certificateDrafts[index];
-                          return Container(
-                            margin: const EdgeInsets.only(
-                              bottom: AppConstants.smallPadding,
-                            ),
-                            padding: const EdgeInsets.all(
-                              AppConstants.defaultPadding,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppConstants.backgroundColor,
-                              borderRadius: BorderRadius.circular(
-                                AppConstants.borderRadius,
-                              ),
-                              border: Border.all(
-                                color: AppConstants.borderColor,
-                              ),
-                            ),
-                            child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        certificate['name'] ?? 'Certificate',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        certificate['uploadDate'] ??
-                                            'Not specified',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color:
-                                              AppConstants.textSecondaryColor,
-                                        ),
-                                      ),
-                                    ],
+                                Text(
+                                  'Certificate ${index + 1}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                                const Spacer(),
                                 IconButton(
-                                  tooltip: 'Remove certificate',
-                                  onPressed: () => removeCertificateAt(index),
+                                  tooltip: 'Delete certificate',
                                   icon: const Icon(
                                     Icons.delete_outline,
                                     color: AppConstants.errorColor,
                                   ),
+                                  onPressed: () => removeCertificate(index),
                                 ),
                               ],
                             ),
-                          );
-                        }),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('certificate_name_$index'),
+                              initialValue:
+                                  certificate['name']?.toString() ?? '',
+                              decoration: const InputDecoration(
+                                labelText: 'Certificate Name',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  certificate['name'] = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            DropdownButtonFormField<String>(
+                              value: certificateTypes.contains(selectedType)
+                                  ? selectedType
+                                  : 'Certificate',
+                              items: certificateTypes
+                                  .map(
+                                    (type) => DropdownMenuItem<String>(
+                                      value: type,
+                                      child: Text(type),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setModalState(() {
+                                  certificate['type'] = value;
+                                });
+                              },
+                              decoration: const InputDecoration(
+                                labelText: 'Certificate Type',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('certificate_date_$index'),
+                              initialValue:
+                                  certificate['uploadDate']?.toString() ?? '',
+                              decoration: const InputDecoration(
+                                labelText: 'Achievement Date',
+                                hintText: 'e.g., 10 July 2024',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  certificate['uploadDate'] = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('certificate_url_$index'),
+                              initialValue:
+                                  certificate['path']?.toString() ?? '',
+                              decoration: const InputDecoration(
+                                labelText: 'Certificate URL (optional)',
+                                hintText: 'https://example.com/certificate.pdf',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.url,
+                              onChanged: (value) {
+                                setModalState(() {
+                                  certificate['path'] = value;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: addCertificate,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Certificate'),
                       ),
+                    ),
                     const SizedBox(height: AppConstants.largePadding),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          if (!resumeFormKey.currentState!.validate()) {
+                          final sanitizedCertificates =
+                              <Map<String, dynamic>>[];
+                          String? urlValidationMessage;
+                          var hasValidationError = false;
+
+                          for (final certificate in certificateDrafts) {
+                            final name =
+                                certificate['name']?.toString().trim() ?? '';
+                            final type =
+                                certificate['type']?.toString().trim() ?? '';
+                            final uploadDate =
+                                certificate['uploadDate']?.toString().trim() ??
+                                '';
+                            final url =
+                                certificate['path']?.toString().trim() ?? '';
+
+                            final hasAnyValue = [
+                              name,
+                              type,
+                              uploadDate,
+                              url,
+                            ].any((value) => value.isNotEmpty);
+
+                            if (hasAnyValue && name.isEmpty) {
+                              hasValidationError = true;
+                              break;
+                            }
+
+                            final validationMessage = validateUrl(url);
+                            if (validationMessage != null) {
+                              urlValidationMessage = validationMessage;
+                              break;
+                            }
+
+                            if (name.isEmpty) {
+                              continue;
+                            }
+
+                            sanitizedCertificates.add({
+                              'name': name,
+                              'type': type.isNotEmpty ? type : 'Certificate',
+                              'uploadDate': uploadDate.isNotEmpty
+                                  ? uploadDate
+                                  : 'Not specified',
+                              'extension': inferExtensionFromInputs(
+                                name: name,
+                                url: url,
+                              ),
+                              if (url.isNotEmpty) 'path': url,
+                              'size': certificate['size'] is num
+                                  ? (certificate['size'] as num).toInt()
+                                  : 0,
+                            });
+                          }
+
+                          if (hasValidationError) {
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Please provide a name for each certificate.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
                             return;
                           }
 
-                          final resumeName = resumeNameController.text.trim();
-                          final resumeDate = resumeUpdatedController.text
-                              .trim();
-                          final resumeUrl = resumeUrlController.text.trim();
-
-                          final sanitizedCertificates = certificateDrafts
-                              .map(
-                                (cert) => {
-                                  'name': (cert['name'] ?? '')
-                                      .toString()
-                                      .trim(),
-                                  'type': (cert['type'] ?? 'Certificate')
-                                      .toString(),
-                                  'uploadDate':
-                                      (cert['uploadDate'] ?? 'Not specified')
-                                          .toString(),
-                                  'extension': (cert['extension'] ?? 'file')
-                                      .toString(),
-                                  if (cert['path'] != null)
-                                    'path': cert['path'].toString(),
-                                  'size': cert['size'] is num
-                                      ? (cert['size'] as num).toInt()
-                                      : 0,
-                                },
-                              )
-                              .toList();
+                          if (urlValidationMessage != null) {
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                              SnackBar(
+                                content: Text(urlValidationMessage),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
 
                           bloc.add(
                             UpdateProfileCertificatesInlineEvent(
                               certificates: sanitizedCertificates,
                             ),
                           );
-
-                          bloc.add(
-                            UpdateProfileResumeInlineEvent(
-                              fileName: resumeName,
-                              lastUpdated: resumeDate.isNotEmpty
-                                  ? resumeDate
-                                  : null,
-                              downloadUrl: resumeUrl.isNotEmpty
-                                  ? resumeUrl
-                                  : null,
-                            ),
-                          );
-
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(parentContext).showSnackBar(
                             const SnackBar(
-                              content: Text('Certificates and resume updated.'),
+                              content: Text('Certificates updated.'),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
@@ -2113,6 +2170,18 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
 
         const SizedBox(height: AppConstants.defaultPadding),
 
+        // Resume Section
+        _buildModernSectionCard(
+          context: context,
+          state: state,
+          title: 'Resume',
+          icon: Icons.description_outlined,
+          section: 'resume',
+          child: _buildResumeContent(context, state),
+        ),
+
+        const SizedBox(height: AppConstants.defaultPadding),
+
         // Certificates Section
         _buildModernSectionCard(
           context: context,
@@ -2301,50 +2370,57 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
   }
 
   /// Certificates Content
+  Widget _buildResumeContent(BuildContext context, ProfileDetailsLoaded state) {
+    final resumeName = state.resumeFileName?.trim() ?? '';
+    final updatedDate = state.lastResumeUpdatedDate?.trim() ?? '';
+
+    if (resumeName.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.description_outlined,
+        title: 'No Resume Uploaded',
+        subtitle: 'Upload your resume to attract employers',
+      );
+    }
+
+    return _buildDocumentCard(
+      icon: Icons.description,
+      title: 'Resume',
+      fileName: resumeName,
+      lastUpdated: updatedDate.isNotEmpty ? updatedDate : 'Unknown',
+      onDownload: () => _downloadResume(context, state.resumeDownloadUrl),
+    );
+  }
+
   Widget _buildCertificatesContent(
     BuildContext context,
     ProfileDetailsLoaded state,
   ) {
-    final resumeName = state.resumeFileName;
-    final otherCertificates = state.certificates
+    final certificates = state.certificates
         .where(
           (cert) => (cert['type'] ?? '').toString().toLowerCase() != 'resume',
         )
         .toList();
-    final hasResume = resumeName != null && resumeName.isNotEmpty;
 
     return Column(
       children: [
-        // Resume
-        if (hasResume)
-          _buildDocumentCard(
-            icon: Icons.description,
-            title: 'Resume',
-            fileName: resumeName!,
-            lastUpdated: state.lastResumeUpdatedDate ?? 'Unknown',
-            onDownload: () => _downloadResume(context, state.resumeDownloadUrl),
-          ),
-
         // Certificates
-        if (otherCertificates.isNotEmpty) ...[
-          const SizedBox(height: AppConstants.smallPadding),
-          ...otherCertificates.map(
+        if (certificates.isNotEmpty) ...[
+          ...certificates.map(
             (cert) => _buildDocumentCard(
               icon: _getCertificateIcon(cert['type'] ?? ''),
               title: cert['name'] ?? 'Document',
               fileName: cert['name'] ?? 'Document',
               lastUpdated: cert['uploadDate'] ?? 'Unknown',
               onDownload: () => _downloadDocument(context, cert),
-              onDelete: () => _deleteDocument(context, cert),
             ),
           ),
         ],
 
-        if (!hasResume && otherCertificates.isEmpty)
+        if (certificates.isEmpty)
           _buildEmptyState(
             icon: Icons.folder_outlined,
             title: 'No Certificates Added',
-            subtitle: 'Upload your resume and certificates to stand out',
+            subtitle: 'Upload your certificates to showcase achievements',
           ),
       ],
     );
@@ -2794,35 +2870,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         backgroundColor: AppConstants.primaryColor,
         behavior: SnackBarBehavior.floating,
       ),
-    );
-  }
-
-  void _deleteDocument(BuildContext context, Map<String, dynamic> document) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Delete Document'),
-          content: Text(
-            'Are you sure you want to delete "${document['name'] ?? 'document'}"?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                context.read<ProfileBloc>().add(
-                  DeleteCertificateEvent(certificate: document),
-                );
-              },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
     );
   }
 

@@ -140,15 +140,17 @@ class UpdateProfileHeaderInlineEvent extends ProfileEvent {
   final String name;
   final String email;
   final String location;
+  final String? bio;
 
   const UpdateProfileHeaderInlineEvent({
     required this.name,
     required this.email,
     required this.location,
+    this.bio,
   });
 
   @override
-  List<Object?> get props => [name, email, location];
+  List<Object?> get props => [name, email, location, bio];
 }
 
 /// Inline resume update event
