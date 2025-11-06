@@ -136,6 +136,8 @@ class JobPreferencesUpdateSuccess extends ProfileState {
 
 /// Profile details loaded state
 class ProfileDetailsLoaded extends ProfileState {
+  static const Object _noValue = Object();
+
   final Map<String, dynamic> userProfile;
   final List<String> skills;
   final List<Map<String, dynamic>> education;
@@ -148,6 +150,7 @@ class ProfileDetailsLoaded extends ProfileState {
   final String? resumeFileName;
   final String? lastResumeUpdatedDate;
   final int resumeFileSize;
+  final String? resumeDownloadUrl;
 
   const ProfileDetailsLoaded({
     required this.userProfile,
@@ -162,6 +165,7 @@ class ProfileDetailsLoaded extends ProfileState {
     this.resumeFileName,
     this.lastResumeUpdatedDate,
     required this.resumeFileSize,
+    this.resumeDownloadUrl,
   });
 
   @override
@@ -178,6 +182,7 @@ class ProfileDetailsLoaded extends ProfileState {
     resumeFileName,
     lastResumeUpdatedDate,
     resumeFileSize,
+    resumeDownloadUrl,
   ];
 
   /// Copy with method for immutable state updates
@@ -189,11 +194,12 @@ class ProfileDetailsLoaded extends ProfileState {
     Map<String, dynamic>? jobPreferences,
     Map<String, bool>? sectionExpansionStates,
     List<Map<String, dynamic>>? certificates,
-    String? profileImagePath,
-    String? profileImageName,
-    String? resumeFileName,
-    String? lastResumeUpdatedDate,
+    Object? profileImagePath = _noValue,
+    Object? profileImageName = _noValue,
+    Object? resumeFileName = _noValue,
+    Object? lastResumeUpdatedDate = _noValue,
     int? resumeFileSize,
+    Object? resumeDownloadUrl = _noValue,
   }) {
     return ProfileDetailsLoaded(
       userProfile: userProfile ?? this.userProfile,
@@ -204,12 +210,22 @@ class ProfileDetailsLoaded extends ProfileState {
       sectionExpansionStates:
           sectionExpansionStates ?? this.sectionExpansionStates,
       certificates: certificates ?? this.certificates,
-      profileImagePath: profileImagePath ?? this.profileImagePath,
-      profileImageName: profileImageName ?? this.profileImageName,
-      resumeFileName: resumeFileName ?? this.resumeFileName,
-      lastResumeUpdatedDate:
-          lastResumeUpdatedDate ?? this.lastResumeUpdatedDate,
+      profileImagePath: profileImagePath == _noValue
+          ? this.profileImagePath
+          : profileImagePath as String?,
+      profileImageName: profileImageName == _noValue
+          ? this.profileImageName
+          : profileImageName as String?,
+      resumeFileName: resumeFileName == _noValue
+          ? this.resumeFileName
+          : resumeFileName as String?,
+      lastResumeUpdatedDate: lastResumeUpdatedDate == _noValue
+          ? this.lastResumeUpdatedDate
+          : lastResumeUpdatedDate as String?,
       resumeFileSize: resumeFileSize ?? this.resumeFileSize,
+      resumeDownloadUrl: resumeDownloadUrl == _noValue
+          ? this.resumeDownloadUrl
+          : resumeDownloadUrl as String?,
     );
   }
 }

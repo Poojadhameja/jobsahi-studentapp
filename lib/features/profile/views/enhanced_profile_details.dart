@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/loaders/jobsahi_loader.dart';
@@ -146,8 +144,9 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
   Widget _buildProfileHeader(BuildContext context, ProfileDetailsLoaded state) {
     final user = state.userProfile;
     final rawBio = user['bio'];
-    final String? profileBio =
-        rawBio is String && rawBio.trim().isNotEmpty ? rawBio.trim() : null;
+    final String? profileBio = rawBio is String && rawBio.trim().isNotEmpty
+        ? rawBio.trim()
+        : null;
 
     return Container(
       width: double.infinity,
@@ -179,7 +178,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                   if (!isFromBottomNavigation)
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.pop(),
+                      onPressed: () => Navigator.of(context).pop(),
                     )
                   else
                     const SizedBox(width: 48), // Spacer for alignment
@@ -188,11 +187,10 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.white),
-                        onPressed: () => _navigateToEditProfile(context),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.share, color: Colors.white),
-                        onPressed: () => _shareProfile(context),
+                        onPressed: () => _showProfileInfoEditSheet(
+                          context: context,
+                          state: state,
+                        ),
                       ),
                     ],
                   ),
@@ -432,6 +430,1646 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     );
   }
 
+  void _showProfileInfoEditSheet({
+    required BuildContext context,
+    required ProfileDetailsLoaded state,
+  }) {
+    final parentContext = context;
+    final bloc = parentContext.read<ProfileBloc>();
+    final nameController = TextEditingController(
+      text: state.userProfile['name']?.toString() ?? '',
+    );
+    final emailController = TextEditingController(
+      text: state.userProfile['email']?.toString() ?? '',
+    );
+    final locationController = TextEditingController(
+      text: state.userProfile['location']?.toString() ?? '',
+    );
+    final formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        final viewInsets = MediaQuery.of(sheetContext).viewInsets.bottom;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSheetHeader(
+                        context: sheetContext,
+                        title: 'Edit Profile Info',
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                          border: OutlineInputBorder(),
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Name is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      TextFormField(
+                        controller: emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          final email = value?.trim() ?? '';
+                          if (email.isEmpty) {
+                            return 'Email is required';
+                          }
+                          final emailRegex = RegExp(
+                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                          );
+                          if (!emailRegex.hasMatch(email)) {
+                            return 'Enter a valid email address';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppConstants.smallPadding),
+                      TextFormField(
+                        controller: locationController,
+                        decoration: const InputDecoration(
+                          labelText: 'Location',
+                          border: OutlineInputBorder(),
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Location is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppConstants.largePadding),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+                            final updatedName = nameController.text.trim();
+                            final updatedEmail = emailController.text.trim();
+                            final updatedLocation = locationController.text
+                                .trim();
+
+                            bloc.add(
+                              UpdateProfileHeaderInlineEvent(
+                                name: updatedName,
+                                email: updatedEmail,
+                                location: updatedLocation,
+                              ),
+                            );
+                            Navigator.of(sheetContext).pop();
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                              const SnackBar(
+                                content: Text('Profile details updated.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          child: const Text('Save Changes'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditSectionSheet({
+    required BuildContext context,
+    required String section,
+    required ProfileDetailsLoaded state,
+  }) {
+    final bloc = context.read<ProfileBloc>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        switch (section) {
+          case 'skills':
+            return _buildSkillsEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              initialSkills: state.skills,
+            );
+          case 'experience':
+            return _buildExperienceEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              initialExperience: state.experience,
+            );
+          case 'education':
+            return _buildEducationEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              initialEducation: state.education,
+            );
+          case 'certificates':
+            return _buildCertificatesEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              initialCertificates: state.certificates,
+              initialResumeName: state.resumeFileName,
+              initialResumeUpdated: state.lastResumeUpdatedDate,
+              initialResumeUrl: state.resumeDownloadUrl,
+            );
+          case 'contact':
+            return _buildContactEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              userProfile: state.userProfile,
+            );
+          case 'social':
+            return _buildSocialLinksEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              userProfile: state.userProfile,
+            );
+          default:
+            return _buildUnsupportedSectionSheet(sheetContext, section);
+        }
+      },
+    );
+  }
+
+  Widget _buildUnsupportedSectionSheet(BuildContext context, String section) {
+    final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+    final title = section.isEmpty
+        ? 'Edit Section'
+        : 'Edit ${section[0].toUpperCase()}${section.substring(1)}';
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: viewInsets,
+          left: AppConstants.defaultPadding,
+          right: AppConstants.defaultPadding,
+          top: AppConstants.defaultPadding,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSheetHeader(context: context, title: title),
+            const SizedBox(height: AppConstants.defaultPadding),
+            const Text(
+              'Editing for this section will be available soon.',
+              style: TextStyle(color: AppConstants.textSecondaryColor),
+            ),
+            const SizedBox(height: AppConstants.largePadding),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSheetHeader({
+    required BuildContext context,
+    required String title,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+        ),
+        IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkillsEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    required List<String> initialSkills,
+  }) {
+    final skillsDraft = List<String>.from(initialSkills);
+    final newSkillController = TextEditingController();
+
+    void addSkill(String value, void Function(void Function()) setModalState) {
+      final trimmedValue = value.trim();
+      if (trimmedValue.isEmpty) {
+        return;
+      }
+      final exists = skillsDraft.any(
+        (skill) => skill.toLowerCase() == trimmedValue.toLowerCase(),
+      );
+      if (exists) {
+        ScaffoldMessenger.of(parentContext).showSnackBar(
+          const SnackBar(
+            content: Text('Skill already exists.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      setModalState(() {
+        skillsDraft.add(trimmedValue);
+        newSkillController.clear();
+      });
+    }
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSheetHeader(context: context, title: 'Edit Skills'),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    if (skillsDraft.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(
+                          AppConstants.defaultPadding,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppConstants.backgroundColor,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                        child: const Text(
+                          'No skills added yet. Add your skills to improve your profile.',
+                          style: TextStyle(
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      ),
+                    Column(
+                      children: List.generate(skillsDraft.length, (index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppConstants.smallPadding,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  key: ValueKey('skill_field_$index'),
+                                  initialValue: skillsDraft[index],
+                                  decoration: InputDecoration(
+                                    labelText: 'Skill ${index + 1}',
+                                    border: const OutlineInputBorder(),
+                                  ),
+                                  onChanged: (value) {
+                                    setModalState(() {
+                                      skillsDraft[index] = value;
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                tooltip: 'Remove skill',
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: AppConstants.errorColor,
+                                ),
+                                onPressed: () {
+                                  setModalState(() {
+                                    skillsDraft.removeAt(index);
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    TextField(
+                      controller: newSkillController,
+                      decoration: InputDecoration(
+                        labelText: 'Add new skill',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () =>
+                              addSkill(newSkillController.text, setModalState),
+                        ),
+                      ),
+                      onSubmitted: (value) => addSkill(value, setModalState),
+                    ),
+                    const SizedBox(height: AppConstants.largePadding),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final sanitizedSkills = skillsDraft
+                              .map((skill) => skill.trim())
+                              .where((skill) => skill.isNotEmpty)
+                              .toList();
+                          bloc.add(
+                            UpdateProfileSkillsInlineEvent(
+                              skills: sanitizedSkills,
+                            ),
+                          );
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(parentContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Skills updated.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text('Save Changes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExperienceEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    required List<Map<String, dynamic>> initialExperience,
+  }) {
+    final experienceDrafts = initialExperience
+        .map((exp) => Map<String, dynamic>.from(exp))
+        .toList();
+
+    if (experienceDrafts.isEmpty) {
+      experienceDrafts.add({
+        'company': '',
+        'position': '',
+        'startDate': '',
+        'endDate': '',
+        'description': '',
+      });
+    }
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+        void addEmptyExperience() {
+          setModalState(() {
+            experienceDrafts.add({
+              'company': '',
+              'position': '',
+              'startDate': '',
+              'endDate': '',
+              'description': '',
+            });
+          });
+        }
+
+        void deleteExperience(int index) {
+          setModalState(() {
+            experienceDrafts.removeAt(index);
+            if (experienceDrafts.isEmpty) {
+              addEmptyExperience();
+            }
+          });
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSheetHeader(
+                      context: context,
+                      title: 'Edit Work Experience',
+                    ),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    ...List.generate(experienceDrafts.length, (index) {
+                      final experience = experienceDrafts[index];
+                      return Container(
+                        margin: const EdgeInsets.only(
+                          bottom: AppConstants.defaultPadding,
+                        ),
+                        padding: const EdgeInsets.all(
+                          AppConstants.defaultPadding,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppConstants.backgroundColor,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                          border: Border.all(color: AppConstants.borderColor),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'Experience ${index + 1}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  tooltip: 'Delete experience',
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: AppConstants.errorColor,
+                                  ),
+                                  onPressed: () => deleteExperience(index),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('experience_company_$index'),
+                              initialValue:
+                                  (experience['company'] ?? '') as String,
+                              decoration: const InputDecoration(
+                                labelText: 'Company',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  experience['company'] = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('experience_position_$index'),
+                              initialValue:
+                                  (experience['position'] ?? '') as String,
+                              decoration: const InputDecoration(
+                                labelText: 'Position',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  experience['position'] = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    key: ValueKey('experience_start_$index'),
+                                    initialValue:
+                                        (experience['startDate'] ?? '')
+                                            as String,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Start Date',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: (value) {
+                                      setModalState(() {
+                                        experience['startDate'] = value;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(
+                                  width: AppConstants.smallPadding,
+                                ),
+                                Expanded(
+                                  child: TextFormField(
+                                    key: ValueKey('experience_end_$index'),
+                                    initialValue:
+                                        (experience['endDate'] ?? '') as String,
+                                    decoration: const InputDecoration(
+                                      labelText: 'End Date',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: (value) {
+                                      setModalState(() {
+                                        experience['endDate'] = value.isEmpty
+                                            ? 'Present'
+                                            : value;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('experience_description_$index'),
+                              initialValue:
+                                  (experience['description'] ?? '') as String,
+                              decoration: const InputDecoration(
+                                labelText: 'Description',
+                                border: OutlineInputBorder(),
+                              ),
+                              maxLines: 3,
+                              onChanged: (value) {
+                                setModalState(() {
+                                  experience['description'] = value;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: addEmptyExperience,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Experience'),
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.largePadding),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final sanitizedExperience = experienceDrafts
+                              .map(
+                                (exp) => {
+                                  'company': (exp['company'] ?? '').trim(),
+                                  'position': (exp['position'] ?? '').trim(),
+                                  'startDate': (exp['startDate'] ?? '').trim(),
+                                  'endDate': (exp['endDate'] ?? '').trim(),
+                                  'description': (exp['description'] ?? '')
+                                      .trim(),
+                                },
+                              )
+                              .where(
+                                (exp) => exp.values.any(
+                                  (value) => value.toString().isNotEmpty,
+                                ),
+                              )
+                              .toList();
+
+                          final hasInvalidEntry = sanitizedExperience.any(
+                            (exp) =>
+                                (exp['company'] as String).isEmpty ||
+                                (exp['position'] as String).isEmpty ||
+                                (exp['startDate'] as String).isEmpty,
+                          );
+
+                          if (hasInvalidEntry) {
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Please fill company, position, and start date for each experience.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
+
+                          bloc.add(
+                            UpdateProfileExperienceListEvent(
+                              experience: sanitizedExperience,
+                            ),
+                          );
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(parentContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Work experience updated.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text('Save Changes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEducationEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    required List<Map<String, dynamic>> initialEducation,
+  }) {
+    final educationDrafts = initialEducation
+        .map((edu) => Map<String, dynamic>.from(edu))
+        .toList();
+
+    if (educationDrafts.isEmpty) {
+      educationDrafts.add({
+        'qualification': '',
+        'institute': '',
+        'course': '',
+        'passingYear': '',
+        'cgpa': '',
+      });
+    }
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+        void addEducation() {
+          setModalState(() {
+            educationDrafts.add({
+              'qualification': '',
+              'institute': '',
+              'course': '',
+              'passingYear': '',
+              'cgpa': '',
+            });
+          });
+        }
+
+        void deleteEducation(int index) {
+          setModalState(() {
+            educationDrafts.removeAt(index);
+            if (educationDrafts.isEmpty) {
+              addEducation();
+            }
+          });
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSheetHeader(
+                      context: context,
+                      title: 'Edit Education',
+                    ),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    ...List.generate(educationDrafts.length, (index) {
+                      final education = educationDrafts[index];
+                      return Container(
+                        margin: const EdgeInsets.only(
+                          bottom: AppConstants.defaultPadding,
+                        ),
+                        padding: const EdgeInsets.all(
+                          AppConstants.defaultPadding,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppConstants.backgroundColor,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                          border: Border.all(color: AppConstants.borderColor),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'Education ${index + 1}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  tooltip: 'Delete education',
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: AppConstants.errorColor,
+                                  ),
+                                  onPressed: () => deleteEducation(index),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('education_qualification_$index'),
+                              initialValue:
+                                  (education['qualification'] ?? '') as String,
+                              decoration: const InputDecoration(
+                                labelText: 'Qualification',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  education['qualification'] = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('education_institute_$index'),
+                              initialValue:
+                                  (education['institute'] ?? '') as String,
+                              decoration: const InputDecoration(
+                                labelText: 'Institute',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  education['institute'] = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              key: ValueKey('education_course_$index'),
+                              initialValue:
+                                  (education['course'] ?? '') as String,
+                              decoration: const InputDecoration(
+                                labelText: 'Course / Field of Study',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  education['course'] = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    key: ValueKey('education_passing_$index'),
+                                    initialValue:
+                                        (education['passingYear'] ?? '')
+                                            as String,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Year of Completion',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: (value) {
+                                      setModalState(() {
+                                        education['passingYear'] = value;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(
+                                  width: AppConstants.smallPadding,
+                                ),
+                                Expanded(
+                                  child: TextFormField(
+                                    key: ValueKey('education_cgpa_$index'),
+                                    initialValue:
+                                        (education['cgpa'] ?? '') as String,
+                                    decoration: const InputDecoration(
+                                      labelText: 'CGPA / Percentage',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: (value) {
+                                      setModalState(() {
+                                        education['cgpa'] = value;
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: addEducation,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Education'),
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.largePadding),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final sanitizedEducation = educationDrafts
+                              .map(
+                                (edu) => {
+                                  'qualification': (edu['qualification'] ?? '')
+                                      .trim(),
+                                  'institute': (edu['institute'] ?? '').trim(),
+                                  'course': (edu['course'] ?? '').trim(),
+                                  'passingYear': (edu['passingYear'] ?? '')
+                                      .trim(),
+                                  'cgpa': (edu['cgpa'] ?? '').trim(),
+                                },
+                              )
+                              .where(
+                                (edu) => edu.values.any(
+                                  (value) => value.toString().isNotEmpty,
+                                ),
+                              )
+                              .toList();
+
+                          final hasInvalidEntry = sanitizedEducation.any(
+                            (edu) =>
+                                (edu['qualification'] as String).isEmpty ||
+                                (edu['institute'] as String).isEmpty,
+                          );
+
+                          if (hasInvalidEntry) {
+                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Qualification and institute are required.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
+
+                          bloc.add(
+                            UpdateProfileEducationListEvent(
+                              education: sanitizedEducation,
+                            ),
+                          );
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(parentContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Education updated.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text('Save Changes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCertificatesEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    required List<Map<String, dynamic>> initialCertificates,
+    String? initialResumeName,
+    String? initialResumeUpdated,
+    String? initialResumeUrl,
+  }) {
+    final resumeFormKey = GlobalKey<FormState>();
+    final resumeNameController = TextEditingController(
+      text: initialResumeName ?? '',
+    );
+    final resumeUpdatedController = TextEditingController(
+      text: initialResumeUpdated ?? '',
+    );
+    final resumeUrlController = TextEditingController(
+      text: initialResumeUrl ?? '',
+    );
+
+    final certificateDrafts = initialCertificates
+        .where(
+          (cert) => (cert['type'] ?? '').toString().toLowerCase() != 'resume',
+        )
+        .map((cert) => Map<String, dynamic>.from(cert))
+        .toList();
+
+    final addCertificateFormKey = GlobalKey<FormState>();
+    final newCertificateNameController = TextEditingController();
+    final newCertificateDateController = TextEditingController();
+    final newCertificateUrlController = TextEditingController();
+    String newCertificateType = 'Certificate';
+
+    const certificateTypes = ['Certificate', 'License', 'ID Proof', 'Other'];
+
+    String inferExtensionFromInputs({
+      required String name,
+      required String url,
+    }) {
+      final candidates = <String>[name, url];
+      for (final candidate in candidates) {
+        final trimmed = candidate.trim();
+        if (trimmed.contains('.')) {
+          final parts = trimmed.split('.');
+          final ext = parts.isNotEmpty ? parts.last.trim() : '';
+          if (ext.isNotEmpty) {
+            return ext;
+          }
+        }
+      }
+      return 'file';
+    }
+
+    return StatefulBuilder(
+      builder: (context, setModalState) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+        String? validateUrl(String? value) {
+          final trimmed = value?.trim() ?? '';
+          if (trimmed.isEmpty) {
+            return null;
+          }
+          final uri = Uri.tryParse(trimmed);
+          if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+            return 'Enter a valid URL starting with http or https';
+          }
+          return null;
+        }
+
+        void addCertificateEntry() {
+          if (!addCertificateFormKey.currentState!.validate()) {
+            return;
+          }
+          final name = newCertificateNameController.text.trim();
+          final uploadDate = newCertificateDateController.text.trim();
+          final url = newCertificateUrlController.text.trim();
+          final extension = inferExtensionFromInputs(name: name, url: url);
+
+          setModalState(() {
+            certificateDrafts.add({
+              'name': name,
+              'type': newCertificateType,
+              'uploadDate': uploadDate.isNotEmpty
+                  ? uploadDate
+                  : 'Not specified',
+              if (url.isNotEmpty) 'path': url,
+              'extension': extension,
+              'size': 0,
+            });
+            newCertificateNameController.clear();
+            newCertificateDateController.clear();
+            newCertificateUrlController.clear();
+            newCertificateType = 'Certificate';
+          });
+
+          ScaffoldMessenger.of(parentContext).showSnackBar(
+            const SnackBar(
+              content: Text('Certificate added to the list.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+
+        void removeCertificateAt(int index) {
+          setModalState(() {
+            certificateDrafts.removeAt(index);
+          });
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSheetHeader(
+                      context: context,
+                      title: 'Manage Certificates & Resume',
+                    ),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    const Text(
+                      'Resume Details',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    Form(
+                      key: resumeFormKey,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: resumeNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Resume File Name',
+                              border: OutlineInputBorder(),
+                              hintText: 'Resume.pdf',
+                            ),
+                            validator: (value) {
+                              final trimmed = value?.trim() ?? '';
+                              final hasOtherValues =
+                                  resumeUpdatedController.text
+                                      .trim()
+                                      .isNotEmpty ||
+                                  resumeUrlController.text.trim().isNotEmpty;
+                              if (trimmed.isEmpty && hasOtherValues) {
+                                return 'Resume name is required.';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: AppConstants.smallPadding),
+                          TextFormField(
+                            controller: resumeUpdatedController,
+                            decoration: const InputDecoration(
+                              labelText: 'Last Updated',
+                              hintText: 'e.g., 15 July 2024',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: AppConstants.smallPadding),
+                          TextFormField(
+                            controller: resumeUrlController,
+                            decoration: const InputDecoration(
+                              labelText: 'Resume URL (optional)',
+                              hintText: 'https://example.com/resume.pdf',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.url,
+                            validator: validateUrl,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.largePadding),
+                    const Text(
+                      'Add Certificate',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    Form(
+                      key: addCertificateFormKey,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: newCertificateNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Certificate Name',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Certificate name is required';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: AppConstants.smallPadding),
+                          DropdownButtonFormField<String>(
+                            value: newCertificateType,
+                            items: certificateTypes
+                                .map(
+                                  (type) => DropdownMenuItem<String>(
+                                    value: type,
+                                    child: Text(type),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value == null) return;
+                              setModalState(() {
+                                newCertificateType = value;
+                              });
+                            },
+                            decoration: const InputDecoration(
+                              labelText: 'Certificate Type',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: AppConstants.smallPadding),
+                          TextFormField(
+                            controller: newCertificateDateController,
+                            decoration: const InputDecoration(
+                              labelText: 'Achievement Date',
+                              hintText: 'e.g., 10 July 2024',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: AppConstants.smallPadding),
+                          TextFormField(
+                            controller: newCertificateUrlController,
+                            decoration: const InputDecoration(
+                              labelText: 'Certificate URL (optional)',
+                              hintText: 'https://example.com/certificate.pdf',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.url,
+                            validator: validateUrl,
+                          ),
+                          const SizedBox(height: AppConstants.smallPadding),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: addCertificateEntry,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add to list'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.largePadding),
+                    const Text(
+                      'Existing Certificates',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    if (certificateDrafts.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(
+                          AppConstants.defaultPadding,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppConstants.backgroundColor,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                        child: const Text(
+                          'No certificates added yet. Use the form above to add one.',
+                          style: TextStyle(
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: List.generate(certificateDrafts.length, (
+                          index,
+                        ) {
+                          final certificate = certificateDrafts[index];
+                          return Container(
+                            margin: const EdgeInsets.only(
+                              bottom: AppConstants.smallPadding,
+                            ),
+                            padding: const EdgeInsets.all(
+                              AppConstants.defaultPadding,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppConstants.backgroundColor,
+                              borderRadius: BorderRadius.circular(
+                                AppConstants.borderRadius,
+                              ),
+                              border: Border.all(
+                                color: AppConstants.borderColor,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        certificate['name'] ?? 'Certificate',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        certificate['uploadDate'] ??
+                                            'Not specified',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              AppConstants.textSecondaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Remove certificate',
+                                  onPressed: () => removeCertificateAt(index),
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: AppConstants.errorColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ),
+                    const SizedBox(height: AppConstants.largePadding),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!resumeFormKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          final resumeName = resumeNameController.text.trim();
+                          final resumeDate = resumeUpdatedController.text
+                              .trim();
+                          final resumeUrl = resumeUrlController.text.trim();
+
+                          final sanitizedCertificates = certificateDrafts
+                              .map(
+                                (cert) => {
+                                  'name': (cert['name'] ?? '')
+                                      .toString()
+                                      .trim(),
+                                  'type': (cert['type'] ?? 'Certificate')
+                                      .toString(),
+                                  'uploadDate':
+                                      (cert['uploadDate'] ?? 'Not specified')
+                                          .toString(),
+                                  'extension': (cert['extension'] ?? 'file')
+                                      .toString(),
+                                  if (cert['path'] != null)
+                                    'path': cert['path'].toString(),
+                                  'size': cert['size'] is num
+                                      ? (cert['size'] as num).toInt()
+                                      : 0,
+                                },
+                              )
+                              .toList();
+
+                          bloc.add(
+                            UpdateProfileCertificatesInlineEvent(
+                              certificates: sanitizedCertificates,
+                            ),
+                          );
+
+                          bloc.add(
+                            UpdateProfileResumeInlineEvent(
+                              fileName: resumeName,
+                              lastUpdated: resumeDate.isNotEmpty
+                                  ? resumeDate
+                                  : null,
+                              downloadUrl: resumeUrl.isNotEmpty
+                                  ? resumeUrl
+                                  : null,
+                            ),
+                          );
+
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(parentContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Certificates and resume updated.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text('Save Changes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContactEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    required Map<String, dynamic> userProfile,
+  }) {
+    final formKey = GlobalKey<FormState>();
+    final emailController = TextEditingController(
+      text: userProfile['email']?.toString() ?? '',
+    );
+    final phoneController = TextEditingController(
+      text: userProfile['phone']?.toString() ?? '',
+    );
+    final locationController = TextEditingController(
+      text: userProfile['location']?.toString() ?? '',
+    );
+    final genderController = TextEditingController(
+      text: userProfile['gender']?.toString() ?? '',
+    );
+    final dobController = TextEditingController(
+      text: userProfile['dateOfBirth']?.toString() ?? '',
+    );
+
+    return Builder(
+      builder: (context) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: viewInsets,
+              left: AppConstants.defaultPadding,
+              right: AppConstants.defaultPadding,
+              top: AppConstants.defaultPadding,
+            ),
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSheetHeader(
+                      context: context,
+                      title: 'Edit Contact Details',
+                    ),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        final email = value?.trim() ?? '';
+                        if (email.isEmpty) {
+                          return 'Email is required';
+                        }
+                        final emailRegex = RegExp(
+                          r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                        );
+                        if (!emailRegex.hasMatch(email)) {
+                          return 'Enter a valid email address';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    TextFormField(
+                      controller: phoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone Number',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        final phone = value?.trim() ?? '';
+                        if (phone.isEmpty) {
+                          return 'Phone number is required';
+                        }
+                        if (phone.length < 6) {
+                          return 'Enter a valid phone number';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    TextFormField(
+                      controller: locationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Location',
+                        border: OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Location is required';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    TextFormField(
+                      controller: genderController,
+                      decoration: const InputDecoration(
+                        labelText: 'Gender (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    TextFormField(
+                      controller: dobController,
+                      decoration: const InputDecoration(
+                        labelText: 'Date of Birth (optional)',
+                        hintText: 'DD/MM/YYYY',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppConstants.largePadding),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          final email = emailController.text.trim();
+                          final phone = phoneController.text.trim();
+                          final location = locationController.text.trim();
+                          final gender = genderController.text.trim();
+                          final dob = dobController.text.trim();
+
+                          bloc.add(
+                            UpdateProfileContactInlineEvent(
+                              email: email,
+                              phone: phone,
+                              location: location,
+                              gender: gender.isNotEmpty ? gender : null,
+                              dateOfBirth: dob.isNotEmpty ? dob : null,
+                            ),
+                          );
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(parentContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Contact details updated.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text('Save Changes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSocialLinksEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    required Map<String, dynamic> userProfile,
+  }) {
+    final formKey = GlobalKey<FormState>();
+    final portfolioController = TextEditingController(
+      text: userProfile['portfolioLink']?.toString() ?? '',
+    );
+    final linkedinController = TextEditingController(
+      text: userProfile['linkedinUrl']?.toString() ?? '',
+    );
+
+    return Builder(
+      builder: (context) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+        String? validateUrl(String? value) {
+          final trimmed = value?.trim() ?? '';
+          if (trimmed.isEmpty) {
+            return null;
+          }
+          final uri = Uri.tryParse(trimmed);
+          if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+            return 'Enter a valid URL starting with http or https';
+          }
+          return null;
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: viewInsets,
+              left: AppConstants.defaultPadding,
+              right: AppConstants.defaultPadding,
+              top: AppConstants.defaultPadding,
+            ),
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSheetHeader(
+                      context: context,
+                      title: 'Edit Social Links',
+                    ),
+                    const SizedBox(height: AppConstants.defaultPadding),
+                    TextFormField(
+                      controller: portfolioController,
+                      decoration: const InputDecoration(
+                        labelText: 'Portfolio URL',
+                        hintText: 'https://yourportfolio.com',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.url,
+                      validator: validateUrl,
+                    ),
+                    const SizedBox(height: AppConstants.smallPadding),
+                    TextFormField(
+                      controller: linkedinController,
+                      decoration: const InputDecoration(
+                        labelText: 'LinkedIn Profile URL',
+                        hintText: 'https://linkedin.com/in/username',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.url,
+                      validator: validateUrl,
+                    ),
+                    const SizedBox(height: AppConstants.largePadding),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          final portfolio = portfolioController.text.trim();
+                          final linkedin = linkedinController.text.trim();
+
+                          bloc.add(
+                            UpdateProfileSocialLinksInlineEvent(
+                              portfolioLink: portfolio.isNotEmpty
+                                  ? portfolio
+                                  : null,
+                              linkedinUrl: linkedin.isNotEmpty
+                                  ? linkedin
+                                  : null,
+                            ),
+                          );
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(parentContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('Social links updated.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        child: const Text('Save Changes'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   /// Profile Sections
   Widget _buildProfileSections(
     BuildContext context,
@@ -475,23 +2113,23 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
 
         const SizedBox(height: AppConstants.defaultPadding),
 
-        // Documents Section
+        // Certificates Section
         _buildModernSectionCard(
           context: context,
           state: state,
-          title: 'Documents & Certificates',
+          title: 'Certificates',
           icon: Icons.folder_outlined,
           section: 'certificates',
-          child: _buildDocumentsContent(context, state),
+          child: _buildCertificatesContent(context, state),
         ),
 
         const SizedBox(height: AppConstants.defaultPadding),
 
-        // Contact & Social Section
+        // Contact Section
         _buildModernSectionCard(
           context: context,
           state: state,
-          title: 'Contact & Social',
+          title: 'Contact',
           icon: Icons.contact_page_outlined,
           section: 'contact',
           child: _buildContactContent(state.userProfile),
@@ -587,7 +2225,11 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                         color: AppConstants.primaryColor,
                         size: 18,
                       ),
-                      onPressed: () => _navigateToEditSection(context, section),
+                      onPressed: () => _showEditSectionSheet(
+                        context: context,
+                        section: section,
+                        state: state,
+                      ),
                     ),
                   ],
                 ),
@@ -658,27 +2300,35 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     );
   }
 
-  /// Documents Content
-  Widget _buildDocumentsContent(
+  /// Certificates Content
+  Widget _buildCertificatesContent(
     BuildContext context,
     ProfileDetailsLoaded state,
   ) {
+    final resumeName = state.resumeFileName;
+    final otherCertificates = state.certificates
+        .where(
+          (cert) => (cert['type'] ?? '').toString().toLowerCase() != 'resume',
+        )
+        .toList();
+    final hasResume = resumeName != null && resumeName.isNotEmpty;
+
     return Column(
       children: [
         // Resume
-        if (state.resumeFileName != null)
+        if (hasResume)
           _buildDocumentCard(
             icon: Icons.description,
             title: 'Resume',
-            fileName: state.resumeFileName!,
+            fileName: resumeName!,
             lastUpdated: state.lastResumeUpdatedDate ?? 'Unknown',
-            onDownload: () => _downloadResume(context),
+            onDownload: () => _downloadResume(context, state.resumeDownloadUrl),
           ),
 
         // Certificates
-        if (state.certificates.isNotEmpty) ...[
+        if (otherCertificates.isNotEmpty) ...[
           const SizedBox(height: AppConstants.smallPadding),
-          ...state.certificates.map(
+          ...otherCertificates.map(
             (cert) => _buildDocumentCard(
               icon: _getCertificateIcon(cert['type'] ?? ''),
               title: cert['name'] ?? 'Document',
@@ -690,11 +2340,11 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
           ),
         ],
 
-        if (state.resumeFileName == null && state.certificates.isEmpty)
+        if (!hasResume && otherCertificates.isEmpty)
           _buildEmptyState(
             icon: Icons.folder_outlined,
-            title: 'No Documents Added',
-            subtitle: 'Upload your resume and certificates',
+            title: 'No Certificates Added',
+            subtitle: 'Upload your resume and certificates to stand out',
           ),
       ],
     );
@@ -1112,35 +2762,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     );
   }
 
-  /// Navigation and Actions
-  void _navigateToEditProfile(BuildContext context) {
-    // Navigate to profile edit screen
-    context.push(AppRoutes.profileEdit);
-  }
-
-  void _navigateToEditSection(BuildContext context, String section) {
-    switch (section) {
-      case 'skills':
-        context.push(AppRoutes.profileSkillsEdit);
-        break;
-      case 'experience':
-        context.push(AppRoutes.profileExperienceEdit);
-        break;
-      case 'education':
-        context.push(AppRoutes.profileEducationEdit);
-        break;
-      case 'certificates':
-        context.push(AppRoutes.profileCertificatesEdit);
-        break;
-      case 'contact':
-        context.push(AppRoutes.profileEdit);
-        break;
-      case 'social':
-        context.push(AppRoutes.profileEdit);
-        break;
-    }
-  }
-
   void _openUrl(BuildContext context, String url) {
     // TODO: Implement URL launcher
     // For now, show a snackbar
@@ -1153,21 +2774,13 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     );
   }
 
-  void _shareProfile(BuildContext context) {
-    // Implement profile sharing
+  void _downloadResume(BuildContext context, String? url) {
+    final message = url != null && url.isNotEmpty
+        ? 'Opening resume: $url'
+        : 'Downloading resume...';
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile sharing feature coming soon!'),
-        backgroundColor: AppConstants.primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _downloadResume(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Downloading resume...'),
+      SnackBar(
+        content: Text(message),
         backgroundColor: AppConstants.primaryColor,
         behavior: SnackBarBehavior.floating,
       ),

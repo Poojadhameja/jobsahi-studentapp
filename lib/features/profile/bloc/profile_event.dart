@@ -135,6 +135,112 @@ class DeleteExperienceEvent extends ProfileEvent {
   List<Object?> get props => [index];
 }
 
+/// Inline profile header update event
+class UpdateProfileHeaderInlineEvent extends ProfileEvent {
+  final String name;
+  final String email;
+  final String location;
+
+  const UpdateProfileHeaderInlineEvent({
+    required this.name,
+    required this.email,
+    required this.location,
+  });
+
+  @override
+  List<Object?> get props => [name, email, location];
+}
+
+/// Inline resume update event
+class UpdateProfileResumeInlineEvent extends ProfileEvent {
+  final String fileName;
+  final String? lastUpdated;
+  final String? downloadUrl;
+
+  const UpdateProfileResumeInlineEvent({
+    required this.fileName,
+    this.lastUpdated,
+    this.downloadUrl,
+  });
+
+  @override
+  List<Object?> get props => [fileName, lastUpdated, downloadUrl];
+}
+
+/// Inline contact details update event
+class UpdateProfileContactInlineEvent extends ProfileEvent {
+  final String email;
+  final String phone;
+  final String location;
+  final String? gender;
+  final String? dateOfBirth;
+
+  const UpdateProfileContactInlineEvent({
+    required this.email,
+    required this.phone,
+    required this.location,
+    this.gender,
+    this.dateOfBirth,
+  });
+
+  @override
+  List<Object?> get props => [email, phone, location, gender, dateOfBirth];
+}
+
+/// Inline social links update event
+class UpdateProfileSocialLinksInlineEvent extends ProfileEvent {
+  final String? portfolioLink;
+  final String? linkedinUrl;
+
+  const UpdateProfileSocialLinksInlineEvent({
+    this.portfolioLink,
+    this.linkedinUrl,
+  });
+
+  @override
+  List<Object?> get props => [portfolioLink, linkedinUrl];
+}
+
+/// Inline certificates update event
+class UpdateProfileCertificatesInlineEvent extends ProfileEvent {
+  final List<Map<String, dynamic>> certificates;
+
+  const UpdateProfileCertificatesInlineEvent({required this.certificates});
+
+  @override
+  List<Object?> get props => [certificates];
+}
+
+/// Inline skills update event
+class UpdateProfileSkillsInlineEvent extends ProfileEvent {
+  final List<String> skills;
+
+  const UpdateProfileSkillsInlineEvent({required this.skills});
+
+  @override
+  List<Object?> get props => [skills];
+}
+
+/// Inline experience list update event
+class UpdateProfileExperienceListEvent extends ProfileEvent {
+  final List<Map<String, dynamic>> experience;
+
+  const UpdateProfileExperienceListEvent({required this.experience});
+
+  @override
+  List<Object?> get props => [experience];
+}
+
+/// Inline education list update event
+class UpdateProfileEducationListEvent extends ProfileEvent {
+  final List<Map<String, dynamic>> education;
+
+  const UpdateProfileEducationListEvent({required this.education});
+
+  @override
+  List<Object?> get props => [education];
+}
+
 /// Refresh profile data event
 class RefreshProfileDataEvent extends ProfileEvent {
   const RefreshProfileDataEvent();

@@ -19,6 +19,14 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<UpdateEducationEvent>(_onUpdateEducation);
     on<UpdateExperienceEvent>(_onUpdateExperience);
     on<DeleteExperienceEvent>(_onDeleteExperience);
+    on<UpdateProfileHeaderInlineEvent>(_onInlineProfileHeaderUpdate);
+    on<UpdateProfileResumeInlineEvent>(_onInlineResumeUpdate);
+    on<UpdateProfileContactInlineEvent>(_onInlineContactUpdate);
+    on<UpdateProfileSocialLinksInlineEvent>(_onInlineSocialLinksUpdate);
+    on<UpdateProfileCertificatesInlineEvent>(_onInlineCertificatesUpdate);
+    on<UpdateProfileSkillsInlineEvent>(_onInlineSkillsUpdate);
+    on<UpdateProfileExperienceListEvent>(_onInlineExperienceUpdate);
+    on<UpdateProfileEducationListEvent>(_onInlineEducationUpdate);
     on<RefreshProfileDataEvent>(_onRefreshProfileData);
     on<ToggleSectionEvent>(_onToggleSection);
     on<DeleteCertificateEvent>(_onDeleteCertificate);
@@ -91,6 +99,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       String? resumeFileName = userProfile['resume_file_name'] as String?;
       String? lastResumeUpdatedDate =
           userProfile['resume_last_updated'] as String?;
+      String? resumeDownloadUrl;
       final resumeFileSizeRaw = userProfile['resume_file_size'];
       var resumeFileSize = 0;
       if (resumeFileSizeRaw is num) {
@@ -147,14 +156,17 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           ];
 
           final jobType = profile.professionalInfo.jobType;
-          final normalizedJobTypes =
-              jobType.isNotEmpty ? <String>[jobType] : <String>[];
+          final normalizedJobTypes = jobType.isNotEmpty
+              ? <String>[jobType]
+              : <String>[];
 
           final resumePath = profile.documents.resume;
-          resumeFileName =
-              resumePath.isNotEmpty ? resumePath.split('/').last : null;
+          resumeFileName = resumePath.isNotEmpty
+              ? resumePath.split('/').last
+              : null;
           lastResumeUpdatedDate = profile.status.modifiedAt;
           resumeFileSize = 0;
+          resumeDownloadUrl = resumePath.isNotEmpty ? resumePath : null;
 
           certificates = [];
           if (resumePath.isNotEmpty) {
@@ -212,7 +224,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           profileImagePath = null;
           profileImageName = null;
 
-          debugPrint('✅ [ProfileBloc] Profile data loaded successfully from API');
+          debugPrint(
+            '✅ [ProfileBloc] Profile data loaded successfully from API',
+          );
           debugPrint('🔵 [ProfileBloc] Skills count: ${skills.length}');
           debugPrint('🔵 [ProfileBloc] Experience count: ${experience.length}');
           loadedFromApi = true;
@@ -253,6 +267,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           resumeFileName: resumeFileName,
           lastResumeUpdatedDate: lastResumeUpdatedDate,
           resumeFileSize: resumeFileSize,
+          resumeDownloadUrl: resumeDownloadUrl,
         ),
       );
     } catch (e) {
@@ -442,6 +457,152 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       emit(
         currentState.copyWith(sectionExpansionStates: updatedExpansionStates),
       );
+    }
+  }
+
+  void _onInlineProfileHeaderUpdate(
+    UpdateProfileHeaderInlineEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state is ProfileDetailsLoaded) {
+      final currentState = state as ProfileDetailsLoaded;
+      final updatedProfile = Map<String, dynamic>.from(
+        currentState.userProfile,
+      );
+      updatedProfile['name'] = event.name;
+      updatedProfile['email'] = event.email;
+      updatedProfile['location'] = event.location;
+
+      emit(currentState.copyWith(userProfile: updatedProfile));
+    }
+  }
+
+  void _onInlineResumeUpdate(
+    UpdateProfileResumeInlineEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state is ProfileDetailsLoaded) {
+      final currentState = state as ProfileDetailsLoaded;
+      final sanitizedName = event.fileName.trim();
+      final sanitizedDate = event.lastUpdated?.trim() ?? '';
+      final sanitizedUrl = event.downloadUrl?.trim() ?? '';
+
+      final updatedCertificates =
+          List<Map<String, dynamic>>.from(currentState.certificates)
+            ..removeWhere(
+              (cert) =>
+                  (cert['type'] ?? '').toString().toLowerCase() == 'resume',
+            );
+
+      if (sanitizedName.isNotEmpty) {
+        updatedCertificates.insert(0, {
+          'name': sanitizedName,
+          'type': 'Resume',
+          'uploadDate': sanitizedDate.isNotEmpty
+              ? sanitizedDate
+              : 'Not specified',
+          'size': 0,
+          'extension': sanitizedName.contains('.')
+              ? sanitizedName.split('.').last
+              : 'file',
+          if (sanitizedUrl.isNotEmpty) 'path': sanitizedUrl,
+        });
+      }
+
+      emit(
+        currentState.copyWith(
+          resumeFileName: sanitizedName.isNotEmpty ? sanitizedName : null,
+          lastResumeUpdatedDate: sanitizedDate.isNotEmpty
+              ? sanitizedDate
+              : null,
+          resumeDownloadUrl: sanitizedUrl.isNotEmpty ? sanitizedUrl : null,
+          certificates: updatedCertificates,
+        ),
+      );
+    }
+  }
+
+  void _onInlineContactUpdate(
+    UpdateProfileContactInlineEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state is ProfileDetailsLoaded) {
+      final currentState = state as ProfileDetailsLoaded;
+      final updatedProfile = Map<String, dynamic>.from(
+        currentState.userProfile,
+      );
+
+      updatedProfile['email'] = event.email;
+      updatedProfile['phone'] = event.phone;
+      updatedProfile['location'] = event.location;
+
+      final gender = event.gender?.trim() ?? '';
+      updatedProfile['gender'] = gender.isNotEmpty ? gender : null;
+
+      final dob = event.dateOfBirth?.trim() ?? '';
+      updatedProfile['dateOfBirth'] = dob.isNotEmpty ? dob : null;
+
+      emit(currentState.copyWith(userProfile: updatedProfile));
+    }
+  }
+
+  void _onInlineSocialLinksUpdate(
+    UpdateProfileSocialLinksInlineEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state is ProfileDetailsLoaded) {
+      final currentState = state as ProfileDetailsLoaded;
+      final updatedProfile = Map<String, dynamic>.from(
+        currentState.userProfile,
+      );
+
+      final portfolio = event.portfolioLink?.trim() ?? '';
+      final linkedin = event.linkedinUrl?.trim() ?? '';
+
+      updatedProfile['portfolioLink'] = portfolio.isNotEmpty ? portfolio : null;
+      updatedProfile['linkedinUrl'] = linkedin.isNotEmpty ? linkedin : null;
+
+      emit(currentState.copyWith(userProfile: updatedProfile));
+    }
+  }
+
+  void _onInlineCertificatesUpdate(
+    UpdateProfileCertificatesInlineEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state is ProfileDetailsLoaded) {
+      final currentState = state as ProfileDetailsLoaded;
+      emit(currentState.copyWith(certificates: event.certificates));
+    }
+  }
+
+  void _onInlineSkillsUpdate(
+    UpdateProfileSkillsInlineEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state is ProfileDetailsLoaded) {
+      final currentState = state as ProfileDetailsLoaded;
+      emit(currentState.copyWith(skills: event.skills));
+    }
+  }
+
+  void _onInlineExperienceUpdate(
+    UpdateProfileExperienceListEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state is ProfileDetailsLoaded) {
+      final currentState = state as ProfileDetailsLoaded;
+      emit(currentState.copyWith(experience: event.experience));
+    }
+  }
+
+  void _onInlineEducationUpdate(
+    UpdateProfileEducationListEvent event,
+    Emitter<ProfileState> emit,
+  ) {
+    if (state is ProfileDetailsLoaded) {
+      final currentState = state as ProfileDetailsLoaded;
+      emit(currentState.copyWith(education: event.education));
     }
   }
 
