@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/app_constants.dart';
+import '../../../shared/services/api_service.dart';
+import '../../../shared/services/token_storage.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 
 class JobStepScreen extends StatefulWidget {
@@ -15,6 +17,9 @@ class JobStepScreen extends StatefulWidget {
 class _JobStepScreenState extends State<JobStepScreen> {
   final _formKey = GlobalKey<FormState>();
   final _coverLetterController = TextEditingController();
+  final ApiService _apiService = ApiService();
+  final TokenStorage _tokenStorage = TokenStorage.instance;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -50,7 +55,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitCoverLetter,
+                  onPressed: _isSubmitting ? null : _submitCoverLetter,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppConstants.secondaryColor,
                     foregroundColor: Colors.white,
@@ -61,10 +66,24 @@ class _JobStepScreenState extends State<JobStepScreen> {
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
-                    'Save Cover Letter',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Text(
+                          'Submit Application',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -276,20 +295,78 @@ class _JobStepScreenState extends State<JobStepScreen> {
     );
   }
 
-  void _submitCoverLetter() {
+  Future<void> _submitCoverLetter() async {
     _closeKeyboard();
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Cover letter saved locally. Job submission integration is temporarily disabled.',
+      final coverLetter = _coverLetterController.text.trim();
+      final jobIdValue = widget.job['id'];
+      final jobId = _parseId(jobIdValue);
+
+      if (jobId == null) {
+        _showErrorSnackBar('Invalid job information. Please try again later.');
+        return;
+      }
+
+      final studentIdString = await _tokenStorage.getUserId();
+      int? studentId = _parseId(studentIdString);
+
+      if (studentId == null) {
+        studentId = _parseId(widget.job['student_id']);
+      }
+
+      if (studentId == null) {
+        _showErrorSnackBar(
+          'Could not determine student profile. Please log in again.',
+        );
+        return;
+      }
+
+      setState(() {
+        _isSubmitting = true;
+      });
+
+      try {
+        final response = await _apiService.submitJobApplication(
+          jobId: jobId,
+          studentId: studentId,
+          coverLetter: coverLetter,
+        );
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              response.message.isNotEmpty
+                  ? response.message
+                  : 'Application submitted successfully.',
+            ),
+            backgroundColor: AppConstants.successColor,
           ),
-          backgroundColor: AppConstants.primaryColor,
-        ),
-      );
+        );
+
+        Navigator.of(context).pop(true);
+      } catch (e) {
+        if (!mounted) return;
+        _showErrorSnackBar(e.toString());
+      } finally {
+        if (!mounted) return;
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     } else {
       _showErrorSnackBar('Please enter your cover letter.');
     }
+  }
+
+  int? _parseId(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value.replaceAll(RegExp(r'[^0-9]'), ''));
+    }
+    return null;
   }
 
   void _closeKeyboard() {

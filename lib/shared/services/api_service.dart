@@ -7,6 +7,7 @@ import '../../features/profile/models/student_profile.dart';
 import '../../features/jobs/models/job_details_api_models.dart';
 import '../../features/profile/models/profile_update_response.dart';
 import 'token_storage.dart';
+import '../../features/jobs/models/job_application_response.dart';
 
 /// API Service for making HTTP requests
 class ApiService {
@@ -626,6 +627,73 @@ extension JobsApi on ApiService {
       }
     } catch (e) {
       debugPrint('🔴 [Jobs] Error fetching job details: $e');
+      rethrow;
+    }
+  }
+
+  /// Submit a job application
+  Future<JobApplicationResponse> submitJobApplication({
+    required int jobId,
+    required int studentId,
+    String? coverLetter,
+  }) async {
+    try {
+      debugPrint(
+        '🔵 [Jobs] Submitting job application: jobId=$jobId, studentId=$studentId',
+      );
+
+      final payload = <String, dynamic>{
+        'job_id': jobId,
+        'student_id': studentId,
+      };
+
+      final trimmedCoverLetter = coverLetter?.trim() ?? '';
+      if (trimmedCoverLetter.isNotEmpty) {
+        payload['cover_letter'] = trimmedCoverLetter;
+      }
+
+      final response = await post(
+        '/jobs/job_apply.php',
+        data: payload,
+      );
+
+      debugPrint(
+        '🔵 [Jobs] Job application response status: ${response.statusCode}',
+      );
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        try {
+          jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 [Jobs] Failed to decode job application response: $e');
+          throw Exception('Invalid response format from server');
+        }
+      } else {
+        debugPrint(
+          '🔴 [Jobs] Unexpected job application response type: ${rawData.runtimeType}',
+        );
+        throw Exception('Unexpected response format from server');
+      }
+
+      final result = JobApplicationResponse.fromJson(jsonData);
+
+      if (!result.success) {
+        final failureMessage = result.message.isNotEmpty
+            ? result.message
+            : 'Failed to submit job application';
+        debugPrint('🔴 [Jobs] Job application failed: $failureMessage');
+        throw Exception(failureMessage);
+      }
+
+      debugPrint('✅ [Jobs] Job application submitted successfully');
+      return result;
+    } catch (e) {
+      debugPrint('🔴 [Jobs] Error submitting job application: $e');
       rethrow;
     }
   }
