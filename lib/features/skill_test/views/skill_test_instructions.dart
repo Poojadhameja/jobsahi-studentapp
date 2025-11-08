@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../bloc/skill_test_bloc.dart';
-import '../bloc/skill_test_event.dart';
 import '../bloc/skill_test_state.dart';
 
 class SkillTestInstructionsScreen extends StatelessWidget {
@@ -395,9 +394,14 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
 
   /// Proceeds to the actual test
   void _proceedToTest(BuildContext context) {
-    // Navigate to the skills test FAQ screen
-    context.read<SkillTestBloc>().add(
-      ViewTestFAQEvent(testId: test['id']?.toString() ?? 'test_1'),
+    final testId = test['id']?.toString() ?? 'test_general';
+    context.pushNamed(
+      'skillsTestFAQ',
+      pathParameters: {'id': testId},
+      extra: {
+        'job': job,
+        'test': test,
+      },
     );
   }
 }

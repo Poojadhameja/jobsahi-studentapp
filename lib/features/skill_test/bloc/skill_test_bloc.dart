@@ -427,6 +427,7 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
       switch (jobCategory.toLowerCase()) {
         case 'electrician':
           skillTest = {
+            'id': 'test_electrician',
             'title': 'इलेक्ट्रीशियन स्किल टेस्ट',
             'subtitle': 'Comprehensive Test',
             'icon': Icons.electrical_services,
@@ -441,6 +442,7 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
           break;
         case 'fitter':
           skillTest = {
+            'id': 'test_fitter',
             'title': 'फिटर स्किल टेस्ट',
             'subtitle': 'Comprehensive Test',
             'icon': Icons.handyman,
@@ -455,6 +457,7 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
           break;
         default:
           skillTest = {
+            'id': 'test_general',
             'title': 'सामान्य स्किल टेस्ट',
             'subtitle': 'General Test',
             'icon': Icons.quiz,

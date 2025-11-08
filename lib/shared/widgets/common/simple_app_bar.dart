@@ -32,6 +32,9 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Whether to center the title
   final bool centerTitle;
 
+  /// Optional callback when back button pressed
+  final VoidCallback? onBack;
+
   const SimpleAppBar({
     super.key,
     required this.title,
@@ -41,6 +44,7 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.backgroundColor,
     this.titleColor,
     this.centerTitle = true,
+    this.onBack,
   });
 
   @override
@@ -75,12 +79,24 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (showBackButton) {
       return IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () => _handleBackAction(context),
+        onPressed: () {
+          if (onBack != null) {
+            onBack!();
+          } else {
+            _handleBackAction(context);
+          }
+        },
       );
     } else if (showCloseButton) {
       return IconButton(
         icon: const Icon(Icons.close),
-        onPressed: () => _handleBackAction(context),
+        onPressed: () {
+          if (onBack != null) {
+            onBack!();
+          } else {
+            _handleBackAction(context);
+          }
+        },
       );
     }
     return null;

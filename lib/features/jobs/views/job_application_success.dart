@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
-import '../../skill_test/views/skill_test_details.dart';
 
 /// Job Application Success Screen
 /// Shows confirmation after successful job application submission
@@ -173,8 +173,30 @@ class JobApplicationSuccessScreen extends StatelessWidget {
 
   /// Navigates to take skill test
   void _takeTest(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => SkillTestDetailsScreen(job: job)),
+    final jobId = job['id']?.toString().trim();
+    final fallbackJobId =
+        jobId != null && jobId.isNotEmpty ? jobId : 'job_skill_test';
+
+    final jobPayload = Map<String, dynamic>.from(job);
+    jobPayload.putIfAbsent(
+      'category',
+      () {
+        if (job['category'] != null) return job['category'];
+        if (job['job_type_display'] != null) {
+          return job['job_type_display'];
+        }
+        final tags = job['tags'];
+        if (tags is List && tags.isNotEmpty) {
+          return tags.first.toString();
+        }
+        return 'general';
+      },
+    );
+
+    context.pushNamed(
+      'skillTestDetails',
+      pathParameters: {'id': fallbackJobId},
+      extra: jobPayload,
     );
   }
 }

@@ -117,7 +117,7 @@ class AppRoutes {
   static const String aboutCompany = '/jobs/company/:id';
 
   /// Job application success
-  static const String jobApplicationSuccess = '/jobs/application/success';
+  static const String jobApplicationSuccess = '/jobs/application/success/:id';
 
   /// Job application step
   static const String jobStep = '/jobs/application/step/:id';
@@ -137,7 +137,7 @@ class AppRoutes {
 
   // ==================== SKILL TEST ROUTES ====================
   /// Skill test details with dynamic ID
-  static const String skillTestDetails = '/skill-test/:id';
+  static const String skillTestDetails = '/skill-test/:id/details';
 
   /// Skill test instructions
   static const String skillTestInstructions = '/skill-test/:id/instructions';
@@ -180,7 +180,7 @@ class AppRoutes {
   static String chatWithId(String id) => '/messages/chat/$id';
 
   /// Generate skill test details route with ID
-  static String skillTestDetailsWithId(String id) => '/skill-test/$id';
+  static String skillTestDetailsWithId(String id) => '/skill-test/$id/details';
 
   /// Generate skill test instructions route with ID
   static String skillTestInstructionsWithId(String id) =>
@@ -197,4 +197,8 @@ class AppRoutes {
 
   /// Generate job step route with ID
   static String jobStepWithId(String id) => '/jobs/application/step/$id';
+
+  /// Generate job application success route with ID
+  static String jobApplicationSuccessWithId(String id) =>
+      '/jobs/application/success/$id';
 }

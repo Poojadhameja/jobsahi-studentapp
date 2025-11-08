@@ -489,15 +489,21 @@ class AppRouter {
           debugPrint('🔵 [Router] Job details route - ID from URL: $id');
           debugPrint('🔵 [Router] Full path: ${state.uri}');
           debugPrint('🔵 [Router] Path parameters: ${state.pathParameters}');
-          // Create a job object with the correct ID from URL
-          final job = {
-            'id': id,
-            'title': 'Loading...',
-            'company': 'Loading...',
-            'location': 'Loading...',
-            'salary': 'Loading...',
-            'description': 'Loading job details...',
-          };
+          Map<String, dynamic> job;
+          if (state.extra is Map<String, dynamic>) {
+            job = Map<String, dynamic>.from(state.extra as Map<String, dynamic>);
+            job['id'] = id;
+          } else {
+            // Create a job object with the correct ID from URL
+            job = {
+              'id': id,
+              'title': 'Loading...',
+              'company': 'Loading...',
+              'location': 'Loading...',
+              'salary': 'Loading...',
+              'description': 'Loading job details...',
+            };
+          }
           debugPrint('🔵 [Router] Created job object: $job');
           return JobDetailsScreen(job: job);
         },
@@ -539,7 +545,16 @@ class AppRouter {
         path: AppRoutes.jobApplicationSuccess,
         name: 'jobApplicationSuccess',
         builder: (context, state) {
-          final job = JobData.recommendedJobs.first;
+          final id = state.pathParameters['id'] ?? '';
+          final extra = state.extra;
+          Map<String, dynamic> job;
+          if (extra is Map<String, dynamic>) {
+            job = Map<String, dynamic>.from(extra);
+            job['id'] = id;
+          } else {
+            job = Map<String, dynamic>.from(JobData.recommendedJobs.first);
+            job['id'] = id.isNotEmpty ? id : job['id']?.toString() ?? '';
+          }
           return JobApplicationSuccessScreen(job: job);
         },
       ),
@@ -549,7 +564,12 @@ class AppRouter {
         name: 'jobStep',
         builder: (context, state) {
           final id = state.pathParameters['id'];
-          final job = _findJobByIdOrDefault(id);
+          final extra = state.extra;
+          Map<String, dynamic> job = _findJobByIdOrDefault(id);
+          if (extra is Map<String, dynamic>) {
+            job = Map<String, dynamic>.from(extra);
+            job['id'] = id ?? job['id'];
+          }
           return JobStepScreen(job: job);
         },
       ),
@@ -588,7 +608,16 @@ class AppRouter {
         name: 'skillTestDetails',
         builder: (context, state) {
           final id = state.pathParameters['id'];
-          final job = _findJobByIdOrDefault(id);
+          final extra = state.extra;
+          Map<String, dynamic> job;
+          if (extra is Map<String, dynamic>) {
+            job = Map<String, dynamic>.from(extra);
+            if (id != null) {
+              job['id'] = id;
+            }
+          } else {
+            job = _findJobByIdOrDefault(id);
+          }
           return SkillTestDetailsScreen(job: job);
         },
       ),
@@ -598,8 +627,25 @@ class AppRouter {
         name: 'skillTestInstructions',
         builder: (context, state) {
           final id = state.pathParameters['id'];
-          final job = _findJobByIdOrDefault(id);
-          final test = <String, dynamic>{};
+          final extra = state.extra;
+          Map<String, dynamic> job = _findJobByIdOrDefault(id);
+          Map<String, dynamic> test = <String, dynamic>{};
+          if (extra is Map<String, dynamic>) {
+            final extraJob = extra['job'];
+            final extraTest = extra['test'];
+            if (extraJob is Map<String, dynamic>) {
+              job = Map<String, dynamic>.from(extraJob);
+              if (id != null) {
+                job['id'] = id;
+              }
+            }
+            if (extraTest is Map<String, dynamic>) {
+              test = Map<String, dynamic>.from(extraTest);
+              if (id != null) {
+                test['id'] = id;
+              }
+            }
+          }
           return SkillTestInstructionsScreen(job: job, test: test);
         },
       ),
@@ -609,8 +655,25 @@ class AppRouter {
         name: 'skillsTestFAQ',
         builder: (context, state) {
           final id = state.pathParameters['id'];
-          final job = _findJobByIdOrDefault(id);
-          final test = <String, dynamic>{};
+          final extra = state.extra;
+          Map<String, dynamic> job = _findJobByIdOrDefault(id);
+          Map<String, dynamic> test = <String, dynamic>{};
+          if (extra is Map<String, dynamic>) {
+            final extraJob = extra['job'];
+            final extraTest = extra['test'];
+            if (extraJob is Map<String, dynamic>) {
+              job = Map<String, dynamic>.from(extraJob);
+              if (id != null) {
+                job['id'] = id;
+              }
+            }
+            if (extraTest is Map<String, dynamic>) {
+              test = Map<String, dynamic>.from(extraTest);
+              if (id != null) {
+                test['id'] = id;
+              }
+            }
+          }
           return SkillsTestFAQScreen(job: job, test: test);
         },
       ),

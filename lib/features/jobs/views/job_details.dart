@@ -4,14 +4,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/data/job_data.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
-
-import 'job_step.dart';
 
 import 'write_review.dart';
 import 'about_company.dart';
@@ -93,6 +92,13 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                 length: 3,
                 child: Column(
                   children: [
+                    if (isLoading)
+                      const LinearProgressIndicator(
+                        minHeight: 3,
+                        backgroundColor: Colors.transparent,
+                        color: AppConstants.secondaryColor,
+                      ),
+
                     // Job header section
                     _buildJobHeader(
                       context,
@@ -115,32 +121,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ],
                 ),
               ),
-              // Loading overlay
-              if (isLoading)
-                Container(
-                  color: Colors.black.withOpacity(0.3),
-                  child: const Center(
-                    child: Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 16),
-                            Text(
-                              'जॉब विवरण लोड हो रहा है...',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
             ],
           ),
         );
@@ -1101,8 +1081,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       currentJob = currentState.job;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => JobStepScreen(job: currentJob)),
+    final jobId = currentJob['id']?.toString();
+    if (jobId == null || jobId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to determine job ID for application.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final jobPayload = Map<String, dynamic>.from(currentJob);
+    jobPayload['id'] = jobId;
+
+    context.pushNamed(
+      'jobStep',
+      pathParameters: {'id': jobId},
+      extra: jobPayload,
     );
   }
 }

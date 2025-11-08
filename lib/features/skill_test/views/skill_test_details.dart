@@ -48,11 +48,14 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
         builder: (context, state) {
           Map<String, dynamic> skillTest = {};
           bool isBookmarked = false;
+          final bool isLoading = state is SkillTestLoading;
 
           if (state is SkillTestDetailsLoaded) {
             skillTest = state.skillTest;
             isBookmarked = state.isBookmarked;
           }
+
+          final bool hasTestData = skillTest.isNotEmpty;
 
           return Scaffold(
             backgroundColor: AppConstants.cardBackgroundColor,
@@ -61,11 +64,14 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
               showBackButton: true,
               actions: [
                 IconButton(
-                  onPressed: () {
-                    context.read<SkillTestBloc>().add(
-                      ToggleTestBookmarkEvent(testId: 'test_1'),
-                    );
-                  },
+                  onPressed: hasTestData
+                      ? () {
+                          final testId = skillTest['id']?.toString() ?? 'test_1';
+                          context.read<SkillTestBloc>().add(
+                                ToggleTestBookmarkEvent(testId: testId),
+                              );
+                        }
+                      : null,
                   icon: Icon(
                     isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     color: isBookmarked
@@ -76,31 +82,46 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
               ],
             ),
             body: SafeArea(
-              child: Column(
-                children: [
-                  // Scrollable content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(
-                        AppConstants.defaultPadding,
-                      ),
-                      child: _buildMainCard(context, skillTest),
-                    ),
-                  ),
+              child: hasTestData
+                  ? Column(
+                      children: [
+                        // Scrollable content
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(
+                              AppConstants.defaultPadding,
+                            ),
+                            child: _buildMainCard(context, skillTest),
+                          ),
+                        ),
 
-                  // Fixed bottom button
-                  Container(
-                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                    decoration: BoxDecoration(
-                      color: AppConstants.cardBackgroundColor,
-                      border: Border(
-                        top: BorderSide(color: Colors.grey.shade200),
-                      ),
+                        // Fixed bottom button
+                        Container(
+                          padding:
+                              const EdgeInsets.all(AppConstants.defaultPadding),
+                          decoration: BoxDecoration(
+                            color: AppConstants.cardBackgroundColor,
+                            border: Border(
+                              top: BorderSide(color: Colors.grey.shade200),
+                            ),
+                          ),
+                          child:
+                              _buildBottomSection(context, skillTest, job),
+                        ),
+                      ],
+                    )
+                  : Center(
+                      child: isLoading
+                          ? const CircularProgressIndicator()
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 12),
+                                Text('Loading skill test details...'),
+                              ],
+                            ),
                     ),
-                    child: _buildBottomSection(context, skillTest),
-                  ),
-                ],
-              ),
             ),
           );
         },
@@ -152,17 +173,23 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
 
   /// Builds the test overview section
   Widget _buildTestOverviewSection(Map<String, dynamic> test) {
+    final Color accentColor = test['color'] is Color
+        ? test['color'] as Color
+        : AppConstants.primaryColor;
+    final IconData iconData = test['icon'] is IconData
+        ? test['icon'] as IconData
+        : Icons.quiz;
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: (test['color'] as Color).withValues(alpha: 0.1),
+            color: accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
-            test['icon'] as IconData,
-            color: test['color'] as Color,
+            iconData,
+            color: accentColor,
             size: 24,
           ),
         ),
@@ -309,7 +336,11 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
   }
 
   /// Builds the bottom section with provider and button
-  Widget _buildBottomSection(BuildContext context, Map<String, dynamic> test) {
+  Widget _buildBottomSection(
+    BuildContext context,
+    Map<String, dynamic> test,
+    Map<String, dynamic> job,
+  ) {
     return Column(
       children: [
         Text(
@@ -318,27 +349,40 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppConstants.defaultPadding),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              context.read<SkillTestBloc>().add(
-                ViewTestInstructionsEvent(testId: 'test_1'),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.secondaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        Builder(
+          builder: (context) {
+            final hasTest = test.isNotEmpty;
+            return SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: hasTest
+                    ? () {
+                        final testId = test['id']?.toString() ?? 'test_general';
+                        context.pushNamed(
+                          'skillTestInstructions',
+                          pathParameters: {'id': testId},
+                          extra: {
+                            'job': job,
+                            'test': test,
+                          },
+                        );
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConstants.secondaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                  ),
+                ),
+                child: const Text(
+                  'Ready For Test',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-            child: const Text(
-              'Ready For Test',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
+            );
+          },
         ),
       ],
     );

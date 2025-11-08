@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
-import 'job_application_success.dart';
 
 class JobStepScreen extends StatefulWidget {
   final Map<String, dynamic> job;
@@ -30,65 +31,69 @@ class _JobStepScreenState extends State<JobStepScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
-        title: 'Job Application / नौकरी आवेदन',
-        showBackButton: true,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: _buildMainCard(),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              decoration: BoxDecoration(
-                color: AppConstants.cardBackgroundColor,
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade200),
+    return WillPopScope(
+      onWillPop: _handleBackNavigation,
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
+        appBar: SimpleAppBar(
+          title: 'Job Application / नौकरी आवेदन',
+          showBackButton: true,
+          onBack: _navigateBack,
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: _buildMainCard(),
                 ),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitCoverLetter,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.secondaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.borderRadius),
-                    ),
-                    elevation: 2,
+              Container(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardBackgroundColor,
+                  border: Border(
+                    top: BorderSide(color: Colors.grey.shade200),
                   ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _submitCoverLetter,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.secondaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppConstants.borderRadius),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'Submit Application',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        )
-                      : const Text(
-                          'Submit Application',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -347,18 +352,17 @@ class _JobStepScreenState extends State<JobStepScreen> {
         );
 
         final jobWithApplication = Map<String, dynamic>.from(widget.job);
+        jobWithApplication['id'] = jobId;
         if (response.data != null) {
           jobWithApplication['application'] = response.data;
         }
         jobWithApplication['application_status'] =
             response.data?['status'] ?? 'pending';
 
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => JobApplicationSuccessScreen(
-              job: jobWithApplication,
-            ),
-          ),
+        context.goNamed(
+          'jobApplicationSuccess',
+          pathParameters: {'id': jobId.toString()},
+          extra: jobWithApplication,
         );
       } catch (e) {
         if (!mounted) return;
@@ -388,6 +392,32 @@ class _JobStepScreenState extends State<JobStepScreen> {
 
   void _closeKeyboard() {
     FocusScope.of(context).requestFocus(FocusNode());
+  }
+
+  void _navigateBack() {
+    final jobId = widget.job['id']?.toString();
+    if (jobId == null || jobId.isEmpty) {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        context.go(AppRoutes.home);
+      }
+      return;
+    }
+
+    final jobPayload = Map<String, dynamic>.from(widget.job);
+    jobPayload['id'] = jobId;
+
+    context.goNamed(
+      'jobDetails',
+      pathParameters: {'id': jobId},
+      extra: jobPayload,
+    );
+  }
+
+  Future<bool> _handleBackNavigation() async {
+    _navigateBack();
+    return false;
   }
 
   void _showErrorSnackBar(String message) {
