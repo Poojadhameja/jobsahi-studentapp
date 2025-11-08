@@ -846,3 +846,50 @@ extension StudentProfileApi on ApiService {
     }
   }
 }
+
+/// Student Applications API methods
+extension StudentApplicationsApi on ApiService {
+  /// Get student's job applications
+  Future<List<Map<String, dynamic>>> getStudentApplications() async {
+    try {
+      final response = await get('/student/applications.php');
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+      } else {
+        throw Exception('Unexpected response format from applications API');
+      }
+
+      final statusFlag = jsonData['status'];
+      final isSuccess = statusFlag == true ||
+          statusFlag == 1 ||
+          statusFlag == '1' ||
+          (statusFlag is String &&
+              statusFlag.toLowerCase() == 'true');
+
+      if (!isSuccess) {
+        final message =
+            jsonData['message']?.toString() ?? 'Failed to load applications';
+        throw Exception(message);
+      }
+
+      final data = jsonData['data'];
+      if (data is List) {
+        return data
+            .where((item) => item is Map<String, dynamic>)
+            .map((item) => Map<String, dynamic>.from(item as Map<String, dynamic>))
+            .toList();
+      }
+
+      return const <Map<String, dynamic>>[];
+    } catch (e) {
+      debugPrint('🔴 [StudentApplications] Error fetching applications: $e');
+      rethrow;
+    }
+  }
+}

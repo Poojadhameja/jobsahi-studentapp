@@ -34,29 +34,29 @@ class _JobStepScreenState extends State<JobStepScreen> {
     return WillPopScope(
       onWillPop: _handleBackNavigation,
       child: Scaffold(
-        backgroundColor: AppConstants.cardBackgroundColor,
+            backgroundColor: AppConstants.cardBackgroundColor,
         appBar: SimpleAppBar(
-          title: 'Job Application / नौकरी आवेदन',
-          showBackButton: true,
+              title: 'Job Application / नौकरी आवेदन',
+              showBackButton: true,
           onBack: _navigateBack,
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
+            ),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppConstants.defaultPadding),
                   child: _buildMainCard(),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                decoration: BoxDecoration(
-                  color: AppConstants.cardBackgroundColor,
-                  border: Border(
-                    top: BorderSide(color: Colors.grey.shade200),
-                  ),
-                ),
+                  Container(
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    decoration: BoxDecoration(
+                      color: AppConstants.cardBackgroundColor,
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -90,13 +90,13 @@ class _JobStepScreenState extends State<JobStepScreen> {
                             ),
                           ),
                   ),
-                ),
-              ),
-            ],
+                    ),
+                  ),
+                ],
           ),
-        ),
-      ),
-    );
+              ),
+            ),
+          );
   }
 
   Widget _buildMainCard() {
@@ -261,12 +261,12 @@ class _JobStepScreenState extends State<JobStepScreen> {
         const SizedBox(height: AppConstants.smallPadding),
         const Text(
           'Share a short summary about yourself and why you are the right fit for this opportunity.',
-          style: TextStyle(
-            fontSize: 12,
+                    style: TextStyle(
+                      fontSize: 12,
             color: AppConstants.textSecondaryColor,
           ),
         ),
-        const SizedBox(height: AppConstants.defaultPadding),
+          const SizedBox(height: AppConstants.defaultPadding),
         TextFormField(
           controller: _coverLetterController,
           maxLines: 8,

@@ -95,6 +95,13 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
               backgroundColor: AppConstants.successColor,
             ),
           );
+        } else if (state is JobsError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       },
       child: BlocBuilder<JobsBloc, JobsState>(

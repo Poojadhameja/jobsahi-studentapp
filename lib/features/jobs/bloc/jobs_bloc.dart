@@ -17,6 +17,21 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   final JobsRepository _jobsRepository;
   final ApiService _apiService;
 
+  static const List<String> _monthNames = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
   JobsBloc({JobsRepository? jobsRepository, ApiService? apiService})
     : _jobsRepository = jobsRepository ?? _createDefaultRepository(),
       _apiService = apiService ?? ApiService(),
@@ -84,24 +99,26 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       if (jobsResponse.status) {
         // Convert Job objects to Map format for compatibility with existing UI
         final allJobs = jobsResponse.data.map((job) => _jobToMap(job)).toList();
-        
+
         // Load saved jobs from API automatically
         List<Map<String, dynamic>> savedJobs = [];
         Set<String> savedJobIds = <String>{};
-        
+
         try {
           debugPrint('🔵 [Jobs] Loading saved jobs from API...');
           final savedJobsResponse = await _jobsRepository.getSavedJobs();
-          
+
           if (savedJobsResponse.status) {
-        // Convert SavedJobItem to Map format - toMap() already handles deep conversion
-        savedJobs = savedJobsResponse.data.map((item) => item.toMap()).toList();
-            
+            // Convert SavedJobItem to Map format - toMap() already handles deep conversion
+            savedJobs = savedJobsResponse.data
+                .map((item) => item.toMap())
+                .toList();
+
             // Extract saved job IDs
             savedJobIds = savedJobsResponse.data
                 .map((item) => item.jobId.toString())
                 .toSet();
-            
+
             debugPrint(
               '✅ [Jobs] Loaded ${savedJobs.length} saved jobs from API',
             );
@@ -121,8 +138,9 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           savedJobs = JobData.savedJobs;
           savedJobIds = UserData.savedJobIds.toSet();
         }
-        
-        final appliedJobs = JobData.appliedJobs; // Keep existing applied jobs for now
+
+        final appliedJobs =
+            JobData.appliedJobs; // Keep existing applied jobs for now
 
         emit(
           JobsLoaded(
@@ -146,24 +164,28 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         // Use mock data as fallback when user is not authenticated
         debugPrint('🔵 User not authenticated, using mock data as fallback');
         final allJobs = JobData.recommendedJobs;
-        
+
         // Try to load saved jobs even in fallback mode (might work if partially authenticated)
         List<Map<String, dynamic>> savedJobs = JobData.savedJobs;
         Set<String> savedJobIds = UserData.savedJobIds.toSet();
-        
+
         try {
           final savedJobsResponse = await _jobsRepository.getSavedJobs();
           if (savedJobsResponse.status) {
-            savedJobs = savedJobsResponse.data.map((item) => item.toMap()).toList();
+            savedJobs = savedJobsResponse.data
+                .map((item) => item.toMap())
+                .toList();
             savedJobIds = savedJobsResponse.data
                 .map((item) => item.jobId.toString())
                 .toSet();
             debugPrint('✅ Loaded saved jobs even in fallback mode');
           }
         } catch (savedJobsError) {
-          debugPrint('⚠️ Could not load saved jobs in fallback: $savedJobsError');
+          debugPrint(
+            '⚠️ Could not load saved jobs in fallback: $savedJobsError',
+          );
         }
-        
+
         final appliedJobs = JobData.appliedJobs;
 
         emit(
@@ -476,11 +498,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             );
           } else {
             // Update saved job IDs even if job not found in current list
-            emit(
-              currentState.copyWith(
-                savedJobIds: updatedSavedJobIds,
-              ),
-            );
+            emit(currentState.copyWith(savedJobIds: updatedSavedJobIds));
           }
 
           // Emit success state
@@ -498,34 +516,36 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           final updatedSavedJobIds = Set<String>.from(currentState.savedJobIds);
           updatedSavedJobIds.add(event.jobId);
 
-          emit(
-            currentState.copyWith(
-              savedJobIds: updatedSavedJobIds,
-            ),
-          );
+          emit(currentState.copyWith(savedJobIds: updatedSavedJobIds));
         }
         emit(JobSavedState(jobId: event.jobId));
       } else if (saveJobResponse.isJobNotFound) {
         // Job not found
-        emit(JobsError(
-          message: saveJobResponse.message.isNotEmpty
-              ? saveJobResponse.message
-              : 'Job not found or not available for saving',
-        ));
+        emit(
+          JobsError(
+            message: saveJobResponse.message.isNotEmpty
+                ? saveJobResponse.message
+                : 'Job not found or not available for saving',
+          ),
+        );
       } else if (saveJobResponse.isInvalidToken) {
         // Invalid token - authentication issue
-        emit(JobsError(
-          message: saveJobResponse.message.isNotEmpty
-              ? saveJobResponse.message
-              : 'Authentication failed. Please login again.',
-        ));
+        emit(
+          JobsError(
+            message: saveJobResponse.message.isNotEmpty
+                ? saveJobResponse.message
+                : 'Authentication failed. Please login again.',
+          ),
+        );
       } else {
         // Other error
-        emit(JobsError(
-          message: saveJobResponse.message.isNotEmpty
-              ? saveJobResponse.message
-              : 'Failed to save job',
-        ));
+        emit(
+          JobsError(
+            message: saveJobResponse.message.isNotEmpty
+                ? saveJobResponse.message
+                : 'Failed to save job',
+          ),
+        );
       }
     } catch (e) {
       debugPrint('🔴 [JobsBloc] Error saving job: $e');
@@ -577,7 +597,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       } else if (unsaveJobResponse.isJobNotSaved) {
         // Job is not saved or doesn't exist
         debugPrint('⚠️ [JobsBloc] Job is not saved or doesn\'t exist');
-        
+
         // Still update local state to remove from saved list
         if (state is JobsLoaded) {
           final currentState = state as JobsLoaded;
@@ -599,11 +619,13 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         emit(JobUnsavedState(jobId: event.jobId));
       } else {
         // Other error
-        emit(JobsError(
-          message: unsaveJobResponse.message.isNotEmpty
-              ? unsaveJobResponse.message
-              : 'Failed to unsave job',
-        ));
+        emit(
+          JobsError(
+            message: unsaveJobResponse.message.isNotEmpty
+                ? unsaveJobResponse.message
+                : 'Failed to unsave job',
+          ),
+        );
       }
     } catch (e) {
       debugPrint('🔴 [JobsBloc] Error unsaving job: $e');
@@ -669,7 +691,9 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
 
       if (savedJobsResponse.status) {
         // Convert SavedJobItem to Map format - toMap() already handles deep conversion
-        final savedJobs = savedJobsResponse.data.map((item) => item.toMap()).toList();
+        final savedJobs = savedJobsResponse.data
+            .map((item) => item.toMap())
+            .toList();
 
         debugPrint(
           '✅ [JobsBloc] Loaded ${savedJobs.length} saved jobs successfully',
@@ -682,30 +706,32 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           ),
         );
       } else {
-        debugPrint('🔴 [JobsBloc] Failed to load saved jobs: ${savedJobsResponse.message}');
-        emit(JobsError(
-          message: savedJobsResponse.message.isNotEmpty
-              ? savedJobsResponse.message
-              : 'Failed to load saved jobs',
-        ));
+        debugPrint(
+          '🔴 [JobsBloc] Failed to load saved jobs: ${savedJobsResponse.message}',
+        );
+        emit(
+          JobsError(
+            message: savedJobsResponse.message.isNotEmpty
+                ? savedJobsResponse.message
+                : 'Failed to load saved jobs',
+          ),
+        );
       }
     } catch (e) {
       debugPrint('🔴 [JobsBloc] Error loading saved jobs: $e');
-      
+
       // Check if it's an authentication error
       final errorMessage = e.toString();
       if (errorMessage.contains('User must be logged in') ||
           errorMessage.contains('Unauthorized') ||
           errorMessage.contains('No token provided')) {
-        debugPrint('ℹ️ [JobsBloc] User not authenticated, using mock data as fallback');
+        debugPrint(
+          'ℹ️ [JobsBloc] User not authenticated, using mock data as fallback',
+        );
         // Use mock data as fallback when user is not authenticated
         final savedJobs = JobData.savedJobs;
 
-        emit(
-          SavedJobsLoaded(
-            savedJobs: savedJobs,
-          ),
-        );
+        emit(SavedJobsLoaded(savedJobs: savedJobs));
       } else {
         emit(JobsError(message: 'Failed to load saved jobs: ${e.toString()}'));
       }
@@ -865,21 +891,30 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   }
 
   /// Handle load application tracker
-  void _onLoadApplicationTracker(
+  Future<void> _onLoadApplicationTracker(
     LoadApplicationTrackerEvent event,
     Emitter<JobsState> emit,
-  ) {
+  ) async {
     try {
-      // Load application tracker data from mock data
-      final appliedJobs = JobData.appliedJobs;
-      final interviewJobs = JobData.appliedJobs.where((job) {
-        return job['status'] == 'Interview Scheduled' ||
-            job['status'] == 'Interview Pending';
-      }).toList();
-      final offerJobs = JobData.appliedJobs.where((job) {
-        return job['status'] == 'Offer Received' ||
-            job['status'] == 'Offer Accepted';
-      }).toList();
+      final applications = await _apiService.getStudentApplications();
+
+      final appliedJobs = <Map<String, dynamic>>[];
+      final interviewJobs = <Map<String, dynamic>>[];
+      final offerJobs = <Map<String, dynamic>>[];
+
+      for (final application in applications) {
+        final normalized = _normalizeApplicationForTracker(application);
+        final statusKey =
+            normalized.remove('raw_status')?.toString().toLowerCase() ?? '';
+
+        if (_isOfferStatus(statusKey)) {
+          offerJobs.add(normalized);
+        } else if (_isInterviewStatus(statusKey)) {
+          interviewJobs.add(normalized);
+        } else {
+          appliedJobs.add(normalized);
+        }
+      }
 
       emit(
         ApplicationTrackerLoaded(
@@ -889,9 +924,12 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         ),
       );
     } catch (e) {
+      debugPrint('🔴 [Jobs] Failed to load application tracker: $e');
       emit(
         JobsError(
-          message: 'Failed to load application tracker: ${e.toString()}',
+          message: e.toString().startsWith('Exception: ')
+              ? e.toString().substring('Exception: '.length)
+              : 'Failed to load application tracker: ${e.toString()}',
         ),
       );
     }
@@ -918,6 +956,135 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         JobsError(message: 'Failed to apply for more jobs: ${e.toString()}'),
       );
     }
+  }
+
+  Map<String, dynamic> _normalizeApplicationForTracker(
+    Map<String, dynamic> application,
+  ) {
+    final statusRaw = application['status']?.toString().toLowerCase() ?? '';
+    final statusLabel = _mapApplicationStatusLabel(statusRaw);
+    final jobType = application['job_type']?.toString();
+    final salaryText = _formatSalaryRange(
+      application['salary_min'],
+      application['salary_max'],
+    );
+    final appliedDate = _formatApplicationDate(
+      application['applied_at']?.toString(),
+    );
+    final applicationId = application['application_id']?.toString() ?? '';
+    final jobId = application['job_id']?.toString() ?? '';
+    final companyName =
+        application['company_name']?.toString() ??
+        application['company']?.toString() ??
+        '';
+
+    return <String, dynamic>{
+      'id': applicationId,
+      'application_id': applicationId,
+      'job_id': jobId,
+      'title': application['job_title']?.toString() ?? 'Job Title',
+      'company_name': companyName,
+      'company': companyName,
+      'location': application['location']?.toString() ?? 'Location',
+      'experience': jobType ?? 'Fresher',
+      'type': jobType ?? 'Full-time',
+      'skills': jobType ?? 'Key skills not provided',
+      'appliedDate': appliedDate,
+      'interviewDate': appliedDate,
+      'positions': jobId.isNotEmpty
+          ? 'Job ID: $jobId'
+          : 'Application ID: #$applicationId',
+      'status': statusLabel,
+      'salary': salaryText,
+      'raw_status': statusRaw,
+    };
+  }
+
+  String _mapApplicationStatusLabel(String status) {
+    switch (status) {
+      case 'applied':
+        return 'Applied';
+      case 'shortlisted':
+      case 'interview':
+      case 'interview_scheduled':
+      case 'interview scheduled':
+        return 'Shortlisted';
+      case 'offer':
+      case 'offer_received':
+      case 'offer accepted':
+      case 'hired':
+      case 'selected':
+        return 'Offer Received';
+      default:
+        if (status.isEmpty) return 'Applied';
+        return status[0].toUpperCase() + status.substring(1);
+    }
+  }
+
+  bool _isInterviewStatus(String status) {
+    return status == 'shortlisted' ||
+        status.contains('interview') ||
+        status == 'screening';
+  }
+
+  bool _isOfferStatus(String status) {
+    return status == 'offer' ||
+        status == 'offer_received' ||
+        status == 'offer accepted' ||
+        status == 'hired' ||
+        status == 'selected';
+  }
+
+  String _formatApplicationDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return 'Recently';
+    }
+
+    try {
+      final date = DateTime.parse(dateString);
+      final day = date.day.toString().padLeft(2, '0');
+      final month = _monthNames[date.month - 1];
+      final year = date.year.toString();
+      return '$day $month $year';
+    } catch (_) {
+      return dateString;
+    }
+  }
+
+  String _formatSalaryRange(dynamic minValue, dynamic maxValue) {
+    final double? min = _toDouble(minValue);
+    final double? max = _toDouble(maxValue);
+
+    if (min == null && max == null) {
+      return 'Salary not disclosed';
+    }
+
+    String formatValue(double value) {
+      if (value >= 100000) {
+        return '₹${(value / 100000).toStringAsFixed(1)}L';
+      }
+      if (value >= 1000) {
+        return '₹${(value / 1000).toStringAsFixed(1)}K';
+      }
+      return '₹${value.toStringAsFixed(0)}';
+    }
+
+    if (min != null && max != null) {
+      return '${formatValue(min)} - ${formatValue(max)}';
+    }
+
+    final single = min ?? max!;
+    return formatValue(single);
+  }
+
+  double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      final parsed = double.tryParse(value);
+      return parsed;
+    }
+    return null;
   }
 
   /// Handle remove saved job
