@@ -1,14 +1,22 @@
+import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../shared/services/location_service.dart';
+import '../../../shared/services/token_storage.dart';
 import '../models/student_profile.dart';
 
 /// Profile BLoC
 /// Handles all profile-related business logic
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
+  final ApiService _apiService = ApiService();
+  final TokenStorage _tokenStorage = TokenStorage.instance;
+  final LocationService _locationService = LocationService.instance;
+  int _statusMessageCounter = 0;
+
   ProfileBloc() : super(const ProfileInitial()) {
     // Register event handlers
     on<LoadProfileDataEvent>(_onLoadProfileData);
@@ -113,9 +121,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       var loadedFromApi = false;
 
       try {
-        final apiService = ApiService();
         debugPrint('🔵 [ProfileBloc] Calling getStudentProfile API...');
-        final studentProfileResponse = await apiService.getStudentProfile();
+        final studentProfileResponse = await _apiService.getStudentProfile();
         final profiles = studentProfileResponse.data.profiles;
 
         if (profiles.isNotEmpty) {
@@ -154,6 +161,18 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
               'cgpa': profile.professionalInfo.cgpa,
             },
           ];
+
+          final parsedProjects = profile.professionalInfo.projects
+              .map(
+                (project) => {
+                  'name': project.name,
+                  'link': project.link,
+                },
+              )
+              .where((project) =>
+                  (project['name'] as String).isNotEmpty ||
+                  (project['link'] as String).isNotEmpty)
+              .toList();
 
           final jobType = profile.professionalInfo.jobType;
           final normalizedJobTypes = jobType.isNotEmpty
@@ -201,6 +220,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             'trade': profile.professionalInfo.trade,
             'graduationYear': profile.professionalInfo.graduationYear,
             'cgpa': profile.professionalInfo.cgpa,
+            'latitude': profile.personalInfo.latitude,
+            'longitude': profile.personalInfo.longitude,
+            'projects': parsedProjects,
           };
 
           skills = parsedSkills;
@@ -243,6 +265,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         debugPrint('⚠️ [ProfileBloc] Loading mock/dummy data as fallback');
       }
 
+      userProfile.putIfAbsent('latitude', () => 0.0);
+      userProfile.putIfAbsent('longitude', () => 0.0);
+      userProfile.putIfAbsent('projects', () => <Map<String, dynamic>>[]);
+
       emit(
         ProfileDetailsLoaded(
           userProfile: userProfile,
@@ -258,6 +284,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           lastResumeUpdatedDate: lastResumeUpdatedDate,
           resumeFileSize: resumeFileSize,
           resumeDownloadUrl: resumeDownloadUrl,
+          isSyncing: false,
+          statusMessage: null,
+          statusIsError: false,
+          statusMessageKey: 0,
         ),
       );
     } catch (e) {
@@ -450,22 +480,29 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
   }
 
-  void _onInlineProfileHeaderUpdate(
+  Future<void> _onInlineProfileHeaderUpdate(
     UpdateProfileHeaderInlineEvent event,
     Emitter<ProfileState> emit,
-  ) {
-    if (state is ProfileDetailsLoaded) {
-      final currentState = state as ProfileDetailsLoaded;
-      final updatedProfile = Map<String, dynamic>.from(
-        currentState.userProfile,
-      );
-      updatedProfile['name'] = event.name;
-      updatedProfile['email'] = event.email;
-      updatedProfile['location'] = event.location;
-      updatedProfile['bio'] = event.bio;
-
-      emit(currentState.copyWith(userProfile: updatedProfile));
+  ) async {
+    if (state is! ProfileDetailsLoaded) {
+      return;
     }
+    final currentState = state as ProfileDetailsLoaded;
+    final updatedProfile = Map<String, dynamic>.from(currentState.userProfile);
+
+    updatedProfile['name'] = event.name;
+    updatedProfile['email'] = event.email;
+    updatedProfile['location'] = event.location;
+    updatedProfile['bio'] = event.bio;
+
+    await _applyLocationCoordinates(updatedProfile);
+
+    final updatedState = currentState.copyWith(userProfile: updatedProfile);
+    await _syncProfileWithServer(
+      updatedState,
+      emit,
+      source: 'profile_header',
+    );
   }
 
   void _onInlineResumeUpdate(
@@ -498,48 +535,58 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
   }
 
-  void _onInlineContactUpdate(
+  Future<void> _onInlineContactUpdate(
     UpdateProfileContactInlineEvent event,
     Emitter<ProfileState> emit,
-  ) {
-    if (state is ProfileDetailsLoaded) {
-      final currentState = state as ProfileDetailsLoaded;
-      final updatedProfile = Map<String, dynamic>.from(
-        currentState.userProfile,
-      );
-
-      updatedProfile['email'] = event.email;
-      updatedProfile['phone'] = event.phone;
-      updatedProfile['location'] = event.location;
-
-      final gender = event.gender?.trim() ?? '';
-      updatedProfile['gender'] = gender.isNotEmpty ? gender : null;
-
-      final dob = event.dateOfBirth?.trim() ?? '';
-      updatedProfile['dateOfBirth'] = dob.isNotEmpty ? dob : null;
-
-      emit(currentState.copyWith(userProfile: updatedProfile));
+  ) async {
+    if (state is! ProfileDetailsLoaded) {
+      return;
     }
+    final currentState = state as ProfileDetailsLoaded;
+    final updatedProfile = Map<String, dynamic>.from(currentState.userProfile);
+
+    updatedProfile['email'] = event.email;
+    updatedProfile['phone'] = event.phone;
+    updatedProfile['location'] = event.location;
+
+    final gender = event.gender?.trim() ?? '';
+    updatedProfile['gender'] = gender.isNotEmpty ? gender : null;
+
+    final dob = event.dateOfBirth?.trim() ?? '';
+    updatedProfile['dateOfBirth'] = dob.isNotEmpty ? dob : null;
+
+    await _applyLocationCoordinates(updatedProfile);
+
+    final updatedState = currentState.copyWith(userProfile: updatedProfile);
+    await _syncProfileWithServer(
+      updatedState,
+      emit,
+      source: 'contact',
+    );
   }
 
-  void _onInlineSocialLinksUpdate(
+  Future<void> _onInlineSocialLinksUpdate(
     UpdateProfileSocialLinksInlineEvent event,
     Emitter<ProfileState> emit,
-  ) {
-    if (state is ProfileDetailsLoaded) {
-      final currentState = state as ProfileDetailsLoaded;
-      final updatedProfile = Map<String, dynamic>.from(
-        currentState.userProfile,
-      );
-
-      final portfolio = event.portfolioLink?.trim() ?? '';
-      final linkedin = event.linkedinUrl?.trim() ?? '';
-
-      updatedProfile['portfolioLink'] = portfolio.isNotEmpty ? portfolio : null;
-      updatedProfile['linkedinUrl'] = linkedin.isNotEmpty ? linkedin : null;
-
-      emit(currentState.copyWith(userProfile: updatedProfile));
+  ) async {
+    if (state is! ProfileDetailsLoaded) {
+      return;
     }
+    final currentState = state as ProfileDetailsLoaded;
+    final updatedProfile = Map<String, dynamic>.from(currentState.userProfile);
+
+    final portfolio = event.portfolioLink?.trim() ?? '';
+    final linkedin = event.linkedinUrl?.trim() ?? '';
+
+    updatedProfile['portfolioLink'] = portfolio.isNotEmpty ? portfolio : null;
+    updatedProfile['linkedinUrl'] = linkedin.isNotEmpty ? linkedin : null;
+
+    final updatedState = currentState.copyWith(userProfile: updatedProfile);
+    await _syncProfileWithServer(
+      updatedState,
+      emit,
+      source: 'social_links',
+    );
   }
 
   void _onInlineCertificatesUpdate(
@@ -552,34 +599,439 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
   }
 
-  void _onInlineSkillsUpdate(
+  Future<void> _onInlineSkillsUpdate(
     UpdateProfileSkillsInlineEvent event,
     Emitter<ProfileState> emit,
-  ) {
-    if (state is ProfileDetailsLoaded) {
-      final currentState = state as ProfileDetailsLoaded;
-      emit(currentState.copyWith(skills: event.skills));
+  ) async {
+    if (state is! ProfileDetailsLoaded) {
+      return;
     }
+    final currentState = state as ProfileDetailsLoaded;
+    final updatedState = currentState.copyWith(skills: event.skills);
+
+    await _syncProfileWithServer(
+      updatedState,
+      emit,
+      source: 'skills',
+    );
   }
 
-  void _onInlineExperienceUpdate(
+  Future<void> _onInlineExperienceUpdate(
     UpdateProfileExperienceListEvent event,
     Emitter<ProfileState> emit,
-  ) {
-    if (state is ProfileDetailsLoaded) {
-      final currentState = state as ProfileDetailsLoaded;
-      emit(currentState.copyWith(experience: event.experience));
+  ) async {
+    if (state is! ProfileDetailsLoaded) {
+      return;
+    }
+    final currentState = state as ProfileDetailsLoaded;
+    final updatedState = currentState.copyWith(experience: event.experience);
+
+    await _syncProfileWithServer(
+      updatedState,
+      emit,
+      source: 'experience',
+    );
+  }
+
+  Future<void> _onInlineEducationUpdate(
+    UpdateProfileEducationListEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    if (state is! ProfileDetailsLoaded) {
+      return;
+    }
+    final currentState = state as ProfileDetailsLoaded;
+    final updatedState = currentState.copyWith(education: event.education);
+
+    await _syncProfileWithServer(
+      updatedState,
+      emit,
+      source: 'education',
+    );
+  }
+
+  Future<void> _applyLocationCoordinates(
+    Map<String, dynamic> profile,
+  ) async {
+    double? latitude = _parseDouble(profile['latitude']);
+    double? longitude = _parseDouble(profile['longitude']);
+
+    if (latitude != null && longitude != null) {
+      profile['latitude'] = latitude;
+      profile['longitude'] = longitude;
+      if (latitude != 0.0 || longitude != 0.0) {
+        return;
+      }
+    }
+
+    try {
+      await _locationService.initialize();
+      final savedLocation = await _locationService.getSavedLocation();
+      if (savedLocation != null) {
+        profile['latitude'] = savedLocation.latitude;
+        profile['longitude'] = savedLocation.longitude;
+        return;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [ProfileBloc] Unable to fetch saved location: $e');
+    }
+
+    profile['latitude'] = latitude ?? 0.0;
+    profile['longitude'] = longitude ?? 0.0;
+  }
+
+  Future<void> _syncProfileWithServer(
+    ProfileDetailsLoaded pendingState,
+    Emitter<ProfileState> emit, {
+    String? source,
+  }) async {
+    debugPrint(
+      '🔵 [ProfileBloc] Syncing profile${source != null ? ' ($source)' : ''}',
+    );
+
+    emit(
+      pendingState.copyWith(
+        isSyncing: true,
+        statusMessage: null,
+      ),
+    );
+
+    try {
+      final payload = await _buildProfileUpdatePayload(pendingState);
+      final response = await _apiService.updateStudentProfile(payload);
+      final message = response.message.isNotEmpty
+          ? response.message
+          : 'Student profile updated successfully';
+
+      emit(
+        pendingState.copyWith(
+          isSyncing: false,
+          statusMessage: message,
+          statusIsError: !response.isSuccessful,
+          statusMessageKey: _nextStatusKey(),
+        ),
+      );
+    } catch (e) {
+      final errorMessage =
+          'Failed to update profile: ${_formatErrorMessage(e)}';
+      debugPrint('🔴 [ProfileBloc] $errorMessage');
+      emit(
+        pendingState.copyWith(
+          isSyncing: false,
+          statusMessage: errorMessage,
+          statusIsError: true,
+          statusMessageKey: _nextStatusKey(),
+        ),
+      );
     }
   }
 
-  void _onInlineEducationUpdate(
-    UpdateProfileEducationListEvent event,
-    Emitter<ProfileState> emit,
-  ) {
-    if (state is ProfileDetailsLoaded) {
-      final currentState = state as ProfileDetailsLoaded;
-      emit(currentState.copyWith(education: event.education));
+  Future<Map<String, dynamic>> _buildProfileUpdatePayload(
+    ProfileDetailsLoaded state,
+  ) async {
+    final userProfile = Map<String, dynamic>.from(state.userProfile);
+    final userId = await _resolveUserId(userProfile);
+
+    if (userId == null) {
+      throw Exception('Unable to determine user ID for profile update');
     }
+
+    double latitude = _parseDouble(userProfile['latitude']) ?? 0.0;
+    double longitude = _parseDouble(userProfile['longitude']) ?? 0.0;
+
+    if (latitude == 0.0 && longitude == 0.0) {
+      try {
+        await _locationService.initialize();
+        final savedLocation = await _locationService.getSavedLocation();
+        if (savedLocation != null) {
+          latitude = savedLocation.latitude;
+          longitude = savedLocation.longitude;
+        }
+      } catch (e) {
+        debugPrint('⚠️ [ProfileBloc] Unable to load saved location: $e');
+      }
+    }
+
+    final personalInfo = {
+      'email': userProfile['email']?.toString() ?? '',
+      'user_name': userProfile['name']?.toString() ?? '',
+      'phone_number': userProfile['phone']?.toString() ?? '',
+      'date_of_birth': _normalizeDate(userProfile['dateOfBirth']),
+      'gender': (userProfile['gender']?.toString() ?? '').toLowerCase(),
+      'location': userProfile['location']?.toString() ?? '',
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+
+    final skills = state.skills
+        .map((skill) => skill.trim())
+        .where((skill) => skill.isNotEmpty)
+        .toList();
+
+    final educationEntry =
+        state.education.isNotEmpty ? state.education.first : <String, dynamic>{};
+    final educationValue =
+        educationEntry['qualification']?.toString() ??
+            educationEntry['course']?.toString() ??
+            '';
+    final graduationYear =
+        _parseInt(educationEntry['passingYear'] ?? userProfile['graduationYear']) ??
+            0;
+    final cgpa =
+        _parseDouble(educationEntry['cgpa'] ?? userProfile['cgpa']) ?? 0.0;
+
+    final experiencePayload = _buildExperiencePayload(state.experience);
+    final projectsPayload = _normalizeProjects(userProfile['projects']);
+    final languages = _normalizeStringList(userProfile['languages']);
+    final documents = _buildDocumentsPayload(userProfile, state);
+    final socialLinks = {
+      'portfolio_link': userProfile['portfolioLink']?.toString() ?? '',
+      'linkedin_url': userProfile['linkedinUrl']?.toString() ?? '',
+    };
+
+    final professionalInfo = {
+      'skills': skills,
+      'education': educationValue,
+      'experience': experiencePayload,
+      'projects': projectsPayload,
+      'job_type': userProfile['jobType']?.toString() ?? '',
+      'trade': userProfile['trade']?.toString() ?? '',
+      'graduation_year': graduationYear,
+      'cgpa': cgpa,
+      'languages': languages,
+    };
+
+    return {
+      'user_id': userId,
+      'personal_info': personalInfo,
+      'professional_info': professionalInfo,
+      'documents': documents,
+      'social_links': socialLinks,
+      'additional_info': {
+        'bio': userProfile['bio']?.toString() ?? '',
+      },
+    };
+  }
+
+  Map<String, dynamic> _buildDocumentsPayload(
+    Map<String, dynamic> userProfile,
+    ProfileDetailsLoaded state,
+  ) {
+    final certificatePaths = state.certificates
+        .map(
+          (certificate) =>
+              certificate['path']?.toString() ?? certificate['name']?.toString(),
+        )
+        .whereType<String>()
+        .where((value) => value.trim().isNotEmpty)
+        .toList();
+
+    return {
+      'resume': state.resumeDownloadUrl ?? '',
+      'certificates': certificatePaths,
+      'aadhar_number': userProfile['aadharNumber']?.toString() ?? '',
+    };
+  }
+
+  Future<int?> _resolveUserId(Map<String, dynamic> userProfile) async {
+    final storedId = await _tokenStorage.getUserId();
+    final parsedStoredId = _parseInt(storedId);
+    if (parsedStoredId != null) {
+      return parsedStoredId;
+    }
+
+    final token = await _tokenStorage.getToken();
+    if (token != null && token.isNotEmpty) {
+      final decodedToken = _decodeJwt(token);
+      final tokenUserId = decodedToken?['user_id'] ?? decodedToken?['id'];
+      final parsedTokenId = _parseInt(tokenUserId);
+      if (parsedTokenId != null) {
+        return parsedTokenId;
+      }
+    }
+
+    final profileId = userProfile['userId'] ?? userProfile['id'];
+    return _parseInt(profileId);
+  }
+
+  Map<String, dynamic>? _decodeJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        return null;
+      }
+      final normalized = base64Url.normalize(parts[1]);
+      final payload = utf8.decode(base64Url.decode(normalized));
+      final decoded = jsonDecode(payload);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (e) {
+      debugPrint('⚠️ [ProfileBloc] Failed to decode JWT: $e');
+    }
+    return null;
+  }
+
+  List<Map<String, dynamic>> _buildExperiencePayload(
+    List<Map<String, dynamic>> experience,
+  ) {
+    return experience
+        .map((entry) {
+          final company = entry['company']?.toString() ?? '';
+          final role =
+              entry['position']?.toString() ?? entry['role']?.toString() ?? '';
+          final startDate = entry['startDate']?.toString() ?? '';
+          final endDate = entry['endDate']?.toString() ?? '';
+          final duration = _buildDuration(startDate, endDate);
+          final description = entry['description']?.toString() ?? '';
+
+          final hasContent = [company, role, duration, description]
+              .any((value) => value.trim().isNotEmpty);
+
+          if (!hasContent) {
+            return null;
+          }
+
+          return {
+            'company': company,
+            'role': role,
+            'duration': duration,
+            'description': description,
+          };
+        })
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  String _buildDuration(String start, String end) {
+    final trimmedStart = start.trim();
+    final trimmedEnd = end.trim();
+
+    if (trimmedStart.isEmpty && trimmedEnd.isEmpty) {
+      return '';
+    }
+    if (trimmedStart.isEmpty) {
+      return trimmedEnd;
+    }
+    if (trimmedEnd.isEmpty) {
+      return trimmedStart;
+    }
+    return '$trimmedStart - $trimmedEnd';
+  }
+
+  List<Map<String, dynamic>> _normalizeProjects(dynamic projects) {
+    if (projects is List) {
+      return projects
+          .map((project) {
+            if (project is Map) {
+              final name = project['name']?.toString() ?? '';
+              final link = project['link']?.toString() ?? '';
+              if (name.trim().isEmpty && link.trim().isEmpty) {
+                return null;
+              }
+              return {'name': name, 'link': link};
+            }
+            return null;
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  List<String> _normalizeStringList(dynamic value) {
+    if (value is List) {
+      return value
+          .map((item) => item.toString().trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    if (value is String) {
+      if (value.trim().isEmpty) {
+        return <String>[];
+      }
+      return value
+          .split(RegExp(r'[,\n]+'))
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    return <String>[];
+  }
+
+  double? _parseDouble(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is double) {
+      return value;
+    }
+    if (value is int) {
+      return value.toDouble();
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value.toString());
+  }
+
+  int? _parseInt(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    final sanitized = value.toString().replaceAll(RegExp(r'[^0-9-]'), '');
+    return sanitized.isEmpty ? null : int.tryParse(sanitized);
+  }
+
+  int _nextStatusKey() {
+    _statusMessageCounter += 1;
+    return _statusMessageCounter;
+  }
+
+  String _normalizeDate(dynamic value) {
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) {
+      return '';
+    }
+
+    final isoPattern = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+    if (isoPattern.hasMatch(raw)) {
+      return raw;
+    }
+
+    final slashPattern = RegExp(r'^(\d{2})/(\d{2})/(\d{4})$');
+    final dashPattern = RegExp(r'^(\d{2})-(\d{2})-(\d{4})$');
+    RegExpMatch? match = slashPattern.firstMatch(raw) ?? dashPattern.firstMatch(raw);
+    if (match != null) {
+      final day = match.group(1);
+      final month = match.group(2);
+      final year = match.group(3);
+      if (day != null && month != null && year != null) {
+        return '$year-${month.padLeft(2, '0')}-${day.padLeft(2, '0')}';
+      }
+    }
+
+    try {
+      final parsed = DateTime.parse(raw);
+      return '${parsed.year.toString().padLeft(4, '0')}-'
+          '${parsed.month.toString().padLeft(2, '0')}-'
+          '${parsed.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  String _formatErrorMessage(Object error) {
+    final message = error.toString();
+    return message.startsWith('Exception: ')
+        ? message.substring('Exception: '.length)
+        : message;
   }
 
   /// Handle delete certificate

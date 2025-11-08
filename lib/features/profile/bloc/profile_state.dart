@@ -151,6 +151,10 @@ class ProfileDetailsLoaded extends ProfileState {
   final String? lastResumeUpdatedDate;
   final int resumeFileSize;
   final String? resumeDownloadUrl;
+  final bool isSyncing;
+  final String? statusMessage;
+  final bool statusIsError;
+  final int statusMessageKey;
 
   const ProfileDetailsLoaded({
     required this.userProfile,
@@ -166,6 +170,10 @@ class ProfileDetailsLoaded extends ProfileState {
     this.lastResumeUpdatedDate,
     required this.resumeFileSize,
     this.resumeDownloadUrl,
+    this.isSyncing = false,
+    this.statusMessage,
+    this.statusIsError = false,
+    this.statusMessageKey = 0,
   });
 
   @override
@@ -183,6 +191,10 @@ class ProfileDetailsLoaded extends ProfileState {
     lastResumeUpdatedDate,
     resumeFileSize,
     resumeDownloadUrl,
+    isSyncing,
+    statusMessage,
+    statusIsError,
+    statusMessageKey,
   ];
 
   /// Copy with method for immutable state updates
@@ -200,6 +212,10 @@ class ProfileDetailsLoaded extends ProfileState {
     Object? lastResumeUpdatedDate = _noValue,
     int? resumeFileSize,
     Object? resumeDownloadUrl = _noValue,
+    bool? isSyncing,
+    Object? statusMessage = _noValue,
+    bool? statusIsError,
+    int? statusMessageKey,
   }) {
     return ProfileDetailsLoaded(
       userProfile: userProfile ?? this.userProfile,
@@ -226,6 +242,12 @@ class ProfileDetailsLoaded extends ProfileState {
       resumeDownloadUrl: resumeDownloadUrl == _noValue
           ? this.resumeDownloadUrl
           : resumeDownloadUrl as String?,
+      isSyncing: isSyncing ?? this.isSyncing,
+      statusMessage: statusMessage == _noValue
+          ? this.statusMessage
+          : statusMessage as String?,
+      statusIsError: statusIsError ?? this.statusIsError,
+      statusMessageKey: statusMessageKey ?? this.statusMessageKey,
     );
   }
 }

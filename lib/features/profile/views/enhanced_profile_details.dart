@@ -36,6 +36,20 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ProfileBloc, ProfileState>(
+      listenWhen: (previous, current) {
+        if (current is ProfileDetailsLoaded) {
+          if (current.statusMessage == null) {
+            return false;
+          }
+          final previousKey = previous is ProfileDetailsLoaded
+              ? previous.statusMessageKey
+              : -1;
+          return current.statusMessageKey != previousKey;
+        }
+        return current is CertificateDeletedSuccess ||
+            current is ProfileImageRemovedSuccess ||
+            current is ProfileError;
+      },
       listener: (context, state) {
         if (state is CertificateDeletedSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -61,6 +75,19 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
               behavior: SnackBarBehavior.floating,
             ),
           );
+        } else if (state is ProfileDetailsLoaded) {
+          final message = state.statusMessage;
+          if (message != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                backgroundColor: state.statusIsError
+                    ? AppConstants.errorColor
+                    : AppConstants.successColor,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
       },
       builder: (context, state) {
@@ -113,28 +140,47 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     return KeyboardDismissWrapper(
       child: Scaffold(
         backgroundColor: AppConstants.backgroundColor,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Profile Header
-              _buildProfileHeader(context, state),
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Profile Header
+                  _buildProfileHeader(context, state),
 
-              // Profile Content
-              Padding(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: Column(
-                  children: [
-                    // Quick Stats Cards
-                    _buildQuickStatsCards(context, state),
-                    const SizedBox(height: AppConstants.largePadding),
+                  // Profile Content
+                  Padding(
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    child: Column(
+                      children: [
+                        // Quick Stats Cards
+                        _buildQuickStatsCards(context, state),
+                        const SizedBox(height: AppConstants.largePadding),
 
-                    // Profile Sections
-                    _buildProfileSections(context, state),
-                  ],
+                        // Profile Sections
+                        _buildProfileSections(context, state),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (state.isSyncing)
+              Align(
+                alignment: Alignment.topCenter,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: LinearProgressIndicator(
+                      minHeight: 4,
+                      color: AppConstants.primaryColor,
+                      backgroundColor:
+                          AppConstants.primaryColor.withValues(alpha: 0.2),
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -560,12 +606,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                               ),
                             );
                             Navigator.of(sheetContext).pop();
-                            ScaffoldMessenger.of(parentContext).showSnackBar(
-                              const SnackBar(
-                                content: Text('Profile details updated.'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
                           },
                           child: const Text('Save Changes'),
                         ),
@@ -842,12 +882,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                             ),
                           );
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(parentContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Skills updated.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
                         },
                         child: const Text('Save Changes'),
                       ),
@@ -1108,12 +1142,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                             ),
                           );
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(parentContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Work experience updated.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
                         },
                         child: const Text('Save Changes'),
                       ),
@@ -1377,12 +1405,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                             ),
                           );
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(parentContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Education updated.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
                         },
                         child: const Text('Save Changes'),
                       ),
@@ -1503,12 +1525,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                               ),
                             );
                             Navigator.of(context).pop();
-                            ScaffoldMessenger.of(parentContext).showSnackBar(
-                              const SnackBar(
-                                content: Text('Resume details updated.'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
                           },
                           child: const Text('Save Changes'),
                         ),
@@ -1830,12 +1846,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                             ),
                           );
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(parentContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Certificates updated.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
                         },
                         child: const Text('Save Changes'),
                       ),
@@ -1994,12 +2004,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                             ),
                           );
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(parentContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Contact details updated.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
                         },
                         child: const Text('Save Changes'),
                       ),
@@ -2107,12 +2111,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                             ),
                           );
                           Navigator.of(context).pop();
-                          ScaffoldMessenger.of(parentContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Social links updated.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
                         },
                         child: const Text('Save Changes'),
                       ),
@@ -2350,6 +2348,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: experience.map((exp) => _buildExperienceCard(exp)).toList(),
     );
   }
@@ -2365,6 +2364,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: education.map((edu) => _buildEducationCard(edu)).toList(),
     );
   }
@@ -2553,6 +2553,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
 
   Widget _buildExperienceCard(Map<String, dynamic> exp) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
@@ -2605,6 +2606,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
 
   Widget _buildEducationCard(Map<String, dynamic> edu) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(

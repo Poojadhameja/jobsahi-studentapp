@@ -5,6 +5,7 @@ import '../../core/utils/app_constants.dart';
 import '../../features/courses/models/course.dart';
 import '../../features/profile/models/student_profile.dart';
 import '../../features/jobs/models/job_details_api_models.dart';
+import '../../features/profile/models/profile_update_response.dart';
 import 'token_storage.dart';
 
 /// API Service for making HTTP requests
@@ -710,6 +711,69 @@ extension StudentProfileApi on ApiService {
       return result;
     } catch (e) {
       debugPrint('🔴 [StudentProfile] Error fetching student profile: $e');
+      rethrow;
+    }
+  }
+
+  /// Update student profile data
+  /// Sends a PUT request with the complete profile payload
+  Future<ProfileUpdateResponse> updateStudentProfile(
+    Map<String, dynamic> payload,
+  ) async {
+    debugPrint('🔵 [StudentProfile] Updating student profile');
+
+    final userLoggedIn = await isLoggedIn();
+    if (!userLoggedIn) {
+      debugPrint('🔴 [StudentProfile] User not authenticated');
+      throw Exception('User must be logged in to update profile');
+    }
+
+    try {
+      debugPrint('🔵 [StudentProfile] Payload keys: ${payload.keys.toList()}');
+      final response = await put(
+        AppConstants.updateStudentProfileEndpoint,
+        data: payload,
+      );
+
+      debugPrint(
+        '🔵 [StudentProfile] Update Response Status: ${response.statusCode}',
+      );
+      debugPrint(
+        '🔵 [StudentProfile] Update Response Type: ${response.data.runtimeType}',
+      );
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        try {
+          jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 [StudentProfile] Failed to decode response: $e');
+          throw Exception('Invalid response format from server');
+        }
+      } else {
+        debugPrint(
+          '🔴 [StudentProfile] Unexpected response type: ${rawData.runtimeType}',
+        );
+        throw Exception('Unexpected response format from server');
+      }
+
+      final result = ProfileUpdateResponse.fromJson(jsonData);
+      if (!result.isSuccessful) {
+        final failureMessage = result.message.isNotEmpty
+            ? result.message
+            : 'Failed to update student profile';
+        debugPrint('🔴 [StudentProfile] Update failed: $failureMessage');
+        throw Exception(failureMessage);
+      }
+
+      debugPrint('✅ [StudentProfile] Profile updated successfully');
+      return result;
+    } catch (e) {
+      debugPrint('🔴 [StudentProfile] Error updating student profile: $e');
       rethrow;
     }
   }
