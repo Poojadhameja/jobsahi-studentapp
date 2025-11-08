@@ -4,6 +4,7 @@ import '../../../core/utils/app_constants.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import 'job_application_success.dart';
 
 class JobStepScreen extends StatefulWidget {
   final Map<String, dynamic> job;
@@ -345,10 +346,26 @@ class _JobStepScreenState extends State<JobStepScreen> {
           ),
         );
 
-        Navigator.of(context).pop(true);
+        final jobWithApplication = Map<String, dynamic>.from(widget.job);
+        if (response.data != null) {
+          jobWithApplication['application'] = response.data;
+        }
+        jobWithApplication['application_status'] =
+            response.data?['status'] ?? 'pending';
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => JobApplicationSuccessScreen(
+              job: jobWithApplication,
+            ),
+          ),
+        );
       } catch (e) {
         if (!mounted) return;
-        _showErrorSnackBar(e.toString());
+        final errorMessage = e.toString().startsWith('Exception: ')
+            ? e.toString().substring('Exception: '.length)
+            : e.toString();
+        _showErrorSnackBar(errorMessage);
       } finally {
         if (!mounted) return;
         setState(() {
