@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/profile_navigation_app_bar.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
@@ -54,11 +55,11 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
       if (name is String && name.isNotEmpty) return name;
       if (name != null) return name.toString();
     }
-    
+
     // Then try company as string
     final company = job['company'];
     if (company == null) return fallback;
-    
+
     // If company is a Map/LinkedMap, extract company_name
     if (company is Map) {
       final companyName = company['company_name'];
@@ -67,10 +68,10 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
         if (companyName != null) return companyName.toString();
       }
     }
-    
+
     // If company is already a string, return it
     if (company is String) return company;
-    
+
     // Fallback: convert to string or use provided fallback
     return fallback.isNotEmpty ? fallback : company.toString();
   }
@@ -97,10 +98,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
           );
         } else if (state is JobsError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         }
       },
@@ -218,6 +216,10 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
       itemCount: appliedJobs.length,
       itemBuilder: (context, index) {
         final job = appliedJobs[index];
+        final applicationId =
+            job['application_id']?.toString() ??
+            job['id']?.toString() ??
+            '$index';
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: _buildAppliedJobCard(
@@ -228,7 +230,8 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
             experience: job['experience']?.toString() ?? 'Fresher',
             appliedDate: job['appliedDate']?.toString() ?? 'Applied Date',
             positions: job['positions']?.toString() ?? 'Positions',
-            applicationId: job['id']?.toString() ?? '$index',
+            applicationId: applicationId,
+            jobData: job,
           ),
         );
       },
@@ -259,6 +262,7 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
     required String appliedDate,
     required String positions,
     required String applicationId,
+    required Map<String, dynamic> jobData,
   }) {
     return Container(
       width: double.infinity,
@@ -349,8 +353,20 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                context.read<JobsBloc>().add(
-                  ViewApplicationEvent(applicationId: applicationId),
+                if (applicationId.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Application ID not available.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                context.pushNamed(
+                  'studentApplicationDetail',
+                  pathParameters: {'id': applicationId},
+                  extra: jobData,
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -443,7 +459,8 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
                         children: [
                           // Job Title
                           Text(
-                            job['title']?.toString() ?? 'इलेक्ट्रीशियन अप्रेंटिस',
+                            job['title']?.toString() ??
+                                'इलेक्ट्रीशियन अप्रेंटिस',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -557,7 +574,10 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          _getCompanyName(job, 'W').substring(0, 1).toUpperCase(),
+                          _getCompanyName(
+                            job,
+                            'W',
+                          ).substring(0, 1).toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -575,7 +595,8 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
                         children: [
                           // Job Title
                           Text(
-                            job['title']?.toString() ?? 'इलेक्ट्रीशियन अप्रेंटिस',
+                            job['title']?.toString() ??
+                                'इलेक्ट्रीशियन अप्रेंटिस',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

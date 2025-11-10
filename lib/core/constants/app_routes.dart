@@ -122,6 +122,9 @@ class AppRoutes {
   /// Job application step
   static const String jobStep = '/jobs/application/step/:id';
 
+  /// Student application detail
+  static const String studentApplicationDetail = '/application/details/:id';
+
   // ==================== COURSES ROUTES ====================
 
   /// Course details with dynamic ID
@@ -201,4 +204,8 @@ class AppRoutes {
   /// Generate job application success route with ID
   static String jobApplicationSuccessWithId(String id) =>
       '/jobs/application/success/$id';
+
+  /// Generate student application detail route with ID
+  static String studentApplicationDetailWithId(String id) =>
+      '/application/details/$id';
 }

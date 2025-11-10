@@ -30,6 +30,7 @@ import '../../shared/widgets/common/main_scaffold.dart';
 import '../../features/jobs/views/job_details.dart';
 import '../../features/jobs/views/saved_jobs.dart';
 import '../../features/jobs/views/application_tracker.dart';
+import '../../features/jobs/views/student_application_detail.dart';
 import '../../features/jobs/views/calendar_view.dart';
 import '../../features/jobs/views/write_review.dart';
 import '../../features/jobs/views/about_company.dart';
@@ -571,6 +572,23 @@ class AppRouter {
             job['id'] = id ?? job['id'];
           }
           return JobStepScreen(job: job);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.studentApplicationDetail,
+        name: 'studentApplicationDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          Map<String, dynamic>? initialData;
+          if (state.extra is Map<String, dynamic>) {
+            initialData =
+                Map<String, dynamic>.from(state.extra as Map<String, dynamic>);
+          }
+          return StudentApplicationDetailScreen(
+            applicationId: id,
+            initialData: initialData,
+          );
         },
       ),
 

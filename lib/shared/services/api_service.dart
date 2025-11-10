@@ -849,10 +849,10 @@ extension StudentProfileApi on ApiService {
 
 /// Student Applications API methods
 extension StudentApplicationsApi on ApiService {
-  /// Get student's job applications
-  Future<List<Map<String, dynamic>>> getStudentApplications() async {
+  /// Get student's applied jobs
+  Future<List<Map<String, dynamic>>> getStudentAppliedJobs() async {
     try {
-      final response = await get('/student/applications.php');
+      final response = await get('/student/applied_jobs.php');
 
       final rawData = response.data;
       late final Map<String, dynamic> jsonData;
@@ -881,14 +881,62 @@ extension StudentApplicationsApi on ApiService {
       final data = jsonData['data'];
       if (data is List) {
         return data
-            .where((item) => item is Map<String, dynamic>)
-            .map((item) => Map<String, dynamic>.from(item as Map<String, dynamic>))
+            .whereType<Map<String, dynamic>>()
+            .map((item) => Map<String, dynamic>.from(item))
             .toList();
       }
 
       return const <Map<String, dynamic>>[];
     } catch (e) {
-      debugPrint('🔴 [StudentApplications] Error fetching applications: $e');
+      debugPrint('🔴 [StudentApplications] Error fetching applied jobs: $e');
+      rethrow;
+    }
+  }
+
+  /// Get detailed information for a single student application
+  Future<Map<String, dynamic>> getStudentApplicationDetail(
+    int applicationId,
+  ) async {
+    try {
+      final response = await get(
+        '/student/get_application.php',
+        queryParameters: {'id': applicationId},
+      );
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+      } else {
+        throw Exception(
+          'Unexpected response format from application detail API',
+        );
+      }
+
+      final statusFlag = jsonData['status'];
+      final isSuccess = statusFlag == true ||
+          statusFlag == 1 ||
+          statusFlag == '1' ||
+          (statusFlag is String && statusFlag.toLowerCase() == 'true');
+
+      if (!isSuccess) {
+        final message =
+            jsonData['message']?.toString() ??
+            'Failed to load application detail';
+        throw Exception(message);
+      }
+
+      final data = jsonData['data'];
+      if (data is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(data);
+      }
+
+      throw Exception('Invalid application detail payload');
+    } catch (e) {
+      debugPrint('🔴 [StudentApplications] Error fetching application detail: $e');
       rethrow;
     }
   }

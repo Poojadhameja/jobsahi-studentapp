@@ -896,7 +896,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     Emitter<JobsState> emit,
   ) async {
     try {
-      final applications = await _apiService.getStudentApplications();
+      final applications = await _apiService.getStudentAppliedJobs();
 
       final appliedJobs = <Map<String, dynamic>>[];
       final interviewJobs = <Map<String, dynamic>>[];
@@ -976,7 +976,12 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     final companyName =
         application['company_name']?.toString() ??
         application['company']?.toString() ??
-        '';
+        'Company';
+    final experienceRequired =
+        application['experience_required']?.toString() ?? '';
+    final deadline = _formatApplicationDate(
+      application['application_deadline']?.toString(),
+    );
 
     return <String, dynamic>{
       'id': applicationId,
@@ -986,14 +991,20 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       'company_name': companyName,
       'company': companyName,
       'location': application['location']?.toString() ?? 'Location',
-      'experience': jobType ?? 'Fresher',
-      'type': jobType ?? 'Full-time',
-      'skills': jobType ?? 'Key skills not provided',
+      'experience': experienceRequired.isNotEmpty
+          ? experienceRequired
+          : _formatJobType(jobType) ?? 'Fresher',
+      'type': _formatJobType(jobType) ?? 'Full-time',
+      'skills': experienceRequired.isNotEmpty
+          ? 'Experience: $experienceRequired'
+          : _formatJobType(jobType) ?? 'Full-time',
       'appliedDate': appliedDate,
       'interviewDate': appliedDate,
-      'positions': jobId.isNotEmpty
-          ? 'Job ID: $jobId'
-          : 'Application ID: #$applicationId',
+      'positions': deadline != 'Recently'
+          ? 'Deadline: $deadline'
+          : (jobId.isNotEmpty
+                ? 'Job ID: $jobId'
+                : 'Application ID: #$applicationId'),
       'status': statusLabel,
       'salary': salaryText,
       'raw_status': statusRaw,
@@ -1085,6 +1096,13 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       return parsed;
     }
     return null;
+  }
+
+  String? _formatJobType(String? jobType) {
+    if (jobType == null || jobType.isEmpty) return null;
+    final normalized = jobType.replaceAll('_', ' ').trim();
+    if (normalized.isEmpty) return null;
+    return normalized[0].toUpperCase() + normalized.substring(1);
   }
 
   /// Handle remove saved job
