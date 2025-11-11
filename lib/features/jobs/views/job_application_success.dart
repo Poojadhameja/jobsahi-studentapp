@@ -61,6 +61,15 @@ class JobApplicationSuccessScreen extends StatelessWidget {
 
           const SizedBox(height: 48),
 
+          // Skill test status info
+          if (job['skill_test_response'] is Map<String, dynamic>)
+            ...[
+              _buildSkillTestInfoCard(
+                job['skill_test_response'] as Map<String, dynamic>,
+              ),
+              const SizedBox(height: 32),
+            ],
+
           // Action buttons
           _buildActionButtons(context),
         ],
@@ -173,11 +182,23 @@ class JobApplicationSuccessScreen extends StatelessWidget {
 
   /// Navigates to take skill test
   void _takeTest(BuildContext context) {
-    final jobId = job['id']?.toString().trim();
-    final fallbackJobId =
-        jobId != null && jobId.isNotEmpty ? jobId : 'job_skill_test';
+    final jobId = job['job_id']?.toString().trim().isNotEmpty == true
+        ? job['job_id'].toString().trim()
+        : job['id']?.toString().trim();
+    final skillTestInfo =
+        job['skill_test_response'] is Map<String, dynamic>
+            ? job['skill_test_response'] as Map<String, dynamic>
+            : null;
+    final skillTestId = skillTestInfo?['test_id']?.toString();
+    final fallbackJobId = (jobId != null && jobId.isNotEmpty)
+        ? jobId
+        : (skillTestId != null && skillTestId.isNotEmpty
+            ? skillTestId
+            : 'job_skill_test');
 
     final jobPayload = Map<String, dynamic>.from(job);
+    jobPayload['id'] = fallbackJobId;
+    jobPayload['job_id'] = fallbackJobId;
     jobPayload.putIfAbsent(
       'category',
       () {
@@ -192,11 +213,91 @@ class JobApplicationSuccessScreen extends StatelessWidget {
         return 'general';
       },
     );
+    if (skillTestInfo != null) {
+      jobPayload['skill_test_response'] = skillTestInfo;
+    }
 
     context.pushNamed(
       'skillTestDetails',
       pathParameters: {'id': fallbackJobId},
       extra: jobPayload,
+    );
+  }
+
+  Widget _buildSkillTestInfoCard(Map<String, dynamic> info) {
+    final message = info['message']?.toString() ?? 'Skill test updated.';
+    final alreadyExists = info['already_exists'] == true;
+    final testId = info['test_id']?.toString();
+    final created = info['status'] == true;
+    final color = created ? AppConstants.successColor : AppConstants.primaryColor;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  alreadyExists ? Icons.restart_alt : Icons.flash_on,
+                  color: color,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      alreadyExists
+                          ? 'Skill Test Ready'
+                          : 'Skill Test Created',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    if (testId != null && testId.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Test ID: $testId',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppConstants.textSecondaryColor,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

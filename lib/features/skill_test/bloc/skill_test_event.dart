@@ -16,11 +16,17 @@ class LoadSkillTestsEvent extends SkillTestEvent {
 /// Start test event
 class StartTestEvent extends SkillTestEvent {
   final String testId;
+  final String? jobId;
+  final Map<String, dynamic>? jobPayload;
 
-  const StartTestEvent({required this.testId});
+  const StartTestEvent({
+    required this.testId,
+    this.jobId,
+    this.jobPayload,
+  });
 
   @override
-  List<Object?> get props => [testId];
+  List<Object?> get props => [testId, jobId, jobPayload];
 }
 
 /// Submit answer event

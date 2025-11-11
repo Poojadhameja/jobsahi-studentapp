@@ -24,6 +24,7 @@ class _StudentApplicationDetailScreenState
     extends State<StudentApplicationDetailScreen> {
   late Future<Map<String, dynamic>> _detailFuture;
   Map<String, dynamic>? _initialData;
+  bool _isStartingSkillTest = false;
 
   static const List<String> _monthNames = <String>[
     'Jan',
@@ -43,8 +44,9 @@ class _StudentApplicationDetailScreenState
   @override
   void initState() {
     super.initState();
-    _initialData =
-        widget.initialData != null ? Map<String, dynamic>.from(widget.initialData!) : null;
+    _initialData = widget.initialData != null
+        ? Map<String, dynamic>.from(widget.initialData!)
+        : null;
     _detailFuture = _loadApplicationDetail();
   }
 
@@ -62,21 +64,28 @@ class _StudentApplicationDetailScreenState
       merged.addAll(_initialData!);
     }
 
-    merged['formatted_applied_at'] =
-        _formatDateTime(merged['applied_at']?.toString());
-    merged['formatted_created_at'] =
-        _formatDateTime(merged['created_at']?.toString());
-    merged['formatted_updated_at'] =
-        _formatDateTime(merged['modified_at']?.toString());
-    merged['salary'] = merged['salary'] ??
+    merged['formatted_applied_at'] = _formatDateTime(
+      merged['applied_at']?.toString(),
+    );
+    merged['formatted_created_at'] = _formatDateTime(
+      merged['created_at']?.toString(),
+    );
+    merged['formatted_updated_at'] = _formatDateTime(
+      merged['modified_at']?.toString(),
+    );
+    merged['salary'] =
+        merged['salary'] ??
         _formatSalaryRange(merged['salary_min'], merged['salary_max']);
-    merged['status_label'] =
-        _mapStatusLabel(merged['status']?.toString() ?? '');
+    merged['status_label'] = _mapStatusLabel(
+      merged['status']?.toString() ?? '',
+    );
 
     final skillOverviewRaw = merged['skill_test_overview'];
     if (skillOverviewRaw is Map<String, dynamic>) {
-      merged['skill_test_overview'] =
-          _normalizeSkillTestOverview(skillOverviewRaw, merged);
+      merged['skill_test_overview'] = _normalizeSkillTestOverview(
+        skillOverviewRaw,
+        merged,
+      );
     } else {
       merged['skill_test_overview'] = null;
     }
@@ -103,11 +112,12 @@ class _StudentApplicationDetailScreenState
             if (snapshot.hasError) {
               return _buildErrorState(
                 context,
-                snapshot.error?.toString() ?? 'Failed to load application detail.',
+                snapshot.error?.toString() ??
+                    'Failed to load application detail.',
               );
             }
 
-    final data = snapshot.data ?? <String, dynamic>{};
+            final data = snapshot.data ?? <String, dynamic>{};
             return SingleChildScrollView(
               padding: const EdgeInsets.all(AppConstants.defaultPadding),
               child: _buildMainCard(data),
@@ -146,7 +156,10 @@ class _StudentApplicationDetailScreenState
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppConstants.primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -160,13 +173,18 @@ class _StudentApplicationDetailScreenState
   }
 
   Widget _buildMainCard(Map<String, dynamic> data) {
-    final title = data['job_title']?.toString() ?? data['title']?.toString() ?? 'Job Title';
-    final company = data['company_name']?.toString() ??
+    final title =
+        data['job_title']?.toString() ??
+        data['title']?.toString() ??
+        'Job Title';
+    final company =
+        data['company_name']?.toString() ??
         data['company']?.toString() ??
         'Company';
     final location = data['location']?.toString() ?? 'Location';
     final statusLabel = data['status_label']?.toString() ?? 'Applied';
-    final coverLetter = (data['cover_letter'] ?? data['cover_letter_text'])
+    final coverLetter =
+        (data['cover_letter'] ?? data['cover_letter_text'])
             ?.toString()
             .trim() ??
         '';
@@ -198,11 +216,7 @@ class _StudentApplicationDetailScreenState
     );
   }
 
-  Widget _buildHeaderSection(
-    String title,
-    String company,
-    String statusLabel,
-  ) {
+  Widget _buildHeaderSection(String title, String company, String statusLabel) {
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Row(
@@ -210,11 +224,15 @@ class _StudentApplicationDetailScreenState
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
+            decoration: BoxDecoration(
               color: AppConstants.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.work_outline, color: AppConstants.primaryColor, size: 28),
+            child: const Icon(
+              Icons.work_outline,
+              color: AppConstants.primaryColor,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -262,8 +280,10 @@ class _StudentApplicationDetailScreenState
   }
 
   Widget _buildInfoRows(Map<String, dynamic> data, String fallbackLocation) {
-    final jobType = data['job_type']?.toString() ?? data['type']?.toString() ?? 'Job Type';
-    final salary = data['salary']?.toString() ??
+    final jobType =
+        data['job_type']?.toString() ?? data['type']?.toString() ?? 'Job Type';
+    final salary =
+        data['salary']?.toString() ??
         _formatSalaryRange(data['salary_min'], data['salary_max']);
     final location = data['location']?.toString() ?? fallbackLocation;
 
@@ -302,10 +322,16 @@ class _StudentApplicationDetailScreenState
     final completedLabel = overview['completedLabel']?.toString();
     final bool hasCompleted = overview['hasCompleted'] == true;
     final bool canStart = overview['ctaEnabled'] == true;
-    final String buttonLabel = overview['ctaLabel']?.toString() ?? 'Take Skill Test';
+    final bool alreadyExists = overview['alreadyExists'] == true;
+    final String buttonLabel =
+        overview['ctaLabel']?.toString() ?? 'Take Skill Test';
     final String jobId = overview['jobId']?.toString() ?? '';
+    final String testId = overview['testId']?.toString() ?? '';
     final Map<String, dynamic>? jobPayload =
         overview['jobPayload'] as Map<String, dynamic>?;
+    final String routeId = jobId.isNotEmpty ? jobId : testId;
+    final bool canNavigate = routeId.isNotEmpty && jobPayload != null;
+    final bool isLoading = _isStartingSkillTest;
 
     return Padding(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -432,31 +458,36 @@ class _StudentApplicationDetailScreenState
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: (canStart && jobId.isNotEmpty && jobPayload != null)
-                      ? () {
-                          context.pushNamed(
-                            'skillTestDetails',
-                            pathParameters: {'id': jobId},
-                            extra: jobPayload,
-                          );
-                        }
+                  onPressed:
+                      (!isLoading && (canStart || alreadyExists) && canNavigate)
+                      ? () => _startSkillTest(application, overview)
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppConstants.secondaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.borderRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
                     ),
                   ),
-                  child: Text(
-                    buttonLabel,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          buttonLabel,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             if (hasCompleted && scoreText == null)
@@ -491,7 +522,11 @@ class _StudentApplicationDetailScreenState
             ),
           ),
           const SizedBox(height: 12),
-          _buildTimelineTile('Applied on', appliedAt, Icons.check_circle_outline),
+          _buildTimelineTile(
+            'Applied on',
+            appliedAt,
+            Icons.check_circle_outline,
+          ),
         ],
       ),
     );
@@ -522,9 +557,7 @@ class _StudentApplicationDetailScreenState
               border: Border.all(color: Colors.grey.shade200),
             ),
             child: Text(
-              hasCoverLetter
-                  ? coverLetter
-                  : 'Cover letter not provided.',
+              hasCoverLetter ? coverLetter : 'Cover letter not provided.',
               style: const TextStyle(
                 fontSize: 14,
                 height: 1.5,
@@ -678,22 +711,25 @@ class _StudentApplicationDetailScreenState
     final available = _toBool(overview['available']);
     final canStartNow =
         _toBool(overview['can_start_now']) || _toBool(overview['can_start']);
+    final alreadyExists = _toBool(overview['already_exists']);
     final score = _toDouble(overview['score']);
     final maxScore = _toDouble(overview['max_score']);
-    final hasCompleted =
-        score != null && maxScore != null && maxScore > 0;
+    final hasCompleted = score != null && maxScore != null && maxScore > 0;
     final answered = overview['answered_questions'];
     final totalQuestions = overview['total_questions'];
     final completedAtRaw = overview['completed_at']?.toString();
     final statusRaw = overview['status']?.toString() ?? '';
 
     String? scoreText;
-    if (hasCompleted) {
-      final percent =
-          maxScore > 0 ? ((score / maxScore) * 100).round() : null;
+    if (score != null && maxScore != null) {
+      final double scoreValue = score;
+      final double maxScoreValue = maxScore;
+      final percent = maxScoreValue > 0
+          ? ((scoreValue / maxScoreValue) * 100).round()
+          : null;
       scoreText = percent != null
-          ? '${score.toInt()} / ${maxScore.toInt()}  (${percent}%)'
-          : score.toStringAsFixed(1);
+          ? '${scoreValue.toInt()} / ${maxScoreValue.toInt()}  (${percent}%)'
+          : scoreValue.toStringAsFixed(1);
     }
 
     String? progressText;
@@ -702,45 +738,55 @@ class _StudentApplicationDetailScreenState
           '${answered.toInt()} of ${totalQuestions.toInt()} questions answered';
     }
 
-    final completedLabel =
-        completedAtRaw != null ? _formatDateTime(completedAtRaw) : '';
+    final completedLabel = completedAtRaw != null
+        ? _formatDateTime(completedAtRaw)
+        : '';
 
-    final statusLabel =
-        _mapSkillTestStatus(statusRaw, hasCompleted, available);
+    final statusLabel = _mapSkillTestStatus(statusRaw, hasCompleted, available);
 
     final jobId = application['job_id']?.toString() ?? '';
-    final jobTitle = application['job_title']?.toString() ??
+    final jobTitle =
+        application['job_title']?.toString() ??
         application['title']?.toString() ??
         'Skill Test';
-    final jobCategory = application['job_type']?.toString() ??
+    final jobCategory =
+        application['job_type']?.toString() ??
         application['type']?.toString() ??
         'general';
-    final companyName = application['company_name']?.toString() ??
+    final companyName =
+        application['company_name']?.toString() ??
         application['company']?.toString() ??
         '';
+    final testId = overview['test_id']?.toString() ?? '';
 
-    final ctaEnabled = !hasCompleted && canStartNow && jobId.isNotEmpty;
+    final ctaEnabled =
+        !hasCompleted && (canStartNow || alreadyExists) && jobId.isNotEmpty;
     final ctaLabel = hasCompleted
         ? 'Skill Test Completed'
-        : (ctaEnabled ? 'Take Skill Test' : 'Skill Test Unavailable');
+        : alreadyExists
+        ? 'Resume Skill Test'
+        : (canStartNow ? 'Take Skill Test' : 'Skill Test Unavailable');
 
     return <String, dynamic>{
       'available': available,
       'canStart': canStartNow,
+      'alreadyExists': alreadyExists,
       'hasCompleted': hasCompleted,
       'statusLabel': statusLabel,
       'scoreText': scoreText,
       'progressText': progressText,
-      'completedLabel':
-          completedLabel != 'Not available' ? completedLabel : '',
+      'completedLabel': completedLabel != 'Not available' ? completedLabel : '',
       'ctaEnabled': ctaEnabled,
       'ctaLabel': ctaLabel,
       'jobId': jobId,
+      'testId': testId,
       'jobPayload': {
-        'id': jobId,
+        'id': jobId.isNotEmpty ? jobId : testId,
+        'job_id': jobId.isNotEmpty ? jobId : testId,
         'title': jobTitle,
         'category': jobCategory,
         'company': companyName,
+        'test_id': testId,
       },
     };
   }
@@ -755,11 +801,7 @@ class _StudentApplicationDetailScreenState
     return false;
   }
 
-  String _mapSkillTestStatus(
-    String status,
-    bool hasCompleted,
-    bool available,
-  ) {
+  String _mapSkillTestStatus(String status, bool hasCompleted, bool available) {
     final normalized = status.toLowerCase();
     if (hasCompleted) return 'Completed';
     switch (normalized) {
@@ -779,5 +821,101 @@ class _StudentApplicationDetailScreenState
         return status[0].toUpperCase() + status.substring(1);
     }
   }
-}
 
+  void _showSnackBar(String message, {bool isError = true}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : AppConstants.primaryColor,
+      ),
+    );
+  }
+
+  Future<void> _startSkillTest(
+    Map<String, dynamic> application,
+    Map<String, dynamic> overview,
+  ) async {
+    final appIdStr =
+        application['application_id']?.toString() ?? widget.applicationId;
+    final applicationId = int.tryParse(appIdStr);
+    if (applicationId == null) {
+      _showSnackBar('Invalid application ID.');
+      return;
+    }
+
+    final Map<String, dynamic> jobPayload = Map<String, dynamic>.from(
+      overview['jobPayload'] as Map<String, dynamic>? ??
+          {
+            'id': application['job_id']?.toString() ?? '',
+            'job_id': application['job_id']?.toString() ?? '',
+            'title':
+                application['job_title']?.toString() ??
+                application['title']?.toString() ??
+                'Skill Test',
+            'category':
+                application['job_type']?.toString() ??
+                application['type']?.toString() ??
+                'general',
+            'company':
+                application['company_name']?.toString() ??
+                application['company']?.toString() ??
+                '',
+          },
+    );
+
+    final jobId = jobPayload['id']?.toString() ?? '';
+
+    setState(() {
+      _isStartingSkillTest = true;
+    });
+
+    try {
+      final result = await ApiService().startSkillTest(
+        applicationId: applicationId,
+      );
+
+      if (!mounted) return;
+
+      final message = result['message']?.toString();
+      if (message != null && message.isNotEmpty) {
+        _showSnackBar(message, isError: result['status'] != true);
+      }
+
+      final testId =
+          result['test_id']?.toString() ?? overview['testId']?.toString() ?? '';
+      final routeId = jobId.isNotEmpty
+          ? jobId
+          : (testId.isNotEmpty ? testId : '');
+
+      setState(() {
+        _detailFuture = _loadApplicationDetail();
+      });
+
+      if (routeId.isNotEmpty) {
+        final payload = Map<String, dynamic>.from(jobPayload);
+        payload['skill_test_response'] = result;
+        payload['test_id'] = testId;
+
+        context.pushNamed(
+          'skillTestDetails',
+          pathParameters: {'id': routeId},
+          extra: payload,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString();
+      _showSnackBar(
+        msg.startsWith('Exception: ')
+            ? msg.substring('Exception: '.length)
+            : msg,
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isStartingSkillTest = false;
+      });
+    }
+  }
+}

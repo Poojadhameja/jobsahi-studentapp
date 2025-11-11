@@ -47,8 +47,8 @@ class _JobStepScreenState extends State<JobStepScreen> {
                     child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppConstants.defaultPadding),
                   child: _buildMainCard(),
-                ),
-              ),
+                    ),
+                  ),
                   Container(
                     padding: const EdgeInsets.all(AppConstants.defaultPadding),
                     decoration: BoxDecoration(
@@ -264,8 +264,8 @@ class _JobStepScreenState extends State<JobStepScreen> {
                     style: TextStyle(
                       fontSize: 12,
             color: AppConstants.textSecondaryColor,
+            ),
           ),
-        ),
           const SizedBox(height: AppConstants.defaultPadding),
         TextFormField(
           controller: _coverLetterController,
@@ -311,7 +311,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
       if (jobId == null) {
         _showErrorSnackBar('Invalid job information. Please try again later.');
         return;
-      }
+  }
 
       final studentIdString = await _tokenStorage.getUserId();
       int? studentId = _parseId(studentIdString);
@@ -348,16 +348,39 @@ class _JobStepScreenState extends State<JobStepScreen> {
                   : 'Application submitted successfully.',
             ),
             backgroundColor: AppConstants.successColor,
-          ),
+                        ),
         );
 
         final jobWithApplication = Map<String, dynamic>.from(widget.job);
         jobWithApplication['id'] = jobId;
+        jobWithApplication['job_id'] = jobId.toString();
         if (response.data != null) {
           jobWithApplication['application'] = response.data;
         }
         jobWithApplication['application_status'] =
             response.data?['status'] ?? 'pending';
+
+        Map<String, dynamic>? skillTestInfo;
+        final applicationIdValue = response.data?['application_id'] ??
+            response.data?['id'] ??
+            response.data?['applicationId'];
+        final applicationId =
+            int.tryParse(applicationIdValue?.toString() ?? '');
+
+        if (applicationId != null) {
+          try {
+            final result = await _apiService.startSkillTest(
+              applicationId: applicationId,
+            );
+            skillTestInfo = result;
+          } catch (e) {
+            debugPrint('🔴 [Jobs] Failed to start skill test: $e');
+          }
+        }
+
+        if (skillTestInfo != null) {
+          jobWithApplication['skill_test_response'] = skillTestInfo;
+        }
 
         context.goNamed(
           'jobApplicationSuccess',

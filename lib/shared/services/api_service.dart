@@ -940,4 +940,145 @@ extension StudentApplicationsApi on ApiService {
       rethrow;
     }
   }
+
+  /// Fetch skill test questions for a job
+  Future<List<Map<String, dynamic>>> getSkillTestQuestions({
+    required String jobId,
+  }) async {
+    try {
+      final response = await get(
+        '/skills/skill-questions.php',
+        queryParameters: {'job_id': jobId},
+      );
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+      } else {
+        throw Exception('Unexpected response format from skill questions API');
+      }
+
+      final statusFlag = jsonData['status'];
+      final isSuccess = statusFlag == true ||
+          statusFlag == 1 ||
+          statusFlag == '1' ||
+          (statusFlag is String && statusFlag.toLowerCase() == 'true');
+
+      if (!isSuccess) {
+        final message =
+            jsonData['message']?.toString() ?? 'Failed to load skill questions';
+        throw Exception(message);
+      }
+
+      final data = jsonData['data'];
+      if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map((question) => Map<String, dynamic>.from(question))
+            .toList();
+      }
+
+      return const <Map<String, dynamic>>[];
+    } catch (e) {
+      debugPrint('🔴 [SkillTest] Error fetching skill questions: $e');
+      rethrow;
+    }
+  }
+
+  /// Submit student skill test attempts (batch preferred)
+  Future<Map<String, dynamic>> submitSkillTestAttempts({
+    required List<Map<String, dynamic>> attempts,
+  }) async {
+    if (attempts.isEmpty) {
+      throw Exception('No attempts to submit');
+    }
+
+    try {
+      final userLoggedIn = await isLoggedIn();
+      if (!userLoggedIn) {
+        throw Exception('User must be logged in to submit skill test attempts');
+      }
+
+      final payload = {'attempts': attempts};
+
+      final response = await post(
+        '/student/skill-attempts.php',
+        data: payload,
+      );
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+      } else {
+        throw Exception('Unexpected response format from skill attempts API');
+      }
+
+      final statusFlag = jsonData['status'];
+      final isSuccess = statusFlag == true ||
+          statusFlag == 1 ||
+          statusFlag == '1' ||
+          (statusFlag is String && statusFlag.toLowerCase() == 'true');
+
+      final result = Map<String, dynamic>.from(jsonData);
+      result['success'] = isSuccess;
+      if (!isSuccess) {
+        final message =
+            jsonData['message']?.toString() ?? 'Failed to submit skill attempts';
+        result['error_message'] = message;
+      }
+
+      return result;
+    } catch (e) {
+      debugPrint('🔴 [SkillTest] Error submitting skill attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Start or resume a skill test for an application
+  Future<Map<String, dynamic>> startSkillTest({
+    required int applicationId,
+  }) async {
+    try {
+      final response = await post(
+        '/skills/skill-tests.php',
+        data: {'application_id': applicationId},
+      );
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+      } else {
+        throw Exception('Unexpected response format from skill test API');
+      }
+
+      final statusFlag = jsonData['status'];
+      final isSuccess = statusFlag == true ||
+          statusFlag == 1 ||
+          statusFlag == '1' ||
+          (statusFlag is String && statusFlag.toLowerCase() == 'true');
+
+      if (!isSuccess) {
+        final message =
+            jsonData['message']?.toString() ?? 'Failed to start skill test';
+        throw Exception(message);
+      }
+
+      return jsonData;
+    } catch (e) {
+      debugPrint('🔴 [SkillTest] Error starting skill test: $e');
+      rethrow;
+    }
+  }
 }

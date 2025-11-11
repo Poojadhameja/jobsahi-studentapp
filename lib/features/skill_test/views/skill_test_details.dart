@@ -173,24 +173,30 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
 
   /// Builds the test overview section
   Widget _buildTestOverviewSection(Map<String, dynamic> test) {
-    final Color accentColor = test['color'] is Color
-        ? test['color'] as Color
-        : AppConstants.primaryColor;
-    final IconData iconData = test['icon'] is IconData
-        ? test['icon'] as IconData
-        : Icons.quiz;
+    final title = test['title']?.toString() ?? 'Skill Test';
+    final provider = test['provider']?.toString() ?? '';
+    final leadingLetter = title.trim().isNotEmpty
+        ? title.trim().substring(0, 1).toUpperCase()
+        : 'S';
+    final accentColor = AppConstants.primaryColor;
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.1),
+            color: accentColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            iconData,
-            color: accentColor,
-            size: 24,
+          child: Center(
+            child: Text(
+              leadingLetter,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: accentColor,
+              ),
+            ),
           ),
         ),
         const SizedBox(width: AppConstants.defaultPadding),
@@ -199,7 +205,7 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                test['title'] as String,
+                title,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -208,7 +214,7 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                test['subtitle'] as String,
+                provider.isNotEmpty ? provider : 'By JobSahi',
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppConstants.successColor,
@@ -224,24 +230,75 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
 
   /// Builds the test details section
   Widget _buildTestDetailsSection(Map<String, dynamic> test) {
-    final details = [
-      {
-        'title': '${test['mcqs']} MCQs in ${test['time']} Mins',
-        'subtitle': 'परीक्षा हिंदी में होगी',
-      },
-      {
-        'title': '${test['passingMarks']}% marks to pass',
-        'subtitle': 'शपथ लें कि आप स्वयं उत्तर देंगे',
-      },
-      {
-        'title': 'This is your ${test['attempts']}st attempt',
-        'subtitle': 'पास न होने पर 2 और प्रयास मिलेंगी',
-      },
-      {
-        'title': 'Results remain private',
-        'subtitle': 'केवल पास होने पर ही रिक्रूटर्स के साथ साझा किये जाएंगे',
-      },
-    ];
+    int mcqs = 0;
+    final rawMcqs = test['mcqs'];
+    if (rawMcqs is int) {
+      mcqs = rawMcqs;
+    } else if (rawMcqs is String) {
+      mcqs = int.tryParse(rawMcqs) ?? mcqs;
+    }
+
+    int time = 15;
+    final rawTime = test['time'];
+    if (rawTime is int) {
+      time = rawTime;
+    } else if (rawTime is String) {
+      time = int.tryParse(rawTime) ?? time;
+    }
+
+    int passingMarks = 50;
+    final rawPassing = test['passingMarks'];
+    if (rawPassing is int) {
+      passingMarks = rawPassing;
+    } else if (rawPassing is String) {
+      passingMarks = int.tryParse(rawPassing) ?? passingMarks;
+    }
+
+    int attemptsAllowed = 1;
+    final rawAttempts = test['attemptsAllowed'];
+    if (rawAttempts is int) {
+      attemptsAllowed = rawAttempts;
+    } else if (rawAttempts is String) {
+      attemptsAllowed = int.tryParse(rawAttempts) ?? attemptsAllowed;
+    }
+
+    final language = test['language']?.toString().isNotEmpty == true
+        ? test['language'].toString()
+        : 'Hindi';
+    final resultsPrivate = test['resultsPrivate'] != false;
+
+    final details = <Map<String, String>>[];
+
+    final mcqLabel = mcqs > 0 ? mcqs.toString() : 'N/A';
+    final timeLabel = time > 0 ? time.toString() : 'N/A';
+    details.add({
+      'title': '$mcqLabel MCQs in $timeLabel mins',
+      'subtitle': 'परीक्षा $language में होगी',
+    });
+
+    final passingLabel = passingMarks > 0 ? passingMarks.toString() : '50';
+    details.add({
+      'title': '$passingLabel% marks to pass',
+      'subtitle': 'कम से कम $passingLabel% अंक लाना आवश्यक है',
+    });
+
+    details.add({
+      'title': attemptsAllowed > 1
+          ? 'You get $attemptsAllowed attempts'
+          : 'This is your only attempt',
+      'subtitle': attemptsAllowed > 1
+          ? 'पास न होने पर ${attemptsAllowed - 1} और प्रयास मिलेंगे'
+          : 'सफलता के लिए ध्यान से प्रश्न हल करें',
+    });
+
+    details.add({
+      'title': resultsPrivate
+          ? 'Results remain private'
+          : 'Results shared with recruiter',
+      'subtitle': resultsPrivate
+          ? 'केवल पास होने पर ही रिक्रूटर्स के साथ साझा किये जाएंगे'
+          : 'परिणाम रिक्रूटर्स के साथ साझा किए जाएंगे',
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,8 +316,10 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
 
         // Details list
         ...details.map(
-          (detail) =>
-              _buildTestDetailItem(detail['title']!, detail['subtitle']!),
+          (detail) => _buildTestDetailItem(
+            detail['title'] ?? '',
+            detail['subtitle'] ?? '',
+          ),
         ),
       ],
     );
@@ -344,7 +403,7 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
     return Column(
       children: [
         Text(
-          'इस परीक्षा को देने वाले छात्रों की संख्या के साथ पूरा करें',
+          'परीक्षा शुरू करने से पहले अपने इंटरनेट और समय की तैयारी सुनिश्चित करें',
           style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           textAlign: TextAlign.center,
         ),
@@ -352,12 +411,15 @@ class _SkillTestDetailsScreenView extends StatelessWidget {
         Builder(
           builder: (context) {
             final hasTest = test.isNotEmpty;
+            final jobId = job['id']?.toString() ?? job['job_id']?.toString() ?? '';
             return SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: hasTest
                     ? () {
-                        final testId = test['id']?.toString() ?? 'test_general';
+                        final testId = jobId.isNotEmpty
+                            ? jobId
+                            : test['id']?.toString() ?? 'test_general';
                         context.pushNamed(
                           'skillTestInstructions',
                           pathParameters: {'id': testId},

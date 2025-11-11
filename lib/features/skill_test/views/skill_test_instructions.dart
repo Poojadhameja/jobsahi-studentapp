@@ -130,19 +130,41 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
 
   /// Builds the test overview section
   Widget _buildTestOverviewSection() {
+    final title = test['title']?.toString() ??
+        job['job_title']?.toString() ??
+        job['title']?.toString() ??
+        'Skill Test';
+    final provider = test['provider']?.toString() ??
+        job['company_name']?.toString() ??
+        job['company']?.toString() ??
+        'JobSahi';
+    final time = _parseInt(test['time']) ?? 15;
+    final mcqs = _parseInt(test['mcqs']) ??
+        _parseInt(job['total_questions']) ??
+        0;
+    final leadingLetter = title.trim().isNotEmpty
+        ? title.trim().substring(0, 1).toUpperCase()
+        : 'S';
+
     return Row(
       children: [
         // Left side - Icon
         Container(
-          padding: const EdgeInsets.all(12),
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
-            color: (test['color'] as Color).withValues(alpha: 0.1),
+            color: AppConstants.primaryColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            test['icon'] as IconData,
-            color: test['color'] as Color,
-            size: 24,
+          child: Center(
+            child: Text(
+              leadingLetter,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppConstants.primaryColor,
+              ),
+            ),
           ),
         ),
         const SizedBox(width: AppConstants.defaultPadding),
@@ -153,7 +175,7 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                test['title'] as String,
+                title,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -162,7 +184,7 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'By ${test['provider']}',
+                'By $provider',
                 style: const TextStyle(
                   fontSize: 14,
                   color: AppConstants.successColor,
@@ -189,7 +211,7 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${test['time']} Mins',
+                      '$time Mins',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppConstants.successColor,
@@ -211,7 +233,7 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${test['mcqs']} MCQs',
+                      '${mcqs > 0 ? mcqs.toString() : 'N/A'} MCQs',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppConstants.successColor,
@@ -230,13 +252,27 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
 
   /// Builds the instructions section
   Widget _buildInstructionsSection() {
-    final instructions = [
-      'प्रत्येक परीक्षा के लिए एक निर्धारित समय सीमा होती है |',
-      'परीक्षा शुरू करने से पहले सुनिश्चित करें कि आपका इंटरनेट कनेक्शन स्थिर हो |',
-      '"Attempt Test" बटन पर क्लिक करने के बाद, आप परीक्षा छोड़ नहीं पाएंगे |',
-      'सभी प्रश्नों को ध्यानपूर्वक पढ़ें और उत्तर सोच-समझकर दें |',
-      'परीक्षा समाप्त होने के बाद परिणाम जल्द ही उपलब्ध कराए जाएंगे |',
-    ];
+    final instructionsFromTest = test['instructions'];
+    List<String> instructions;
+    if (instructionsFromTest is List) {
+      instructions = instructionsFromTest
+          .map((e) => e == null ? null : e.toString().trim())
+          .whereType<String>()
+          .where((e) => e.isNotEmpty)
+          .toList();
+    } else {
+      instructions = const [];
+    }
+
+    if (instructions.isEmpty) {
+      instructions = const [
+        'प्रत्येक परीक्षा के लिए एक निर्धारित समय सीमा होती है |',
+        'परीक्षा शुरू करने से पहले सुनिश्चित करें कि आपका इंटरनेट कनेक्शन स्थिर हो |',
+        '"Attempt Test" बटन पर क्लिक करने के बाद, आप परीक्षा छोड़ नहीं पाएंगे |',
+        'सभी प्रश्नों को ध्यानपूर्वक पढ़ें और उत्तर सोच-समझकर दें |',
+        'परीक्षा समाप्त होने के बाद परिणाम जल्द ही उपलब्ध कराए जाएंगे |',
+      ];
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,7 +430,10 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
 
   /// Proceeds to the actual test
   void _proceedToTest(BuildContext context) {
-    final testId = test['id']?.toString() ?? 'test_general';
+    final jobId = job['id']?.toString() ?? job['job_id']?.toString();
+    final testId = jobId?.isNotEmpty == true
+        ? jobId!
+        : test['id']?.toString() ?? 'test_general';
     context.pushNamed(
       'skillsTestFAQ',
       pathParameters: {'id': testId},
@@ -403,5 +442,12 @@ class _SkillTestInstructionsScreenView extends StatelessWidget {
         'test': test,
       },
     );
+  }
+
+  int? _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is double) return value.round();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 }
