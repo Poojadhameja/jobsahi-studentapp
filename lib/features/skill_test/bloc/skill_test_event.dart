@@ -50,15 +50,17 @@ class SubmitTestEvent extends SkillTestEvent {
   final String testId;
   final Map<String, String> answers;
   final int totalTimeSpent; // in seconds
+  final bool isAutoSubmit; // true when test is auto-submitted due to time expiry
 
   const SubmitTestEvent({
     required this.testId,
     required this.answers,
     required this.totalTimeSpent,
+    this.isAutoSubmit = false,
   });
 
   @override
-  List<Object?> get props => [testId, answers, totalTimeSpent];
+  List<Object?> get props => [testId, answers, totalTimeSpent, isAutoSubmit];
 }
 
 /// Load test results event

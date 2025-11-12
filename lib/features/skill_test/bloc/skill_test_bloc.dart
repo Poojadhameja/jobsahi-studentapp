@@ -88,12 +88,13 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
         throw Exception('No questions available for this skill test.');
       }
 
-      final timeLimit = questions.length >= 20
-          ? 30
-          : questions.length >= 10
-              ? 20
-              : 15;
+      // Time limit is half of total questions (e.g., 6 questions = 3 minutes)
+      // TODO: For testing, fixed to 10 seconds. Change back to: (questions.length / 2).ceil()
+      final timeLimit = 1; // Keep as 1 minute for state compatibility
       final startTime = DateTime.now();
+      
+      // For testing: Set to 10 seconds
+      const testTimeLimitSeconds = 10;
 
       emit(
         TestStartedState(
@@ -111,7 +112,7 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
           questions: questions,
           currentQuestionIndex: 0,
           answers: <String, String>{},
-          timeRemaining: timeLimit * 60,
+          timeRemaining: testTimeLimitSeconds, // 10 seconds for testing
           startTime: startTime,
         ),
       );
@@ -167,7 +168,8 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
       final inProgress = currentState;
       final answers = event.answers.isNotEmpty ? event.answers : inProgress.answers;
 
-      if (answers.isEmpty) {
+      // Allow empty answers only for auto-submit (time expiry)
+      if (answers.isEmpty && !event.isAutoSubmit) {
         emit(const SkillTestError(message: 'Please answer at least one question before submitting.'));
         return;
       }
@@ -220,8 +222,29 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
         });
       });
 
+      // Handle empty attempts for auto-submit
       if (attempts.isEmpty) {
-        throw Exception('No attempts to submit');
+        if (event.isAutoSubmit) {
+          // Auto-submit with no answers - create result with 0 score
+          final totalQuestions = inProgress.questions.length;
+      emit(
+        TestResultsLoadedState(
+          testId: inProgress.testId,
+          score: 0,
+          totalQuestions: totalQuestions,
+          correctAnswers: 0,
+          wrongAnswers: 0,
+          timeSpent: totalTimeSpent,
+          grade: 'F',
+          detailedResults: const [],
+          completedAt: DateTime.now(),
+          attemptedQuestions: answers.length,
+        ),
+      );
+          return;
+        } else {
+          throw Exception('No attempts to submit');
+        }
       }
 
       final response =
@@ -339,6 +362,7 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
           grade: grade,
           detailedResults: detailedResults,
           completedAt: completedAt,
+          attemptedQuestions: answers.length,
         ),
       );
     } catch (e) {
@@ -410,6 +434,7 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
           detailedResults:
               testResult['detailedResults'] as List<Map<String, dynamic>>,
           completedAt: testResult['completedAt'] as DateTime,
+          attemptedQuestions: (testResult['detailedResults'] as List).length,
         ),
       );
     } catch (e) {

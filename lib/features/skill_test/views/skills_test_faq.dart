@@ -3,6 +3,8 @@
 
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -94,11 +96,79 @@ class _SkillsTestFAQScreenView extends StatefulWidget {
 }
 
 class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
+  Timer? _timer;
+  DateTime? _testStartTime;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   /// Formats time as MM:SS
   String _formatTime(int seconds) {
     int minutes = seconds ~/ 60;
     int remainingSeconds = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  /// Starts the timer for auto-submit
+  void _startTimer(DateTime startTime, int timeLimitSeconds) {
+    _testStartTime = startTime;
+    _timer?.cancel();
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      final currentState = context.read<SkillTestBloc>().state;
+      if (currentState is! TestInProgressState) {
+        timer.cancel();
+        return;
+      }
+
+      final elapsed = DateTime.now().difference(startTime).inSeconds;
+      final remaining = (timeLimitSeconds - elapsed).clamp(0, timeLimitSeconds);
+
+      // Update UI to show remaining time
+      setState(() {});
+
+      // Auto-submit when time runs out
+      if (remaining <= 0) {
+        timer.cancel();
+        _autoSubmitTest();
+      }
+    });
+  }
+
+  /// Auto-submits the test when time expires (doesn't check if all questions answered)
+  void _autoSubmitTest() {
+    final bloc = context.read<SkillTestBloc>();
+    final state = bloc.state;
+    if (state is TestInProgressState) {
+      final elapsedSeconds = DateTime.now()
+          .difference(state.startTime)
+          .inSeconds;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Time is up! Test submitted automatically.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      bloc.add(
+        SubmitTestEvent(
+          testId: state.testId,
+          answers: state.answers,
+          totalTimeSpent: elapsedSeconds > 0 ? elapsedSeconds : 0,
+          isAutoSubmit: true,
+        ),
+      );
+    }
   }
 
   /// Handles answer selection
@@ -117,16 +187,26 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
     final bloc = context.read<SkillTestBloc>();
     final state = bloc.state;
     if (state is TestInProgressState) {
-      if (state.answers.isEmpty) {
+      final totalQuestions = state.questions.length;
+      final answeredCount = state.answers.length;
+
+      if (answeredCount < totalQuestions) {
+        final remaining = totalQuestions - answeredCount;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Please answer at least one question before submitting.',
+              'Please answer all questions before submitting. $remaining question${remaining > 1 ? 's' : ''} remaining.',
             ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
           ),
         );
         return;
       }
+
+      // Cancel timer when manually submitting
+      _timer?.cancel();
+
       final elapsedSeconds = DateTime.now()
           .difference(state.startTime)
           .inSeconds;
@@ -145,8 +225,10 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
     return BlocListener<SkillTestBloc, SkillTestState>(
       listener: (context, state) {
         if (state is TestResultsLoadedState) {
+          _timer?.cancel();
           _showResultDialog(context, state);
         } else if (state is SkillTestError) {
+          _timer?.cancel();
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(state.message)));
@@ -173,13 +255,39 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
 
           if (state is TestStartedState) {
             questions = state.questions;
-            remainingTime = state.timeLimit * 60;
+            // TODO: For testing, fixed to 10 seconds. Change back to: state.timeLimit * 60
+            const testTimeLimitSeconds = 10; // Testing: 10 seconds
+            final timeLimitSeconds = testTimeLimitSeconds;
+            remainingTime = timeLimitSeconds;
+            // Start timer when test starts
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _startTimer(state.startTime, timeLimitSeconds);
+            });
           }
 
           if (state is TestInProgressState) {
             questions = state.questions;
-            remainingTime = state.timeRemaining;
             selectedAnswers = state.answers;
+
+            // TODO: For testing, fixed to 10 seconds. Change back to: (questions.length / 2).ceil() * 60
+            const testTimeLimitSeconds = 10; // Testing: 10 seconds
+            final timeLimitSeconds = testTimeLimitSeconds;
+
+            // Calculate remaining time based on elapsed time
+            final elapsed = DateTime.now()
+                .difference(state.startTime)
+                .inSeconds;
+            remainingTime = (timeLimitSeconds - elapsed).clamp(
+              0,
+              timeLimitSeconds,
+            );
+
+            // Start timer if not already started
+            if (_testStartTime == null || _testStartTime != state.startTime) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _startTimer(state.startTime, timeLimitSeconds);
+              });
+            }
           }
 
           final totalQuestions = questions.length;
@@ -272,7 +380,10 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
                   ),
 
                   // Submit button
-                  _buildSubmitButton(),
+                  _buildSubmitButton(
+                    totalQuestions: totalQuestions,
+                    answeredCount: answeredCount,
+                  ),
                 ],
               ),
             ),
@@ -332,6 +443,61 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
         ],
       ),
     );
+  }
+
+  /// Builds the timer widget with dynamic colors and bell icon
+  Widget _buildTimerWidget(int remainingTime) {
+    Color timerColor;
+    Color backgroundColor;
+    bool showBell = false;
+
+    if (remainingTime <= 10) {
+      // Red for last 10 seconds
+      timerColor = Colors.red;
+      backgroundColor = Colors.red.shade50;
+      showBell = true;
+    } else if (remainingTime <= 30) {
+      // Orange for last 30 seconds
+      timerColor = Colors.orange;
+      backgroundColor = Colors.orange.shade50;
+      showBell = true;
+    } else {
+      // Green for normal time
+      timerColor = Colors.black;
+      backgroundColor = const Color(0xFFE8F5E8);
+      showBell = false;
+    }
+
+    Widget timerContent = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: timerColor.withOpacity(0.3), width: 1.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showBell) ...[
+            Icon(Icons.notifications_active, color: timerColor, size: 18),
+            const SizedBox(width: 6),
+          ] else ...[
+            Icon(Icons.access_time, color: timerColor, size: 18),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            _formatTime(remainingTime),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: timerColor,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return timerContent;
   }
 
   /// Builds the course information section with timer
@@ -404,22 +570,8 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
             ),
           ),
 
-          // Timer
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E8),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              _formatTime(remainingTime),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ),
+          // Timer with dynamic color and bell icon
+          _buildTimerWidget(remainingTime),
         ],
       ),
     );
@@ -584,25 +736,38 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
   }
 
   /// Builds the submit button
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton({
+    required int totalQuestions,
+    required int answeredCount,
+  }) {
+    final allQuestionsAnswered =
+        answeredCount >= totalQuestions && totalQuestions > 0;
+    final remaining = totalQuestions - answeredCount;
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: SizedBox(
         width: double.infinity,
         height: 56,
         child: ElevatedButton(
-          onPressed: _submitTest,
+          onPressed: allQuestionsAnswered ? _submitTest : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF5C9A24),
+            backgroundColor: allQuestionsAnswered
+                ? const Color(0xFF5C9A24)
+                : Colors.grey.shade400,
             foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            disabledBackgroundColor: Colors.grey.shade400,
+            disabledForegroundColor: Colors.white,
           ),
-          child: const Text(
-            'Submit',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          child: Text(
+            allQuestionsAnswered
+                ? 'Submit Test'
+                : 'Answer All Questions ($remaining remaining)',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -627,7 +792,8 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
 
   void _showResultDialog(BuildContext context, TestResultsLoadedState result) {
     final totalQuestions = result.totalQuestions;
-    final attemptedQuestions = result.correctAnswers + result.wrongAnswers;
+    // Use attemptedQuestions from result state which tracks actual answered questions
+    final attemptedQuestions = result.attemptedQuestions;
     final unAttempted = (totalQuestions - attemptedQuestions).clamp(
       0,
       totalQuestions,
@@ -757,41 +923,88 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                _buildResultRow(
-                  label: 'Attempted Questions',
-                  value: '$attemptedQuestions / $totalQuestions',
-                  icon: Icons.task_alt,
-                  color: AppConstants.successColor,
-                ),
-                const SizedBox(height: 12),
-                _buildResultRow(
-                  label: 'Correct Answers',
-                  value: '${result.correctAnswers}',
-                  icon: Icons.check_circle_outline,
-                  color: const Color(0xFF1A73E8),
-                ),
-                const SizedBox(height: 12),
-                _buildResultRow(
-                  label: 'Incorrect Answers',
-                  value: '${result.wrongAnswers}',
-                  icon: Icons.close_rounded,
-                  color: Colors.redAccent,
-                ),
-                if (unAttempted > 0) ...[
-                  const SizedBox(height: 12),
-                  _buildResultRow(
-                    label: 'Unattempted',
-                    value: '$unAttempted',
-                    icon: Icons.help_outline,
-                    color: AppConstants.warningColor,
-                  ),
-                ],
-                const SizedBox(height: 12),
-                _buildResultRow(
-                  label: 'Time Taken',
-                  value: '${minutes}m ${seconds}s',
-                  icon: Icons.schedule,
-                  color: AppConstants.primaryColor,
+                // Build and display result cards based on even/odd count
+                Builder(
+                  builder: (context) {
+                    // Build result cards list
+                    final resultCards = <Widget>[
+                      _buildResultRow(
+                        label: 'Attempted Questions',
+                        value: '$attemptedQuestions / $totalQuestions',
+                        icon: Icons.task_alt,
+                        color: AppConstants.successColor,
+                      ),
+                      _buildResultRow(
+                        label: 'Correct Answers',
+                        value: '${result.correctAnswers}',
+                        icon: Icons.check_circle_outline,
+                        color: const Color(0xFF1A73E8),
+                      ),
+                      _buildResultRow(
+                        label: 'Incorrect Answers',
+                        value: '${result.wrongAnswers}',
+                        icon: Icons.close_rounded,
+                        color: Colors.redAccent,
+                      ),
+                      if (unAttempted > 0)
+                        _buildResultRow(
+                          label: 'Unattempted',
+                          value: '$unAttempted',
+                          icon: Icons.help_outline,
+                          color: AppConstants.warningColor,
+                        ),
+                      _buildResultRow(
+                        label: 'Time Taken',
+                        value: '${minutes}m ${seconds}s',
+                        icon: Icons.schedule,
+                        color: AppConstants.primaryColor,
+                      ),
+                    ];
+
+                    // Display cards based on even/odd count
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final itemWidth = (constraints.maxWidth - 12) / 2;
+                        final totalCards = resultCards.length;
+                        final isEven = totalCards % 2 == 0;
+
+                        if (isEven) {
+                          // Even count: all cards in 2 columns
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: resultCards.map((card) {
+                              return SizedBox(width: itemWidth, child: card);
+                            }).toList(),
+                          );
+                        } else {
+                          // Odd count: first (count-1) in 2 columns, last one full width
+                          final gridCards = resultCards.sublist(
+                            0,
+                            totalCards - 1,
+                          );
+                          final lastCard = resultCards.last;
+
+                          return Column(
+                            children: [
+                              Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: gridCards.map((card) {
+                                  return SizedBox(
+                                    width: itemWidth,
+                                    child: card,
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 12),
+                              lastCard, // Full width
+                            ],
+                          );
+                        }
+                      },
+                    );
+                  },
                 ),
               ],
             ),

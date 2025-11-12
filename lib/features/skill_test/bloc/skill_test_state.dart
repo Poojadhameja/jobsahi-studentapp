@@ -159,6 +159,7 @@ class TestResultsLoadedState extends SkillTestState {
   final String grade;
   final List<Map<String, dynamic>> detailedResults;
   final DateTime completedAt;
+  final int attemptedQuestions; // actual number of questions answered
 
   const TestResultsLoadedState({
     required this.testId,
@@ -170,6 +171,7 @@ class TestResultsLoadedState extends SkillTestState {
     required this.grade,
     required this.detailedResults,
     required this.completedAt,
+    required this.attemptedQuestions,
   });
 
   @override
@@ -183,6 +185,7 @@ class TestResultsLoadedState extends SkillTestState {
     grade,
     detailedResults,
     completedAt,
+    attemptedQuestions,
   ];
 }
 

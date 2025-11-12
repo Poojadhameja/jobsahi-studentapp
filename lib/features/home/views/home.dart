@@ -51,9 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: KeyboardDismissWrapper(
         child: BlocBuilder<HomeBloc, HomeState>(
           builder: (context, state) {
-            if (state is HomeLoading) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is HomeError) {
+            if (state is HomeError) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -80,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             } else {
-              // Show HomePage content
+              // Show HomePage content (including during loading)
               return const HomePage();
             }
           },
@@ -134,9 +132,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return BlocBuilder<HomeBloc, HomeState>(
       builder: (context, state) {
-        if (state is HomeLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
+        final isLoading = state is HomeLoading;
+        final homeLoaded = state is HomeLoaded ? state : null;
 
         if (state is HomeError) {
           return NoInternetErrorWidget(
@@ -149,30 +146,42 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           );
         }
 
-        if (state is HomeLoaded) {
-          return SafeArea(
-            child: Stack(
-              children: [
-                // Main content with NestedScrollView
-                NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: _StickyTabBarDelegate(child: _buildTabBar()),
-                      ),
-                    ];
-                  },
-                  body: TabBarView(
-                    controller: tabController,
-                    physics: const ClampingScrollPhysics(),
-                    children: [
-                      _buildAllJobsTab(state),
-                      _buildSavedJobsTab(state),
-                    ],
-                  ),
-                ),
-                // Filter chips overlay - positioned above everything with z-index
+        return SafeArea(
+          child: Stack(
+            children: [
+              // Main content with NestedScrollView
+              NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _StickyTabBarDelegate(child: _buildTabBar()),
+                    ),
+                  ];
+                },
+                body: isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppConstants.secondaryColor,
+                        ),
+                      )
+                    : homeLoaded != null
+                        ? TabBarView(
+                            controller: tabController,
+                            physics: const ClampingScrollPhysics(),
+                            children: [
+                              _buildAllJobsTab(homeLoaded),
+                              _buildSavedJobsTab(homeLoaded),
+                            ],
+                          )
+                        : const Center(
+                            child: CircularProgressIndicator(
+                              color: AppConstants.secondaryColor,
+                            ),
+                          ),
+              ),
+              // Filter chips overlay - positioned above everything with z-index
+              if (!isLoading && homeLoaded != null)
                 Positioned(
                   top: 56, // Below the pinned tab bar (48 + 8 bottom padding)
                   left: 0,
@@ -203,12 +212,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     },
                   ),
                 ),
-              ],
-            ),
-          );
-        }
-
-        return const Center(child: CircularProgressIndicator());
+            ],
+          ),
+        );
       },
     );
   }

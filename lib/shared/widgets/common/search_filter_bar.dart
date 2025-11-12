@@ -93,20 +93,26 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
               ),
               child: StatefulBuilder(
                 builder: (context, setState) {
+                  final isEnabled = widget.onSearchChanged != null;
                   return TextField(
                     controller: _controller,
+                    enabled: isEnabled,
                     decoration: InputDecoration(
                       hintText: widget.searchHint,
-                      hintStyle: const TextStyle(
-                        color: AppConstants.textSecondaryColor,
+                      hintStyle: TextStyle(
+                        color: isEnabled
+                            ? AppConstants.textSecondaryColor
+                            : AppConstants.textSecondaryColor.withOpacity(0.5),
                         fontSize: 14,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.search,
-                        color: AppConstants.textSecondaryColor,
+                        color: isEnabled
+                            ? AppConstants.textSecondaryColor
+                            : AppConstants.textSecondaryColor.withOpacity(0.5),
                         size: 20,
                       ),
-                      suffixIcon: _controller.text.isNotEmpty
+                      suffixIcon: _controller.text.isNotEmpty && widget.onSearchCleared != null
                           ? IconButton(
                               icon: const Icon(
                                 Icons.clear,
@@ -126,8 +132,10 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
                         vertical: 12,
                       ),
                     ),
-                    style: const TextStyle(
-                      color: AppConstants.textPrimaryColor,
+                    style: TextStyle(
+                      color: isEnabled
+                          ? AppConstants.textPrimaryColor
+                          : AppConstants.textPrimaryColor.withOpacity(0.5),
                       fontSize: 14,
                     ),
                     onChanged: (value) {
@@ -158,36 +166,40 @@ class _SearchFilterBarState extends State<SearchFilterBar> {
     bool isFilterVisible,
     Function(bool)? onFilterToggle,
   ) {
+    final isEnabled = onFilterToggle != null;
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => onFilterToggle?.call(!isFilterVisible),
+        onTap: isEnabled ? () => onFilterToggle(!isFilterVisible) : null,
         borderRadius: BorderRadius.circular(22.5),
-        child: Container(
-          height: 45,
-          width: 45,
-          decoration: BoxDecoration(
-            color: isFilterVisible
-                ? AppConstants.primaryColor
-                : AppConstants.backgroundColor,
-            borderRadius: BorderRadius.circular(22.5),
-            border: Border.all(color: AppConstants.borderColor, width: 1),
-          ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, animation) {
-              return ScaleTransition(
-                scale: animation,
-                child: FadeTransition(opacity: animation, child: child),
-              );
-            },
-            child: Icon(
-              isFilterVisible ? Icons.close : Icons.tune,
-              key: ValueKey(isFilterVisible),
+        child: Opacity(
+          opacity: isEnabled ? 1.0 : 0.5,
+          child: Container(
+            height: 45,
+            width: 45,
+            decoration: BoxDecoration(
               color: isFilterVisible
-                  ? Colors.white
-                  : AppConstants.textSecondaryColor,
-              size: 24,
+                  ? AppConstants.primaryColor
+                  : AppConstants.backgroundColor,
+              borderRadius: BorderRadius.circular(22.5),
+              border: Border.all(color: AppConstants.borderColor, width: 1),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) {
+                return ScaleTransition(
+                  scale: animation,
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+              child: Icon(
+                isFilterVisible ? Icons.close : Icons.tune,
+                key: ValueKey(isFilterVisible),
+                color: isFilterVisible
+                    ? Colors.white
+                    : AppConstants.textSecondaryColor,
+                size: 24,
+              ),
             ),
           ),
         ),
@@ -208,26 +220,36 @@ class SearchFilterBarWithBloc extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<HomeBloc, HomeState>(
       builder: (context, state) {
-        if (state is! HomeLoaded) return const SizedBox.shrink();
-        final isFilterVisible = state.showFilters;
+        // Show search bar even during loading, but disable interactions
+        final isFilterVisible = state is HomeLoaded ? state.showFilters : false;
+        final searchQuery = state is HomeLoaded ? state.searchQuery : '';
+        final isLoading = state is HomeLoading;
 
         return SearchFilterBar(
           searchHint: searchHint,
           showFilters: isFilterVisible,
-          initialValue: state.searchQuery,
-          onSearchChanged: (value) {
-            context.read<HomeBloc>().add(SearchJobsEvent(query: value));
-          },
-          onSearchCleared: () {
-            context.read<HomeBloc>().add(const ClearSearchEvent());
-          },
-          onFilterToggle: (showFilters) {
-            final bloc = context.read<HomeBloc>();
-            if (showFilters && state.activeFilters.isNotEmpty) {
-              bloc.add(const ClearAllFiltersEvent());
-            }
-            bloc.add(const ToggleFiltersEvent());
-          },
+          initialValue: searchQuery,
+          onSearchChanged: isLoading
+              ? null
+              : (value) {
+                  context.read<HomeBloc>().add(SearchJobsEvent(query: value));
+                },
+          onSearchCleared: isLoading
+              ? null
+              : () {
+                  context.read<HomeBloc>().add(const ClearSearchEvent());
+                },
+          onFilterToggle: isLoading
+              ? null
+              : (showFilters) {
+                  if (state is HomeLoaded) {
+                    final bloc = context.read<HomeBloc>();
+                    if (showFilters && state.activeFilters.isNotEmpty) {
+                      bloc.add(const ClearAllFiltersEvent());
+                    }
+                    bloc.add(const ToggleFiltersEvent());
+                  }
+                },
         );
       },
     );
