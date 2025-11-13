@@ -171,12 +171,34 @@ class JobApplicationSuccessScreen extends StatelessWidget {
 
   /// Navigates to track application
   void _trackApplication(BuildContext context) {
-    // TODO: Navigate to application tracking screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Application tracking coming soon!'),
-        backgroundColor: AppConstants.primaryColor,
-      ),
+    // Extract application ID from job data
+    final applicationData = job['application'] is Map<String, dynamic>
+        ? job['application'] as Map<String, dynamic>
+        : null;
+  
+    final applicationId = job['application_id']?.toString() ??
+        applicationData?['application_id']?.toString() ??
+        applicationData?['id']?.toString() ??
+        job['applicationId']?.toString();
+
+    if (applicationId == null || applicationId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Application ID not available.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Navigate to application detail page
+    final navigationData = Map<String, dynamic>.from(job);
+    navigationData['_navigation_source'] = 'job_application_success'; // Track navigation source
+
+    context.pushNamed(
+      'studentApplicationDetail',
+      pathParameters: {'id': applicationId},
+      extra: navigationData,
     );
   }
 

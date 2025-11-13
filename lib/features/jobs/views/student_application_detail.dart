@@ -15,6 +15,9 @@ class StudentApplicationDetailScreen extends StatefulWidget {
     this.initialData,
   });
 
+  /// Get navigation source from initial data
+  String? get navigationSource => initialData?['_navigation_source']?.toString();
+
   @override
   State<StudentApplicationDetailScreen> createState() =>
       _StudentApplicationDetailScreenState();
@@ -95,11 +98,14 @@ class _StudentApplicationDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    final navigationSource = widget.navigationSource;
+    
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
-      appBar: const SimpleAppBar(
+      appBar: SimpleAppBar(
         title: 'Application Detail',
         showBackButton: true,
+        onBack: () => _handleBackNavigation(context, navigationSource),
       ),
       body: SafeArea(
         child: FutureBuilder<Map<String, dynamic>>(
@@ -916,6 +922,56 @@ class _StudentApplicationDetailScreenState
       setState(() {
         _isStartingSkillTest = false;
       });
+    }
+  }
+
+  /// Handle back navigation based on source
+  void _handleBackNavigation(BuildContext context, String? navigationSource) {
+    if (navigationSource == 'job_details') {
+      // Navigate back to job details page
+      final jobId = widget.initialData?['id']?.toString() ??
+          widget.initialData?['job_id']?.toString();
+      
+      if (jobId != null && jobId.isNotEmpty) {
+        final jobPayload = Map<String, dynamic>.from(widget.initialData ?? {});
+        jobPayload['id'] = jobId;
+        jobPayload['job_id'] = jobId;
+        
+        context.goNamed(
+          'jobDetails',
+          pathParameters: {'id': jobId},
+          extra: jobPayload,
+        );
+        return;
+      }
+    } else if (navigationSource == 'applied_jobs') {
+      // Navigate back to applied jobs page (Application Tracker)
+      context.goNamed('application-tracker');
+      return;
+    } else if (navigationSource == 'job_application_success') {
+      // Navigate back to job application success page
+      final jobId = widget.initialData?['id']?.toString() ??
+          widget.initialData?['job_id']?.toString();
+      
+      if (jobId != null && jobId.isNotEmpty) {
+        final jobPayload = Map<String, dynamic>.from(widget.initialData ?? {});
+        jobPayload['id'] = jobId;
+        jobPayload['job_id'] = jobId;
+        
+        context.goNamed(
+          'jobApplicationSuccess',
+          pathParameters: {'id': jobId},
+          extra: jobPayload,
+        );
+        return;
+      }
+    }
+    
+    // Default: pop if possible, otherwise go to home
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      context.goNamed('home');
     }
   }
 }

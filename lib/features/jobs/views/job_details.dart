@@ -14,6 +14,7 @@ import '../bloc/jobs_state.dart';
 
 import 'write_review.dart';
 import 'about_company.dart';
+import '../../../shared/services/api_service.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   /// Job data to display
@@ -26,6 +27,9 @@ class JobDetailsScreen extends StatefulWidget {
 }
 
 class _JobDetailsScreenState extends State<JobDetailsScreen> {
+  String? _applicationId;
+  bool _isCheckingApplication = false;
+
   @override
   void initState() {
     super.initState();
@@ -38,8 +42,62 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         debugPrint('🔵 [JobDetailsScreen] Extracted job ID: $jobId');
         debugPrint('🔵 [JobDetailsScreen] Loading job details for ID: $jobId');
         context.read<JobsBloc>().add(LoadJobDetailsEvent(jobId: jobId));
+        
+        // Check if user has already applied for this job
+        if (jobId.isNotEmpty) {
+          _checkIfApplied(jobId);
+        }
       }
     });
+  }
+
+  /// Check if user has already applied for this job
+  Future<void> _checkIfApplied(String jobId) async {
+    if (_isCheckingApplication || jobId.isEmpty) return;
+    
+    setState(() {
+      _isCheckingApplication = true;
+    });
+
+    try {
+      final api = ApiService();
+      final appliedJobs = await api.getStudentAppliedJobs();
+      
+      // Find application for this job
+      for (final appliedJob in appliedJobs) {
+        // Check multiple possible fields for job ID
+        final appliedJobId = appliedJob['job_id']?.toString() ?? 
+                             appliedJob['id']?.toString();
+        
+        // Check multiple possible fields for application ID
+        final applicationId = appliedJob['application_id']?.toString() ??
+                             appliedJob['id']?.toString();
+        
+        // Match job ID (try both string and int comparison)
+        final jobIdMatch = appliedJobId == jobId || 
+                          appliedJobId == jobId.toString() ||
+                          (int.tryParse(appliedJobId ?? '')?.toString() == jobId) ||
+                          (int.tryParse(jobId)?.toString() == appliedJobId);
+        
+        if (jobIdMatch && applicationId != null && applicationId.isNotEmpty) {
+          if (mounted) {
+            setState(() {
+              _applicationId = applicationId;
+            });
+          }
+          debugPrint('✅ [JobDetailsScreen] Found application ID: $applicationId for job: $jobId');
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('🔴 [JobDetailsScreen] Error checking application: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingApplication = false;
+        });
+      }
+    }
   }
 
   @override
@@ -80,49 +138,48 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         }
 
         return Scaffold(
-          backgroundColor: AppConstants.cardBackgroundColor,
+          backgroundColor: Colors.white,
           appBar: const SimpleAppBar(
             title: 'Job Details',
             showBackButton: true,
           ),
-          bottomNavigationBar: _buildApplyButton(context),
-          body: Stack(
-            children: [
-              DefaultTabController(
-                length: 3,
-                child: Column(
+          bottomNavigationBar: isLoading ? null : _buildApplyButton(context, currentJob),
+          body: isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: AppConstants.secondaryColor,
+                  ),
+                )
+              : Stack(
                   children: [
-                    if (isLoading)
-                      const LinearProgressIndicator(
-                        minHeight: 3,
-                        backgroundColor: Colors.transparent,
-                        color: AppConstants.secondaryColor,
-                      ),
+                    DefaultTabController(
+                      length: 3,
+                      child: Column(
+                        children: [
+                          // Job header section
+                          _buildJobHeader(
+                            context,
+                            currentJob,
+                            isBookmarked,
+                            companyInfo,
+                          ),
 
-                    // Job header section
-                    _buildJobHeader(
-                      context,
-                      currentJob,
-                      isBookmarked,
-                      companyInfo,
-                    ),
+                          // Tab bar
+                          _buildTabBar(),
 
-                    // Tab bar
-                    _buildTabBar(),
-
-                    // Tab content
-                    Expanded(
-                      child: _buildTabContent(
-                        currentJob,
-                        companyInfo,
-                        statistics,
+                          // Tab content
+                          Expanded(
+                            child: _buildTabContent(
+                              currentJob,
+                              companyInfo,
+                              statistics,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
         );
       },
     );
@@ -1031,7 +1088,21 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   /// Builds the apply button at the bottom
-  Widget _buildApplyButton(BuildContext context) {
+  Widget _buildApplyButton(BuildContext context, Map<String, dynamic> currentJob) {
+    // Check if user has already applied for this job
+    final applicationData = currentJob['application'] is Map<String, dynamic>
+        ? currentJob['application'] as Map<String, dynamic>
+        : null;
+  
+    final applicationIdRaw = _applicationId ??
+        currentJob['application_id']?.toString() ??
+        applicationData?['application_id']?.toString() ??
+        applicationData?['id']?.toString() ??
+        currentJob['applicationId']?.toString();
+  
+    final hasApplied = applicationIdRaw != null && applicationIdRaw.isNotEmpty;
+    final applicationId = hasApplied ? applicationIdRaw : '';
+
     return SafeArea(
       minimum: const EdgeInsets.only(bottom: 20),
       child: Container(
@@ -1054,12 +1125,17 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             onPressed: () {
-              // Navigate directly to job application step
-              _navigateToJobStep(context);
+              if (hasApplied) {
+                // Navigate to application detail page
+                _navigateToApplicationDetail(context, applicationId, currentJob);
+              } else {
+                // Navigate directly to job application step
+                _navigateToJobStep(context);
+              }
             },
-            child: const Text(
-              AppConstants.applyJobText,
-              style: TextStyle(
+            child: Text(
+              hasApplied ? 'Track Application' : AppConstants.applyJobText,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -1068,6 +1144,23 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Navigates to application detail page
+  void _navigateToApplicationDetail(
+    BuildContext context,
+    String applicationId,
+    Map<String, dynamic> currentJob,
+  ) {
+    final jobPayload = Map<String, dynamic>.from(currentJob);
+    jobPayload['application_id'] = applicationId;
+    jobPayload['_navigation_source'] = 'job_details'; // Track navigation source
+
+    context.pushNamed(
+      'studentApplicationDetail',
+      pathParameters: {'id': applicationId},
+      extra: jobPayload,
     );
   }
 

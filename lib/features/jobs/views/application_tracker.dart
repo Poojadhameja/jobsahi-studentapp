@@ -363,10 +363,13 @@ class _ApplicationTrackerScreenView extends StatelessWidget {
                   return;
                 }
 
+                final navigationData = Map<String, dynamic>.from(jobData);
+                navigationData['_navigation_source'] = 'applied_jobs'; // Track navigation source
+
                 context.pushNamed(
                   'studentApplicationDetail',
                   pathParameters: {'id': applicationId},
-                  extra: jobData,
+                  extra: navigationData,
                 );
               },
               style: ElevatedButton.styleFrom(
