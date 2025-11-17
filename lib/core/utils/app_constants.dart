@@ -249,6 +249,9 @@ class AppConstants {
   // Feedback
   static const String feedbackEndpoint = '/student/feedback.php';
 
+  // FCM Token
+  static const String saveFcmTokenEndpoint = '/fcm/save_token.php';
+
   // Other (placeholders)
   static const String signupEndpoint = '/auth/signup';
   static const String jobsEndpoint = '/jobs';

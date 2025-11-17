@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/router/app_router.dart';
 import 'core/di/injection_container.dart';
 import 'core/services/onboarding_service.dart';
@@ -14,11 +16,23 @@ import 'features/settings/bloc/settings_bloc.dart';
 import 'features/skill_test/bloc/skill_test_bloc.dart';
 import 'shared/services/api_service.dart';
 import 'shared/services/inactivity_service.dart';
+import 'shared/services/fcm_service.dart';
 
 /// The main function - this is where the Flutter app starts
 /// It calls runApp() which inflates the given widget and attaches it to the screen
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    debugPrint('✅ Firebase initialized successfully');
+  } catch (e) {
+    debugPrint('🔴 Error initializing Firebase: $e');
+  }
+
+  // Set up background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Initialize dependency injection
   await initializeDependencies();
@@ -26,6 +40,15 @@ void main() async {
   // Initialize API service with token restoration
   final apiService = sl<ApiService>();
   await apiService.initialize();
+
+  // Initialize FCM service
+  try {
+    final fcmService = sl<FcmService>();
+    await fcmService.initialize();
+    debugPrint('✅ FCM Service initialized successfully');
+  } catch (e) {
+    debugPrint('🔴 Error initializing FCM Service: $e');
+  }
 
   // Initialize onboarding service for optimized performance
   await OnboardingService.instance.initialize();

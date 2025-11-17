@@ -17,6 +17,7 @@ import '../../features/feedback/repository/feedback_repository.dart';
 import '../../shared/services/api_service.dart';
 import '../../shared/services/token_storage.dart';
 import '../../shared/services/inactivity_service.dart';
+import '../../shared/services/fcm_service.dart';
 
 /// Global service locator instance
 final GetIt sl = GetIt.instance;
@@ -143,5 +144,12 @@ void _registerServices() {
     final inactivityService = InactivityService.instance;
     inactivityService.initialize();
     return inactivityService;
+  });
+
+  // FCM Service
+  sl.registerLazySingleton<FcmService>(() {
+    final fcmService = FcmService();
+    // Note: initialize() is called in main.dart after dependencies are registered
+    return fcmService;
   });
 }

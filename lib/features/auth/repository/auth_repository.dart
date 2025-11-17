@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
+import '../../../shared/services/fcm_service.dart';
 import '../../../core/utils/app_constants.dart';
 import '../services/auth_api_service.dart';
 
@@ -181,6 +182,16 @@ class AuthRepositoryImpl implements AuthRepository {
           debugPrint(
             "🔵 User data stored successfully with role: ${user.role}",
           );
+
+          // Save FCM token after successful login
+          try {
+            final fcmService = FcmService();
+            await fcmService.saveTokenToBackend();
+            debugPrint('✅ FCM token saved after login');
+          } catch (e) {
+            debugPrint('🔴 Error saving FCM token after login: $e');
+            // Don't fail login if FCM token save fails
+          }
         } else {
           debugPrint("🔴 User or token is null in successful response");
         }
@@ -262,6 +273,16 @@ class AuthRepositoryImpl implements AuthRepository {
         );
 
         _apiService.setAuthToken(loginResponse.token!);
+
+        // Save FCM token after successful login
+        try {
+          final fcmService = FcmService();
+          await fcmService.saveTokenToBackend();
+          debugPrint('✅ FCM token saved after OTP verification');
+        } catch (e) {
+          debugPrint('🔴 Error saving FCM token after OTP verification: $e');
+          // Don't fail login if FCM token save fails
+        }
       }
 
       return loginResponse;
@@ -348,6 +369,16 @@ class AuthRepositoryImpl implements AuthRepository {
         debugPrint(
           "🔵 User data stored successfully with role: ${user.role}",
         );
+
+        // Save FCM token after successful login
+        try {
+          final fcmService = FcmService();
+          await fcmService.saveTokenToBackend();
+          debugPrint('✅ FCM token saved after phone login OTP verification');
+        } catch (e) {
+          debugPrint('🔴 Error saving FCM token after phone login OTP verification: $e');
+          // Don't fail login if FCM token save fails
+        }
       }
 
       return loginResponse;
