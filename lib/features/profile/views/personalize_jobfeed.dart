@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
-import '../bloc/profile_state.dart';
 
 /// PersonalizeJobfeedScreen - A screen for users to customize their job preferences
 /// This screen allows users to set their trade, location, job sectors, job types,
@@ -93,29 +92,7 @@ class _PersonalizeJobfeedViewState extends State<_PersonalizeJobfeedView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ProfileBloc, ProfileState>(
-      builder: (context, state) {
-        String? selectedTrade;
-        String? selectedState;
-        String? selectedCity;
-        String? selectedSalaryRange;
-        String availability = "Immediately Available";
-        List<String> selectedSectors = ["Power Plant"];
-        List<String> selectedJobTypes = ["Full Time", "Internship"];
-        List<String> skills = ["Wiring"];
-
-        if (state is PersonalizeJobfeedState) {
-          selectedTrade = state.selectedTrade;
-          selectedState = state.selectedState;
-          selectedCity = state.selectedCity;
-          selectedSalaryRange = state.selectedSalaryRange;
-          availability = state.availability;
-          selectedSectors = state.selectedSectors;
-          selectedJobTypes = state.selectedJobTypes;
-          skills = state.skills;
-        }
-
-        return Scaffold(
+    return Scaffold(
           backgroundColor: Colors.white,
           // ===== APP BAR =====
           appBar: AppBar(
@@ -136,336 +113,33 @@ class _PersonalizeJobfeedViewState extends State<_PersonalizeJobfeedView> {
             centerTitle: true,
           ),
           // ===== MAIN BODY CONTENT =====
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+          body: Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // ===== TRADE SELECTION SECTION =====
-                _buildSectionTitle(
-                  AppConstants.selectTradeTitle,
-                  isGreen: true,
+                Icon(
+                  Icons.construction_outlined,
+                  size: 80,
+                  color: AppConstants.textSecondaryColor.withOpacity(0.5),
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 24),
+                Text(
+                  'Coming Soon',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.textPrimaryColor,
                   ),
-                  child: DropdownButtonFormField<String>(
-                    initialValue: selectedTrade,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    items:
-                        [
-                              "इलेक्ट्रीशियन",
-                              "फिटर",
-                              "वेल्डर",
-                              "मैकेनिक",
-                              "प्लंबर",
-                              "कारपेंटर",
-                            ]
-                            .map(
-                              (trade) => DropdownMenuItem(
-                                value: trade,
-                                child: Text(trade),
-                              ),
-                            )
-                            .toList(),
-                    onChanged: (val) => context.read<ProfileBloc>().add(
-                      UpdateSelectedTradeEvent(trade: val!),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // ===== LOCATION SELECTION SECTION =====
-                _buildSectionTitle(
-                  AppConstants.preferredLocationTitle,
-                  isGreen: true,
-                ),
-                Row(
-                  children: [
-                    // State Dropdown
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedState,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            hintText: "Select State",
-                          ),
-                          items:
-                              [
-                                    "Madhya Pradesh",
-                                    "Maharashtra",
-                                    "Gujarat",
-                                    "Rajasthan",
-                                    "Uttar Pradesh",
-                                  ]
-                                  .map(
-                                    (state) => DropdownMenuItem(
-                                      value: state,
-                                      child: Text(state),
-                                    ),
-                                  )
-                                  .toList(),
-                          onChanged: (val) => context.read<ProfileBloc>().add(
-                            UpdateSelectedStateEvent(state: val!),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // City Dropdown
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButtonFormField<String>(
-                          initialValue: selectedCity,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            hintText: "Select City",
-                          ),
-                          items:
-                              [
-                                    "Balaghat",
-                                    "Bhopal",
-                                    "Indore",
-                                    "Jabalpur",
-                                    "Gwalior",
-                                  ]
-                                  .map(
-                                    (city) => DropdownMenuItem(
-                                      value: city,
-                                      child: Text(city),
-                                    ),
-                                  )
-                                  .toList(),
-                          onChanged: (val) => context.read<ProfileBloc>().add(
-                            UpdateSelectedCityEvent(city: val!),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // ===== JOB SECTORS SECTION =====
-                _buildSectionTitle(AppConstants.jobSectorTitle, isGreen: true),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: jobSectors.map((sector) {
-                    final isSelected = selectedSectors.contains(sector);
-                    return FilterChip(
-                      label: Text(sector),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        context.read<ProfileBloc>().add(
-                          ToggleJobSectorEvent(
-                            sector: sector,
-                            isSelected: selected,
-                          ),
-                        );
-                      },
-                      selectedColor: AppConstants.primaryColor.withValues(
-                        alpha: 0.2,
-                      ),
-                      checkmarkColor: AppConstants.primaryColor,
-                      backgroundColor: Colors.grey.shade100,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 24),
-
-                // ===== JOB TYPES SECTION =====
-                _buildSectionTitle(AppConstants.jobTypeTitle, isGreen: true),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: jobTypes.map((type) {
-                    final isSelected = selectedJobTypes.contains(type);
-                    return FilterChip(
-                      label: Text(type),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        context.read<ProfileBloc>().add(
-                          ToggleJobTypeEvent(
-                            jobType: type,
-                            isSelected: selected,
-                          ),
-                        );
-                      },
-                      selectedColor: AppConstants.primaryColor.withValues(
-                        alpha: 0.2,
-                      ),
-                      checkmarkColor: AppConstants.primaryColor,
-                      backgroundColor: Colors.grey.shade100,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 24),
-
-                // ===== AVAILABILITY SECTION =====
-                _buildSectionTitle(
-                  AppConstants.availabilityTitle,
-                  isGreen: true,
-                ),
-                _buildCustomRadioOption(
-                  AppConstants.immediatelyAvailable,
-                  availability == AppConstants.immediatelyAvailable,
-                  () => context.read<ProfileBloc>().add(
-                    UpdateAvailabilityEvent(
-                      availability: AppConstants.immediatelyAvailable,
-                    ),
-                  ),
-                ),
-                _buildCustomRadioOption(
-                  AppConstants.withinOneMonth,
-                  availability == AppConstants.withinOneMonth,
-                  () => context.read<ProfileBloc>().add(
-                    UpdateAvailabilityEvent(
-                      availability: AppConstants.withinOneMonth,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // ===== SKILLS SECTION =====
-                _buildSectionTitle(AppConstants.skillsTitle, isGreen: true),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: skills.map((skill) {
-                    return Chip(
-                      label: Text(skill),
-                      backgroundColor: Colors.blue.shade100,
-                      deleteIcon: const Icon(Icons.close, size: 18),
-                      onDeleted: () {
-                        context.read<ProfileBloc>().add(
-                          RemoveSkillEvent(skill: skill),
-                        );
-                      },
-                    );
-                  }).toList(),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: skillsController,
-                        decoration: const InputDecoration(
-                          hintText: "Add a skill",
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Add new skill when add button is pressed
-                        if (skillsController.text.trim().isNotEmpty) {
-                          context.read<ProfileBloc>().add(
-                            AddSkillEvent(skill: skillsController.text.trim()),
-                          );
-                          skillsController.clear();
-                        }
-                      },
-                      child: const Text("Add"),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // ===== SALARY RANGE SECTION =====
-                _buildSectionTitle(
-                  AppConstants.salaryRangeTitle,
-                  isGreen: true,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButtonFormField<String>(
-                    initialValue: selectedSalaryRange,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      hintText: "Select Salary Range",
-                    ),
-                    items: salaryRanges
-                        .map(
-                          (range) => DropdownMenuItem(
-                            value: range,
-                            child: Text(range),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (val) => context.read<ProfileBloc>().add(
-                      UpdateSelectedSalaryRangeEvent(salaryRange: val!),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // ===== SAVE BUTTON =====
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: Save preferences and navigate back
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      "Save Preferences",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    'We are working on this feature. It will be available soon!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppConstants.textSecondaryColor,
                     ),
                   ),
                 ),
@@ -473,71 +147,5 @@ class _PersonalizeJobfeedViewState extends State<_PersonalizeJobfeedView> {
             ),
           ),
         );
-      },
-    );
-  }
-
-  /// Builds section title with optional green styling
-  Widget _buildSectionTitle(String title, {bool isGreen = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: isGreen
-              ? AppConstants.primaryColor
-              : AppConstants.textPrimaryColor,
-        ),
-      ),
-    );
-  }
-
-  /// Builds custom radio option for availability selection
-  Widget _buildCustomRadioOption(
-    String title,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected
-                ? AppConstants.primaryColor
-                : Colors.grey.shade300,
-          ),
-          borderRadius: BorderRadius.circular(8),
-          color: isSelected
-              ? AppConstants.primaryColor.withValues(alpha: 0.1)
-              : Colors.white,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              isSelected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              color: isSelected ? AppConstants.primaryColor : Colors.grey,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected
-                    ? AppConstants.primaryColor
-                    : AppConstants.textPrimaryColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

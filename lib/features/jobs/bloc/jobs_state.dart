@@ -130,16 +130,30 @@ class JobApplicationSuccessState extends JobsState {
 class JobDetailsLoaded extends JobsState {
   final Map<String, dynamic> job;
   final bool isBookmarked;
+  final Map<String, dynamic>? companyInfo;
+  final Map<String, dynamic>? statistics;
 
-  const JobDetailsLoaded({required this.job, required this.isBookmarked});
+  const JobDetailsLoaded({
+    required this.job,
+    required this.isBookmarked,
+    this.companyInfo,
+    this.statistics,
+  });
 
   @override
-  List<Object?> get props => [job, isBookmarked];
+  List<Object?> get props => [job, isBookmarked, companyInfo, statistics];
 
-  JobDetailsLoaded copyWith({Map<String, dynamic>? job, bool? isBookmarked}) {
+  JobDetailsLoaded copyWith({
+    Map<String, dynamic>? job,
+    bool? isBookmarked,
+    Map<String, dynamic>? companyInfo,
+    Map<String, dynamic>? statistics,
+  }) {
     return JobDetailsLoaded(
       job: job ?? this.job,
       isBookmarked: isBookmarked ?? this.isBookmarked,
+      companyInfo: companyInfo ?? this.companyInfo,
+      statistics: statistics ?? this.statistics,
     );
   }
 }

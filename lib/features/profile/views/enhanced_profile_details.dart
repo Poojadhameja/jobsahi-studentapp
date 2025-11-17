@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
-import '../../../shared/widgets/loaders/jobsahi_loader.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -91,19 +91,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        if (state is ProfileLoading) {
-          return Scaffold(
-            backgroundColor: AppConstants.backgroundColor,
-            body: Center(
-              child: JobsahiLoader(
-                size: 60,
-                strokeWidth: 4,
-                message: 'Loading profile...',
-                showMessage: true,
-              ),
-            ),
-          );
-        } else if (state is ProfileDetailsLoaded) {
+        if (state is ProfileDetailsLoaded) {
           return _buildEnhancedProfileDetails(context, state);
         } else if (state is ProfileError) {
           return Scaffold(
@@ -118,14 +106,12 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
             ),
           );
         }
+        // Show content immediately or simple loading without text
         return Scaffold(
           backgroundColor: AppConstants.backgroundColor,
           body: Center(
-            child: JobsahiLoader(
-              size: 60,
-              strokeWidth: 4,
-              message: 'Loading...',
-              showMessage: true,
+            child: CircularProgressIndicator(
+              color: AppConstants.secondaryColor,
             ),
           ),
         );
@@ -153,10 +139,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                     padding: const EdgeInsets.all(AppConstants.defaultPadding),
                     child: Column(
                       children: [
-                        // Quick Stats Cards
-                        _buildQuickStatsCards(context, state),
-                        const SizedBox(height: AppConstants.largePadding),
-
                         // Profile Sections
                         _buildProfileSections(context, state),
                       ],
@@ -174,8 +156,9 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                     child: LinearProgressIndicator(
                       minHeight: 4,
                       color: AppConstants.primaryColor,
-                      backgroundColor:
-                          AppConstants.primaryColor.withValues(alpha: 0.2),
+                      backgroundColor: AppConstants.primaryColor.withValues(
+                        alpha: 0.2,
+                      ),
                     ),
                   ),
                 ),
@@ -303,7 +286,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
               Column(
                 children: [
                   Text(
-                    user['name'] ?? 'User Name',
+                    _capitalizeEachWord(user['name'] ?? 'User Name'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -331,7 +314,13 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        user['location'] ?? 'Location not set',
+                        (() {
+                          final raw = user['location'];
+                          if (raw is String && raw.trim().isNotEmpty) {
+                            return raw.trim();
+                          }
+                          return 'Location not provided';
+                        })(),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 13,
@@ -357,7 +346,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Profile Brief',
+                        'About me',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 14,
@@ -386,94 +375,84 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     );
   }
 
-  /// Quick Stats Cards
-  Widget _buildQuickStatsCards(
-    BuildContext context,
-    ProfileDetailsLoaded state,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.work_outline,
-            title: 'Experience',
-            value: '${state.experience.length} Years',
-            color: AppConstants.primaryColor,
-          ),
-        ),
-        const SizedBox(width: AppConstants.smallPadding),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.school_outlined,
-            title: 'Education',
-            value: state.education.isNotEmpty ? 'Graduated' : 'Not Set',
-            color: AppConstants.secondaryColor,
-          ),
-        ),
-        const SizedBox(width: AppConstants.smallPadding),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.star_outline,
-            title: 'Skills',
-            value: '${state.skills.length} Skills',
-            color: AppConstants.warningColor,
-          ),
-        ),
-      ],
-    );
+  /// Capitalize the first letter of each word (e.g., 'ram kumar' -> 'Ram Kumar')
+  String _capitalizeEachWord(String input) {
+    if (input.isEmpty) return input;
+    final words = input.trim().split(RegExp(r'\\s+'));
+    return words
+        .map(
+          (w) => w.isEmpty
+              ? w
+              : '${w[0].toUpperCase()}${w.length > 1 ? w.substring(1) : ''}',
+        )
+        .join(' ');
   }
 
-  /// Individual Stat Card
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: AppConstants.smallPadding),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppConstants.textSecondaryColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+  /// Format date to "22 Jan 2021" format
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final day = date.day.toString();
+    final month = months[date.month - 1];
+    final year = date.year.toString();
+    return '$day $month $year';
+  }
+
+  /// Parse date from various formats to DateTime
+  DateTime? _parseDate(String dateStr) {
+    if (dateStr.isEmpty) return null;
+
+    try {
+      // Try ISO format (yyyy-MM-dd)
+      if (dateStr.contains('-')) {
+        return DateTime.tryParse(dateStr);
+      }
+      // Try DD/MM/YYYY or MM/DD/YYYY
+      if (dateStr.contains('/')) {
+        final parts = dateStr.split('/');
+        if (parts.length == 3) {
+          // Try DD/MM/YYYY first
+          final day = int.tryParse(parts[0]);
+          final month = int.tryParse(parts[1]);
+          final year = int.tryParse(parts[2]);
+          if (day != null && month != null && year != null) {
+            if (month <= 12 && day <= 31) {
+              return DateTime(year, month, day);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+    return null;
+  }
+
+  /// Format gender value to proper case (Male, Female, Other)
+  String _formatGender(String gender) {
+    if (gender.isEmpty) return gender;
+    final lowerGender = gender.toLowerCase().trim();
+    if (lowerGender == 'male') {
+      return 'Male';
+    } else if (lowerGender == 'female') {
+      return 'Female';
+    } else if (lowerGender == 'other') {
+      return 'Other';
+    }
+    // If it's already in proper format or unknown, capitalize first letter
+    return '${gender[0].toUpperCase()}${gender.length > 1 ? gender.substring(1).toLowerCase() : ''}';
   }
 
   void _showProfileInfoEditSheet({
@@ -499,122 +478,184 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     showModalBottomSheet(
       context: parentContext,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppConstants.cardBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
         final viewInsets = MediaQuery.of(sheetContext).viewInsets.bottom;
         return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: viewInsets),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSheetHeader(
-                        context: sheetContext,
-                        title: 'Edit Profile Info',
-                      ),
-                      const SizedBox(height: AppConstants.defaultPadding),
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Full Name',
-                          border: OutlineInputBorder(),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSheetHeader(
+                          context: sheetContext,
+                          title: 'Edit Profile Info',
                         ),
-                        textCapitalization: TextCapitalization.words,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Name is required';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppConstants.smallPadding),
-                      TextFormField(
-                        controller: emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          final email = value?.trim() ?? '';
-                          if (email.isEmpty) {
-                            return 'Email is required';
-                          }
-                          final emailRegex = RegExp(
-                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                          );
-                          if (!emailRegex.hasMatch(email)) {
-                            return 'Enter a valid email address';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppConstants.smallPadding),
-                      TextFormField(
-                        controller: locationController,
-                        decoration: const InputDecoration(
-                          labelText: 'Location',
-                          border: OutlineInputBorder(),
-                        ),
-                        textCapitalization: TextCapitalization.words,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Location is required';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: AppConstants.smallPadding),
-                      TextFormField(
-                        controller: bioController,
-                        decoration: const InputDecoration(
-                          labelText: 'Profile Brief',
-                          hintText: 'Write a short summary about yourself',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 4,
-                      ),
-                      const SizedBox(height: AppConstants.largePadding),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (!formKey.currentState!.validate()) {
-                              return;
-                            }
-                            final updatedName = nameController.text.trim();
-                            final updatedEmail = emailController.text.trim();
-                            final updatedLocation = locationController.text
-                                .trim();
-                            final updatedBio = bioController.text.trim();
-
-                            bloc.add(
-                              UpdateProfileHeaderInlineEvent(
-                                name: updatedName,
-                                email: updatedEmail,
-                                location: updatedLocation,
-                                bio: updatedBio.isNotEmpty ? updatedBio : null,
+                        const SizedBox(height: AppConstants.defaultPadding),
+                        _buildMainCard(
+                          children: [
+                            TextFormField(
+                              controller: nameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Full Name *',
+                                border: OutlineInputBorder(),
                               ),
-                            );
-                            Navigator.of(sheetContext).pop();
-                          },
-                          child: const Text('Save Changes'),
+                              textCapitalization: TextCapitalization.words,
+                              validator: (value) {
+                                final name = value?.trim() ?? '';
+                                if (name.isEmpty) {
+                                  return 'Name is required';
+                                }
+                                final lettersOnly = name.replaceAll(
+                                  RegExp(r'[^a-zA-Z]'),
+                                  '',
+                                );
+                                if (lettersOnly.length < 3) {
+                                  return 'Name must have at least 3 letters';
+                                }
+                                final words = name
+                                    .split(RegExp(r'\s+'))
+                                    .where((w) => w.isNotEmpty)
+                                    .toList();
+                                if (words.length < 2) {
+                                  return 'Name must have at least 2 words';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              controller: emailController,
+                              decoration: const InputDecoration(
+                                labelText: 'Email *',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (value) {
+                                final email = value?.trim() ?? '';
+                                if (email.isEmpty) {
+                                  return 'Email is required';
+                                }
+                                final emailRegex = RegExp(
+                                  r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                );
+                                if (!emailRegex.hasMatch(email)) {
+                                  return 'Enter a valid email address';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              controller: locationController,
+                              decoration: const InputDecoration(
+                                labelText: 'Location',
+                                border: OutlineInputBorder(),
+                              ),
+                              textCapitalization: TextCapitalization.words,
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Location is required';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              controller: bioController,
+                              decoration: const InputDecoration(
+                                labelText: 'About me',
+                                hintText:
+                                    'Write a short summary about yourself',
+                                border: OutlineInputBorder(),
+                              ),
+                              maxLines: 4,
+                              validator: (value) {
+                                final bio = value?.trim() ?? '';
+                                if (bio.isNotEmpty) {
+                                  final lettersOnly = bio.replaceAll(
+                                    RegExp(r'[^a-zA-Z]'),
+                                    '',
+                                  );
+                                  if (lettersOnly.length < 15) {
+                                    return 'About me must have at least 15 letters';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+              // Fixed bottom button
+              Container(
+                padding: EdgeInsets.only(
+                  left: AppConstants.defaultPadding,
+                  right: AppConstants.defaultPadding,
+                  top: AppConstants.defaultPadding,
+                  bottom: viewInsets + AppConstants.defaultPadding,
+                ),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardBackgroundColor,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (!formKey.currentState!.validate()) {
+                        return;
+                      }
+                      final updatedName = nameController.text.trim();
+                      final updatedEmail = emailController.text.trim();
+                      final updatedLocation = locationController.text.trim();
+                      final updatedBio = bioController.text.trim();
+
+                      bloc.add(
+                        UpdateProfileHeaderInlineEvent(
+                          name: updatedName,
+                          email: updatedEmail,
+                          location: updatedLocation,
+                          bio: updatedBio.isNotEmpty ? updatedBio : null,
+                        ),
+                      );
+                      Navigator.of(sheetContext).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -671,6 +712,12 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
             );
           case 'contact':
             return _buildContactEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              userProfile: state.userProfile,
+            );
+          case 'general_info':
+            return _buildGeneralInformationEditSheet(
               parentContext: context,
               bloc: bloc,
               userProfile: state.userProfile,
@@ -735,7 +782,11 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppConstants.textPrimaryColor,
+            ),
           ),
         ),
         IconButton(
@@ -743,6 +794,22 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
           icon: const Icon(Icons.close),
         ),
       ],
+    );
+  }
+
+  /// Builds main card container matching skill test instructions design
+  Widget _buildMainCard({required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      decoration: BoxDecoration(
+        color: AppConstants.backgroundColor,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
     );
   }
 
@@ -782,114 +849,169 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         final viewInsets = MediaQuery.of(context).viewInsets.bottom;
 
         return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: viewInsets),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSheetHeader(context: context, title: 'Edit Skills'),
-                    const SizedBox(height: AppConstants.defaultPadding),
-                    if (skillsDraft.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(
-                          AppConstants.defaultPadding,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppConstants.backgroundColor,
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
-                          ),
-                        ),
-                        child: const Text(
-                          'No skills added yet. Add your skills to improve your profile.',
-                          style: TextStyle(
-                            color: AppConstants.textSecondaryColor,
-                          ),
-                        ),
-                      ),
-                    Column(
-                      children: List.generate(skillsDraft.length, (index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: AppConstants.smallPadding,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  key: ValueKey('skill_field_$index'),
-                                  initialValue: skillsDraft[index],
-                                  decoration: InputDecoration(
-                                    labelText: 'Skill ${index + 1}',
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                  onChanged: (value) {
-                                    setModalState(() {
-                                      skillsDraft[index] = value;
-                                    });
-                                  },
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSheetHeader(context: context, title: 'Edit Skills'),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      _buildMainCard(
+                        children: [
+                          if (skillsDraft.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(
+                                AppConstants.defaultPadding,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: const Text(
+                                'No skills added yet. Add your skills to improve your profile.',
+                                style: TextStyle(
+                                  color: AppConstants.textSecondaryColor,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                tooltip: 'Remove skill',
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: AppConstants.errorColor,
+                            ),
+                          if (skillsDraft.isNotEmpty) ...[
+                            ...List.generate(skillsDraft.length, (index) {
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: AppConstants.smallPadding,
                                 ),
-                                onPressed: () {
-                                  setModalState(() {
-                                    skillsDraft.removeAt(index);
-                                  });
-                                },
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        key: ValueKey('skill_field_$index'),
+                                        initialValue: skillsDraft[index],
+                                        decoration: InputDecoration(
+                                          labelText: 'Skill ${index + 1}',
+                                          border: const OutlineInputBorder(),
+                                        ),
+                                        onChanged: (value) {
+                                          setModalState(() {
+                                            skillsDraft[index] = value;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      tooltip: 'Remove skill',
+                                      icon: const Icon(
+                                        Icons.delete_outline,
+                                        color: AppConstants.errorColor,
+                                      ),
+                                      onPressed: () {
+                                        setModalState(() {
+                                          skillsDraft.removeAt(index);
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: AppConstants.defaultPadding),
+                          ],
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: newSkillController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Add new skill',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  maxLength: 25,
+                                  onSubmitted: (value) =>
+                                      addSkill(value, setModalState),
+                                ),
+                              ),
+                              const SizedBox(width: AppConstants.smallPadding),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: ElevatedButton.icon(
+                                  onPressed: () => addSkill(
+                                    newSkillController.text,
+                                    setModalState,
+                                  ),
+                                  icon: const Icon(Icons.add, size: 18),
+                                  label: const Text('Add'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: AppConstants.defaultPadding),
-                    TextField(
-                      controller: newSkillController,
-                      decoration: InputDecoration(
-                        labelText: 'Add new skill',
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.add),
-                          onPressed: () =>
-                              addSkill(newSkillController.text, setModalState),
-                        ),
+                        ],
                       ),
-                      onSubmitted: (value) => addSkill(value, setModalState),
-                    ),
-                    const SizedBox(height: AppConstants.largePadding),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final sanitizedSkills = skillsDraft
-                              .map((skill) => skill.trim())
-                              .where((skill) => skill.isNotEmpty)
-                              .toList();
-                          bloc.add(
-                            UpdateProfileSkillsInlineEvent(
-                              skills: sanitizedSkills,
-                            ),
-                          );
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('Save Changes'),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+              // Fixed bottom button
+              Container(
+                padding: EdgeInsets.only(
+                  left: AppConstants.defaultPadding,
+                  right: AppConstants.defaultPadding,
+                  top: AppConstants.defaultPadding,
+                  bottom: viewInsets + AppConstants.defaultPadding,
+                ),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardBackgroundColor,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final sanitizedSkills = skillsDraft
+                          .map((skill) => skill.trim())
+                          .where((skill) => skill.isNotEmpty)
+                          .toList();
+                      bloc.add(
+                        UpdateProfileSkillsInlineEvent(skills: sanitizedSkills),
+                      );
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -941,215 +1063,333 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         }
 
         return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: viewInsets),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSheetHeader(
-                      context: context,
-                      title: 'Edit Work Experience',
-                    ),
-                    const SizedBox(height: AppConstants.defaultPadding),
-                    ...List.generate(experienceDrafts.length, (index) {
-                      final experience = experienceDrafts[index];
-                      return Container(
-                        margin: const EdgeInsets.only(
-                          bottom: AppConstants.defaultPadding,
-                        ),
-                        padding: const EdgeInsets.all(
-                          AppConstants.defaultPadding,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppConstants.backgroundColor,
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
-                          ),
-                          border: Border.all(color: AppConstants.borderColor),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'Experience ${index + 1}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const Spacer(),
-                                IconButton(
-                                  tooltip: 'Delete experience',
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: AppConstants.errorColor,
-                                  ),
-                                  onPressed: () => deleteExperience(index),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppConstants.smallPadding),
-                            TextFormField(
-                              key: ValueKey('experience_company_$index'),
-                              initialValue:
-                                  (experience['company'] ?? '') as String,
-                              decoration: const InputDecoration(
-                                labelText: 'Company',
-                                border: OutlineInputBorder(),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSheetHeader(
+                        context: context,
+                        title: 'Edit Work Experience',
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      _buildMainCard(
+                        children: [
+                          ...List.generate(experienceDrafts.length, (index) {
+                            final experience = experienceDrafts[index];
+                            return Container(
+                              margin: const EdgeInsets.only(
+                                bottom: AppConstants.defaultPadding,
                               ),
-                              onChanged: (value) {
-                                setModalState(() {
-                                  experience['company'] = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: AppConstants.smallPadding),
-                            TextFormField(
-                              key: ValueKey('experience_position_$index'),
-                              initialValue:
-                                  (experience['position'] ?? '') as String,
-                              decoration: const InputDecoration(
-                                labelText: 'Position',
-                                border: OutlineInputBorder(),
+                              padding: const EdgeInsets.all(
+                                AppConstants.defaultPadding,
                               ),
-                              onChanged: (value) {
-                                setModalState(() {
-                                  experience['position'] = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: AppConstants.smallPadding),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    key: ValueKey('experience_start_$index'),
+                              decoration: BoxDecoration(
+                                color: AppConstants.backgroundColor,
+                                borderRadius: BorderRadius.circular(
+                                  AppConstants.borderRadius,
+                                ),
+                                border: Border.all(
+                                  color: AppConstants.borderColor,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Experience ${index + 1}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      IconButton(
+                                        tooltip: 'Delete experience',
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          color: AppConstants.errorColor,
+                                        ),
+                                        onPressed: () =>
+                                            deleteExperience(index),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(
+                                    height: AppConstants.smallPadding,
+                                  ),
+                                  TextFormField(
+                                    key: ValueKey('experience_company_$index'),
                                     initialValue:
-                                        (experience['startDate'] ?? '')
+                                        (experience['company'] ?? '') as String,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Company *',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: (value) {
+                                      setModalState(() {
+                                        experience['company'] = value;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(
+                                    height: AppConstants.smallPadding,
+                                  ),
+                                  TextFormField(
+                                    key: ValueKey('experience_position_$index'),
+                                    initialValue:
+                                        (experience['position'] ?? '')
                                             as String,
                                     decoration: const InputDecoration(
-                                      labelText: 'Start Date',
+                                      labelText: 'Position *',
                                       border: OutlineInputBorder(),
                                     ),
                                     onChanged: (value) {
                                       setModalState(() {
-                                        experience['startDate'] = value;
+                                        experience['position'] = value;
                                       });
                                     },
                                   ),
-                                ),
-                                const SizedBox(
-                                  width: AppConstants.smallPadding,
-                                ),
-                                Expanded(
-                                  child: TextFormField(
-                                    key: ValueKey('experience_end_$index'),
+                                  const SizedBox(
+                                    height: AppConstants.smallPadding,
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Builder(
+                                          builder: (context) {
+                                            final startDateStr =
+                                                (experience['startDate'] ?? '')
+                                                    as String;
+                                            DateTime? startDate = _parseDate(
+                                              startDateStr,
+                                            );
+                                            final displayStartDate =
+                                                startDate != null
+                                                ? _formatDate(startDate)
+                                                : '';
+
+                                            return TextFormField(
+                                              key: ValueKey(
+                                                'experience_start_${index}_${experience['startDate']}',
+                                              ),
+                                              initialValue: displayStartDate,
+                                              readOnly: true,
+                                              decoration: const InputDecoration(
+                                                labelText: 'Start Date',
+                                                hintText: 'Select date',
+                                                border: OutlineInputBorder(),
+                                                suffixIcon: Icon(
+                                                  Icons.calendar_today,
+                                                ),
+                                              ),
+                                              onTap: () async {
+                                                final pickedDate =
+                                                    await showDatePicker(
+                                                      context: context,
+                                                      initialDate:
+                                                          startDate ??
+                                                          DateTime.now(),
+                                                      firstDate: DateTime(1900),
+                                                      lastDate: DateTime.now(),
+                                                    );
+                                                if (pickedDate != null) {
+                                                  setModalState(() {
+                                                    experience['startDate'] =
+                                                        '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
+                                                  });
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        width: AppConstants.smallPadding,
+                                      ),
+                                      Expanded(
+                                        child: Builder(
+                                          builder: (context) {
+                                            final endDateStr =
+                                                (experience['endDate'] ?? '')
+                                                    as String;
+                                            final isPresent =
+                                                endDateStr.toLowerCase() ==
+                                                    'present' ||
+                                                endDateStr.isEmpty;
+                                            DateTime? endDate = isPresent
+                                                ? null
+                                                : _parseDate(endDateStr);
+                                            final displayEndDate = isPresent
+                                                ? 'Present'
+                                                : (endDate != null
+                                                      ? _formatDate(endDate)
+                                                      : '');
+
+                                            return TextFormField(
+                                              key: ValueKey(
+                                                'experience_end_${index}_${experience['endDate']}',
+                                              ),
+                                              initialValue: displayEndDate,
+                                              readOnly: true,
+                                              decoration: const InputDecoration(
+                                                labelText: 'End Date',
+                                                hintText:
+                                                    'Select date or leave for Present',
+                                                border: OutlineInputBorder(),
+                                                suffixIcon: Icon(
+                                                  Icons.calendar_today,
+                                                ),
+                                              ),
+                                              onTap: () async {
+                                                final pickedDate =
+                                                    await showDatePicker(
+                                                      context: context,
+                                                      initialDate:
+                                                          endDate ??
+                                                          DateTime.now(),
+                                                      firstDate: DateTime(1900),
+                                                      lastDate: DateTime.now(),
+                                                    );
+                                                if (pickedDate != null) {
+                                                  setModalState(() {
+                                                    experience['endDate'] =
+                                                        '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
+                                                  });
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(
+                                    height: AppConstants.smallPadding,
+                                  ),
+                                  TextFormField(
+                                    key: ValueKey(
+                                      'experience_description_$index',
+                                    ),
                                     initialValue:
-                                        (experience['endDate'] ?? '') as String,
+                                        (experience['description'] ?? '')
+                                            as String,
                                     decoration: const InputDecoration(
-                                      labelText: 'End Date',
+                                      labelText: 'Description',
                                       border: OutlineInputBorder(),
                                     ),
+                                    maxLines: 3,
                                     onChanged: (value) {
                                       setModalState(() {
-                                        experience['endDate'] = value.isEmpty
-                                            ? 'Present'
-                                            : value;
+                                        experience['description'] = value;
                                       });
                                     },
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppConstants.smallPadding),
-                            TextFormField(
-                              key: ValueKey('experience_description_$index'),
-                              initialValue:
-                                  (experience['description'] ?? '') as String,
-                              decoration: const InputDecoration(
-                                labelText: 'Description',
-                                border: OutlineInputBorder(),
-                              ),
-                              maxLines: 3,
-                              onChanged: (value) {
-                                setModalState(() {
-                                  experience['description'] = value;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: addEmptyExperience,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Experience'),
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.largePadding),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final sanitizedExperience = experienceDrafts
-                              .map(
-                                (exp) => {
-                                  'company': (exp['company'] ?? '').trim(),
-                                  'position': (exp['position'] ?? '').trim(),
-                                  'startDate': (exp['startDate'] ?? '').trim(),
-                                  'endDate': (exp['endDate'] ?? '').trim(),
-                                  'description': (exp['description'] ?? '')
-                                      .trim(),
-                                },
-                              )
-                              .where(
-                                (exp) => exp.values.any(
-                                  (value) => value.toString().isNotEmpty,
-                                ),
-                              )
-                              .toList();
-
-                          final hasInvalidEntry = sanitizedExperience.any(
-                            (exp) =>
-                                (exp['company'] as String).isEmpty ||
-                                (exp['position'] as String).isEmpty ||
-                                (exp['startDate'] as String).isEmpty,
-                          );
-
-                          if (hasInvalidEntry) {
-                            ScaffoldMessenger.of(parentContext).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Please fill company, position, and start date for each experience.',
-                                ),
-                                behavior: SnackBarBehavior.floating,
+                                ],
                               ),
                             );
-                            return;
-                          }
-
-                          bloc.add(
-                            UpdateProfileExperienceListEvent(
-                              experience: sanitizedExperience,
+                          }),
+                          const SizedBox(height: AppConstants.defaultPadding),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: addEmptyExperience,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Experience'),
                             ),
-                          );
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('Save Changes'),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+              // Fixed bottom button
+              Container(
+                padding: EdgeInsets.only(
+                  left: AppConstants.defaultPadding,
+                  right: AppConstants.defaultPadding,
+                  top: AppConstants.defaultPadding,
+                  bottom: viewInsets + AppConstants.defaultPadding,
+                ),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardBackgroundColor,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final sanitizedExperience = experienceDrafts
+                          .map(
+                            (exp) => {
+                              'company': (exp['company'] ?? '').trim(),
+                              'position': (exp['position'] ?? '').trim(),
+                              'startDate': (exp['startDate'] ?? '').trim(),
+                              'endDate': (exp['endDate'] ?? '').trim(),
+                              'description': (exp['description'] ?? '').trim(),
+                            },
+                          )
+                          .where(
+                            (exp) => exp.values.any(
+                              (value) => value.toString().isNotEmpty,
+                            ),
+                          )
+                          .toList();
+
+                      final hasInvalidEntry = sanitizedExperience.any(
+                        (exp) =>
+                            (exp['company'] as String).isEmpty ||
+                            (exp['position'] as String).isEmpty ||
+                            (exp['startDate'] as String).isEmpty,
+                      );
+
+                      if (hasInvalidEntry) {
+                        ScaffoldMessenger.of(parentContext).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Please fill company, position, and start date for each experience.',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        return;
+                      }
+
+                      bloc.add(
+                        UpdateProfileExperienceListEvent(
+                          experience: sanitizedExperience,
+                        ),
+                      );
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -1174,8 +1414,10 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
             educationDrafts.add({
               'qualification': '',
               'institute': '',
-              'course': '',
-              'passingYear': '',
+              'startYear': '',
+              'endYear': '',
+              'isPursuing': false,
+              'pursuingYear': null,
               'cgpa': '',
             });
           });
@@ -1188,231 +1430,398 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         }
 
         return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: viewInsets),
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSheetHeader(
-                      context: context,
-                      title: 'Edit Education',
-                    ),
-                    const SizedBox(height: AppConstants.defaultPadding),
-                    if (educationDrafts.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(
-                          AppConstants.defaultPadding,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppConstants.backgroundColor,
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
-                          ),
-                        ),
-                        child: const Text(
-                          'No education added yet. Use the button below to add your education history.',
-                          style: TextStyle(
-                            color: AppConstants.textSecondaryColor,
-                          ),
-                        ),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSheetHeader(
+                        context: context,
+                        title: 'Edit Education',
                       ),
-                    ...List.generate(educationDrafts.length, (index) {
-                      final education = educationDrafts[index];
-                      return Container(
-                        margin: const EdgeInsets.only(
-                          bottom: AppConstants.defaultPadding,
-                        ),
-                        padding: const EdgeInsets.all(
-                          AppConstants.defaultPadding,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppConstants.backgroundColor,
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
-                          ),
-                          border: Border.all(color: AppConstants.borderColor),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'Education ${index + 1}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      _buildMainCard(
+                        children: [
+                          if (educationDrafts.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(
+                                AppConstants.defaultPadding,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: const Text(
+                                'No education added yet. Use the button below to add your education history.',
+                                style: TextStyle(
+                                  color: AppConstants.textSecondaryColor,
+                                ),
+                              ),
+                            ),
+                          if (educationDrafts.isNotEmpty)
+                            ...List.generate(educationDrafts.length, (index) {
+                              final education = educationDrafts[index];
+                              return Container(
+                                margin: const EdgeInsets.only(
+                                  bottom: AppConstants.defaultPadding,
+                                ),
+                                padding: const EdgeInsets.all(
+                                  AppConstants.defaultPadding,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppConstants.backgroundColor,
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.borderRadius,
+                                  ),
+                                  border: Border.all(
+                                    color: AppConstants.borderColor,
                                   ),
                                 ),
-                                const Spacer(),
-                                IconButton(
-                                  tooltip: 'Delete education',
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    color: AppConstants.errorColor,
-                                  ),
-                                  onPressed: () => deleteEducation(index),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppConstants.smallPadding),
-                            TextFormField(
-                              key: ValueKey('education_qualification_$index'),
-                              initialValue:
-                                  (education['qualification'] ?? '') as String,
-                              decoration: const InputDecoration(
-                                labelText: 'Qualification',
-                                border: OutlineInputBorder(),
-                              ),
-                              onChanged: (value) {
-                                setModalState(() {
-                                  education['qualification'] = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: AppConstants.smallPadding),
-                            TextFormField(
-                              key: ValueKey('education_institute_$index'),
-                              initialValue:
-                                  (education['institute'] ?? '') as String,
-                              decoration: const InputDecoration(
-                                labelText: 'Institute',
-                                border: OutlineInputBorder(),
-                              ),
-                              onChanged: (value) {
-                                setModalState(() {
-                                  education['institute'] = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: AppConstants.smallPadding),
-                            TextFormField(
-                              key: ValueKey('education_course_$index'),
-                              initialValue:
-                                  (education['course'] ?? '') as String,
-                              decoration: const InputDecoration(
-                                labelText: 'Course / Field of Study',
-                                border: OutlineInputBorder(),
-                              ),
-                              onChanged: (value) {
-                                setModalState(() {
-                                  education['course'] = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: AppConstants.smallPadding),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    key: ValueKey('education_passing_$index'),
-                                    initialValue:
-                                        (education['passingYear'] ?? '')
-                                            as String,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Year of Completion',
-                                      border: OutlineInputBorder(),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Education ${index + 1}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        IconButton(
+                                          tooltip: 'Delete education',
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: AppConstants.errorColor,
+                                          ),
+                                          onPressed: () =>
+                                              deleteEducation(index),
+                                        ),
+                                      ],
                                     ),
-                                    onChanged: (value) {
-                                      setModalState(() {
-                                        education['passingYear'] = value;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(
-                                  width: AppConstants.smallPadding,
-                                ),
-                                Expanded(
-                                  child: TextFormField(
-                                    key: ValueKey('education_cgpa_$index'),
-                                    initialValue:
-                                        (education['cgpa'] ?? '') as String,
-                                    decoration: const InputDecoration(
-                                      labelText: 'CGPA / Percentage',
-                                      border: OutlineInputBorder(),
+                                    const SizedBox(
+                                      height: AppConstants.smallPadding,
                                     ),
-                                    onChanged: (value) {
-                                      setModalState(() {
-                                        education['cgpa'] = value;
-                                      });
-                                    },
-                                  ),
+                                    TextFormField(
+                                      key: ValueKey(
+                                        'education_qualification_$index',
+                                      ),
+                                      initialValue:
+                                          education['qualification'] != null
+                                          ? education['qualification']
+                                                .toString()
+                                          : '',
+                                      decoration: const InputDecoration(
+                                        labelText: 'Qualification *',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      onChanged: (value) {
+                                        setModalState(() {
+                                          education['qualification'] = value;
+                                        });
+                                      },
+                                    ),
+                                    const SizedBox(
+                                      height: AppConstants.smallPadding,
+                                    ),
+                                    TextFormField(
+                                      key: ValueKey(
+                                        'education_institute_$index',
+                                      ),
+                                      initialValue:
+                                          education['institute'] != null
+                                          ? education['institute'].toString()
+                                          : '',
+                                      decoration: const InputDecoration(
+                                        labelText: 'Institute *',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      onChanged: (value) {
+                                        setModalState(() {
+                                          education['institute'] = value;
+                                        });
+                                      },
+                                    ),
+                                    const SizedBox(
+                                      height: AppConstants.smallPadding,
+                                    ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextFormField(
+                                            key: ValueKey(
+                                              'education_startYear_$index',
+                                            ),
+                                            initialValue:
+                                                education['startYear'] != null
+                                                ? education['startYear']
+                                                      .toString()
+                                                : '',
+                                            decoration: const InputDecoration(
+                                              labelText: 'Start Year',
+                                              border: OutlineInputBorder(),
+                                              hintText: 'e.g., 2020',
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            maxLength: 4,
+                                            onChanged: (value) {
+                                              setModalState(() {
+                                                education['startYear'] = value;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(
+                                          width: AppConstants.smallPadding,
+                                        ),
+                                        Expanded(
+                                          child: TextFormField(
+                                            key: ValueKey(
+                                              'education_endYear_$index',
+                                            ),
+                                            initialValue:
+                                                education['endYear'] != null
+                                                ? education['endYear']
+                                                      .toString()
+                                                : '',
+                                            decoration: const InputDecoration(
+                                              labelText: 'End Year',
+                                              border: OutlineInputBorder(),
+                                              hintText: 'e.g., 2024',
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            maxLength: 4,
+                                            enabled:
+                                                !(education['isPursuing'] ==
+                                                    true),
+                                            onChanged: (value) {
+                                              setModalState(() {
+                                                education['endYear'] = value;
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height: AppConstants.smallPadding,
+                                    ),
+                                    CheckboxListTile(
+                                      title: const Text('Currently Pursuing'),
+                                      value: education['isPursuing'] == true,
+                                      onChanged: (value) {
+                                        setModalState(() {
+                                          education['isPursuing'] =
+                                              value ?? false;
+                                          if (value == true) {
+                                            education['endYear'] = '';
+                                          }
+                                        });
+                                      },
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    if (education['isPursuing'] == true) ...[
+                                      const SizedBox(
+                                        height: AppConstants.smallPadding,
+                                      ),
+                                      DropdownButtonFormField<int>(
+                                        key: ValueKey(
+                                          'education_pursuingYear_$index',
+                                        ),
+                                        value: () {
+                                          // Get the pursuingYear value
+                                          final pursuingYear =
+                                              education['pursuingYear'];
+                                          if (pursuingYear == null) return null;
+
+                                          // Try to parse as int
+                                          int? yearValue;
+                                          if (pursuingYear is int) {
+                                            yearValue = pursuingYear;
+                                          } else {
+                                            yearValue = int.tryParse(
+                                              pursuingYear.toString(),
+                                            );
+                                          }
+
+                                          // Only return if it's a valid academic year (1-4)
+                                          // If it's a full year like 2024, return null
+                                          if (yearValue != null &&
+                                              yearValue >= 1 &&
+                                              yearValue <= 4) {
+                                            return yearValue;
+                                          }
+                                          return null;
+                                        }(),
+                                        decoration: const InputDecoration(
+                                          labelText: 'Pursuing Year',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: 1,
+                                            child: Text('1st Year'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 2,
+                                            child: Text('2nd Year'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 3,
+                                            child: Text('3rd Year'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 4,
+                                            child: Text('4th Year'),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          setModalState(() {
+                                            education['pursuingYear'] = value;
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                    const SizedBox(
+                                      height: AppConstants.smallPadding,
+                                    ),
+                                    TextFormField(
+                                      key: ValueKey('education_cgpa_$index'),
+                                      initialValue: education['cgpa'] != null
+                                          ? education['cgpa'].toString()
+                                          : '',
+                                      decoration: const InputDecoration(
+                                        labelText: 'CGPA / Percentage',
+                                        border: OutlineInputBorder(),
+                                        hintText: 'e.g., 8.5 or 85%',
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (value) {
+                                        setModalState(() {
+                                          education['cgpa'] = value;
+                                        });
+                                      },
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              );
+                            }),
+                          const SizedBox(height: AppConstants.defaultPadding),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: addEducation,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Education'),
                             ),
-                          ],
-                        ),
-                      );
-                    }),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: addEducation,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Education'),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: AppConstants.largePadding),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final sanitizedEducation = educationDrafts
-                              .map(
-                                (edu) => {
-                                  'qualification': (edu['qualification'] ?? '')
-                                      .trim(),
-                                  'institute': (edu['institute'] ?? '').trim(),
-                                  'course': (edu['course'] ?? '').trim(),
-                                  'passingYear': (edu['passingYear'] ?? '')
-                                      .trim(),
-                                  'cgpa': (edu['cgpa'] ?? '').trim(),
-                                },
-                              )
-                              .where(
-                                (edu) => edu.values.any(
-                                  (value) => value.toString().isNotEmpty,
-                                ),
-                              )
-                              .toList();
-
-                          final hasInvalidEntry = sanitizedEducation.any(
-                            (edu) =>
-                                (edu['qualification'] as String).isEmpty ||
-                                (edu['institute'] as String).isEmpty,
-                          );
-
-                          if (hasInvalidEntry) {
-                            ScaffoldMessenger.of(parentContext).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Qualification and institute are required.',
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                            return;
-                          }
-
-                          bloc.add(
-                            UpdateProfileEducationListEvent(
-                              education: sanitizedEducation,
-                            ),
-                          );
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('Save Changes'),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+              // Fixed bottom button
+              Container(
+                padding: EdgeInsets.only(
+                  left: AppConstants.defaultPadding,
+                  right: AppConstants.defaultPadding,
+                  top: AppConstants.defaultPadding,
+                  bottom: viewInsets + AppConstants.defaultPadding,
+                ),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardBackgroundColor,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final sanitizedEducation = educationDrafts
+                          .map(
+                            (edu) => {
+                              'qualification': (edu['qualification'] ?? '')
+                                  .toString()
+                                  .trim(),
+                              'institute': (edu['institute'] ?? '')
+                                  .toString()
+                                  .trim(),
+                              'startYear': (edu['startYear'] ?? '')
+                                  .toString()
+                                  .trim(),
+                              'endYear': (edu['endYear'] ?? '')
+                                  .toString()
+                                  .trim(),
+                              'isPursuing':
+                                  edu['isPursuing'] == true ||
+                                  edu['isPursuing'] == 1 ||
+                                  edu['isPursuing'] == '1' ||
+                                  edu['isPursuing'] == 'true',
+                              'pursuingYear': edu['pursuingYear'],
+                              'cgpa': (edu['cgpa'] ?? '').toString().trim(),
+                            },
+                          )
+                          .where(
+                            (edu) => edu.values.any(
+                              (value) => value.toString().isNotEmpty,
+                            ),
+                          )
+                          .toList();
+
+                      final hasInvalidEntry = sanitizedEducation.any(
+                        (edu) =>
+                            (edu['qualification'] as String).isEmpty ||
+                            (edu['institute'] as String).isEmpty,
+                      );
+
+                      if (hasInvalidEntry) {
+                        ScaffoldMessenger.of(parentContext).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Qualification and institute are required.',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        return;
+                      }
+
+                      bloc.add(
+                        UpdateProfileEducationListEvent(
+                          education: sanitizedEducation,
+                        ),
+                      );
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -1847,6 +2256,10 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                           );
                           Navigator.of(context).pop();
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
                         child: const Text('Save Changes'),
                       ),
                     ),
@@ -1866,20 +2279,15 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     required Map<String, dynamic> userProfile,
   }) {
     final formKey = GlobalKey<FormState>();
-    final emailController = TextEditingController(
-      text: userProfile['email']?.toString() ?? '',
+    final contactEmailController = TextEditingController(
+      text: userProfile['contactEmail']?.toString().isNotEmpty == true
+          ? userProfile['contactEmail']?.toString() ?? ''
+          : (userProfile['email']?.toString() ?? ''),
     );
-    final phoneController = TextEditingController(
-      text: userProfile['phone']?.toString() ?? '',
-    );
-    final locationController = TextEditingController(
-      text: userProfile['location']?.toString() ?? '',
-    );
-    final genderController = TextEditingController(
-      text: userProfile['gender']?.toString() ?? '',
-    );
-    final dobController = TextEditingController(
-      text: userProfile['dateOfBirth']?.toString() ?? '',
+    final contactPhoneController = TextEditingController(
+      text: userProfile['contactPhone']?.toString().isNotEmpty == true
+          ? userProfile['contactPhone']?.toString() ?? ''
+          : (userProfile['phone']?.toString() ?? ''),
     );
 
     return Builder(
@@ -1887,100 +2295,420 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         final viewInsets = MediaQuery.of(context).viewInsets.bottom;
 
         return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: viewInsets,
-              left: AppConstants.defaultPadding,
-              right: AppConstants.defaultPadding,
-              top: AppConstants.defaultPadding,
-            ),
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSheetHeader(
-                      context: context,
-                      title: 'Edit Contact Details',
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSheetHeader(
+                          context: context,
+                          title: 'Edit Contact Details',
+                        ),
+                        const SizedBox(height: AppConstants.defaultPadding),
+                        _buildMainCard(
+                          children: [
+                            TextFormField(
+                              controller: contactEmailController,
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                hintText: 'Enter email address',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (value) {
+                                final email = value?.trim() ?? '';
+                                if (email.isEmpty) {
+                                  return 'Email is required';
+                                }
+                                final emailRegex = RegExp(
+                                  r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                );
+                                if (!emailRegex.hasMatch(email)) {
+                                  return 'Enter a valid email address';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: AppConstants.smallPadding),
+                            TextFormField(
+                              controller: contactPhoneController,
+                              decoration: const InputDecoration(
+                                labelText: 'Phone',
+                                hintText: 'Enter phone number',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.phone,
+                              validator: (value) {
+                                final phone = value?.trim() ?? '';
+                                if (phone.isEmpty) {
+                                  return 'Phone is required';
+                                }
+                                if (phone.length < 6) {
+                                  return 'Enter a valid phone number';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AppConstants.defaultPadding),
-                    TextFormField(
-                      controller: emailController,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        final email = value?.trim() ?? '';
-                        if (email.isEmpty) {
-                          return 'Email is required';
-                        }
-                        final emailRegex = RegExp(
-                          r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                  ),
+                ),
+              ),
+              // Fixed bottom button
+              Container(
+                padding: EdgeInsets.only(
+                  left: AppConstants.defaultPadding,
+                  right: AppConstants.defaultPadding,
+                  top: AppConstants.defaultPadding,
+                  bottom: viewInsets + AppConstants.defaultPadding,
+                ),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardBackgroundColor,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (!formKey.currentState!.validate()) {
+                        return;
+                      }
+
+                      final contactEmail = contactEmailController.text.trim();
+                      final contactPhone = contactPhoneController.text.trim();
+
+                      // Get current values from state to preserve other fields
+                      final currentState = bloc.state;
+                      if (currentState is ProfileDetailsLoaded) {
+                        final currentProfile = currentState.userProfile;
+
+                        bloc.add(
+                          UpdateProfileContactInlineEvent(
+                            email: currentProfile['email']?.toString() ?? '',
+                            phone: currentProfile['phone']?.toString() ?? '',
+                            location:
+                                currentProfile['location']?.toString() ?? '',
+                            gender: currentProfile['gender']?.toString(),
+                            dateOfBirth: currentProfile['dateOfBirth']
+                                ?.toString(),
+                            contactEmail: contactEmail.isNotEmpty
+                                ? contactEmail
+                                : null,
+                            contactPhone: contactPhone.isNotEmpty
+                                ? contactPhone
+                                : null,
+                          ),
                         );
-                        if (!emailRegex.hasMatch(email)) {
-                          return 'Enter a valid email address';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    TextFormField(
-                      controller: phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
-                        border: OutlineInputBorder(),
+                      }
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
                       ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        final phone = value?.trim() ?? '';
-                        if (phone.isEmpty) {
-                          return 'Phone number is required';
-                        }
-                        if (phone.length < 6) {
-                          return 'Enter a valid phone number';
-                        }
-                        return null;
-                      },
+                      elevation: 2,
                     ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    TextFormField(
-                      controller: locationController,
-                      decoration: const InputDecoration(
-                        labelText: 'Location',
-                        border: OutlineInputBorder(),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Location is required';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    TextFormField(
-                      controller: genderController,
-                      decoration: const InputDecoration(
-                        labelText: 'Gender (optional)',
-                        border: OutlineInputBorder(),
-                      ),
-                      textCapitalization: TextCapitalization.words,
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    TextFormField(
-                      controller: dobController,
-                      decoration: const InputDecoration(
-                        labelText: 'Date of Birth (optional)',
-                        hintText: 'DD/MM/YYYY',
-                        border: OutlineInputBorder(),
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: AppConstants.largePadding),
-                    SizedBox(
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGeneralInformationEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    required Map<String, dynamic> userProfile,
+  }) {
+    final formKey = GlobalKey<FormState>();
+
+    // Parse existing gender value
+    String? selectedGender;
+    final existingGender =
+        userProfile['gender']?.toString().toLowerCase() ?? '';
+    if (existingGender == 'male') {
+      selectedGender = 'Male';
+    } else if (existingGender == 'female') {
+      selectedGender = 'Female';
+    } else if (existingGender == 'other') {
+      selectedGender = 'Other';
+    }
+
+    // Parse existing date of birth
+    DateTime? selectedDate;
+    final dobText = userProfile['dateOfBirth']?.toString() ?? '';
+    if (dobText.isNotEmpty) {
+      selectedDate = _parseDate(dobText);
+    }
+
+    final dobController = TextEditingController(
+      text: selectedDate != null ? _formatDate(selectedDate) : '',
+    );
+    final aadharController = TextEditingController(
+      text: userProfile['aadharNumber']?.toString() ?? '',
+    );
+
+    // Get existing languages
+    List<String> languages = [];
+    if (userProfile['languages'] != null) {
+      if (userProfile['languages'] is List) {
+        languages = List<String>.from(userProfile['languages']);
+      } else if (userProfile['languages'] is String) {
+        languages = (userProfile['languages'] as String)
+            .split(',')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList();
+      }
+    }
+
+    final languageInputController = TextEditingController();
+
+    // Use mutable variables that persist across rebuilds
+    String? currentGender = selectedGender;
+    DateTime? currentDate = selectedDate;
+
+    return Builder(
+      builder: (context) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            void addLanguage(String language) {
+              final trimmed = language.trim();
+              if (trimmed.isNotEmpty && !languages.contains(trimmed)) {
+                setState(() {
+                  languages.add(trimmed);
+                  languageInputController.clear();
+                });
+              }
+            }
+
+            void removeLanguage(String language) {
+              setState(() {
+                languages.remove(language);
+              });
+            }
+
+            return SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(
+                        AppConstants.defaultPadding,
+                      ),
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSheetHeader(
+                              context: context,
+                              title: 'Edit General Information',
+                            ),
+                            const SizedBox(height: AppConstants.defaultPadding),
+                            _buildMainCard(
+                              children: [
+                                DropdownButtonFormField<String>(
+                                  value: currentGender,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Gender',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: 'Male',
+                                      child: Text('Male'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'Female',
+                                      child: Text('Female'),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: 'Other',
+                                      child: Text('Other'),
+                                    ),
+                                  ],
+                                  onChanged: (value) {
+                                    setState(() {
+                                      currentGender = value;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(
+                                  height: AppConstants.smallPadding,
+                                ),
+                                TextFormField(
+                                  controller: dobController,
+                                  readOnly: true,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Date of Birth',
+                                    hintText: 'Select date',
+                                    border: OutlineInputBorder(),
+                                    suffixIcon: Icon(Icons.calendar_today),
+                                  ),
+                                  onTap: () async {
+                                    final pickedDate = await showDatePicker(
+                                      context: context,
+                                      initialDate:
+                                          currentDate ?? DateTime.now(),
+                                      firstDate: DateTime(1900),
+                                      lastDate: DateTime.now(),
+                                    );
+                                    if (pickedDate != null) {
+                                      setState(() {
+                                        currentDate = pickedDate;
+                                        dobController.text = _formatDate(
+                                          pickedDate,
+                                        );
+                                      });
+                                    }
+                                  },
+                                ),
+                                const SizedBox(
+                                  height: AppConstants.smallPadding,
+                                ),
+                                const Text(
+                                  'Languages',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(
+                                  height: AppConstants.smallPadding,
+                                ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: languageInputController,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Add Language',
+                                          hintText: 'e.g., Hindi, English',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        textCapitalization:
+                                            TextCapitalization.words,
+                                        onFieldSubmitted: (value) {
+                                          addLanguage(value);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: AppConstants.smallPadding,
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        final value =
+                                            languageInputController.text;
+                                        addLanguage(value);
+                                      },
+                                      icon: const Icon(Icons.add, size: 18),
+                                      label: const Text('Add'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(
+                                  height: AppConstants.smallPadding,
+                                ),
+                                if (languages.isNotEmpty)
+                                  Wrap(
+                                    spacing: AppConstants.smallPadding,
+                                    runSpacing: AppConstants.smallPadding,
+                                    children: languages.map((lang) {
+                                      return Chip(
+                                        label: Text(lang),
+                                        deleteIcon: const Icon(
+                                          Icons.close,
+                                          size: 18,
+                                        ),
+                                        onDeleted: () => removeLanguage(lang),
+                                      );
+                                    }).toList(),
+                                  ),
+                                const SizedBox(
+                                  height: AppConstants.defaultPadding,
+                                ),
+                                TextFormField(
+                                  controller: aadharController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Aadhar Number',
+                                    hintText: '12-digit Aadhar number',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  maxLength: 12,
+                                  validator: (value) {
+                                    if (value != null &&
+                                        value.trim().isNotEmpty) {
+                                      if (value.trim().length != 12) {
+                                        return 'Aadhar number must be 12 digits';
+                                      }
+                                      if (!RegExp(
+                                        r'^\d+$',
+                                      ).hasMatch(value.trim())) {
+                                        return 'Aadhar number must contain only digits';
+                                      }
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Fixed bottom button
+                  Container(
+                    padding: EdgeInsets.only(
+                      left: AppConstants.defaultPadding,
+                      right: AppConstants.defaultPadding,
+                      top: AppConstants.defaultPadding,
+                      bottom: viewInsets + AppConstants.defaultPadding,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppConstants.cardBackgroundColor,
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
@@ -1988,31 +2716,50 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                             return;
                           }
 
-                          final email = emailController.text.trim();
-                          final phone = phoneController.text.trim();
-                          final location = locationController.text.trim();
-                          final gender = genderController.text.trim();
-                          final dob = dobController.text.trim();
+                          final gender = currentGender;
+                          final dob = currentDate != null
+                              ? '${currentDate!.year}-${currentDate!.month.toString().padLeft(2, '0')}-${currentDate!.day.toString().padLeft(2, '0')}'
+                              : '';
+                          final aadhar = aadharController.text.trim();
+
+                          // Create a copy of languages list to ensure it's properly passed
+                          final languagesList = List<String>.from(languages);
 
                           bloc.add(
-                            UpdateProfileContactInlineEvent(
-                              email: email,
-                              phone: phone,
-                              location: location,
-                              gender: gender.isNotEmpty ? gender : null,
+                            UpdateProfileGeneralInfoInlineEvent(
+                              gender: gender,
                               dateOfBirth: dob.isNotEmpty ? dob : null,
+                              languages: languagesList,
+                              aadharNumber: aadhar.isNotEmpty ? aadhar : null,
                             ),
                           );
                           Navigator.of(context).pop();
                         },
-                        child: const Text('Save Changes'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.borderRadius,
+                            ),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -2023,13 +2770,37 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     required ProfileBloc bloc,
     required Map<String, dynamic> userProfile,
   }) {
-    final formKey = GlobalKey<FormState>();
-    final portfolioController = TextEditingController(
-      text: userProfile['portfolioLink']?.toString() ?? '',
-    );
-    final linkedinController = TextEditingController(
-      text: userProfile['linkedinUrl']?.toString() ?? '',
-    );
+    // Get existing social links from array or build from individual fields
+    List<Map<String, dynamic>> socialLinks = [];
+    if (userProfile['socialLinks'] is List) {
+      socialLinks = List<Map<String, dynamic>>.from(
+        (userProfile['socialLinks'] as List).map((link) {
+          if (link is Map<String, dynamic>) {
+            return Map<String, dynamic>.from(link);
+          }
+          return <String, dynamic>{};
+        }),
+      );
+    } else {
+      // Fallback: Build from individual fields
+      final portfolio = userProfile['portfolioLink']?.toString() ?? '';
+      final linkedin = userProfile['linkedinUrl']?.toString() ?? '';
+      final github = userProfile['githubUrl']?.toString() ?? '';
+      final twitter = userProfile['twitterUrl']?.toString() ?? '';
+
+      if (portfolio.isNotEmpty) {
+        socialLinks.add({'title': 'Portfolio', 'profile_url': portfolio});
+      }
+      if (linkedin.isNotEmpty) {
+        socialLinks.add({'title': 'LinkedIn', 'profile_url': linkedin});
+      }
+      if (github.isNotEmpty) {
+        socialLinks.add({'title': 'GitHub', 'profile_url': github});
+      }
+      if (twitter.isNotEmpty) {
+        socialLinks.add({'title': 'Twitter', 'profile_url': twitter});
+      }
+    }
 
     return Builder(
       builder: (context) {
@@ -2038,7 +2809,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         String? validateUrl(String? value) {
           final trimmed = value?.trim() ?? '';
           if (trimmed.isEmpty) {
-            return null;
+            return 'URL is required';
           }
           final uri = Uri.tryParse(trimmed);
           if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
@@ -2047,79 +2818,210 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
           return null;
         }
 
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: viewInsets,
-              left: AppConstants.defaultPadding,
-              right: AppConstants.defaultPadding,
-              top: AppConstants.defaultPadding,
-            ),
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSheetHeader(
-                      context: context,
-                      title: 'Edit Social Links',
-                    ),
-                    const SizedBox(height: AppConstants.defaultPadding),
-                    TextFormField(
-                      controller: portfolioController,
-                      decoration: const InputDecoration(
-                        labelText: 'Portfolio URL',
-                        hintText: 'https://yourportfolio.com',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.url,
-                      validator: validateUrl,
-                    ),
-                    const SizedBox(height: AppConstants.smallPadding),
-                    TextFormField(
-                      controller: linkedinController,
-                      decoration: const InputDecoration(
-                        labelText: 'LinkedIn Profile URL',
-                        hintText: 'https://linkedin.com/in/username',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.url,
-                      validator: validateUrl,
-                    ),
-                    const SizedBox(height: AppConstants.largePadding),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (!formKey.currentState!.validate()) {
-                            return;
-                          }
+        String? validateTitle(String? value) {
+          final trimmed = value?.trim() ?? '';
+          if (trimmed.isEmpty) {
+            return 'Title is required';
+          }
+          return null;
+        }
 
-                          final portfolio = portfolioController.text.trim();
-                          final linkedin = linkedinController.text.trim();
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final formKey = GlobalKey<FormState>();
 
-                          bloc.add(
-                            UpdateProfileSocialLinksInlineEvent(
-                              portfolioLink: portfolio.isNotEmpty
-                                  ? portfolio
-                                  : null,
-                              linkedinUrl: linkedin.isNotEmpty
-                                  ? linkedin
-                                  : null,
+            void addSocialLink() {
+              socialLinks.add({'title': '', 'profile_url': ''});
+              setState(() {});
+            }
+
+            void removeSocialLink(int index) {
+              socialLinks.removeAt(index);
+              setState(() {});
+            }
+
+            void updateSocialLink(int index, String field, String value) {
+              socialLinks[index][field] = value;
+              setState(() {});
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: viewInsets,
+                  left: AppConstants.defaultPadding,
+                  right: AppConstants.defaultPadding,
+                  top: AppConstants.defaultPadding,
+                ),
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSheetHeader(
+                          context: context,
+                          title: 'Edit Social Links',
+                        ),
+                        const SizedBox(height: AppConstants.defaultPadding),
+                        ...socialLinks.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final link = entry.value;
+                          final titleController = TextEditingController(
+                            text: link['title']?.toString() ?? '',
+                          );
+                          final urlController = TextEditingController(
+                            text: link['profile_url']?.toString() ?? '',
+                          );
+
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppConstants.smallPadding,
+                            ),
+                            child: Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(
+                                  AppConstants.smallPadding,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Link ${index + 1}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              removeSocialLink(index);
+                                            });
+                                          },
+                                          color: Colors.red,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(
+                                      height: AppConstants.smallPadding,
+                                    ),
+                                    TextFormField(
+                                      controller: titleController,
+                                      decoration: const InputDecoration(
+                                        labelText:
+                                            'Title * (e.g., Portfolio, LinkedIn, GitHub)',
+                                        hintText: 'Portfolio',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      onChanged: (value) {
+                                        updateSocialLink(index, 'title', value);
+                                      },
+                                      validator: validateTitle,
+                                    ),
+                                    const SizedBox(
+                                      height: AppConstants.smallPadding,
+                                    ),
+                                    TextFormField(
+                                      controller: urlController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'URL *',
+                                        hintText: 'https://example.com',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      keyboardType: TextInputType.url,
+                                      onChanged: (value) {
+                                        updateSocialLink(
+                                          index,
+                                          'profile_url',
+                                          value,
+                                        );
+                                      },
+                                      validator: validateUrl,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           );
-                          Navigator.of(context).pop();
-                        },
-                        child: const Text('Save Changes'),
-                      ),
+                        }).toList(),
+                        const SizedBox(height: AppConstants.smallPadding),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              addSocialLink();
+                            });
+                          },
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Social Link'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 48),
+                          ),
+                        ),
+                        const SizedBox(height: AppConstants.largePadding),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Validate all form fields
+                              if (!formKey.currentState!.validate()) {
+                                return;
+                              }
+
+                              // Filter out empty links (both fields must be filled)
+                              final validLinks = socialLinks
+                                  .where((link) {
+                                    final title =
+                                        link['title']?.toString().trim() ?? '';
+                                    final url =
+                                        link['profile_url']
+                                            ?.toString()
+                                            .trim() ??
+                                        '';
+                                    return title.isNotEmpty && url.isNotEmpty;
+                                  })
+                                  .map(
+                                    (link) => {
+                                      'title':
+                                          link['title']?.toString().trim() ??
+                                          '',
+                                      'profile_url':
+                                          link['profile_url']
+                                              ?.toString()
+                                              .trim() ??
+                                          '',
+                                    },
+                                  )
+                                  .toList();
+
+                              bloc.add(
+                                UpdateProfileSocialLinksInlineEvent(
+                                  socialLinks: validLinks,
+                                ),
+                              );
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Save Changes'),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -2132,6 +3034,18 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
   ) {
     return Column(
       children: [
+        // General Information Section (First)
+        _buildModernSectionCard(
+          context: context,
+          state: state,
+          title: 'General Information',
+          icon: Icons.info_outline,
+          section: 'general_info',
+          child: _buildGeneralInformationContent(state.userProfile),
+        ),
+
+        const SizedBox(height: AppConstants.defaultPadding),
+
         // Skills Section
         _buildModernSectionCard(
           context: context,
@@ -2140,6 +3054,18 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
           icon: Icons.star_outline,
           section: 'skills',
           child: _buildSkillsContent(state.skills),
+        ),
+
+        const SizedBox(height: AppConstants.defaultPadding),
+
+        // Education Section
+        _buildModernSectionCard(
+          context: context,
+          state: state,
+          title: 'Education',
+          icon: Icons.school_outlined,
+          section: 'education',
+          child: _buildEducationContent(state.education),
         ),
 
         const SizedBox(height: AppConstants.defaultPadding),
@@ -2156,14 +3082,26 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
 
         const SizedBox(height: AppConstants.defaultPadding),
 
-        // Education Section
+        // Contact Section
         _buildModernSectionCard(
           context: context,
           state: state,
-          title: 'Education',
-          icon: Icons.school_outlined,
-          section: 'education',
-          child: _buildEducationContent(state.education),
+          title: 'Contact',
+          icon: Icons.contact_page_outlined,
+          section: 'contact',
+          child: _buildContactContent(state.userProfile),
+        ),
+
+        const SizedBox(height: AppConstants.defaultPadding),
+
+        // Social Links Section
+        _buildModernSectionCard(
+          context: context,
+          state: state,
+          title: 'Socials',
+          icon: Icons.link_outlined,
+          section: 'social',
+          child: _buildSocialLinksContent(context, state.userProfile),
         ),
 
         const SizedBox(height: AppConstants.defaultPadding),
@@ -2188,30 +3126,6 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
           icon: Icons.folder_outlined,
           section: 'certificates',
           child: _buildCertificatesContent(context, state),
-        ),
-
-        const SizedBox(height: AppConstants.defaultPadding),
-
-        // Contact Section
-        _buildModernSectionCard(
-          context: context,
-          state: state,
-          title: 'Contact',
-          icon: Icons.contact_page_outlined,
-          section: 'contact',
-          child: _buildContactContent(state.userProfile),
-        ),
-
-        const SizedBox(height: AppConstants.defaultPadding),
-
-        // Social Links Section
-        _buildModernSectionCard(
-          context: context,
-          state: state,
-          title: 'Social Links & Portfolio',
-          icon: Icons.link_outlined,
-          section: 'social',
-          child: _buildSocialLinksContent(context, state.userProfile),
         ),
       ],
     );
@@ -2430,26 +3344,35 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
   Widget _buildContactContent(Map<String, dynamic> userProfile) {
     return Column(
       children: [
+        // Contact Info - Email
         _buildContactItem(
           icon: Icons.email_outlined,
           label: 'Email',
-          value: userProfile['email'] ?? 'Not provided',
+          value: userProfile['contactEmail']?.toString().isNotEmpty == true
+              ? userProfile['contactEmail']
+              : (userProfile['email'] ?? 'Not provided'),
         ),
+        // Contact Info - Phone
         _buildContactItem(
           icon: Icons.phone_outlined,
           label: 'Phone',
-          value: userProfile['phone'] ?? 'Not provided',
+          value: userProfile['contactPhone']?.toString().isNotEmpty == true
+              ? userProfile['contactPhone']
+              : (userProfile['phone'] ?? 'Not provided'),
         ),
-        _buildContactItem(
-          icon: Icons.location_on_outlined,
-          label: 'Location',
-          value: userProfile['location'] ?? 'Not provided',
-        ),
+      ],
+    );
+  }
+
+  /// General Information Content
+  Widget _buildGeneralInformationContent(Map<String, dynamic> userProfile) {
+    return Column(
+      children: [
         if (userProfile['gender'] != null)
           _buildContactItem(
             icon: Icons.person_outline,
             label: 'Gender',
-            value: userProfile['gender'],
+            value: _formatGender(userProfile['gender']?.toString() ?? ''),
           ),
         if (userProfile['dateOfBirth'] != null)
           _buildContactItem(
@@ -2457,13 +3380,10 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
             label: 'Date of Birth',
             value: userProfile['dateOfBirth'],
           ),
-        if (userProfile['languages'] != null &&
-            userProfile['languages'].toString().isNotEmpty)
-          _buildContactItem(
-            icon: Icons.language_outlined,
-            label: 'Languages',
-            value: userProfile['languages'],
-          ),
+        if (userProfile['languages'] != null) ...[
+          _buildLanguagesContactItem(userProfile['languages']) ??
+              const SizedBox.shrink(),
+        ],
         if (userProfile['aadharNumber'] != null &&
             userProfile['aadharNumber'].toString().isNotEmpty)
           _buildContactItem(
@@ -2480,38 +3400,77 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> userProfile,
   ) {
-    final hasPortfolio =
-        userProfile['portfolioLink'] != null &&
-        userProfile['portfolioLink'].toString().isNotEmpty;
-    final hasLinkedIn =
-        userProfile['linkedinUrl'] != null &&
-        userProfile['linkedinUrl'].toString().isNotEmpty;
+    // Get social links from array or build from individual fields
+    List<Map<String, dynamic>> socialLinks = [];
+    if (userProfile['socialLinks'] is List) {
+      socialLinks = List<Map<String, dynamic>>.from(
+        (userProfile['socialLinks'] as List).whereType<Map<String, dynamic>>(),
+      );
+    } else {
+      // Fallback: Build from individual fields
+      final portfolio = userProfile['portfolioLink']?.toString() ?? '';
+      final linkedin = userProfile['linkedinUrl']?.toString() ?? '';
+      final github = userProfile['githubUrl']?.toString() ?? '';
+      final twitter = userProfile['twitterUrl']?.toString() ?? '';
 
-    if (!hasPortfolio && !hasLinkedIn) {
+      if (portfolio.isNotEmpty) {
+        socialLinks.add({'title': 'Portfolio', 'profile_url': portfolio});
+      }
+      if (linkedin.isNotEmpty) {
+        socialLinks.add({'title': 'LinkedIn', 'profile_url': linkedin});
+      }
+      if (github.isNotEmpty) {
+        socialLinks.add({'title': 'GitHub', 'profile_url': github});
+      }
+      if (twitter.isNotEmpty) {
+        socialLinks.add({'title': 'Twitter', 'profile_url': twitter});
+      }
+    }
+
+    // Filter out empty links
+    socialLinks = socialLinks.where((link) {
+      final title = link['title']?.toString().trim() ?? '';
+      final url = link['profile_url']?.toString().trim() ?? '';
+      return title.isNotEmpty && url.isNotEmpty;
+    }).toList();
+
+    if (socialLinks.isEmpty) {
       return _buildEmptyState(
         icon: Icons.link_outlined,
         title: 'No Social Links Added',
-        subtitle: 'Add your portfolio and LinkedIn profile',
+        subtitle: 'Add your portfolio and social media profiles',
       );
     }
 
+    // Helper to get icon based on title
+    IconData getIconForTitle(String title) {
+      final lowerTitle = title.toLowerCase();
+      if (lowerTitle.contains('portfolio') || lowerTitle.contains('website')) {
+        return Icons.web_outlined;
+      } else if (lowerTitle.contains('linkedin')) {
+        return Icons.work_outline;
+      } else if (lowerTitle.contains('github')) {
+        return Icons.code_outlined;
+      } else if (lowerTitle.contains('twitter')) {
+        return Icons.alternate_email;
+      } else if (lowerTitle.contains('facebook')) {
+        return Icons.facebook;
+      } else {
+        return Icons.link_outlined;
+      }
+    }
+
     return Column(
-      children: [
-        if (hasPortfolio)
-          _buildSocialLinkItem(
-            icon: Icons.web_outlined,
-            label: 'Portfolio',
-            value: userProfile['portfolioLink'],
-            onTap: () => _openUrl(context, userProfile['portfolioLink']),
-          ),
-        if (hasLinkedIn)
-          _buildSocialLinkItem(
-            icon: Icons.work_outline,
-            label: 'LinkedIn',
-            value: userProfile['linkedinUrl'],
-            onTap: () => _openUrl(context, userProfile['linkedinUrl']),
-          ),
-      ],
+      children: socialLinks.map((link) {
+        final title = link['title']?.toString() ?? 'Link';
+        final url = link['profile_url']?.toString() ?? '';
+        return _buildSocialLinkItem(
+          icon: getIconForTitle(title),
+          label: title,
+          value: url,
+          onTap: () => _openUrl(context, url),
+        );
+      }).toList(),
     );
   }
 
@@ -2605,6 +3564,61 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
   }
 
   Widget _buildEducationCard(Map<String, dynamic> edu) {
+    // Get all fields
+    final qualification = edu['qualification']?.toString() ?? '';
+    final institute = edu['institute']?.toString() ?? '';
+    final startYear = edu['startYear']?.toString() ?? '';
+    final endYear = edu['endYear']?.toString() ?? '';
+    final isPursuing =
+        edu['isPursuing'] == true ||
+        edu['isPursuing'] == 1 ||
+        edu['isPursuing'] == '1' ||
+        edu['isPursuing'] == 'true';
+    final pursuingYear = edu['pursuingYear'];
+    final cgpa = edu['cgpa']?.toString() ?? '';
+
+    // Build year display - start date always shown, end date only if not pursuing
+    String yearDisplay = '';
+    if (isPursuing) {
+      // Show start year - pursuing status (end date not shown)
+      String pursuingText = '';
+      if (pursuingYear != null) {
+        final yearNum = pursuingYear is int
+            ? pursuingYear
+            : int.tryParse(pursuingYear.toString());
+        if (yearNum != null && yearNum >= 1 && yearNum <= 4) {
+          final yearText = yearNum == 1
+              ? '1st Year'
+              : yearNum == 2
+              ? '2nd Year'
+              : yearNum == 3
+              ? '3rd Year'
+              : '4th Year';
+          pursuingText = 'Pursuing ($yearText)';
+        } else {
+          pursuingText = 'Pursuing';
+        }
+      } else {
+        pursuingText = 'Pursuing';
+      }
+
+      // Combine start year with pursuing status
+      if (startYear.isNotEmpty) {
+        yearDisplay = '$startYear - $pursuingText';
+      } else {
+        yearDisplay = pursuingText;
+      }
+    } else {
+      // Show start year - end year (not pursuing)
+      if (startYear.isNotEmpty && endYear.isNotEmpty) {
+        yearDisplay = '$startYear - $endYear';
+      } else if (endYear.isNotEmpty) {
+        yearDisplay = endYear;
+      } else if (startYear.isNotEmpty) {
+        yearDisplay = startYear;
+      }
+    }
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
@@ -2617,30 +3631,60 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            edu['qualification'] ?? 'Qualification',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
+          // Qualification
+          if (qualification.isNotEmpty)
+            Text(
+              qualification,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppConstants.textPrimaryColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            edu['course'] ?? 'Course',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppConstants.textSecondaryColor,
+          // Institute
+          if (institute.isNotEmpty) ...[
+            if (qualification.isNotEmpty) const SizedBox(height: 4),
+            Text(
+              institute,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppConstants.textSecondaryColor,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${edu['passingYear'] ?? 'Year'} • CGPA: ${edu['cgpa'] ?? 'N/A'}',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppConstants.textSecondaryColor,
+          ],
+          // Year and CGPA
+          if (yearDisplay.isNotEmpty || cgpa.isNotEmpty) ...[
+            if (qualification.isNotEmpty || institute.isNotEmpty)
+              const SizedBox(height: 4),
+            Row(
+              children: [
+                if (yearDisplay.isNotEmpty)
+                  Text(
+                    yearDisplay,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                  ),
+                if (yearDisplay.isNotEmpty && cgpa.isNotEmpty)
+                  const Text(
+                    ' • ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                  ),
+                if (cgpa.isNotEmpty)
+                  Text(
+                    'CGPA: $cgpa',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                  ),
+              ],
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -2706,6 +3750,25 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+
+  Widget? _buildLanguagesContactItem(dynamic languages) {
+    if (languages == null) return null;
+
+    String languagesString = '';
+    if (languages is List) {
+      languagesString = languages.join(', ');
+    } else if (languages is String) {
+      languagesString = languages;
+    }
+
+    if (languagesString.isEmpty) return null;
+
+    return _buildContactItem(
+      icon: Icons.language_outlined,
+      label: 'Languages',
+      value: languagesString,
     );
   }
 
@@ -2840,16 +3903,52 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     );
   }
 
-  void _openUrl(BuildContext context, String url) {
-    // TODO: Implement URL launcher
-    // For now, show a snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening: $url'),
-        backgroundColor: AppConstants.primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _openUrl(BuildContext context, String url) async {
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid URL'),
+          backgroundColor: AppConstants.errorColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Ensure URL has a scheme (http:// or https://)
+      String urlToLaunch = url.trim();
+      if (!urlToLaunch.startsWith('http://') &&
+          !urlToLaunch.startsWith('https://')) {
+        urlToLaunch = 'https://$urlToLaunch';
+      }
+
+      final uri = Uri.parse(urlToLaunch);
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot open URL: $urlToLaunch'),
+              backgroundColor: AppConstants.errorColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening URL: ${e.toString()}'),
+            backgroundColor: AppConstants.errorColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _downloadResume(BuildContext context, String? url) {

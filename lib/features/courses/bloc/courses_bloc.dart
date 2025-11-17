@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'courses_event.dart';
 import 'courses_state.dart';
+import '../../../core/utils/network_error_helper.dart';
 import '../repository/courses_repository.dart';
 
 /// Courses BLoC
@@ -85,7 +86,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
       );
     } catch (e) {
       // Emit error if API fails - no fallback to mock data
-      emit(CoursesError(message: 'Failed to load courses: ${e.toString()}'));
+      _handleCoursesError(e, emit, defaultMessage: 'Failed to load courses');
     }
   }
 
@@ -626,5 +627,15 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         emit(currentState.copyWith(showFilters: newShowFilters));
       }
     }
+  }
+
+  /// Helper method to handle errors and emit appropriate error state
+  /// Detects network errors and formats messages accordingly
+  void _handleCoursesError(dynamic error, Emitter<CoursesState> emit, {String? defaultMessage}) {
+    final errorMessage = NetworkErrorHelper.isNetworkError(error)
+        ? NetworkErrorHelper.getNetworkErrorMessage(error)
+        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
+    
+    emit(CoursesError(message: errorMessage));
   }
 }

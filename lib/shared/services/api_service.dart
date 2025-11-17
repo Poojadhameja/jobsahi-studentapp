@@ -18,9 +18,9 @@ class ApiService {
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: AppConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 15), // Reduced from 30 to 15 seconds
+      receiveTimeout: const Duration(seconds: 15), // Reduced from 30 to 15 seconds
+      sendTimeout: const Duration(seconds: 10), // Reduced from 30 to 10 seconds
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -282,9 +282,9 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
+      name: json['name'] ?? json['user_name'] ?? '',
       email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
+      phone: json['phone'] ?? json['phone_number'] ?? '',
       profileImage: json['profile_image'],
       location: json['location'],
       experience: json['experience'],
@@ -487,6 +487,59 @@ extension CoursesApi on ApiService {
   }
 }
 
+/// Auth/Settings API methods
+extension AuthSettingsApi on ApiService {
+  /// Change current user's password
+  /// Requires Authorization: Bearer <JWT>
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    // Ensure user is logged in
+    final loggedIn = await isLoggedIn();
+    if (!loggedIn) {
+      throw Exception('User must be logged in');
+    }
+
+    try {
+      final response = await post(
+        AppConstants.changePasswordEndpoint,
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+
+      final raw = response.data;
+      late final Map<String, dynamic> jsonData;
+      if (raw is Map<String, dynamic>) {
+        jsonData = raw;
+      } else if (raw is String) {
+        jsonData = jsonDecode(raw) as Map<String, dynamic>;
+      } else {
+        throw Exception('Unexpected response format from server');
+      }
+
+      // Normalize keys: expect { status: bool, message: string }
+      final status = (jsonData['status'] == true) ||
+          (jsonData['success'] == true) ||
+          (jsonData['result'] == true);
+      final message = (jsonData['message'] ??
+              jsonData['msg'] ??
+              jsonData['error'] ??
+              '')
+          .toString();
+
+      return {
+        'status': status,
+        'message': message,
+      };
+    } catch (e) {
+      rethrow;
+    }
+  }
+}
+
 /// Jobs API methods
 extension JobsApi on ApiService {
   /// Get featured jobs
@@ -494,7 +547,10 @@ extension JobsApi on ApiService {
     try {
       debugPrint('🔵 [Jobs] Fetching featured jobs');
 
-      final response = await get('/api/jobs/jobs.php?featured=true');
+      final response = await get(
+        '/jobs/jobs.php',
+        queryParameters: {'featured': 'true'},
+      );
 
       debugPrint(
         '🔵 [Jobs] Featured Jobs API Response Status: ${response.statusCode}',
@@ -553,6 +609,22 @@ extension JobsApi on ApiService {
       }
     } catch (e) {
       debugPrint('🔴 [Jobs] Error fetching featured jobs: $e');
+      
+      // Check for CORS-related errors
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('cors') ||
+          errorString.contains('cross-origin') ||
+          errorString.contains('network error') ||
+          (e is DioException && 
+           (e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.unknown))) {
+        debugPrint('🔴 [Jobs] Possible CORS error detected');
+        throw Exception(
+          'CORS Error: Please ensure the server allows cross-origin requests. '
+          'If testing on web, the server must include proper CORS headers.',
+        );
+      }
+      
       rethrow;
     }
   }
@@ -571,10 +643,12 @@ extension JobsApi on ApiService {
       }
 
       debugPrint('🔵 [Jobs] User authenticated, making API call');
-      final endpoint = '${AppConstants.baseUrl}/jobs/job-detail.php?id=$jobId';
-      debugPrint('🔵 [Jobs] Endpoint: $endpoint');
+      debugPrint('🔵 [Jobs] Fetching job details for ID: $jobId');
 
-      final response = await get(endpoint);
+      final response = await get(
+        '/jobs/job-detail.php',
+        queryParameters: {'id': jobId},
+      );
 
       debugPrint('🔵 [Jobs] API Response Status: ${response.statusCode}');
       debugPrint('🔵 [Jobs] API Response Data: ${response.data}');
@@ -798,6 +872,26 @@ extension StudentProfileApi on ApiService {
 
     try {
       debugPrint('🔵 [StudentProfile] Payload keys: ${payload.keys.toList()}');
+      debugPrint('🔵 [StudentProfile] Payload structure:');
+      debugPrint('   personal_info: ${payload['personal_info'] != null}');
+      debugPrint('   professional_info: ${payload['professional_info'] != null}');
+      debugPrint('   documents: ${payload['documents'] != null}');
+      debugPrint('   social_links: ${payload['social_links'] is List ? 'List (${(payload['social_links'] as List).length} items)' : payload['social_links']?.runtimeType}');
+      debugPrint('   additional_info: ${payload['additional_info'] != null}');
+      debugPrint('   contact_info: ${payload['contact_info'] != null}');
+      
+      // Log social_links structure for debugging
+      if (payload['social_links'] is List) {
+        final socialLinks = payload['social_links'] as List;
+        debugPrint('🔵 [StudentProfile] Social links structure:');
+        for (int i = 0; i < socialLinks.length; i++) {
+          final link = socialLinks[i];
+          if (link is Map) {
+            debugPrint('   Link $i: title="${link['title']}", profile_url="${link['profile_url']}"');
+          }
+        }
+      }
+      
       final response = await put(
         AppConstants.updateStudentProfileEndpoint,
         data: payload,
@@ -807,26 +901,68 @@ extension StudentProfileApi on ApiService {
         '🔵 [StudentProfile] Update Response Status: ${response.statusCode}',
       );
       debugPrint(
-        '🔵 [StudentProfile] Update Response Type: ${response.data.runtimeType}',
+        '🔵 [StudentProfile] Update Response Type: ${response.data?.runtimeType ?? 'null'}',
+      );
+      debugPrint(
+        '🔵 [StudentProfile] Update Response Data: ${response.data}',
       );
 
       final rawData = response.data;
+      
+      // Handle null response
+      if (rawData == null) {
+        debugPrint('🔴 [StudentProfile] Response data is null');
+        throw Exception('Server returned an empty response');
+      }
+      
       late final Map<String, dynamic> jsonData;
 
       if (rawData is Map<String, dynamic>) {
         jsonData = rawData;
       } else if (rawData is String) {
+        if (rawData.trim().isEmpty) {
+          debugPrint('🔴 [StudentProfile] Response string is empty');
+          throw Exception('Server returned an empty response');
+        }
+        
+        // Check if response is HTML (PHP error page) instead of JSON
+        final trimmedResponse = rawData.trim();
+        if (trimmedResponse.startsWith('<') || trimmedResponse.startsWith('<!')) {
+          debugPrint('🔴 [StudentProfile] Server returned HTML instead of JSON');
+          debugPrint('🔴 [StudentProfile] HTML Response (first 500 chars): ${trimmedResponse.substring(0, trimmedResponse.length > 500 ? 500 : trimmedResponse.length)}');
+          
+          // Try to extract error message from HTML
+          String errorMessage = 'Server returned an error page instead of JSON response';
+          if (trimmedResponse.contains('<b>') && trimmedResponse.contains('</b>')) {
+            final startIndex = trimmedResponse.indexOf('<b>') + 3;
+            final endIndex = trimmedResponse.indexOf('</b>', startIndex);
+            if (endIndex > startIndex) {
+              errorMessage = trimmedResponse.substring(startIndex, endIndex).trim();
+            }
+          } else if (trimmedResponse.contains('Fatal error') || trimmedResponse.contains('Warning')) {
+            // Extract PHP error message
+            final errorMatch = RegExp(r'(Fatal error|Warning|Parse error|Notice):\s*(.+?)(?:\n|$)').firstMatch(trimmedResponse);
+            if (errorMatch != null) {
+              errorMessage = errorMatch.group(2)?.trim() ?? errorMessage;
+            }
+          }
+          
+          throw Exception('Server error: $errorMessage. Please check server logs.');
+        }
+        
         try {
           jsonData = jsonDecode(rawData) as Map<String, dynamic>;
         } catch (e) {
           debugPrint('🔴 [StudentProfile] Failed to decode response: $e');
-          throw Exception('Invalid response format from server');
+          debugPrint('🔴 [StudentProfile] Raw response string (first 500 chars): ${rawData.length > 500 ? rawData.substring(0, 500) : rawData}');
+          throw Exception('Invalid response format from server: ${e.toString()}');
         }
       } else {
         debugPrint(
           '🔴 [StudentProfile] Unexpected response type: ${rawData.runtimeType}',
         );
-        throw Exception('Unexpected response format from server');
+        debugPrint('🔴 [StudentProfile] Response value: $rawData');
+        throw Exception('Unexpected response format from server. Expected Map or String, got ${rawData.runtimeType}');
       }
 
       final result = ProfileUpdateResponse.fromJson(jsonData);
@@ -852,7 +988,7 @@ extension StudentApplicationsApi on ApiService {
   /// Get student's applied jobs
   Future<List<Map<String, dynamic>>> getStudentAppliedJobs() async {
     try {
-      final response = await get('/student/applied_jobs.php');
+      final response = await get('/student/applications.php');
 
       final rawData = response.data;
       late final Map<String, dynamic> jsonData;

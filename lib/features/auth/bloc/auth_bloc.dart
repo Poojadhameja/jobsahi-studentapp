@@ -7,6 +7,7 @@ import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../shared/services/inactivity_service.dart';
 import '../../../core/router/app_router.dart';
+import '../../../core/utils/network_error_helper.dart';
 import '../views/success_popup.dart' as success_popup;
 
 /// Authentication BLoC
@@ -68,17 +69,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
 
-      final response = await _authRepository.loginWithOtp(
+      // Use phone login API
+      final response = await _authRepository.phoneLogin(
         phoneNumber: event.phoneNumber,
       );
 
       if (response.success) {
-        emit(OtpSentState(phoneNumber: event.phoneNumber));
+        emit(OtpSentState(
+          phoneNumber: event.phoneNumber,
+          userId: response.userId,
+          expiresIn: response.expiresIn,
+        ));
       } else {
         emit(AuthError(message: response.message));
       }
     } catch (e) {
-      emit(AuthError(message: 'Failed to send OTP: ${e.toString()}'));
+      _handleAuthError(e, emit, defaultMessage: 'Failed to send OTP');
     }
   }
 
@@ -90,20 +96,52 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const OtpVerificationLoading());
 
-      if (event.otp.length != 6) {
-        emit(const AuthError(message: 'Please enter a valid 6-digit OTP'));
+      if (event.otp.length != 4) {
+        emit(const AuthError(message: 'Please enter a valid 4-digit OTP'));
         return;
       }
 
-      String phoneNumber = '';
+      // Check if we have userId and phoneNumber from event or state
+      int? userId = event.userId;
+      String phoneNumber = event.phoneNumber ?? '';
+      
+      // If not provided in event, try to get from state
+      if (userId == null || phoneNumber.isEmpty) {
       if (state is OtpSentState) {
-        phoneNumber = (state as OtpSentState).phoneNumber;
+          final otpSentState = state as OtpSentState;
+          userId ??= otpSentState.userId;
+          phoneNumber = phoneNumber.isEmpty ? otpSentState.phoneNumber : phoneNumber;
+          debugPrint('🔵 Got from OtpSentState - userId: $userId, phoneNumber: $phoneNumber');
+        } else {
+          debugPrint('🔴 State is not OtpSentState: ${state.runtimeType}');
+        }
+      } else {
+        debugPrint('🔵 Got from VerifyOtpEvent - userId: $userId, phoneNumber: $phoneNumber');
       }
 
-      final response = await _authRepository.verifyOtp(
+      LoginResponse response;
+
+      // Use phone login verification if userId is available (new API)
+      if (userId != null && userId > 0) {
+        debugPrint('🔵 Using phone login verification API with userId: $userId');
+        response = await _authRepository.verifyPhoneLoginOtp(
+          userId: userId,
+          otp: event.otp,
+        );
+      } else {
+        debugPrint('🔵 Using fallback OTP verification API with phoneNumber: $phoneNumber');
+        // Fallback to old API if userId is not available
+        if (phoneNumber.isEmpty) {
+          emit(const AuthError(
+            message: 'Phone number not found. Please request a new OTP',
+          ));
+          return;
+        }
+        response = await _authRepository.verifyOtp(
         phoneNumber: phoneNumber,
         otp: event.otp,
       );
+      }
 
       if (response.success) {
         // ✅ Role validation is already handled in the repository
@@ -127,7 +165,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage.contains('Only students can access')) {
         emit(AuthError(message: errorMessage));
       } else {
-        emit(AuthError(message: 'OTP verification failed: ${e.toString()}'));
+        _handleAuthError(e, emit, defaultMessage: 'OTP verification failed');
       }
     }
   }
@@ -177,7 +215,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage.contains('Only students can access')) {
         emit(AuthError(message: errorMessage));
       } else {
-        emit(AuthError(message: 'Login failed: ${e.toString()}'));
+        _handleAuthError(e, emit, defaultMessage: 'Login failed');
       }
     }
   }
@@ -317,7 +355,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           errorMessage.contains('Only students can access')) {
         emit(AuthError(message: errorMessage));
       } else {
-        emit(AuthError(message: 'Account creation failed: ${e.toString()}'));
+        _handleAuthError(e, emit, defaultMessage: 'Account creation failed');
       }
     }
   }
@@ -602,8 +640,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      if (event.otp.length != 6) {
-        emit(const AuthError(message: 'Please enter a valid 6-digit OTP'));
+      if (event.otp.length != 4) {
+        emit(const AuthError(message: 'Please enter a valid 4-digit OTP'));
         return;
       }
 
@@ -660,9 +698,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(AuthError(message: response.message));
       }
-    } catch (e) {
-      emit(AuthError(message: 'Failed to resend OTP. Please try again.'));
+      } catch (e) {
+      _handleAuthError(e, emit, defaultMessage: 'Failed to resend OTP. Please try again.');
     }
+  }
+
+  /// Helper method to handle errors and emit appropriate error state
+  /// Detects network errors and formats messages accordingly
+  void _handleAuthError(dynamic error, Emitter<AuthState> emit, {String? defaultMessage}) {
+    final errorMessage = NetworkErrorHelper.isNetworkError(error)
+        ? NetworkErrorHelper.getNetworkErrorMessage(error)
+        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
+    
+    emit(AuthError(message: errorMessage));
   }
 }
 

@@ -27,14 +27,37 @@ class AuthApiService {
 
       final response = await _apiService.post(
         '/auth/generate-otp.php',
-        data: jsonEncode(requestData),
+        data: requestData, // Pass Map directly, Dio will JSON encode it
       );
 
       debugPrint('🔵 Generate OTP API Status: ${response.statusCode}');
       debugPrint('🔵 Generate OTP API Response: ${response.data}');
 
       final responseData = response.data;
-      final generateOtpResponse = ForgotPasswordResponse.fromJson(responseData);
+      
+      // Handle different response formats
+      Map<String, dynamic> parsedData;
+      if (responseData is Map<String, dynamic>) {
+        parsedData = responseData;
+      } else if (responseData is String) {
+        try {
+          parsedData = jsonDecode(responseData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 Failed to parse JSON string: $e');
+          return ForgotPasswordResponse(
+            success: false,
+            message: 'Invalid response format',
+          );
+        }
+      } else {
+        debugPrint('🔴 Unexpected response type: ${responseData.runtimeType}');
+        return ForgotPasswordResponse(
+          success: false,
+          message: 'Unexpected response format',
+        );
+      }
+
+      final generateOtpResponse = ForgotPasswordResponse.fromJson(parsedData);
 
       debugPrint(
         '🔵 Generate OTP Response success: ${generateOtpResponse.success}',
@@ -55,6 +78,35 @@ class AuthApiService {
       return generateOtpResponse;
     } catch (e) {
       debugPrint('🔴 Error in generate OTP API: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      // Handle DioException specifically
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        debugPrint('🔴 DioException Status: $statusCode');
+        debugPrint('🔴 DioException Response Data: $responseData');
+
+        if (statusCode == 400) {
+          String errorMessage = 'Invalid email or request';
+          if (responseData is Map<String, dynamic>) {
+            errorMessage = responseData['message'] ?? errorMessage;
+          } else if (responseData is String) {
+            try {
+              final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+              errorMessage = parsed['message'] ?? errorMessage;
+            } catch (parseError) {
+              errorMessage = responseData;
+            }
+          }
+          return ForgotPasswordResponse(
+            success: false,
+            message: errorMessage,
+          );
+        }
+      }
+
       return ForgotPasswordResponse(
         success: false,
         message: 'Failed to generate OTP: ${e.toString()}',
@@ -88,6 +140,208 @@ class AuthApiService {
       return LoginResponse(
         success: false,
         message: 'Failed to send OTP: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Phone login - Send OTP to phone number
+  Future<PhoneLoginResponse> phoneLogin({required String phoneNumber}) async {
+    try {
+      debugPrint('🔵 Sending phone login OTP to: $phoneNumber');
+
+      final requestData = {'phone_number': phoneNumber};
+
+      debugPrint('🔵 Request data: $requestData');
+
+      final response = await _apiService.post(
+        '/auth/phone_login.php',
+        data: requestData, // Pass Map directly, Dio will JSON encode it
+      );
+
+      debugPrint('🔵 Phone Login API Status: ${response.statusCode}');
+      debugPrint('🔵 Phone Login API Response: ${response.data}');
+
+      final responseData = response.data;
+      final phoneLoginResponse = PhoneLoginResponse.fromJson(responseData);
+
+      debugPrint(
+        '🔵 Phone Login Response success: ${phoneLoginResponse.success}',
+      );
+      debugPrint(
+        '🔵 Phone Login Response message: ${phoneLoginResponse.message}',
+      );
+      debugPrint('🔵 Phone Login Response userId: ${phoneLoginResponse.userId}');
+      debugPrint(
+        '🔵 Phone Login Response expiresIn: ${phoneLoginResponse.expiresIn}',
+      );
+
+      return phoneLoginResponse;
+    } catch (e) {
+      debugPrint('🔴 Error in phone login API: $e');
+
+      // Handle specific error cases
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        if (statusCode == 400) {
+          // Invalid format or missing field
+          return PhoneLoginResponse(
+            success: false,
+            message: responseData?['message'] ??
+                'Invalid phone number format or phone number is required',
+          );
+        } else if (statusCode == 200 && responseData != null) {
+          // Phone number not found (200 but status: false)
+          return PhoneLoginResponse.fromJson(responseData);
+        }
+      }
+
+      return PhoneLoginResponse(
+        success: false,
+        message: 'Failed to send OTP: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Verify OTP for phone login
+  Future<LoginResponse> verifyPhoneLoginOtp({
+    required int userId,
+    required String otp,
+  }) async {
+    try {
+      debugPrint('🔵 Verifying phone login OTP for user: $userId with OTP: $otp');
+
+      // Validate inputs
+      if (userId <= 0) {
+        debugPrint('🔴 Invalid userId: $userId');
+        return LoginResponse(
+          success: false,
+          message: 'Invalid user ID. Please request a new OTP',
+        );
+      }
+
+      if (otp.isEmpty || otp.length != 4) {
+        debugPrint('🔴 Invalid OTP length: ${otp.length}');
+        return LoginResponse(
+          success: false,
+          message: 'Please enter a valid 4-digit OTP',
+        );
+      }
+
+      final requestData = {'user_id': userId, 'otp': otp};
+
+      debugPrint('🔵 Request data: $requestData');
+      debugPrint('🔵 Request data type: ${requestData.runtimeType}');
+
+      final response = await _apiService.post(
+        '/auth/verify-otp.php',
+        data: requestData, // Pass Map directly, Dio will JSON encode it
+      );
+
+      debugPrint('🔵 Verify Phone Login OTP API Status: ${response.statusCode}');
+      debugPrint('🔵 Verify Phone Login OTP API Response: ${response.data}');
+      debugPrint('🔵 Verify Phone Login OTP API Response Type: ${response.data.runtimeType}');
+
+      final responseData = response.data;
+
+      // Handle error responses
+      if (response.statusCode == 400 || response.statusCode == 403) {
+        String errorMessage = 'OTP verification failed';
+        bool isExpired = false;
+
+        if (responseData is Map<String, dynamic>) {
+          errorMessage = responseData['message'] ?? errorMessage;
+          isExpired = responseData['expired'] == true;
+        } else if (responseData is String) {
+          try {
+            final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+            errorMessage = parsed['message'] ?? errorMessage;
+            isExpired = parsed['expired'] == true;
+          } catch (e) {
+            errorMessage = responseData;
+          }
+        }
+
+        debugPrint('🔴 OTP verification failed: $errorMessage (expired: $isExpired)');
+
+        return LoginResponse(
+          success: false,
+          message: isExpired
+              ? 'OTP has expired. Please request a new one'
+              : errorMessage,
+        );
+      }
+
+      // Parse response data
+      Map<String, dynamic> parsedData;
+      if (responseData is Map<String, dynamic>) {
+        parsedData = responseData;
+      } else if (responseData is String) {
+        try {
+          parsedData = jsonDecode(responseData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 Failed to parse response: $e');
+          return LoginResponse(
+            success: false,
+            message: 'Invalid response format',
+          );
+        }
+      } else {
+        debugPrint('🔴 Unexpected response type: ${responseData.runtimeType}');
+        return LoginResponse(
+          success: false,
+          message: 'Unexpected response format',
+        );
+      }
+
+      return LoginResponse.fromJson(parsedData);
+    } catch (e) {
+      debugPrint('🔴 Error verifying phone login OTP: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      // Handle DioException
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        debugPrint('🔴 DioException Status: $statusCode');
+        debugPrint('🔴 DioException Response Data: $responseData');
+
+        if (statusCode == 400) {
+          String errorMessage = 'Invalid OTP';
+          bool isExpired = false;
+
+          if (responseData is Map<String, dynamic>) {
+            errorMessage = responseData['message'] ?? errorMessage;
+            isExpired = responseData['expired'] == true;
+          } else if (responseData is String) {
+            try {
+              final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+              errorMessage = parsed['message'] ?? errorMessage;
+              isExpired = parsed['expired'] == true;
+            } catch (parseError) {
+              errorMessage = responseData;
+            }
+          }
+
+          return LoginResponse(
+            success: false,
+            message: isExpired
+                ? 'OTP has expired. Please request a new one'
+                : errorMessage,
+          );
+        } else if (statusCode == 403) {
+          return LoginResponse(
+            success: false,
+            message: 'Account not verified',
+          );
+        }
+      }
+
+      return LoginResponse(
+        success: false,
+        message: 'Failed to verify OTP: ${e.toString()}',
       );
     }
   }
@@ -571,6 +825,30 @@ class LogoutResponse {
     return LogoutResponse(
       success: json['status'] ?? false,
       message: json['message'] ?? '',
+    );
+  }
+}
+
+/// Phone login response model (OTP send)
+class PhoneLoginResponse {
+  final bool success;
+  final String message;
+  final int? userId;
+  final int? expiresIn; // in seconds
+
+  PhoneLoginResponse({
+    required this.success,
+    required this.message,
+    this.userId,
+    this.expiresIn,
+  });
+
+  factory PhoneLoginResponse.fromJson(Map<String, dynamic> json) {
+    return PhoneLoginResponse(
+      success: json['status'] ?? false,
+      message: json['message'] ?? '',
+      userId: json['user_id'] != null ? int.tryParse(json['user_id'].toString()) : null,
+      expiresIn: json['expires_in'] != null ? int.tryParse(json['expires_in'].toString()) : null,
     );
   }
 }

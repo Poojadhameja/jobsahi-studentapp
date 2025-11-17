@@ -74,10 +74,6 @@ class AboutPage extends StatelessWidget {
 
                     /// Company info section
                     _buildCompanyInfoSection(),
-                    const SizedBox(height: 20),
-
-                    /// Contact section
-                    _buildContactSection(),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -102,23 +98,13 @@ class AboutPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.flag_outlined,
-                size: 20,
-                color: AppConstants.primaryColor,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Our Mission',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppConstants.textPrimaryColor,
-                ),
-              ),
-            ],
+          Text(
+            'Our Mission',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
+            ),
           ),
           const SizedBox(height: 16),
 
@@ -243,78 +229,5 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  /// Builds the contact section with modern styling
-  Widget _buildContactSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Contact Information',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          _buildContactRow(Icons.email_outlined, 'Email', 'info@jobsahi.com'),
-          const SizedBox(height: 8),
-          _buildContactRow(Icons.phone_outlined, 'Phone', '+91 12345 67890'),
-          const SizedBox(height: 8),
-          _buildContactRow(
-            Icons.location_on_outlined,
-            'Address',
-            'Central India',
-          ),
-          const SizedBox(height: 8),
-          _buildContactRow(
-            Icons.language_outlined,
-            'Website',
-            'www.jobsahi.com',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContactRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF58B248)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppConstants.textPrimaryColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  // Contact section extracted to separate Contact Us page
 }

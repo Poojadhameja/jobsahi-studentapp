@@ -190,6 +190,8 @@ class JobsRepositoryImpl implements JobsRepository {
         status: jobInfo.status,
         adminAction: jobInfo.adminAction,
         createdAt: jobInfo.createdAt,
+        isSaved: jobInfo.isSaved,
+        isApplied: jobInfo.isApplied,
       );
 
       // Create CompanyInfo for legacy compatibility

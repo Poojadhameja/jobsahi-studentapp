@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,8 @@ class LoginOtpCodeScreen extends StatefulWidget {
 
 class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
   bool _isSubmitting = false; // Track submission state locally
+  String? _storedPhoneNumber; // Store phone number from state
+  int? _storedUserId; // Store user ID from state
 
   /// Controllers for OTP input fields
   final List<TextEditingController> _otpControllers = List.generate(
@@ -45,8 +48,23 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Store phone number and userId from current state when screen loads
+    final currentState = context.read<AuthBloc>().state;
+    if (currentState is OtpSentState && _storedPhoneNumber == null) {
+      _storedPhoneNumber = currentState.phoneNumber;
+      _storedUserId = currentState.userId;
+      debugPrint('🔵 Stored phone number: $_storedPhoneNumber, userId: $_storedUserId');
+    }
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
+        // Update stored values if OtpSentState is received
+        if (state is OtpSentState) {
+          _storedPhoneNumber = state.phoneNumber;
+          _storedUserId = state.userId;
+          debugPrint('🔵 Updated stored phone number: $_storedPhoneNumber, userId: $_storedUserId');
+        }
+
         if (state is OtpVerificationLoading) {
           // Set submitting state when loading starts
           setState(() {
@@ -158,31 +176,53 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
   /// Builds the OTP input section
   Widget _buildOTPInputSection() {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        // Use stored phone number or get from current state
+        String phoneNumber = _storedPhoneNumber ?? '';
+        
+        if (phoneNumber.isEmpty && state is OtpSentState) {
+          phoneNumber = state.phoneNumber;
+          _storedPhoneNumber = phoneNumber;
+        }
 
-        // Phone number display
-        Center(
-          child: Text(
-            '+91 98765 43210', // TODO: Replace with dynamic phone number
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppConstants.textPrimaryColor,
+        // Format phone number for display (add +91 and spacing)
+        String formattedPhone = '+91 XXXXX XXXXX';
+        if (phoneNumber.isNotEmpty && phoneNumber.length == 10) {
+          // Format as +91 XXXXX XXXXX (first 5 digits, then last 5 digits)
+          formattedPhone = '+91 ${phoneNumber.substring(0, 5)} ${phoneNumber.substring(5)}';
+        } else if (phoneNumber.isNotEmpty) {
+          // If not exactly 10 digits, just show with +91 prefix
+          formattedPhone = '+91 $phoneNumber';
+        }
+
+        return Column(
+          children: [
+            const SizedBox(height: 20),
+
+            // Phone number display
+            Center(
+              child: Text(
+                formattedPhone,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppConstants.textPrimaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ),
 
-        const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-        // OTP input fields
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(4, (index) => _buildOTPField(index)),
-        ),
-      ],
+            // OTP input fields
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(4, (index) => _buildOTPField(index)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -310,17 +350,74 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
     // Get the complete OTP
     final otp = _otpControllers.map((controller) => controller.text).join();
 
-    // Dispatch OTP verification event to BLoC
-    context.read<AuthBloc>().add(VerifyOtpEvent(otp: otp));
+    // Ensure we have phone number and userId stored before verification
+    final currentState = context.read<AuthBloc>().state;
+    if (currentState is OtpSentState) {
+      _storedPhoneNumber = currentState.phoneNumber;
+      _storedUserId = currentState.userId;
+    }
+
+    // If still no phone number, try to get from current state one more time
+    if (_storedPhoneNumber == null || _storedPhoneNumber!.isEmpty) {
+      final state = context.read<AuthBloc>().state;
+      if (state is OtpSentState) {
+        _storedPhoneNumber = state.phoneNumber;
+        _storedUserId = state.userId;
+      }
+    }
+
+    // If still no phone number, show error
+    if (_storedPhoneNumber == null || _storedPhoneNumber!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Phone number not found. Please go back and request a new OTP.'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Dispatch OTP verification event to BLoC with phone number and userId
+    // This ensures verification works even if state changes
+    context.read<AuthBloc>().add(
+      VerifyOtpEvent(
+        otp: otp,
+        phoneNumber: _storedPhoneNumber,
+        userId: _storedUserId,
+      ),
+    );
   }
 
   /// Resends OTP to the user
   void _resendOTP() {
+    // Use stored phone number or get from current state
+    String phoneNumber = _storedPhoneNumber ?? '';
+    
+    if (phoneNumber.isEmpty) {
+      final currentState = context.read<AuthBloc>().state;
+      if (currentState is OtpSentState) {
+        phoneNumber = currentState.phoneNumber;
+        _storedPhoneNumber = phoneNumber;
+      }
+    }
+
+    if (phoneNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Phone number not found. Please go back and try again.'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     // Dispatch resend OTP event to BLoC
     context.read<AuthBloc>().add(
-      const LoginWithOtpEvent(
-        phoneNumber: '9876543210',
-      ), // TODO: Get from previous screen
+      LoginWithOtpEvent(phoneNumber: phoneNumber),
     );
   }
 }

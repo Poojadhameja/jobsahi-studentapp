@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../bloc/settings_bloc.dart';
-import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
 
 class TermsConditionsPage extends StatelessWidget {
@@ -24,11 +25,6 @@ class _TermsConditionsPageView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsBloc, SettingsState>(
       builder: (context, state) {
-        bool isAgreed = false;
-        if (state is TermsConditionsLoaded) {
-          isAgreed = state.isAgreed;
-        }
-
         return Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
@@ -46,7 +42,7 @@ class _TermsConditionsPageView extends StatelessWidget {
                           Icons.arrow_back,
                           color: AppConstants.textPrimaryColor,
                         ),
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () => context.go(AppRoutes.settings),
                       ),
                       const SizedBox(height: 4),
 
@@ -74,7 +70,7 @@ class _TermsConditionsPageView extends StatelessWidget {
                             ),
                             const SizedBox(height: 6),
                             const Text(
-                              "Please read and accept our terms of service",
+                              "Satpuda Group's Jobsahi.com",
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Color(0xFF4F789B),
@@ -92,106 +88,45 @@ class _TermsConditionsPageView extends StatelessWidget {
                 // Main content
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.largePadding,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Content paragraphs
-                        _buildParagraph(
-                          'Jobsahi आपकी व्यक्तिगत जानकारी को किसी भी अनधिकृत तृतीय पक्ष के साथ साझा नहीं करता है',
-                        ),
-
-                        const SizedBox(height: AppConstants.defaultPadding),
-
-                        _buildParagraph(
-                          'हालाँकि, एक वैश्विक निगम के रूप में, Workday विभिन्न देशों में मौजूद अपनी संबद्ध कंपनियों और संसाधनों के माध्यम से आपकी जानकारी का उपयोग कर सकता है',
-                        ),
-
-                        const SizedBox(height: AppConstants.defaultPadding),
-
-                        _buildParagraph(
-                          'Workday अपने समूह की कंपनियों और अन्य तृतीय पक्षों के साथ आपकी जानकारी को साझा या स्थानांतरित कर सकता है ताकि सेवाएं प्रदान की जा सकें',
-                        ),
-
-                        const SizedBox(height: AppConstants.defaultPadding),
-
-                        _buildParagraph(
-                          'यह स्थानांतरण यूरोपीय आर्थिक क्षेत्र और भारत के बाहर भी हो सकता है',
-                        ),
-
-                        const SizedBox(height: AppConstants.largePadding),
-
-                        // Checkbox and agreement text
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: isAgreed,
-                              onChanged: (value) {
-                                context.read<SettingsBloc>().add(
-                                  ToggleTermsAgreementEvent(
-                                    isAgreed: value ?? false,
-                                  ),
-                                );
-                              },
-                              activeColor: AppConstants.secondaryColor,
-                              side: BorderSide(
-                                color: AppConstants.secondaryColor,
-                                width: 2,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                'I have read and agree to the Terms & Conditions',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: AppConstants.textPrimaryColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: AppConstants.largePadding),
-
-                        // Accept button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: isAgreed
-                                ? () {
-                                    // Handle accept action
-                                    context.read<SettingsBloc>().add(
-                                      AcceptTermsEvent(),
-                                    );
-                                    Navigator.of(context).pop();
-                                  }
-                                : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppConstants.secondaryColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppConstants.defaultPadding,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.borderRadius,
-                                ),
-                              ),
-                              elevation: 2,
-                            ),
-                            child: Text(
-                              'Accept Terms & Conditions',
-                              style: AppConstants.buttonTextStyle.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isAgreed
-                                    ? Colors.white
-                                    : Colors.grey[600],
-                              ),
-                            ),
+                        const SizedBox(height: 20),
+                        _buildCardSection(
+                          child: _buildSection(
+                            title: 'Data Sharing',
+                            content:
+                                'Jobsahi आपकी व्यक्तिगत जानकारी को किसी भी अनधिकृत तृतीय पक्ष के साथ साझा नहीं करता है। आपकी जानकारी केवल सेवाओं को प्रदान करने, कानूनी अनुपालन और सुरक्षा उद्देश्यों के लिए उपयोग की जाती है।',
                           ),
                         ),
+                        const SizedBox(height: 20),
+                        _buildCardSection(
+                          child: _buildSection(
+                            title: 'International Transfer',
+                            content:
+                                'एक वैश्विक संगठन के रूप में, हमारी संबद्ध कंपनियों और संसाधनों के माध्यम से आपकी जानकारी विभिन्न देशों में सुरक्षित सर्वरों पर संसाधित की जा सकती है। हम लागू कानूनों के अनुरूप आवश्यक सुरक्षा उपायों का पालन करते हैं।',
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildCardSection(
+                          child: _buildSection(
+                            title: 'Third‑party Processing',
+                            content:
+                                'सेवाएं प्रदान करने के लिए, Jobsahi विश्वसनीय तृतीय‑पक्ष भागीदारों के साथ काम कर सकता है। ऐसे मामलों में, हम यह सुनिश्चित करते हैं कि वे सख्ती से गोपनीयता और सुरक्षा मानकों का पालन करें तथा डेटा का उपयोग केवल निर्दिष्ट उद्देश्य के लिए करें।',
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildCardSection(
+                          child: _buildSection(
+                            title: 'Your Consent',
+                            content:
+                                'हमारी सेवाओं का उपयोग करते समय आप इन शर्तों से सहमत होते हैं। यदि आप इन शर्तों से असहमत हैं, तो कृपया सेवाओं का उपयोग बंद करें और किसी भी प्रश्न के लिए हमसे संपर्क करें।',
+                          ),
+                        ),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
@@ -204,14 +139,49 @@ class _TermsConditionsPageView extends StatelessWidget {
     );
   }
 
-  Widget _buildParagraph(String text) {
-    return Text(
-      text,
-      style: AppConstants.bodyStyle.copyWith(
-        color: const Color(0xFF424242),
-        height: 1.6,
-        fontSize: 15,
+  Widget _buildSection({required String title, required String content}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppConstants.textPrimaryColor,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: AppConstants.smallPadding),
+        Text(
+          content,
+          style: AppConstants.bodyStyle.copyWith(
+            color: const Color(0xFF4F789B),
+            height: 1.6,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCardSection({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      child: child,
     );
   }
 }

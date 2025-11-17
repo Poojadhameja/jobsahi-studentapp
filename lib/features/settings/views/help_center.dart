@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
-import '../bloc/settings_bloc.dart';
-// Removed unused event/state imports as this screen uses local handlers
+import '../../../core/di/injection_container.dart';
+import '../../feedback/bloc/feedback_bloc.dart';
+import '../../feedback/bloc/feedback_event.dart';
+import '../../feedback/bloc/feedback_state.dart';
 
 class HelpCenterPage extends StatelessWidget {
-  const HelpCenterPage({super.key});
+  final int initialTabIndex;
+  const HelpCenterPage({super.key, this.initialTabIndex = 0});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => SettingsBloc(),
-      child: _HelpCenterPageView(),
+      create: (context) => sl<FeedbackBloc>(),
+      child: _HelpCenterPageView(initialTabIndex: initialTabIndex),
     );
   }
 }
 
 class _HelpCenterPageView extends StatefulWidget {
+  final int initialTabIndex;
+  const _HelpCenterPageView({this.initialTabIndex = 0});
   @override
   State<_HelpCenterPageView> createState() => _HelpCenterPageViewState();
 }
@@ -24,6 +29,7 @@ class _HelpCenterPageView extends StatefulWidget {
 class _HelpCenterPageViewState extends State<_HelpCenterPageView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _subjectController = TextEditingController();
   final TextEditingController _feedbackController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -31,11 +37,17 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Set initial tab based on constructor argument
+    _tabController.index = (widget.initialTabIndex >= 0 &&
+            widget.initialTabIndex <= 1)
+        ? widget.initialTabIndex
+        : 0;
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _subjectController.dispose();
     _feedbackController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -172,38 +184,125 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
 
                 const SizedBox(height: AppConstants.largePadding),
 
+                // Subject Input
+                TextField(
+                  controller: _subjectController,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF212121),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Subject *',
+                    hintText: 'e.g., Course Feedback, App Suggestion',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9E9E9E),
+                      fontSize: 15,
+                    ),
+                    labelStyle: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    helperText:
+                        'Minimum 5 characters required  •  Chars: ${_subjectController.text.trim().length}/5',
+                    helperStyle: TextStyle(
+                      color: _subjectController.text.trim().length < 5
+                          ? Colors.grey[600]
+                          : Colors.green[600],
+                      fontSize: 12,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.grey[300]!,
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.grey[300]!,
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: AppConstants.secondaryColor,
+                        width: 1.5,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {});
+                  },
+                ),
+
+                const SizedBox(height: AppConstants.defaultPadding),
+
                 // Feedback Input
                 TextField(
                   controller: _feedbackController,
                   maxLines: 8,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF212121),
+                  ),
                   onChanged: (value) {
                     // Rebuild UI when text changes to enable/disable button
                     setState(() {});
                   },
                   decoration: InputDecoration(
-                    hintText: 'Enter Feedback',
-                    hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
+                    labelText: 'Feedback *',
+                    hintText: 'Enter your feedback here...',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF9E9E9E),
+                      fontSize: 15,
+                    ),
+                    labelStyle: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    helperText:
+                        'Minimum 15 characters required  •  Chars: ${_feedbackController.text.trim().length}/15',
+                    helperStyle: TextStyle(
+                      color: _feedbackController.text.trim().length < 15
+                          ? Colors.grey[600]
+                          : Colors.green[600],
+                      fontSize: 12,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    alignLabelWithHint: true,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.borderRadius,
-                      ),
+                      borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide(
                         color: Colors.grey[300]!,
-                        width: 1,
+                        width: 1.5,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.grey[300]!,
+                        width: 1.5,
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.borderRadius,
-                      ),
-                      borderSide: BorderSide(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
                         color: AppConstants.secondaryColor,
-                        width: 2,
+                        width: 1.5,
                       ),
                     ),
-                    contentPadding: const EdgeInsets.all(
-                      AppConstants.defaultPadding,
-                    ),
+                    contentPadding: const EdgeInsets.all(16),
                   ),
                 ),
 
@@ -214,7 +313,53 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
         ),
 
         // Fixed bottom button
-        Container(
+        BlocConsumer<FeedbackBloc, FeedbackState>(
+          listener: (context, state) {
+            if (state is FeedbackSubmittedSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+              _subjectController.clear();
+              _feedbackController.clear();
+              setState(() {});
+              // Clear the success state
+              context.read<FeedbackBloc>().add(const ClearFeedbackFormEvent());
+            } else if (state is FeedbackError) {
+              String errorMessage = state.message;
+              
+              // Show rate limit error with more details
+              if (state.isRateLimitError) {
+                errorMessage = state.message;
+                if (state.messageEn != null) {
+                  errorMessage += '\n${state.messageEn}';
+                }
+                if (state.resetDate != null) {
+                  errorMessage += '\n\nPlease try again after ${state.resetDate}';
+                }
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(errorMessage),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            final isLoading = state is FeedbackSubmitting;
+            final subjectText = _subjectController.text.trim();
+            final feedbackText = _feedbackController.text.trim();
+            final isEnabled = subjectText.length >= 5 &&
+                feedbackText.length >= 15 &&
+                !isLoading;
+
+            return Container(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
           decoration: BoxDecoration(
             color: AppConstants.cardBackgroundColor,
@@ -223,16 +368,14 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _feedbackController.text.trim().isNotEmpty
-                  ? () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Feedback submitted successfully!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      _feedbackController.clear();
-                      setState(() {});
+                  onPressed: isEnabled
+                      ? () {
+                          context.read<FeedbackBloc>().add(
+                                SubmitFeedbackEvent(
+                                  feedback: _feedbackController.text.trim(),
+                                  subject: _subjectController.text.trim(),
+                                ),
+                              );
                     }
                   : null,
               style: ElevatedButton.styleFrom(
@@ -247,18 +390,29 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
                 elevation: 2,
                 disabledBackgroundColor: Colors.grey[300],
               ),
-              child: Text(
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
                 'Submit Feedback',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: _feedbackController.text.trim().isNotEmpty
+                            color: isEnabled
                       ? Colors.white
                       : Colors.grey[600],
                 ),
               ),
             ),
           ),
+            );
+          },
         ),
       ],
     );
@@ -463,3 +617,4 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
     );
   }
 }
+

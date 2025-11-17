@@ -7,6 +7,7 @@ import '../../../shared/data/user_data.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/location_service.dart';
 import '../../../shared/services/token_storage.dart';
+import '../../../core/utils/network_error_helper.dart';
 import '../models/student_profile.dart';
 
 /// Profile BLoC
@@ -30,6 +31,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<UpdateProfileHeaderInlineEvent>(_onInlineProfileHeaderUpdate);
     on<UpdateProfileResumeInlineEvent>(_onInlineResumeUpdate);
     on<UpdateProfileContactInlineEvent>(_onInlineContactUpdate);
+    on<UpdateProfileGeneralInfoInlineEvent>(_onInlineGeneralInfoUpdate);
     on<UpdateProfileSocialLinksInlineEvent>(_onInlineSocialLinksUpdate);
     on<UpdateProfileCertificatesInlineEvent>(_onInlineCertificatesUpdate);
     on<UpdateProfileSkillsInlineEvent>(_onInlineSkillsUpdate);
@@ -132,47 +134,74 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             '🔵 [ProfileBloc] Profile fetched for user_id: ${profile.userId}',
           );
 
-          final parsedSkills = profile.professionalInfo.skills
-              .split(',')
-              .map((skill) => skill.trim())
-              .where((skill) => skill.isNotEmpty)
-              .toList();
+          // Skills are now a List<String>
+          skills = profile.professionalInfo.skills;
 
-          final parsedExperience = profile.professionalInfo.experience
+          // Parse experience - new structure
+          experience = profile.professionalInfo.experience
               .map(
                 (exp) => {
-                  'company': exp.company,
-                  'position': exp.role,
-                  'startDate': exp.duration.split(' - ').first,
-                  'endDate': exp.duration.split(' - ').length > 1
-                      ? exp.duration.split(' - ').last
-                      : 'Present',
-                  'description': exp.description,
+                  'company': exp.companyName,
+                  'position': exp.position,
+                  'startDate': exp.startDate,
+                  'endDate': exp.endDate.isEmpty ? 'Present' : exp.endDate,
+                  'companyLocation': exp.companyLocation ?? '',
+                  'description': exp.description ?? '',
                 },
               )
               .toList();
 
-          final parsedEducation = <Map<String, dynamic>>[
-            {
-              'qualification': profile.professionalInfo.education,
-              'institute': 'Not specified',
-              'course': profile.professionalInfo.trade,
-              'passingYear': profile.professionalInfo.graduationYear,
-              'cgpa': profile.professionalInfo.cgpa,
-            },
-          ];
-
-          final parsedProjects = profile.professionalInfo.projects
+          // Parse education - new structure
+          education = profile.professionalInfo.education
               .map(
-                (project) => {
-                  'name': project.name,
-                  'link': project.link,
+                (edu) => {
+                  'qualification': edu.qualification,
+                  'institute': edu.institute,
+                  'startYear': edu.startYear,
+                  'endYear': edu.endYear,
+                  'isPursuing': edu.isPursuing,
+                  'pursuingYear': edu.pursuingYear,
+                  'cgpa': edu.cgpa,
                 },
               )
-              .where((project) =>
-                  (project['name'] as String).isNotEmpty ||
-                  (project['link'] as String).isNotEmpty)
               .toList();
+
+          // Parse projects
+          final parsedProjects = profile.professionalInfo.projects
+              .map((project) => {'name': project.name, 'link': project.link})
+              .where(
+                (project) =>
+                    (project['name'] as String).isNotEmpty ||
+                    (project['link'] as String).isNotEmpty,
+              )
+              .toList();
+
+          // Parse social links - NEW STRUCTURE: Array of objects with title and profile_url
+          // Backend sends: [{"title": "Portfolio", "profile_url": "https://..."}, ...]
+          final socialLinksList = profile.socialLinks;
+          debugPrint(
+            '🟢 [ProfileBloc] Parsed ${socialLinksList.length} social links from API',
+          );
+
+          // Also extract individual links for backward compatibility with UI
+          // NOTE: These individual fields are for UI display only, not for API payload
+          String? portfolioLink;
+          String? linkedinUrl;
+          String? githubUrl;
+          String? twitterUrl;
+
+          for (final link in socialLinksList) {
+            final title = link.title.toLowerCase();
+            if (title.contains('portfolio')) {
+              portfolioLink = link.profileUrl;
+            } else if (title.contains('linkedin')) {
+              linkedinUrl = link.profileUrl;
+            } else if (title.contains('github')) {
+              githubUrl = link.profileUrl;
+            } else if (title.contains('twitter')) {
+              twitterUrl = link.profileUrl;
+            }
+          }
 
           final jobType = profile.professionalInfo.jobType;
           final normalizedJobTypes = jobType.isNotEmpty
@@ -183,7 +212,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           resumeFileName = resumePath.isNotEmpty
               ? resumePath.split('/').last
               : null;
-          lastResumeUpdatedDate = profile.status.modifiedAt;
+          lastResumeUpdatedDate = null; // API doesn't provide this
           resumeFileSize = 0;
           resumeDownloadUrl = resumePath.isNotEmpty ? resumePath : null;
 
@@ -195,39 +224,45 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             certificates.add({
               'name': certificateName,
               'type': 'Certificate',
-              'uploadDate': profile.status.modifiedAt,
+              'uploadDate': '',
               'size': 0,
               'extension': certificateName.split('.').last,
               'path': certificatePath,
             });
           }
 
+          // Contact info
+          final contactEmail = profile.contactInfo?.contactEmail ?? '';
+          final contactPhone = profile.contactInfo?.contactPhone ?? '';
+
           userProfile = {
             'id': profile.userId.toString(),
             'name': profile.personalInfo.userName,
             'email': profile.personalInfo.email,
             'phone': profile.personalInfo.phoneNumber,
+            'contactEmail': contactEmail,
+            'contactPhone': contactPhone,
             'location': profile.personalInfo.location,
             'gender': profile.personalInfo.gender,
             'dateOfBirth': profile.personalInfo.dateOfBirth,
             'bio': profile.additionalInfo.bio,
             'profileImage': null,
-            'portfolioLink': profile.socialLinks.portfolioLink,
-            'linkedinUrl': profile.socialLinks.linkedinUrl,
+            'portfolioLink': portfolioLink ?? '',
+            'linkedinUrl': linkedinUrl ?? '',
+            'githubUrl': githubUrl ?? '',
+            'twitterUrl': twitterUrl ?? '',
             'aadharNumber': profile.documents.aadharNumber,
             'languages': profile.professionalInfo.languages,
             'jobType': profile.professionalInfo.jobType,
             'trade': profile.professionalInfo.trade,
-            'graduationYear': profile.professionalInfo.graduationYear,
-            'cgpa': profile.professionalInfo.cgpa,
             'latitude': profile.personalInfo.latitude,
             'longitude': profile.personalInfo.longitude,
             'projects': parsedProjects,
+            'socialLinks': socialLinksList
+                .map((l) => {'title': l.title, 'profile_url': l.profileUrl})
+                .toList(),
           };
 
-          skills = parsedSkills;
-          experience = parsedExperience;
-          education = parsedEducation;
           jobPreferences = {
             'preferredJobTypes': normalizedJobTypes,
             'preferredLocation': profile.personalInfo.location,
@@ -259,6 +294,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         'experience': false,
         'resume': false,
         'certificates': false,
+        'contact': false,
+        'general_info': false,
+        'social': false,
       };
 
       if (!loadedFromApi) {
@@ -291,7 +329,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         ),
       );
     } catch (e) {
-      emit(ProfileError(message: 'Failed to load profile: ${e.toString()}'));
+      _handleError(e, emit, defaultMessage: 'Failed to load profile');
     }
   }
 
@@ -311,7 +349,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       emit(ProfileUpdateSuccess(message: 'Profile updated successfully'));
     } catch (e) {
-      emit(ProfileError(message: 'Failed to update profile: ${e.toString()}'));
+      _handleError(e, emit, defaultMessage: 'Failed to update profile');
     }
   }
 
@@ -331,11 +369,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       emit(ProfileImageUpdateSuccess(imagePath: event.imagePath));
     } catch (e) {
-      emit(
-        ProfileError(
-          message: 'Failed to update profile image: ${e.toString()}',
-        ),
-      );
+      _handleError(e, emit, defaultMessage: 'Failed to update profile image');
     }
   }
 
@@ -381,9 +415,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Update skills (Note: In real app, this would be an API call)
       // UserData.userSkills = event.skills; // This is const, so we can't modify it
 
-      emit(SkillsUpdateSuccess(skills: event.skills));
+      emit(SkillsUpdateSuccess(skills: event.skills)      );
     } catch (e) {
-      emit(ProfileError(message: 'Failed to update skills: ${e.toString()}'));
+      _handleError(e, emit, defaultMessage: 'Failed to update skills');
     }
   }
 
@@ -401,11 +435,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Add education (Note: In real app, this would be an API call)
       // UserData.userEducation.add(newEducation); // This is const, so we can't modify it
 
-      emit(EducationUpdateSuccess(message: 'Education updated successfully'));
+      emit(EducationUpdateSuccess(message: 'Education updated successfully')      );
     } catch (e) {
-      emit(
-        ProfileError(message: 'Failed to update education: ${e.toString()}'),
-      );
+      _handleError(e, emit, defaultMessage: 'Failed to update education');
     }
   }
 
@@ -423,11 +455,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Add experience (Note: In real app, this would be an API call)
       // UserData.userExperience.add(newExperience); // This is const, so we can't modify it
 
-      emit(ExperienceUpdateSuccess(message: 'Experience updated successfully'));
+      emit(ExperienceUpdateSuccess(message: 'Experience updated successfully')      );
     } catch (e) {
-      emit(
-        ProfileError(message: 'Failed to update experience: ${e.toString()}'),
-      );
+      _handleError(e, emit, defaultMessage: 'Failed to update experience');
     }
   }
 
@@ -447,11 +477,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       //   UserData.userExperience.removeAt(event.index);
       // }
 
-      emit(ExperienceUpdateSuccess(message: 'Experience deleted successfully'));
+      emit(ExperienceUpdateSuccess(message: 'Experience deleted successfully')      );
     } catch (e) {
-      emit(
-        ProfileError(message: 'Failed to delete experience: ${e.toString()}'),
-      );
+      _handleError(e, emit, defaultMessage: 'Failed to delete experience');
     }
   }
 
@@ -498,11 +526,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     await _applyLocationCoordinates(updatedProfile);
 
     final updatedState = currentState.copyWith(userProfile: updatedProfile);
-    await _syncProfileWithServer(
-      updatedState,
-      emit,
-      source: 'profile_header',
-    );
+    await _syncProfileWithServer(updatedState, emit, source: 'profile_header');
   }
 
   void _onInlineResumeUpdate(
@@ -555,14 +579,59 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final dob = event.dateOfBirth?.trim() ?? '';
     updatedProfile['dateOfBirth'] = dob.isNotEmpty ? dob : null;
 
+    // Update contact_info fields
+    final contactEmail = event.contactEmail?.trim() ?? '';
+    updatedProfile['contactEmail'] = contactEmail.isNotEmpty
+        ? contactEmail
+        : null;
+
+    final contactPhone = event.contactPhone?.trim() ?? '';
+    updatedProfile['contactPhone'] = contactPhone.isNotEmpty
+        ? contactPhone
+        : null;
+
     await _applyLocationCoordinates(updatedProfile);
 
     final updatedState = currentState.copyWith(userProfile: updatedProfile);
-    await _syncProfileWithServer(
-      updatedState,
-      emit,
-      source: 'contact',
-    );
+    await _syncProfileWithServer(updatedState, emit, source: 'contact');
+  }
+
+  Future<void> _onInlineGeneralInfoUpdate(
+    UpdateProfileGeneralInfoInlineEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    if (state is! ProfileDetailsLoaded) {
+      debugPrint(
+        '⚠️ [ProfileBloc] _onInlineGeneralInfoUpdate: State is not ProfileDetailsLoaded',
+      );
+      return;
+    }
+    final currentState = state as ProfileDetailsLoaded;
+    final updatedProfile = Map<String, dynamic>.from(currentState.userProfile);
+
+    // Update gender
+    final gender = event.gender?.trim() ?? '';
+    updatedProfile['gender'] = gender.isNotEmpty ? gender : null;
+
+    // Update date of birth
+    final dob = event.dateOfBirth?.trim() ?? '';
+    updatedProfile['dateOfBirth'] = dob.isNotEmpty ? dob : null;
+
+    // Update languages - already a List<String> from event
+    updatedProfile['languages'] = List<String>.from(event.languages);
+
+    // Update aadhar number
+    final aadhar = event.aadharNumber?.trim() ?? '';
+    updatedProfile['aadharNumber'] = aadhar.isNotEmpty ? aadhar : null;
+
+    debugPrint('🟢 [ProfileBloc] _onInlineGeneralInfoUpdate: Updating profile');
+    debugPrint('   Gender: ${updatedProfile['gender']}');
+    debugPrint('   DateOfBirth: ${updatedProfile['dateOfBirth']}');
+    debugPrint('   Languages: ${updatedProfile['languages']}');
+    debugPrint('   AadharNumber: ${updatedProfile['aadharNumber']}');
+
+    final updatedState = currentState.copyWith(userProfile: updatedProfile);
+    await _syncProfileWithServer(updatedState, emit, source: 'general_info');
   }
 
   Future<void> _onInlineSocialLinksUpdate(
@@ -575,18 +644,36 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final currentState = state as ProfileDetailsLoaded;
     final updatedProfile = Map<String, dynamic>.from(currentState.userProfile);
 
-    final portfolio = event.portfolioLink?.trim() ?? '';
-    final linkedin = event.linkedinUrl?.trim() ?? '';
+    // Update social links array
+    updatedProfile['socialLinks'] = event.socialLinks;
 
-    updatedProfile['portfolioLink'] = portfolio.isNotEmpty ? portfolio : null;
-    updatedProfile['linkedinUrl'] = linkedin.isNotEmpty ? linkedin : null;
+    // Also update individual fields for backward compatibility with UI
+    String? portfolioLink;
+    String? linkedinUrl;
+    String? githubUrl;
+    String? twitterUrl;
+
+    for (final link in event.socialLinks) {
+      final title = (link['title']?.toString() ?? '').toLowerCase();
+      final url = link['profile_url']?.toString() ?? '';
+      if (title.contains('portfolio')) {
+        portfolioLink = url;
+      } else if (title.contains('linkedin')) {
+        linkedinUrl = url;
+      } else if (title.contains('github')) {
+        githubUrl = url;
+      } else if (title.contains('twitter')) {
+        twitterUrl = url;
+      }
+    }
+
+    updatedProfile['portfolioLink'] = portfolioLink;
+    updatedProfile['linkedinUrl'] = linkedinUrl;
+    updatedProfile['githubUrl'] = githubUrl;
+    updatedProfile['twitterUrl'] = twitterUrl;
 
     final updatedState = currentState.copyWith(userProfile: updatedProfile);
-    await _syncProfileWithServer(
-      updatedState,
-      emit,
-      source: 'social_links',
-    );
+    await _syncProfileWithServer(updatedState, emit, source: 'social_links');
   }
 
   void _onInlineCertificatesUpdate(
@@ -609,11 +696,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final currentState = state as ProfileDetailsLoaded;
     final updatedState = currentState.copyWith(skills: event.skills);
 
-    await _syncProfileWithServer(
-      updatedState,
-      emit,
-      source: 'skills',
-    );
+    await _syncProfileWithServer(updatedState, emit, source: 'skills');
   }
 
   Future<void> _onInlineExperienceUpdate(
@@ -626,11 +709,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final currentState = state as ProfileDetailsLoaded;
     final updatedState = currentState.copyWith(experience: event.experience);
 
-    await _syncProfileWithServer(
-      updatedState,
-      emit,
-      source: 'experience',
-    );
+    await _syncProfileWithServer(updatedState, emit, source: 'experience');
   }
 
   Future<void> _onInlineEducationUpdate(
@@ -643,16 +722,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final currentState = state as ProfileDetailsLoaded;
     final updatedState = currentState.copyWith(education: event.education);
 
-    await _syncProfileWithServer(
-      updatedState,
-      emit,
-      source: 'education',
-    );
+    await _syncProfileWithServer(updatedState, emit, source: 'education');
   }
 
-  Future<void> _applyLocationCoordinates(
-    Map<String, dynamic> profile,
-  ) async {
+  Future<void> _applyLocationCoordinates(Map<String, dynamic> profile) async {
     double? latitude = _parseDouble(profile['latitude']);
     double? longitude = _parseDouble(profile['longitude']);
 
@@ -689,12 +762,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       '🔵 [ProfileBloc] Syncing profile${source != null ? ' ($source)' : ''}',
     );
 
-    emit(
-      pendingState.copyWith(
-        isSyncing: true,
-        statusMessage: null,
-      ),
-    );
+    emit(pendingState.copyWith(isSyncing: true, statusMessage: null));
 
     try {
       final payload = await _buildProfileUpdatePayload(pendingState);
@@ -763,72 +831,180 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       'longitude': longitude,
     };
 
+    // Skills - already a List<String>
     final skills = state.skills
         .map((skill) => skill.trim())
         .where((skill) => skill.isNotEmpty)
         .toList();
 
-    final educationEntry =
-        state.education.isNotEmpty ? state.education.first : <String, dynamic>{};
-    final educationValue =
-        educationEntry['qualification']?.toString() ??
-            educationEntry['course']?.toString() ??
-            '';
-    final graduationYear =
-        _parseInt(educationEntry['passingYear'] ?? userProfile['graduationYear']) ??
-            0;
-    final cgpa =
-        _parseDouble(educationEntry['cgpa'] ?? userProfile['cgpa']) ?? 0.0;
+    // Education - new structure as array
+    // Handle end_year: if is_pursuing is true, end_year should be empty string
+    final educationPayload = state.education.map((edu) {
+      final isPursuing =
+          edu['isPursuing'] == true ||
+          edu['isPursuing'] == 1 ||
+          edu['isPursuing'] == '1' ||
+          edu['isPursuing'] == 'true';
+      final endYear = isPursuing ? '' : (edu['endYear']?.toString() ?? '');
 
-    final experiencePayload = _buildExperiencePayload(state.experience);
+      return {
+        'qualification': edu['qualification']?.toString() ?? '',
+        'institute': edu['institute']?.toString() ?? '',
+        'start_year': edu['startYear']?.toString() ?? '',
+        'end_year': endYear,
+        'is_pursuing': isPursuing,
+        'pursuing_year': edu['pursuingYear'],
+        'cgpa': edu['cgpa'],
+      };
+    }).toList();
+
+    // Experience - new structure as array
+    // Handle endDate: if it's "Present", send empty string
+    final experiencePayload = state.experience
+        .map(
+          (exp) => {
+            'company_name': exp['company']?.toString() ?? '',
+            'position': exp['position']?.toString() ?? '',
+            'start_date': exp['startDate']?.toString() ?? '',
+            'end_date':
+                (exp['endDate']?.toString() ?? '').toLowerCase() == 'present'
+                ? ''
+                : (exp['endDate']?.toString() ?? ''),
+            'company_location': exp['companyLocation']?.toString() ?? '',
+            'description': exp['description']?.toString() ?? '',
+          },
+        )
+        .toList();
+
+    // Projects
     final projectsPayload = _normalizeProjects(userProfile['projects']);
-    final languages = _normalizeStringList(userProfile['languages']);
-    final documents = _buildDocumentsPayload(userProfile, state);
-    final socialLinks = {
-      'portfolio_link': userProfile['portfolioLink']?.toString() ?? '',
-      'linkedin_url': userProfile['linkedinUrl']?.toString() ?? '',
-    };
 
+    // Languages - should be List<String>
+    final languages = _normalizeStringList(userProfile['languages']);
+
+    // Documents - handle certificates as string (backend expects string, not array)
+    final documents = _buildDocumentsPayload(userProfile, state);
+
+    // Social Links - NEW STRUCTURE: Array of objects with title and profile_url
+    // Backend expects: [{"title": "Portfolio", "profile_url": "https://..."}, ...]
+    // Old structure (portfolio_link, linkedin_url) is no longer supported
+    final socialLinksPayload = <Map<String, dynamic>>[];
+
+    // Priority: Use socialLinks array if it exists (from backend - new structure)
+    if (userProfile['socialLinks'] is List) {
+      final existingLinks = userProfile['socialLinks'] as List;
+      for (final link in existingLinks) {
+        if (link is Map<String, dynamic>) {
+          final title = link['title']?.toString() ?? '';
+          final url = link['profile_url']?.toString() ?? '';
+          if (title.isNotEmpty && url.isNotEmpty) {
+            socialLinksPayload.add({'title': title, 'profile_url': url});
+          }
+        }
+      }
+      debugPrint(
+        '🟢 [ProfileBloc] Building social_links payload: ${socialLinksPayload.length} links',
+      );
+    } else {
+      // Fallback: Build from individual link fields (for backward compatibility during migration)
+      // NOTE: This fallback can be removed once all data is migrated to new structure
+      debugPrint(
+        '⚠️ [ProfileBloc] Using fallback for social_links (old structure detected)',
+      );
+      final portfolioLink = userProfile['portfolioLink']?.toString() ?? '';
+      if (portfolioLink.isNotEmpty) {
+        socialLinksPayload.add({
+          'title': 'Portfolio',
+          'profile_url': portfolioLink,
+        });
+      }
+
+      final linkedinUrl = userProfile['linkedinUrl']?.toString() ?? '';
+      if (linkedinUrl.isNotEmpty) {
+        socialLinksPayload.add({
+          'title': 'LinkedIn',
+          'profile_url': linkedinUrl,
+        });
+      }
+
+      final githubUrl = userProfile['githubUrl']?.toString() ?? '';
+      if (githubUrl.isNotEmpty) {
+        socialLinksPayload.add({'title': 'GitHub', 'profile_url': githubUrl});
+      }
+
+      final twitterUrl = userProfile['twitterUrl']?.toString() ?? '';
+      if (twitterUrl.isNotEmpty) {
+        socialLinksPayload.add({'title': 'Twitter', 'profile_url': twitterUrl});
+      }
+    }
+
+    // Always send an array (even if empty) to match backend structure
+    debugPrint(
+      '🔵 [ProfileBloc] Final social_links payload: ${jsonEncode(socialLinksPayload)}',
+    );
+
+    // Professional Info
     final professionalInfo = {
       'skills': skills,
-      'education': educationValue,
+      'education': educationPayload,
       'experience': experiencePayload,
       'projects': projectsPayload,
       'job_type': userProfile['jobType']?.toString() ?? '',
       'trade': userProfile['trade']?.toString() ?? '',
-      'graduation_year': graduationYear,
-      'cgpa': cgpa,
       'languages': languages,
     };
 
-    return {
-      'user_id': userId,
+    // Contact Info - always include if available
+    final contactInfo = {
+      'contact_email': userProfile['contactEmail']?.toString() ?? '',
+      'contact_phone': userProfile['contactPhone']?.toString() ?? '',
+    };
+
+    // Build payload - match backend structure exactly
+    final payload = <String, dynamic>{
       'personal_info': personalInfo,
       'professional_info': professionalInfo,
       'documents': documents,
-      'social_links': socialLinks,
-      'additional_info': {
-        'bio': userProfile['bio']?.toString() ?? '',
-      },
+      'social_links': socialLinksPayload,
+      'additional_info': {'bio': userProfile['bio']?.toString() ?? ''},
     };
+
+    // Add contact_info if either field has a value
+    if (contactInfo['contact_email']?.toString().trim().isNotEmpty == true ||
+        contactInfo['contact_phone']?.toString().trim().isNotEmpty == true) {
+      payload['contact_info'] = contactInfo;
+    }
+
+    return payload;
   }
 
   Map<String, dynamic> _buildDocumentsPayload(
     Map<String, dynamic> userProfile,
     ProfileDetailsLoaded state,
   ) {
-    final certificatePaths = state.certificates
-        .map(
-          (certificate) =>
-              certificate['path']?.toString() ?? certificate['name']?.toString(),
-        )
-        .whereType<String>()
-        .where((value) => value.trim().isNotEmpty)
-        .toList();
+    // Backend expects certificates as a string (comma-separated or single value)
+    // If multiple certificates, join them; otherwise use the first one or empty string
+    String certificatesValue = '';
+    if (state.certificates.isNotEmpty) {
+      final certificatePaths = state.certificates
+          .map(
+            (certificate) =>
+                certificate['path']?.toString() ??
+                certificate['name']?.toString(),
+          )
+          .whereType<String>()
+          .where((value) => value.trim().isNotEmpty)
+          .toList();
+
+      // Join multiple certificates with comma, or use first one
+      certificatesValue = certificatePaths.isNotEmpty
+          ? certificatePaths.join(', ')
+          : '';
+    }
 
     return {
-      'resume': state.resumeDownloadUrl ?? '',
-      'certificates': certificatePaths,
+      'resume': state.resumeDownloadUrl?.toString() ?? '',
+      'certificates': certificatesValue,
       'aadhar_number': userProfile['aadharNumber']?.toString() ?? '',
     };
   }
@@ -870,53 +1046,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       debugPrint('⚠️ [ProfileBloc] Failed to decode JWT: $e');
     }
     return null;
-  }
-
-  List<Map<String, dynamic>> _buildExperiencePayload(
-    List<Map<String, dynamic>> experience,
-  ) {
-    return experience
-        .map((entry) {
-          final company = entry['company']?.toString() ?? '';
-          final role =
-              entry['position']?.toString() ?? entry['role']?.toString() ?? '';
-          final startDate = entry['startDate']?.toString() ?? '';
-          final endDate = entry['endDate']?.toString() ?? '';
-          final duration = _buildDuration(startDate, endDate);
-          final description = entry['description']?.toString() ?? '';
-
-          final hasContent = [company, role, duration, description]
-              .any((value) => value.trim().isNotEmpty);
-
-          if (!hasContent) {
-            return null;
-          }
-
-          return {
-            'company': company,
-            'role': role,
-            'duration': duration,
-            'description': description,
-          };
-        })
-        .whereType<Map<String, dynamic>>()
-        .toList();
-  }
-
-  String _buildDuration(String start, String end) {
-    final trimmedStart = start.trim();
-    final trimmedEnd = end.trim();
-
-    if (trimmedStart.isEmpty && trimmedEnd.isEmpty) {
-      return '';
-    }
-    if (trimmedStart.isEmpty) {
-      return trimmedEnd;
-    }
-    if (trimmedEnd.isEmpty) {
-      return trimmedStart;
-    }
-    return '$trimmedStart - $trimmedEnd';
   }
 
   List<Map<String, dynamic>> _normalizeProjects(dynamic projects) {
@@ -1007,7 +1136,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
     final slashPattern = RegExp(r'^(\d{2})/(\d{2})/(\d{4})$');
     final dashPattern = RegExp(r'^(\d{2})-(\d{2})-(\d{4})$');
-    RegExpMatch? match = slashPattern.firstMatch(raw) ?? dashPattern.firstMatch(raw);
+    RegExpMatch? match =
+        slashPattern.firstMatch(raw) ?? dashPattern.firstMatch(raw);
     if (match != null) {
       final day = match.group(1);
       final month = match.group(2);
@@ -1531,5 +1661,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       emit(currentState.copyWith(isSaving: false));
       emit(const SkillsChangesSavedState());
     }
+  }
+
+  /// Helper method to handle errors and emit appropriate error state
+  /// Detects network errors and formats messages accordingly
+  void _handleError(dynamic error, Emitter<ProfileState> emit, {String? defaultMessage}) {
+    final errorMessage = NetworkErrorHelper.isNetworkError(error)
+        ? NetworkErrorHelper.getNetworkErrorMessage(error)
+        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
+    
+    emit(ProfileError(message: errorMessage));
   }
 }

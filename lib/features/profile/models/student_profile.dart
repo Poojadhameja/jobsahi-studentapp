@@ -5,13 +5,13 @@ class StudentProfileResponse {
   final bool success;
   final String message;
   final StudentProfileData data;
-  final StudentProfileMeta meta;
+  final StudentProfileMeta? meta;
 
   StudentProfileResponse({
     required this.success,
     required this.message,
     required this.data,
-    required this.meta,
+    this.meta,
   });
 
   factory StudentProfileResponse.fromJson(Map<String, dynamic> json) {
@@ -19,34 +19,26 @@ class StudentProfileResponse {
       success: json['success'] ?? false,
       message: json['message'] ?? '',
       data: StudentProfileData.fromJson(json['data'] ?? {}),
-      meta: StudentProfileMeta.fromJson(json['meta'] ?? {}),
+      meta: json['meta'] != null
+          ? StudentProfileMeta.fromJson(json['meta'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
 
 class StudentProfileData {
   final List<StudentProfile> profiles;
-  final int totalCount;
-  final String userRole;
-  final Map<String, dynamic> filtersApplied;
 
   StudentProfileData({
     required this.profiles,
-    required this.totalCount,
-    required this.userRole,
-    required this.filtersApplied,
   });
 
   factory StudentProfileData.fromJson(Map<String, dynamic> json) {
     return StudentProfileData(
-      profiles:
-          (json['profiles'] as List<dynamic>?)
+      profiles: (json['profiles'] as List<dynamic>?)
               ?.map((profile) => StudentProfile.fromJson(profile))
               .toList() ??
           [],
-      totalCount: json['total_count'] ?? 0,
-      userRole: json['user_role'] ?? '',
-      filtersApplied: json['filters_applied'] ?? {},
     );
   }
 }
@@ -55,21 +47,21 @@ class StudentProfile {
   final int profileId;
   final int userId;
   final PersonalInfo personalInfo;
+  final ContactInfo? contactInfo;
   final ProfessionalInfo professionalInfo;
   final Documents documents;
-  final SocialLinks socialLinks;
+  final List<SocialLink> socialLinks; // ✅ Array of objects
   final AdditionalInfo additionalInfo;
-  final ProfileStatus status;
 
   StudentProfile({
     required this.profileId,
     required this.userId,
     required this.personalInfo,
+    this.contactInfo,
     required this.professionalInfo,
     required this.documents,
     required this.socialLinks,
     required this.additionalInfo,
-    required this.status,
   });
 
   factory StudentProfile.fromJson(Map<String, dynamic> json) {
@@ -77,13 +69,18 @@ class StudentProfile {
       profileId: json['profile_id'] ?? 0,
       userId: json['user_id'] ?? 0,
       personalInfo: PersonalInfo.fromJson(json['personal_info'] ?? {}),
+      contactInfo: json['contact_info'] != null
+          ? ContactInfo.fromJson(json['contact_info'] as Map<String, dynamic>)
+          : null,
       professionalInfo: ProfessionalInfo.fromJson(
         json['professional_info'] ?? {},
       ),
       documents: Documents.fromJson(json['documents'] ?? {}),
-      socialLinks: SocialLinks.fromJson(json['social_links'] ?? {}),
+      socialLinks: (json['social_links'] as List<dynamic>?)
+              ?.map((link) => SocialLink.fromJson(link as Map<String, dynamic>))
+              .toList() ??
+          [],
       additionalInfo: AdditionalInfo.fromJson(json['additional_info'] ?? {}),
-      status: ProfileStatus.fromJson(json['status'] ?? {}),
     );
   }
 }
@@ -121,18 +118,53 @@ class PersonalInfo {
       longitude: (json['longitude'] ?? 0.0).toDouble(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      'user_name': userName,
+      'phone_number': phoneNumber,
+      'date_of_birth': dateOfBirth,
+      'gender': gender,
+      'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+  }
+}
+
+class ContactInfo {
+  final String contactEmail;
+  final String contactPhone;
+
+  ContactInfo({
+    required this.contactEmail,
+    required this.contactPhone,
+  });
+
+  factory ContactInfo.fromJson(Map<String, dynamic> json) {
+    return ContactInfo(
+      contactEmail: json['contact_email'] ?? '',
+      contactPhone: json['contact_phone'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'contact_email': contactEmail,
+      'contact_phone': contactPhone,
+    };
+  }
 }
 
 class ProfessionalInfo {
-  final String skills;
-  final String education;
-  final List<Experience> experience;
-  final List<Project> projects;
+  final List<String> skills; // ✅ Array of strings
+  final List<Education> education; // ✅ Array of objects
+  final List<Experience> experience; // ✅ Array of objects
+  final List<Project> projects; // ✅ Array of objects
   final String jobType;
   final String trade;
-  final String graduationYear;
-  final String cgpa;
-  final String languages;
+  final List<String> languages; // ✅ Array of strings
 
   ProfessionalInfo({
     required this.skills,
@@ -141,71 +173,176 @@ class ProfessionalInfo {
     required this.projects,
     required this.jobType,
     required this.trade,
-    required this.graduationYear,
-    required this.cgpa,
     required this.languages,
   });
 
   factory ProfessionalInfo.fromJson(Map<String, dynamic> json) {
-    // Handle experience field - can be either List or Object
+    // Parse skills - can be List or comma-separated string
+    List<String> skillsList = [];
+    final skillsData = json['skills'];
+    if (skillsData != null) {
+      if (skillsData is List) {
+        skillsList = skillsData.map((s) => s.toString()).toList();
+      } else if (skillsData is String) {
+        skillsList = skillsData
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+      }
+    }
+
+    // Parse education - should be a List
+    List<Education> educationList = [];
+    final educationData = json['education'];
+    if (educationData != null && educationData is List) {
+      educationList = educationData
+          .map((edu) => Education.fromJson(edu as Map<String, dynamic>))
+          .toList();
+    }
+
+    // Parse experience - should be a List
     List<Experience> experienceList = [];
     final experienceData = json['experience'];
+    if (experienceData != null && experienceData is List) {
+      experienceList = experienceData
+          .map((exp) => Experience.fromJson(exp as Map<String, dynamic>))
+          .toList();
+    }
 
-    if (experienceData != null) {
-      if (experienceData is List) {
-        // If it's already a list, parse it directly
-        experienceList = experienceData
-            .map((exp) => Experience.fromJson(exp as Map<String, dynamic>))
+    // Parse languages - can be List or comma-separated string
+    List<String> languagesList = [];
+    final languagesData = json['languages'];
+    if (languagesData != null) {
+      if (languagesData is List) {
+        languagesList = languagesData.map((l) => l.toString()).toList();
+      } else if (languagesData is String) {
+        languagesList = languagesData
+            .split(',')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
             .toList();
-      } else if (experienceData is Map<String, dynamic>) {
-        // If it's an object with 'details' field, extract the details array
-        final details = experienceData['details'];
-        if (details is List && details.isNotEmpty) {
-          experienceList = details
-              .map((exp) => Experience.fromJson(exp as Map<String, dynamic>))
-              .toList();
-        }
       }
     }
 
     return ProfessionalInfo(
-      skills: json['skills'] ?? '',
-      education: json['education'] ?? '',
+      skills: skillsList,
+      education: educationList,
       experience: experienceList,
-      projects:
-          (json['projects'] as List<dynamic>?)
-              ?.map((project) => Project.fromJson(project))
+      projects: (json['projects'] as List<dynamic>?)
+              ?.map((project) => Project.fromJson(project as Map<String, dynamic>))
               .toList() ??
           [],
       jobType: json['job_type'] ?? '',
       trade: json['trade'] ?? '',
-      graduationYear: json['graduation_year'] ?? '',
-      cgpa: json['cgpa'] ?? '',
-      languages: json['languages'] ?? '',
+      languages: languagesList,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'skills': skills,
+      'education': education.map((e) => e.toJson()).toList(),
+      'experience': experience.map((e) => e.toJson()).toList(),
+      'projects': projects.map((p) => p.toJson()).toList(),
+      'job_type': jobType,
+      'trade': trade,
+      'languages': languages,
+    };
+  }
+}
+
+class Education {
+  final String qualification;
+  final String institute;
+  final String startYear;
+  final String endYear;
+  final bool isPursuing;
+  final int? pursuingYear;
+  final double? cgpa;
+
+  Education({
+    required this.qualification,
+    required this.institute,
+    required this.startYear,
+    required this.endYear,
+    required this.isPursuing,
+    this.pursuingYear,
+    this.cgpa,
+  });
+
+  factory Education.fromJson(Map<String, dynamic> json) {
+    return Education(
+      qualification: json['qualification'] ?? '',
+      institute: json['institute'] ?? '',
+      startYear: json['start_year']?.toString() ?? '',
+      endYear: json['end_year']?.toString() ?? '',
+      isPursuing: json['is_pursuing'] == true ||
+          json['is_pursuing'] == 1 ||
+          json['is_pursuing'] == '1',
+      pursuingYear: json['pursuing_year'] != null
+          ? (json['pursuing_year'] is int
+              ? json['pursuing_year'] as int
+              : int.tryParse(json['pursuing_year'].toString()))
+          : null,
+      cgpa: json['cgpa'] != null
+          ? (json['cgpa'] is double
+              ? json['cgpa'] as double
+              : double.tryParse(json['cgpa'].toString()))
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'qualification': qualification,
+      'institute': institute,
+      'start_year': startYear,
+      'end_year': endYear,
+      'is_pursuing': isPursuing,
+      'pursuing_year': pursuingYear,
+      'cgpa': cgpa,
+    };
   }
 }
 
 class Experience {
-  final String company;
-  final String role;
-  final String duration;
-  final String description;
+  final String companyName;
+  final String position;
+  final String startDate;
+  final String endDate;
+  final String? companyLocation;
+  final String? description;
 
   Experience({
-    required this.company,
-    required this.role,
-    required this.duration,
-    required this.description,
+    required this.companyName,
+    required this.position,
+    required this.startDate,
+    required this.endDate,
+    this.companyLocation,
+    this.description,
   });
 
   factory Experience.fromJson(Map<String, dynamic> json) {
     return Experience(
-      company: json['company'] ?? '',
-      role: json['role'] ?? '',
-      duration: json['duration'] ?? '',
-      description: json['description'] ?? '',
+      companyName: json['company_name'] ?? '',
+      position: json['position'] ?? '',
+      startDate: json['start_date'] ?? '',
+      endDate: json['end_date'] ?? '',
+      companyLocation: json['company_location'],
+      description: json['description'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'company_name': companyName,
+      'position': position,
+      'start_date': startDate,
+      'end_date': endDate,
+      'company_location': companyLocation,
+      'description': description,
+    };
   }
 }
 
@@ -216,7 +353,17 @@ class Project {
   Project({required this.name, required this.link});
 
   factory Project.fromJson(Map<String, dynamic> json) {
-    return Project(name: json['name'] ?? '', link: json['link'] ?? '');
+    return Project(
+      name: json['name'] ?? '',
+      link: json['link'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'link': link,
+    };
   }
 }
 
@@ -238,19 +385,37 @@ class Documents {
       aadharNumber: json['aadhar_number'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'resume': resume,
+      'certificates': certificates,
+      'aadhar_number': aadharNumber,
+    };
+  }
 }
 
-class SocialLinks {
-  final String portfolioLink;
-  final String linkedinUrl;
+class SocialLink {
+  final String title;
+  final String profileUrl;
 
-  SocialLinks({required this.portfolioLink, required this.linkedinUrl});
+  SocialLink({
+    required this.title,
+    required this.profileUrl,
+  });
 
-  factory SocialLinks.fromJson(Map<String, dynamic> json) {
-    return SocialLinks(
-      portfolioLink: json['portfolio_link'] ?? '',
-      linkedinUrl: json['linkedin_url'] ?? '',
+  factory SocialLink.fromJson(Map<String, dynamic> json) {
+    return SocialLink(
+      title: json['title'] ?? '',
+      profileUrl: json['profile_url'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'profile_url': profileUrl,
+    };
   }
 }
 
@@ -262,44 +427,27 @@ class AdditionalInfo {
   factory AdditionalInfo.fromJson(Map<String, dynamic> json) {
     return AdditionalInfo(bio: json['bio'] ?? '');
   }
-}
 
-class ProfileStatus {
-  final String adminAction;
-  final String createdAt;
-  final String modifiedAt;
-
-  ProfileStatus({
-    required this.adminAction,
-    required this.createdAt,
-    required this.modifiedAt,
-  });
-
-  factory ProfileStatus.fromJson(Map<String, dynamic> json) {
-    return ProfileStatus(
-      adminAction: json['admin_action'] ?? '',
-      createdAt: json['created_at'] ?? '',
-      modifiedAt: json['modified_at'] ?? '',
-    );
+  Map<String, dynamic> toJson() {
+    return {
+      'bio': bio,
+    };
   }
 }
 
 class StudentProfileMeta {
-  final String timestamp;
-  final String apiVersion;
-  final String responseFormat;
+  final String? timestamp;
+  final String? apiVersion;
 
   StudentProfileMeta({
-    required this.timestamp,
-    required this.apiVersion,
-    required this.responseFormat,
+    this.timestamp,
+    this.apiVersion,
   });
 
   factory StudentProfileMeta.fromJson(Map<String, dynamic> json) {
     return StudentProfileMeta(
-      timestamp: json['timestamp'] ?? '',
-      apiVersion: json['api_version'] ?? '',
-      responseFormat: json['response_format'] ?? '',
+      timestamp: json['timestamp']?.toString(),
+      apiVersion: json['api_version']?.toString(),
     );
   }
 }

@@ -83,8 +83,15 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-          // Keep submitting state true until navigation completes
-          context.push(AppRoutes.loginOtpCode);
+          // Navigate to set password code screen (reused for phone login)
+          context.push(
+            AppRoutes.setPasswordCode,
+            extra: {
+              'purpose': 'phone_login',
+              'phoneNumber': state.phoneNumber,
+              'userId': state.userId,
+            },
+          );
         } else if (state is AuthSuccess) {
           debugPrint("🔵 LoginScreen showing success and navigating to popup");
           debugPrint("🔵 AuthSuccess message: ${state.message}");

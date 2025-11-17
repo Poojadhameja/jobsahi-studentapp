@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../core/utils/network_error_helper.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/loaders/jobsahi_loader.dart';
 import '../../../shared/widgets/profile/profile_header_card.dart';
 import '../../../shared/services/location_service.dart';
@@ -53,9 +55,9 @@ class _MenuScreenState extends State<MenuScreen> {
         return '${currentLocation.latitude.toStringAsFixed(4)}, ${currentLocation.longitude.toStringAsFixed(4)}';
       }
 
-      return 'Location not available';
+      return 'Location not provided';
     } catch (e) {
-      return 'Location not available';
+      return 'Location not provided';
     }
   }
 
@@ -143,11 +145,13 @@ class _MenuScreenState extends State<MenuScreen> {
         if (state is ProfileLoading) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: AppConstants.largePadding),
-            child: JobsahiLoader(
-              size: 48,
-              strokeWidth: 3,
-              message: 'Loading profile...',
-              showMessage: true,
+            child: Center(
+              child: JobsahiLoader(
+                size: 48,
+                strokeWidth: 3,
+                message: 'Loading profile...',
+                showMessage: true,
+              ),
             ),
           );
         }
@@ -169,8 +173,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   state.profileImagePath ?? userProfile['profileImage'],
               bio: _extractBio(userProfile['bio']),
               onTap: () => context.push(AppRoutes.profileDetails),
-              showEditButton: true,
-              onEditPressed: () => context.push(AppRoutes.profileEdit),
+              margin: EdgeInsets.zero,
             );
           }
 
@@ -193,6 +196,21 @@ class _MenuScreenState extends State<MenuScreen> {
         }
 
         if (state is ProfileError) {
+          // Check if it's a network error
+          final isNetworkError = NetworkErrorHelper.isNetworkError(state.message);
+          
+          if (isNetworkError) {
+            return NoInternetErrorWidget(
+              errorMessage: state.message,
+              onRetry: () {
+                context.read<ProfileBloc>().add(const LoadProfileDataEvent());
+              },
+              showImage: true,
+              enablePullToRefresh: true,
+            );
+          }
+          
+          // For non-network errors, show fallback with error message
           final fallbackUser = UserData.currentUser;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -201,12 +219,10 @@ class _MenuScreenState extends State<MenuScreen> {
                 name: fallbackUser['name'] ?? 'User Name',
                 email: fallbackUser['email'] ?? 'user@email.com',
                 location: _extractLocation(fallbackUser['location'] ?? '') ??
-                    'Location not available',
+                    'Location not provided',
                 profileImagePath: fallbackUser['profileImage'],
                 bio: _extractBio(fallbackUser['bio']),
                 onTap: () => context.push(AppRoutes.profileDetails),
-                showEditButton: true,
-                onEditPressed: () => context.push(AppRoutes.profileEdit),
               ),
               const SizedBox(height: AppConstants.smallPadding),
               Text(
@@ -248,38 +264,45 @@ class _MenuScreenState extends State<MenuScreen> {
     return Column(
       children: [
         _buildOptionTile(
-          icon: Icons.track_changes,
-          title: 'Job Status / नौकरी की स्थिति',
-          onTap: () {
-            context.push(AppRoutes.jobStatus);
-          },
-        ),
-        _buildOptionTile(
           icon: Icons.timeline,
           title: 'Track Application / आवेदन ट्रैक करें',
           onTap: () {
-            context.push(AppRoutes.applicationTracker);
-          },
-        ),
-        _buildOptionTile(
-          icon: Icons.chat_outlined,
-          title: 'My Chats / आपकी बातचीत',
-          onTap: () {
-            context.push(AppRoutes.messages);
+            context.push('${AppRoutes.applicationTracker}?fromProfile=true');
           },
         ),
         _buildOptionTile(
           icon: Icons.favorite_outline,
-          title: 'Personalize Jobfeed / पसंद की नौकरी',
+          title: 'Personalize Jobfeed / जॉबफ़ीड पर्सनलाइज़ करें',
           onTap: () {
             context.push(AppRoutes.personalizeJobfeed);
+          },
+        ),
+        _buildOptionTile(
+          icon: Icons.help_outline,
+          title: 'FAQs / सामान्य प्रश्न',
+          onTap: () {
+            context.push(AppRoutes.faqs);
+          },
+        ),
+        _buildOptionTile(
+          icon: Icons.info_outline,
+          title: 'About / हमारे बारे में',
+          onTap: () {
+            context.push(AppRoutes.about);
+          },
+        ),
+        _buildOptionTile(
+          icon: Icons.support_agent_outlined,
+          title: 'Contact Us / संपर्क करें',
+          onTap: () {
+            context.push(AppRoutes.contactUs);
           },
         ),
         _buildOptionTile(
           icon: Icons.feedback_outlined,
           title: 'Feedback / प्रतिक्रिया',
           onTap: () {
-            context.push(AppRoutes.helpCenter);
+            context.push(AppRoutes.feedback);
           },
         ),
         _buildOptionTile(
@@ -308,28 +331,53 @@ class _MenuScreenState extends State<MenuScreen> {
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive
-            ? AppConstants.errorColor
-            : AppConstants.textPrimaryColor,
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isDestructive
-              ? AppConstants.errorColor
-              : AppConstants.textPrimaryColor,
-          fontWeight: FontWeight.w500,
+    final borderRadius = BorderRadius.circular(AppConstants.borderRadius);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: borderRadius,
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
+          onTap: onTap,
+          splashColor: isDestructive
+              ? AppConstants.errorColor.withOpacity(0.2)
+              : null,
+          highlightColor: isDestructive
+              ? AppConstants.errorColor.withOpacity(0.1)
+              : null,
+          hoverColor: isDestructive
+              ? AppConstants.errorColor.withOpacity(0.1)
+              : null,
+          child: ListTile(
+            shape: RoundedRectangleBorder(borderRadius: borderRadius),
+            leading: Icon(
+              icon,
+              color: isDestructive
+                  ? AppConstants.errorColor
+                  : AppConstants.textPrimaryColor,
+            ),
+            title: Text(
+              title,
+              style: TextStyle(
+                color: isDestructive
+                    ? AppConstants.errorColor
+                    : AppConstants.textPrimaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            trailing: const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppConstants.textSecondaryColor,
+            ),
+          ),
         ),
       ),
-      trailing: const Icon(
-        Icons.arrow_forward_ios,
-        size: 16,
-        color: AppConstants.textSecondaryColor,
-      ),
-      onTap: onTap,
     );
   }
 

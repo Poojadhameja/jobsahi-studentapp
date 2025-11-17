@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'home_event.dart';
 import 'home_state.dart';
+import '../../../core/utils/network_error_helper.dart';
 import '../../jobs/bloc/jobs_bloc.dart';
 import '../../jobs/bloc/jobs_event.dart' as jobs_events;
 import '../../jobs/bloc/jobs_state.dart' as jobs_states;
@@ -87,7 +88,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }
       }
     } catch (e) {
-      emit(HomeError(message: 'Failed to load home data: ${e.toString()}'));
+      _handleHomeError(e, emit, defaultMessage: 'Failed to load home data');
     }
   }
 
@@ -473,5 +474,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final jobCategory = job['category']?.toString().toLowerCase() ?? '';
       return jobCategory.contains(category.toLowerCase());
     }).toList();
+  }
+
+  /// Helper method to handle errors and emit appropriate error state
+  /// Detects network errors and formats messages accordingly
+  void _handleHomeError(dynamic error, Emitter<HomeState> emit, {String? defaultMessage}) {
+    final errorMessage = NetworkErrorHelper.isNetworkError(error)
+        ? NetworkErrorHelper.getNetworkErrorMessage(error)
+        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
+    
+    emit(HomeError(message: errorMessage));
   }
 }

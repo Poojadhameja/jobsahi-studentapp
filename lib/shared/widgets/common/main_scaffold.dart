@@ -46,7 +46,10 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     // Get current location to determine active tab
-    final String location = GoRouterState.of(context).uri.path;
+    final state = GoRouterState.of(context);
+    final String location = state.uri.path;
+    final bool fromProfileParam =
+        state.uri.queryParameters['fromProfile'] == 'true';
     final int currentIndex = _getCurrentIndex(location);
 
     // Update navigation manager's current tab only if different
@@ -63,7 +66,11 @@ class _MainScaffoldState extends State<MainScaffold> {
       },
       child: Scaffold(
         backgroundColor: AppConstants.cardBackgroundColor,
-        appBar: _buildAppBar(_navigationManager.currentTabIndex),
+        appBar: _buildAppBar(
+          _navigationManager.currentTabIndex,
+          hideForFromProfile: fromProfileParam &&
+              location.startsWith('/application-tracker'),
+        ),
         body: widget.child,
         bottomNavigationBar: CustomBottomNavigation(
           currentIndex: _navigationManager.currentTabIndex,
@@ -74,7 +81,9 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   /// Build appropriate app bar based on current tab
-  PreferredSizeWidget? _buildAppBar(int currentIndex) {
+  PreferredSizeWidget? _buildAppBar(int currentIndex,
+      {bool hideForFromProfile = false}) {
+    if (hideForFromProfile) return null;
     switch (currentIndex) {
       case 0:
         // Home tab - show hamburger menu, search, and filter icon

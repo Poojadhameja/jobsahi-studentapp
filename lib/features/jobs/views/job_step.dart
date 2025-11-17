@@ -22,6 +22,8 @@ class _JobStepScreenState extends State<JobStepScreen> {
   final ApiService _apiService = ApiService();
   final TokenStorage _tokenStorage = TokenStorage.instance;
   bool _isSubmitting = false;
+  int _coverLetterCharCount = 0;
+  bool _isCoverLetterMinReached = false;
 
   @override
   void dispose() {
@@ -113,19 +115,13 @@ class _JobStepScreenState extends State<JobStepScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildJobOverviewSection(widget.job),
-            Container(
-              margin:
-                  const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding),
+            const SizedBox(height: AppConstants.largePadding),
+            Divider(
               height: 1,
-              color: Colors.grey.shade200,
+              thickness: 0.6,
+              color: Colors.grey.shade300,
             ),
-            _buildProgressSection(),
-            Container(
-              margin:
-                  const EdgeInsets.symmetric(vertical: AppConstants.defaultPadding),
-              height: 1,
-              color: Colors.grey.shade200,
-            ),
+            const SizedBox(height: AppConstants.largePadding),
             _buildCoverLetterSection(),
           ],
         ),
@@ -178,73 +174,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
     );
   }
 
-  Widget _buildProgressSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Application Progress / आवेदन प्रगति',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: AppConstants.textPrimaryColor,
-          ),
-        ),
-        const SizedBox(height: AppConstants.defaultPadding),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    'Step 1 of 1',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppConstants.textPrimaryColor,
-                    ),
-                  ),
-                  Text(
-                    '100%',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppConstants.successColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: 1.0,
-                backgroundColor: Colors.grey.shade300,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppConstants.successColor,
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Complete Application / पूर्ण आवेदन',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppConstants.textSecondaryColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  // Application progress section removed as per requirement
 
   Widget _buildCoverLetterSection() {
     return Column(
@@ -256,31 +186,55 @@ class _JobStepScreenState extends State<JobStepScreen> {
             fontSize: 17,
             fontWeight: FontWeight.bold,
             color: AppConstants.textPrimaryColor,
-          ),
-        ),
-        const SizedBox(height: AppConstants.smallPadding),
-        const Text(
-          'Share a short summary about yourself and why you are the right fit for this opportunity.',
-                    style: TextStyle(
-                      fontSize: 12,
-            color: AppConstants.textSecondaryColor,
             ),
           ),
           const SizedBox(height: AppConstants.defaultPadding),
         TextFormField(
           controller: _coverLetterController,
-          maxLines: 8,
-          minLines: 6,
+          maxLines: 14,
+          minLines: 10,
           style: const TextStyle(fontSize: 14),
+          onChanged: (value) {
+            setState(() {
+              _coverLetterCharCount = value.trim().length;
+              _isCoverLetterMinReached = _coverLetterCharCount >= 50;
+            });
+          },
           decoration: InputDecoration(
             hintText:
                 'Introduce yourself, highlight your strengths, and explain how you can add value.',
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+            helperText:
+                'Minimum 50 characters required  •  Chars: $_coverLetterCharCount/50',
+            helperStyle: TextStyle(
+              color:
+                  _isCoverLetterMinReached ? AppConstants.successColor : Colors.grey[600],
+              fontSize: 12,
+            ),
             filled: true,
             fillColor: const Color(0xFFF1F5F9),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1.5,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1.5,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: _isCoverLetterMinReached
+                    ? AppConstants.successColor
+                    : AppConstants.secondaryColor,
+                width: 1.5,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 17,

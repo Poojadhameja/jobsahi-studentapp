@@ -118,7 +118,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-
   TabController get tabController {
     _tabController ??= TabController(
       length: 2,
@@ -166,19 +165,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ),
                       )
                     : homeLoaded != null
-                        ? TabBarView(
-                            controller: tabController,
-                            physics: const ClampingScrollPhysics(),
-                            children: [
-                              _buildAllJobsTab(homeLoaded),
-                              _buildSavedJobsTab(homeLoaded),
-                            ],
-                          )
-                        : const Center(
-                            child: CircularProgressIndicator(
-                              color: AppConstants.secondaryColor,
-                            ),
-                          ),
+                    ? TabBarView(
+                        controller: tabController,
+                        physics: const ClampingScrollPhysics(),
+                        children: [
+                          _buildAllJobsTab(homeLoaded),
+                          _buildSavedJobsTab(homeLoaded),
+                        ],
+                      )
+                    : const Center(
+                        child: CircularProgressIndicator(
+                          color: AppConstants.secondaryColor,
+                        ),
+                      ),
               ),
               // Filter chips overlay - positioned above everything with z-index
               if (!isLoading && homeLoaded != null)
@@ -298,14 +297,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           savedJobs = jobsState.savedJobs;
         } else {
           // Fallback: use jobs from HomeBloc state filtered by savedJobIds
-          savedJobs = state.allJobs
-              .where((job) {
-                final jobId = job['id'] is int
-                    ? job['id'].toString()
-                    : job['id']?.toString() ?? '';
-                return state.savedJobIds.contains(jobId);
-              })
-              .toList();
+          savedJobs = state.allJobs.where((job) {
+            final jobId = job['id'] is int
+                ? job['id'].toString()
+                : job['id']?.toString() ?? '';
+            return state.savedJobIds.contains(jobId);
+          }).toList();
         }
 
         // Show empty state
@@ -362,7 +359,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         // Show saved jobs list
         return RefreshIndicator(
           onRefresh: () async {
-            context.read<JobsBloc>().add(const jobs_events.LoadSavedJobsEvent());
+            context.read<JobsBloc>().add(
+              const jobs_events.LoadSavedJobsEvent(),
+            );
             await Future.delayed(const Duration(milliseconds: 500));
           },
           child: CustomScrollView(
@@ -390,6 +389,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     final jobId = job['id'] is int
                         ? job['id'].toString()
                         : job['id']?.toString() ?? '';
+
+                    // Check if this job is featured
+                    final currentState = context.read<HomeBloc>().state;
+                    final homeLoaded = currentState is HomeLoaded
+                        ? currentState
+                        : null;
+                    final isFeatured =
+                        homeLoaded != null &&
+                        homeLoaded.featuredJobs.any((featuredJob) {
+                          final featuredJobId = featuredJob['id'] is int
+                              ? featuredJob['id'].toString()
+                              : featuredJob['id']?.toString() ?? '';
+                          return featuredJobId == jobId;
+                        });
+
                     return JobCard(
                       job: job,
                       onTap: () {
@@ -404,11 +418,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         // Reload saved jobs after toggle
                         Future.delayed(const Duration(milliseconds: 300), () {
                           context.read<JobsBloc>().add(
-                                const jobs_events.LoadSavedJobsEvent(),
-                              );
+                            const jobs_events.LoadSavedJobsEvent(),
+                          );
                         });
                       },
                       isSaved: true,
+                      isFeatured: isFeatured,
                     );
                   }, childCount: savedJobs.length),
                 ),
@@ -485,13 +500,27 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final job = jobs[index];
+                  final currentState = BlocProvider.of<HomeBloc>(context).state;
+                  final homeLoaded = currentState is HomeLoaded
+                      ? currentState
+                      : null;
+
+                  // Check if this job is featured
+                  final jobId = job['id'] is int
+                      ? job['id'].toString()
+                      : job['id']?.toString() ?? '';
+                  final isFeatured =
+                      homeLoaded != null &&
+                      homeLoaded.featuredJobs.any((featuredJob) {
+                        final featuredJobId = featuredJob['id'] is int
+                            ? featuredJob['id'].toString()
+                            : featuredJob['id']?.toString() ?? '';
+                        return featuredJobId == jobId;
+                      });
+
                   return JobCard(
                     job: job,
                     onTap: () {
-                      // Safely extract job ID
-                      final jobId = job['id'] is int
-                          ? job['id'].toString()
-                          : job['id']?.toString() ?? '';
                       if (jobId.isNotEmpty) {
                         NavigationHelper.navigateTo(
                           AppRoutes.jobDetailsWithId(jobId),
@@ -502,11 +531,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       _handleSaveToggle(job);
                     },
                     isSaved:
-                        BlocProvider.of<HomeBloc>(context).state
-                            is HomeLoaded &&
-                        (BlocProvider.of<HomeBloc>(context).state as HomeLoaded)
-                            .savedJobIds
-                            .contains(job['id']?.toString()),
+                        homeLoaded != null &&
+                        homeLoaded.savedJobIds.contains(jobId),
+                    isFeatured: isFeatured,
                   );
                 }, childCount: jobs.length),
               ),
@@ -747,38 +774,45 @@ class JobList extends StatelessWidget {
   /// Function to check if a job is saved
   final bool Function(Map<String, dynamic>)? isSaved;
 
+  /// List of featured jobs to check against
+  final List<Map<String, dynamic>>? featuredJobs;
+
   const JobList({
     super.key,
     required this.jobs,
     this.onSaveToggle,
     this.isSaved,
+    this.featuredJobs,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: jobs
-          .map<Widget>(
-            (job) => JobCard(
-              job: job,
-              onTap: () {
-                // Navigate to job details screen using NavigationHelper
-                final jobId = job['id'] is int
-                    ? job['id'].toString()
-                    : job['id']?.toString() ?? '';
-                if (jobId.isNotEmpty) {
-                  NavigationHelper.navigateTo(
-                    AppRoutes.jobDetailsWithId(jobId),
-                  );
-                }
-              },
-              onSaveToggle: onSaveToggle != null
-                  ? () => onSaveToggle!(job)
-                  : null,
-              isSaved: isSaved != null ? isSaved!(job) : false,
-            ),
-          )
-          .toList(),
+      children: jobs.map<Widget>((job) {
+        final jobId = job['id'] is int
+            ? job['id'].toString()
+            : job['id']?.toString() ?? '';
+        final isFeatured =
+            featuredJobs != null &&
+            featuredJobs!.any((featuredJob) {
+              final featuredJobId = featuredJob['id'] is int
+                  ? featuredJob['id'].toString()
+                  : featuredJob['id']?.toString() ?? '';
+              return featuredJobId == jobId;
+            });
+
+        return JobCard(
+          job: job,
+          onTap: () {
+            if (jobId.isNotEmpty) {
+              NavigationHelper.navigateTo(AppRoutes.jobDetailsWithId(jobId));
+            }
+          },
+          onSaveToggle: onSaveToggle != null ? () => onSaveToggle!(job) : null,
+          isSaved: isSaved != null ? isSaved!(job) : false,
+          isFeatured: isFeatured,
+        );
+      }).toList(),
     );
   }
 }
@@ -887,12 +921,12 @@ class _FilterModalContentState extends State<_FilterModalContent> {
     // Use predefined options if available, otherwise use dynamic options
     final predefinedOptions = getPredefinedOptions();
     final dynamicOptions = getFilterOptions();
-    final options = predefinedOptions.isNotEmpty 
-        ? predefinedOptions 
+    final options = predefinedOptions.isNotEmpty
+        ? predefinedOptions
         : ['All', ...dynamicOptions];
-    
+
     final currentSelectedValue = selectedValue ?? widget.currentValue;
-    
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -937,9 +971,10 @@ class _FilterModalContentState extends State<_FilterModalContent> {
               itemCount: options.length,
               itemBuilder: (context, index) {
                 final option = options[index];
-                final isSelected = option == currentSelectedValue || 
+                final isSelected =
+                    option == currentSelectedValue ||
                     (option == 'All' && currentSelectedValue == null);
-                
+
                 return InkWell(
                   onTap: () {
                     final valueToApply = option == 'All' ? null : option;

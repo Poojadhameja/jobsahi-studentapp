@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/data/job_data.dart';
+import '../../../shared/data/user_data.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
@@ -30,6 +31,18 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   String? _applicationId;
   bool _isCheckingApplication = false;
 
+  // Store current job data and bookmark state to persist across state changes
+  Map<String, dynamic>? _currentJobData;
+  Map<String, dynamic>? _currentCompanyInfo;
+  Map<String, dynamic>? _currentStatistics;
+  bool? _currentBookmarkState;
+
+  /// Capitalizes the first letter of a string
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,7 +55,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         debugPrint('🔵 [JobDetailsScreen] Extracted job ID: $jobId');
         debugPrint('🔵 [JobDetailsScreen] Loading job details for ID: $jobId');
         context.read<JobsBloc>().add(LoadJobDetailsEvent(jobId: jobId));
-        
+
         // Check if user has already applied for this job
         if (jobId.isNotEmpty) {
           _checkIfApplied(jobId);
@@ -54,7 +67,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   /// Check if user has already applied for this job
   Future<void> _checkIfApplied(String jobId) async {
     if (_isCheckingApplication || jobId.isEmpty) return;
-    
+
     setState(() {
       _isCheckingApplication = true;
     });
@@ -62,30 +75,34 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     try {
       final api = ApiService();
       final appliedJobs = await api.getStudentAppliedJobs();
-      
+
       // Find application for this job
       for (final appliedJob in appliedJobs) {
         // Check multiple possible fields for job ID
-        final appliedJobId = appliedJob['job_id']?.toString() ?? 
-                             appliedJob['id']?.toString();
-        
+        final appliedJobId =
+            appliedJob['job_id']?.toString() ?? appliedJob['id']?.toString();
+
         // Check multiple possible fields for application ID
-        final applicationId = appliedJob['application_id']?.toString() ??
-                             appliedJob['id']?.toString();
-        
+        final applicationId =
+            appliedJob['application_id']?.toString() ??
+            appliedJob['id']?.toString();
+
         // Match job ID (try both string and int comparison)
-        final jobIdMatch = appliedJobId == jobId || 
-                          appliedJobId == jobId.toString() ||
-                          (int.tryParse(appliedJobId ?? '')?.toString() == jobId) ||
-                          (int.tryParse(jobId)?.toString() == appliedJobId);
-        
+        final jobIdMatch =
+            appliedJobId == jobId ||
+            appliedJobId == jobId.toString() ||
+            (int.tryParse(appliedJobId ?? '')?.toString() == jobId) ||
+            (int.tryParse(jobId)?.toString() == appliedJobId);
+
         if (jobIdMatch && applicationId != null && applicationId.isNotEmpty) {
           if (mounted) {
             setState(() {
               _applicationId = applicationId;
             });
           }
-          debugPrint('✅ [JobDetailsScreen] Found application ID: $applicationId for job: $jobId');
+          debugPrint(
+            '✅ [JobDetailsScreen] Found application ID: $applicationId for job: $jobId',
+          );
           break;
         }
       }
@@ -122,190 +139,230 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             ),
           );
         }
+        // Removed snackbars for JobSavedState and JobUnsavedState
       },
       builder: (context, state) {
-        Map<String, dynamic> currentJob = widget.job;
+        // Initialize with widget data or stored data
+        Map<String, dynamic> currentJob = _currentJobData ?? widget.job;
         bool isBookmarked = false;
-        Map<String, dynamic>? companyInfo;
-        Map<String, dynamic>? statistics;
+        Map<String, dynamic>? companyInfo = _currentCompanyInfo;
+        Map<String, dynamic>? statistics = _currentStatistics;
         bool isLoading = false;
+
+        // Get job ID for bookmark check
+        final jobId = currentJob['id']?.toString() ?? '';
 
         if (state is JobsLoading) {
           isLoading = true;
+          // Keep bookmark state from stored data or UserData
+          isBookmarked =
+              _currentBookmarkState ?? UserData.savedJobIds.contains(jobId);
         } else if (state is JobDetailsLoaded) {
+          // Store the loaded data
           currentJob = state.job;
           isBookmarked = state.isBookmarked;
+          companyInfo = state.companyInfo;
+          statistics = state.statistics;
+
+          // Persist data to state variables
+          _currentJobData = currentJob;
+          _currentCompanyInfo = companyInfo;
+          _currentStatistics = statistics;
+          _currentBookmarkState = isBookmarked;
+        } else if (state is JobBookmarkToggled) {
+          // Update bookmark state when toggled - this state is emitted immediately
+          isBookmarked = state.isBookmarked;
+          _currentBookmarkState = isBookmarked;
+          // Keep stored job data - don't change them, just update bookmark
+        } else if (state is JobSavedState) {
+          // Job was saved - update bookmark
+          isBookmarked = true;
+          _currentBookmarkState = true;
+          // Keep stored job data
+        } else if (state is JobUnsavedState) {
+          // Job was unsaved - update bookmark
+          isBookmarked = false;
+          _currentBookmarkState = false;
+          // Keep stored job data
+        } else {
+          // For any other state, use stored data or fallback to UserData
+          if (_currentJobData != null) {
+            currentJob = _currentJobData!;
+            companyInfo = _currentCompanyInfo;
+            statistics = _currentStatistics;
+            isBookmarked =
+                _currentBookmarkState ?? UserData.savedJobIds.contains(jobId);
+          } else {
+            // Fallback to widget data and UserData check
+            currentJob = widget.job;
+            isBookmarked = UserData.savedJobIds.contains(jobId);
+          }
         }
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppConstants.cardBackgroundColor,
           appBar: const SimpleAppBar(
             title: 'Job Details',
             showBackButton: true,
           ),
-          bottomNavigationBar: isLoading ? null : _buildApplyButton(context, currentJob),
+          bottomNavigationBar: isLoading
+              ? null
+              : _buildApplyButton(context, currentJob),
           body: isLoading
               ? const Center(
                   child: CircularProgressIndicator(
                     color: AppConstants.secondaryColor,
                   ),
                 )
-              : Stack(
-                  children: [
-                    DefaultTabController(
-                      length: 3,
-                      child: Column(
-                        children: [
-                          // Job header section
-                          _buildJobHeader(
-                            context,
-                            currentJob,
-                            isBookmarked,
-                            companyInfo,
-                          ),
-
-                          // Tab bar
-                          _buildTabBar(),
-
-                          // Tab content
-                          Expanded(
-                            child: _buildTabContent(
-                              currentJob,
-                              companyInfo,
-                              statistics,
-                            ),
-                          ),
-                        ],
+              : DefaultTabController(
+                  length: 3,
+                  child: Column(
+                    children: [
+                      // Job header section with card
+                      Padding(
+                        padding: const EdgeInsets.all(
+                          AppConstants.defaultPadding,
+                        ),
+                        child: _buildJobHeaderCard(
+                          context,
+                          currentJob,
+                          isBookmarked,
+                          companyInfo,
+                        ),
                       ),
-                    ),
-                  ],
+
+                      // Tab bar (fixed at bottom of header)
+                      _buildTabBar(),
+
+                      // Tab content
+                      Expanded(
+                        child: _buildTabContent(
+                          currentJob,
+                          companyInfo,
+                          statistics,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
         );
       },
     );
   }
 
-  /// Builds the job header section
-  Widget _buildJobHeader(
+  /// Builds the job header card (simple - icon, name, company, save, job ID)
+  Widget _buildJobHeaderCard(
     BuildContext context,
     Map<String, dynamic> currentJob,
     bool isBookmarked,
     Map<String, dynamic>? companyInfo,
   ) {
+    final title = _capitalizeFirst(
+      currentJob['title']?.toString() ?? 'Job Title',
+    );
+    final companyName =
+        companyInfo?['company_name']?.toString() ?? 'Company Name';
+
     return Container(
-      color: AppConstants.backgroundColor,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.defaultPadding,
-        vertical: 12,
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      decoration: BoxDecoration(
+        color: AppConstants.backgroundColor,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              // Company logo
-              CircleAvatar(
-                backgroundColor: const Color(0xFFD7EDFF),
-                radius: 26,
-                backgroundImage: companyInfo?['company_logo'] != null
-                    ? NetworkImage(companyInfo!['company_logo'])
-                    : null,
-                child: companyInfo?['company_logo'] == null
-                    ? const Icon(
-                        Icons.contact_mail_rounded,
-                        color: AppConstants.accentColor,
-                        size: 28,
-                      )
-                    : null,
+          // Left side - Job icon (matching job card style)
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppConstants.successColor,
+              borderRadius: BorderRadius.circular(
+                AppConstants.smallBorderRadius,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            child: const Icon(Icons.work, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: AppConstants.defaultPadding),
+          // Right side - Job details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      currentJob['title'] ?? 'Job Title',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.textPrimaryColor,
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Tooltip(
-                      message: 'Tap to view company details',
-                      child: GestureDetector(
-                        onTap: () {
-                          // Navigate to company details page
-                          final companyName = companyInfo?['company_name'];
-
-                          if (companyName != null &&
-                              JobData.companies.containsKey(companyName)) {
-                            // Navigate directly to AboutCompanyScreen
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => AboutCompanyScreen(
-                                  company: JobData.companies[companyName]!,
-                                ),
-                              ),
-                            );
-                          } else {
-                            // Show a message if company data is not available
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Company details for "$companyName" not available',
-                                ),
-                                backgroundColor: AppConstants.errorColor,
-                              ),
-                            );
-                          }
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              companyInfo?['company_name'] ?? 'Company Name',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppConstants.successColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: AppConstants.successColor,
-                              size: 14,
-                            ),
-                          ],
-                        ),
+                    // Bookmark button
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        context.read<JobsBloc>().add(
+                          ToggleJobBookmarkEvent(
+                            jobId: currentJob['id']?.toString() ?? '',
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                        color: isBookmarked
+                            ? AppConstants.warningColor
+                            : Colors.grey.shade600,
+                        size: 24,
                       ),
                     ),
                   ],
                 ),
-              ),
-              // Bookmark button
-              IconButton(
-                onPressed: () {
-                  context.read<JobsBloc>().add(
-                    ToggleJobBookmarkEvent(jobId: currentJob['id'] ?? ''),
-                  );
-                },
-                icon: Icon(
-                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                  color: isBookmarked ? AppConstants.warningColor : Colors.grey,
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () {
+                    final name = companyInfo?['company_name'];
+                    if (name != null && JobData.companies.containsKey(name)) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AboutCompanyScreen(
+                            company: JobData.companies[name]!,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(
+                    _capitalizeFirst(companyName),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppConstants.successColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                if (currentJob['id'] != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Job ID: ${currentJob['id']}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppConstants.textSecondaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-          const SizedBox(height: AppConstants.defaultPadding),
-          // Chips (Full-Time, Apprenticeship, On-site, etc.)
-          _buildJobTags(currentJob),
-
-          const SizedBox(height: AppConstants.defaultPadding),
-          // Salary and time row (to match screenshot)
-          _buildSalaryAndTimeRow(currentJob),
         ],
       ),
     );
@@ -314,11 +371,19 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   /// Builds the tab bar
   Widget _buildTabBar() {
     return Container(
-      color: AppConstants.backgroundColor,
+      decoration: BoxDecoration(
+        color: AppConstants.backgroundColor,
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade200),
+          bottom: BorderSide(color: Colors.grey.shade200),
+        ),
+      ),
       child: const TabBar(
         labelColor: AppConstants.textPrimaryColor,
         unselectedLabelColor: AppConstants.textSecondaryColor,
-        indicatorColor: AppConstants.textPrimaryColor,
+        indicatorColor: AppConstants.primaryColor,
+        indicatorWeight: 3,
+        labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         tabs: [
           Tab(text: 'About'),
           Tab(text: 'Company'),
@@ -355,148 +420,232 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'About the role',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
+          // About the role section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            decoration: BoxDecoration(
+              color: AppConstants.backgroundColor,
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'About the role',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: AppConstants.smallPadding),
+                Text(
+                  currentJob['about'] ??
+                      (currentJob['description'] ??
+                          'An Electrician Apprentice assists in installing, maintaining, and repairing electrical systems. This is an apprenticeship or training role with exposure to on-field work under supervision.'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: AppConstants.textSecondaryColor,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: AppConstants.smallPadding),
-          Text(
-            currentJob['about'] ??
-                (currentJob['description'] ??
-                    'An Electrician Apprentice assists in installing, maintaining, and repairing electrical systems. This is an apprenticeship or training role with exposure to on-field work under supervision.'),
-            style: const TextStyle(
-              fontSize: 16,
-              height: 1.5,
-              color: AppConstants.textSecondaryColor,
-            ),
-          ),
-          const SizedBox(height: AppConstants.defaultPadding),
-          const Divider(),
           const SizedBox(height: AppConstants.defaultPadding),
 
           // Job Information Section
-          const Text(
-            'Job Information',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            decoration: BoxDecoration(
+              color: AppConstants.backgroundColor,
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Job Information',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: AppConstants.defaultPadding),
+                _buildSimpleJobInformation(currentJob),
+              ],
             ),
           ),
-          const SizedBox(height: AppConstants.smallPadding),
-          _buildSimpleJobInformation(currentJob),
+          const SizedBox(height: AppConstants.defaultPadding),
 
-          const SizedBox(height: AppConstants.defaultPadding),
-          const Divider(),
-          const SizedBox(height: AppConstants.defaultPadding),
-          const Text(
-            'मुख्य जिम्मेदारियाँ (Key Responsibilities)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
+          // Key Responsibilities Section
+          if ((currentJob['responsibilities'] != null &&
+                  (currentJob['responsibilities'] as List).isNotEmpty) ||
+              (currentJob['requirements'] != null &&
+                  (currentJob['requirements'] as List).isNotEmpty) ||
+              (currentJob['skills_required'] != null &&
+                  (currentJob['skills_required'] as List).isNotEmpty)) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.backgroundColor,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Key Requirements',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  _buildKeyResponsibilities(currentJob),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: AppConstants.smallPadding),
-          _buildKeyResponsibilities(currentJob),
+          ],
         ],
       ),
     );
   }
 
-  /// Builds simple job information section
+  /// Builds simple job information section with icons
   Widget _buildSimpleJobInformation(Map<String, dynamic> currentJob) {
+    final salary = currentJob['salary']?.toString() ?? 'Salary not specified';
+    final location =
+        currentJob['location']?.toString() ?? 'Location not specified';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Job Type
-        if (currentJob['tags'] != null &&
-            (currentJob['tags'] as List).isNotEmpty)
-          _buildSimpleInfoRow(
-            'Job Type',
-            (currentJob['tags'] as List).first.toString(),
+        // Salary
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildInfoItemWithIcon(Icons.currency_rupee, 'Salary', salary),
+        ),
+
+        // Location
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildInfoItemWithIcon(
+            Icons.location_on,
+            'Location',
+            location,
           ),
+        ),
 
         // Experience Required
         if (currentJob['experience_required'] != null &&
             currentJob['experience_required'].toString().isNotEmpty)
-          _buildSimpleInfoRow(
-            'Experience Required',
-            currentJob['experience_required'].toString(),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildInfoItemWithIcon(
+              Icons.trending_up,
+              'Experience Required',
+              currentJob['experience_required'].toString(),
+            ),
           ),
 
-        // Skills Required
-        if (currentJob['requirements'] != null &&
-            (currentJob['requirements'] as List).isNotEmpty)
-          _buildSimpleInfoRow(
-            'Skills Required',
-            (currentJob['requirements'] as List).join(', '),
+        // Job Type
+        if (currentJob['job_type'] != null &&
+            currentJob['job_type'].toString().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildInfoItemWithIcon(
+              Icons.work_outline,
+              'Job Type',
+              currentJob['job_type'].toString(),
+            ),
           ),
 
         // Vacancies
         if (currentJob['no_of_vacancies'] != null &&
             currentJob['no_of_vacancies'] > 0)
-          _buildSimpleInfoRow(
-            'Number of Vacancies',
-            currentJob['no_of_vacancies'].toString(),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildInfoItemWithIcon(
+              Icons.people_outline,
+              'Number of Vacancies',
+              currentJob['no_of_vacancies'].toString(),
+            ),
           ),
-
-        // Status
-        if (currentJob['status'] != null &&
-            currentJob['status'].toString().isNotEmpty)
-          _buildSimpleInfoRow('Status', currentJob['status'].toString()),
 
         // Application Deadline
         if (currentJob['application_deadline'] != null &&
             currentJob['application_deadline'].toString().isNotEmpty)
-          _buildSimpleInfoRow(
-            'Application Deadline',
-            _formatSimpleDeadline(currentJob['application_deadline']),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildInfoItemWithIcon(
+              Icons.calendar_today,
+              'Application Deadline',
+              _formatSimpleDeadline(currentJob['application_deadline']),
+            ),
           ),
 
         // Views
         if (currentJob['views'] != null && currentJob['views'] > 0)
-          _buildSimpleInfoRow('Views', currentJob['views'].toString()),
+          _buildInfoItemWithIcon(
+            Icons.visibility_outlined,
+            'Total Views',
+            currentJob['views'].toString(),
+          ),
       ],
     );
   }
 
-  /// Builds a simple info row
-  Widget _buildSimpleInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+  /// Builds an info item with icon (similar to skill test instruction items)
+  Widget _buildInfoItemWithIcon(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppConstants.textPrimaryColor,
-              ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppConstants.successColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
             ),
+            child: Icon(icon, color: AppConstants.successColor, size: 18),
           ),
-          const Text(
-            ': ',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppConstants.textSecondaryColor,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppConstants.textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppConstants.textPrimaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -516,7 +665,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     }
   }
 
-  /// Builds the Company tab
+  /// Builds the Company tab with card layout
   Widget _buildCompanyTab(
     Map<String, dynamic> currentJob,
     Map<String, dynamic>? companyInfo,
@@ -525,164 +674,162 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     final String? aboutCompany =
         companyInfo?['about'] ?? companyInfo?['company_about'];
 
-    final String? website = companyInfo?['website'];
+    final String? website =
+        companyInfo?['website'] ?? companyInfo?['company_website'];
 
-    final String? headquarters = companyInfo?['location'];
+    final String? headquarters =
+        companyInfo?['location'] ?? companyInfo?['company_location'];
 
-    final String? industry = companyInfo?['industry'];
+    final String? industry =
+        companyInfo?['industry'] ?? companyInfo?['company_industry'];
 
     // These fields are not in the API response, so we'll only show them if available
     final String? founded = currentJob['company_founded'];
     final String? size = currentJob['company_size']?.toString();
     final String? revenue = currentJob['company_revenue'];
 
+    final hasAnyData =
+        aboutCompany != null ||
+        website != null ||
+        headquarters != null ||
+        industry != null ||
+        founded != null ||
+        size != null ||
+        revenue != null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Only show "About Company" section if we have company description
+          // About Company card
           if (aboutCompany != null && aboutCompany.isNotEmpty) ...[
-            const Text(
-              'About Company',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppConstants.textPrimaryColor,
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.backgroundColor,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'About Company',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.smallPadding),
+                  Text(
+                    aboutCompany,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppConstants.smallPadding),
-            Text(
-              aboutCompany,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: AppConstants.textSecondaryColor,
-              ),
-            ),
-            const SizedBox(height: AppConstants.defaultPadding),
-            const Divider(),
             const SizedBox(height: AppConstants.defaultPadding),
           ],
 
-          // Only show company info rows if we have data from API
-          if (website != null && website.isNotEmpty)
-            _buildCompanyInfoRow(
-              Icons.public,
-              'Website',
-              website,
-              isClickable: true,
+          // Company Information card
+          if (website != null ||
+              headquarters != null ||
+              industry != null ||
+              founded != null ||
+              size != null ||
+              revenue != null) ...[
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.backgroundColor,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Company Information',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  if (website != null && website.isNotEmpty) ...[
+                    _buildInfoItemWithIcon(Icons.public, 'Website', website),
+                    const SizedBox(height: 12),
+                  ],
+                  if (headquarters != null && headquarters.isNotEmpty) ...[
+                    _buildInfoItemWithIcon(
+                      Icons.location_on_outlined,
+                      'Headquarters',
+                      headquarters,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (industry != null && industry.isNotEmpty) ...[
+                    _buildInfoItemWithIcon(
+                      Icons.business,
+                      'Industry',
+                      industry,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (founded != null && founded.isNotEmpty) ...[
+                    _buildInfoItemWithIcon(
+                      Icons.event_outlined,
+                      'Founded',
+                      founded,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (size != null && size.isNotEmpty) ...[
+                    _buildInfoItemWithIcon(Icons.group_outlined, 'Size', size),
+                    const SizedBox(height: 12),
+                  ],
+                  if (revenue != null && revenue.isNotEmpty)
+                    _buildInfoItemWithIcon(
+                      Icons.attach_money,
+                      'Revenue',
+                      revenue,
+                    ),
+                ],
+              ),
             ),
-          if (website != null && website.isNotEmpty)
-            const SizedBox(height: AppConstants.defaultPadding),
-
-          if (headquarters != null && headquarters.isNotEmpty)
-            _buildCompanyInfoRow(
-              Icons.location_on_outlined,
-              'Headquarters',
-              headquarters,
-            ),
-          if (headquarters != null && headquarters.isNotEmpty)
-            const SizedBox(height: AppConstants.defaultPadding),
-
-          if (industry != null && industry.isNotEmpty)
-            _buildCompanyInfoRow(Icons.business, 'Industry', industry),
-          if (industry != null && industry.isNotEmpty)
-            const SizedBox(height: AppConstants.defaultPadding),
-
-          if (founded != null && founded.isNotEmpty)
-            _buildCompanyInfoRow(Icons.event_outlined, 'Founded', founded),
-          if (founded != null && founded.isNotEmpty)
-            const SizedBox(height: AppConstants.defaultPadding),
-
-          if (size != null && size.isNotEmpty)
-            _buildCompanyInfoRow(Icons.group_outlined, 'Size', size),
-          if (size != null && size.isNotEmpty)
-            const SizedBox(height: AppConstants.defaultPadding),
-
-          if (revenue != null && revenue.isNotEmpty)
-            _buildCompanyInfoRow(Icons.attach_money, 'Revenue', revenue),
+          ],
 
           // Show message if no company data is available
-          if (aboutCompany == null &&
-              website == null &&
-              headquarters == null &&
-              industry == null &&
-              founded == null &&
-              size == null &&
-              revenue == null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  children: [
-                    const Text(
-                      'No company information available',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppConstants.textSecondaryColor,
-                      ),
+          if (!hasAnyData)
+            Container(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.backgroundColor,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text(
+                    'No company information available',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppConstants.textSecondaryColor,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
         ],
       ),
-    );
-  }
-
-  /// Reusable row for a company info item
-  Widget _buildCompanyInfoRow(
-    IconData icon,
-    String label,
-    String value, {
-    bool isClickable = false,
-  }) {
-    // Don't show the row if value is empty
-    if (value.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Row(
-      children: [
-        Icon(icon, color: AppConstants.textSecondaryColor),
-        const SizedBox(width: AppConstants.defaultPadding),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 15,
-              color: AppConstants.textPrimaryColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        if (isClickable && value.startsWith('http'))
-          GestureDetector(
-            onTap: () {
-              // Handle website click - you can implement URL launcher here
-              debugPrint('Opening website: $value');
-            },
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.blue,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          )
-        else
-          Text(
-            value,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppConstants.textSecondaryColor,
-            ),
-          ),
-      ],
     );
   }
 
@@ -975,107 +1122,72 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     );
   }
 
-  /// Builds the job tags section
-  Widget _buildJobTags(Map<String, dynamic> currentJob) {
-    final tags = currentJob['tags'] as List<dynamic>? ?? [];
-
-    return Wrap(
-      spacing: 8,
-      children: tags
-          .map(
-            (tag) => DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 255, 255, 255),
-                borderRadius: BorderRadius.circular(5),
-
-                border: Border.all(color: Color.fromARGB(47, 0, 38, 84)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: Text(
-                  tag.toString(),
-                  style: const TextStyle(
-                    color: AppConstants.textPrimaryColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  /// Builds the salary and time row (matches screenshot layout)
-  Widget _buildSalaryAndTimeRow(Map<String, dynamic> currentJob) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            currentJob['salary'] ?? 'Salary not specified',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppConstants.textSecondaryColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Text(
-          currentJob['time'] ?? '',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppConstants.textSecondaryColor,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Location/time row from previous design is intentionally removed to match screenshot
-
-  /// Key responsibilities list (falls back to available lists)
+  /// Key responsibilities list with icons (similar to skill test instructions)
   Widget _buildKeyResponsibilities(Map<String, dynamic> currentJob) {
+    // Get skills_required first, then requirements, then fallback
+    final List<dynamic> skills =
+        currentJob['skills_required'] as List<dynamic>? ?? [];
+    final List<dynamic> requirements =
+        currentJob['requirements'] as List<dynamic>? ?? [];
     final List<dynamic> responsibilities =
-        (currentJob['responsibilities'] as List<dynamic>?) ??
-        (currentJob['requirements'] as List<dynamic>?) ??
-        (currentJob['benefits'] as List<dynamic>?) ??
-        [];
+        currentJob['responsibilities'] as List<dynamic>? ?? [];
 
-    if (responsibilities.isEmpty) {
-      return const Text(
-        'Details will be provided during the interview process.',
-        style: TextStyle(color: AppConstants.textSecondaryColor),
+    final List<dynamic> items = skills.isNotEmpty
+        ? skills
+        : (requirements.isNotEmpty ? requirements : responsibilities);
+
+    if (items.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: const Text(
+          'Details will be provided during the interview process.',
+          style: TextStyle(
+            color: AppConstants.textSecondaryColor,
+            fontSize: 14,
+          ),
+        ),
       );
     }
 
     return Column(
-      children: responsibilities
+      children: items
           .map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: AppConstants.smallPadding),
+            (item) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 3),
-                    child: Icon(
-                      Icons.circle,
-                      size: 8,
-                      color: AppConstants.accentColor,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppConstants.successColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.check_circle_outline,
+                      color: AppConstants.successColor,
+                      size: 18,
                     ),
                   ),
-                  const SizedBox(width: AppConstants.smallPadding),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       item.toString(),
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         color: AppConstants.textPrimaryColor,
-                        height: 1.45,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -1088,18 +1200,22 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   /// Builds the apply button at the bottom
-  Widget _buildApplyButton(BuildContext context, Map<String, dynamic> currentJob) {
+  Widget _buildApplyButton(
+    BuildContext context,
+    Map<String, dynamic> currentJob,
+  ) {
     // Check if user has already applied for this job
     final applicationData = currentJob['application'] is Map<String, dynamic>
         ? currentJob['application'] as Map<String, dynamic>
         : null;
-  
-    final applicationIdRaw = _applicationId ??
+
+    final applicationIdRaw =
+        _applicationId ??
         currentJob['application_id']?.toString() ??
         applicationData?['application_id']?.toString() ??
         applicationData?['id']?.toString() ??
         currentJob['applicationId']?.toString();
-  
+
     final hasApplied = applicationIdRaw != null && applicationIdRaw.isNotEmpty;
     final applicationId = hasApplied ? applicationIdRaw : '';
 
@@ -1127,7 +1243,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             onPressed: () {
               if (hasApplied) {
                 // Navigate to application detail page
-                _navigateToApplicationDetail(context, applicationId, currentJob);
+                _navigateToApplicationDetail(
+                  context,
+                  applicationId,
+                  currentJob,
+                );
               } else {
                 // Navigate directly to job application step
                 _navigateToJobStep(context);

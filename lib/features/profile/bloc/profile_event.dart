@@ -176,6 +176,8 @@ class UpdateProfileContactInlineEvent extends ProfileEvent {
   final String location;
   final String? gender;
   final String? dateOfBirth;
+  final String? contactEmail;
+  final String? contactPhone;
 
   const UpdateProfileContactInlineEvent({
     required this.email,
@@ -183,24 +185,51 @@ class UpdateProfileContactInlineEvent extends ProfileEvent {
     required this.location,
     this.gender,
     this.dateOfBirth,
+    this.contactEmail,
+    this.contactPhone,
   });
 
   @override
-  List<Object?> get props => [email, phone, location, gender, dateOfBirth];
+  List<Object?> get props => [
+        email,
+        phone,
+        location,
+        gender,
+        dateOfBirth,
+        contactEmail,
+        contactPhone,
+      ];
+}
+
+/// Inline general information update event
+class UpdateProfileGeneralInfoInlineEvent extends ProfileEvent {
+  final String? gender;
+  final String? dateOfBirth;
+  final List<String> languages;
+  final String? aadharNumber;
+
+  const UpdateProfileGeneralInfoInlineEvent({
+    this.gender,
+    this.dateOfBirth,
+    required this.languages,
+    this.aadharNumber,
+  });
+
+  @override
+  List<Object?> get props => [gender, dateOfBirth, languages, aadharNumber];
 }
 
 /// Inline social links update event
+/// Supports array of social links with title and profile_url
 class UpdateProfileSocialLinksInlineEvent extends ProfileEvent {
-  final String? portfolioLink;
-  final String? linkedinUrl;
+  final List<Map<String, dynamic>> socialLinks;
 
   const UpdateProfileSocialLinksInlineEvent({
-    this.portfolioLink,
-    this.linkedinUrl,
+    required this.socialLinks,
   });
 
   @override
-  List<Object?> get props => [portfolioLink, linkedinUrl];
+  List<Object?> get props => [socialLinks];
 }
 
 /// Inline certificates update event

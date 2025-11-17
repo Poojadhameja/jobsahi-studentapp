@@ -37,13 +37,15 @@ import '../../features/jobs/views/about_company.dart';
 import '../../features/jobs/views/job_application_success.dart';
 import '../../features/jobs/views/job_step.dart';
 
+// Interview screens
+import '../../features/interviews/views/interview_detail.dart';
+
 // Profile screens
 import '../../features/profile/views/your_location.dart';
 import '../../features/profile/views/location_permission.dart';
 import '../../features/profile/views/profile_builder_steps.dart';
 import '../../features/profile/views/menu.dart';
 import '../../features/profile/views/profile_details.dart';
-import '../../features/profile/views/job_status.dart';
 import '../../features/profile/views/personalize_jobfeed.dart';
 import '../../features/profile/views/profile_details/profile_edit.dart';
 import '../../features/profile/views/profile_details/experience_edit.dart';
@@ -56,6 +58,9 @@ import '../../features/profile/views/profile_details/profile_summary_edit.dart';
 // Settings screens
 import '../../features/settings/views/settings.dart';
 import '../../features/settings/views/about_page.dart';
+import '../../features/settings/views/contact_us.dart';
+import '../../features/settings/views/feedback_page.dart';
+import '../../features/settings/views/faqs_page.dart';
 import '../../features/settings/views/help_center.dart';
 import '../../features/settings/views/privacy_policy.dart';
 import '../../features/settings/views/terms_conditions.dart';
@@ -111,7 +116,6 @@ class AppRouter {
         AppRoutes.forgotPassword,
         AppRoutes.setPasswordCode,
         AppRoutes.setNewPassword,
-        AppRoutes.changePassword,
       };
 
       // Check if current path is a public route
@@ -165,7 +169,6 @@ class AppRouter {
           AppRoutes.forgotPassword,
           AppRoutes.setPasswordCode,
           AppRoutes.setNewPassword,
-          AppRoutes.changePassword,
         };
 
         if (authRoutes.contains(path)) {
@@ -345,8 +348,11 @@ class AppRouter {
           GoRoute(
             path: '/application-tracker',
             name: 'application-tracker',
-            builder: (context, state) =>
-                const ApplicationTrackerScreen(isFromProfile: false),
+            builder: (context, state) {
+              final fromProfile =
+                  state.uri.queryParameters['fromProfile'] == 'true';
+              return ApplicationTrackerScreen(isFromProfile: fromProfile);
+            },
           ),
           GoRoute(
             path: '/messages',
@@ -423,12 +429,6 @@ class AppRouter {
         path: AppRoutes.personalizeJobfeed,
         name: 'personalizeJobfeed',
         builder: (context, state) => const PersonalizeJobfeedScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.jobStatus,
-        name: 'jobStatus',
-        builder: (context, state) => const JobStatusScreen(),
       ),
 
       GoRoute(
@@ -592,6 +592,21 @@ class AppRouter {
         },
       ),
 
+      GoRoute(
+        path: AppRoutes.interviewDetail,
+        name: 'interviewDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final interviewId = int.tryParse(id) ?? 0;
+          if (interviewId == 0) {
+            return const Scaffold(
+              body: Center(child: Text('Invalid interview ID')),
+            );
+          }
+          return InterviewDetailScreen(interviewId: interviewId);
+        },
+      ),
+
       // ==================== COURSES ROUTES ====================
       GoRoute(
         path: AppRoutes.courseDetails,
@@ -708,11 +723,26 @@ class AppRouter {
         name: 'about',
         builder: (context, state) => const AboutPage(),
       ),
+      GoRoute(
+        path: AppRoutes.contactUs,
+        name: 'contactUs',
+        builder: (context, state) => const ContactUsPage(),
+      ),
 
       GoRoute(
         path: AppRoutes.helpCenter,
         name: 'helpCenter',
         builder: (context, state) => const HelpCenterPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.feedback,
+        name: 'feedback',
+        builder: (context, state) => const FeedbackPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.faqs,
+        name: 'faqs',
+        builder: (context, state) => const FaqsPage(),
       ),
 
       GoRoute(

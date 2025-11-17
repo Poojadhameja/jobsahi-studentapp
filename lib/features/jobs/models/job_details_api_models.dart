@@ -21,6 +21,8 @@ class JobInfoApi {
   final String status;
   final String adminAction;
   final String createdAt;
+  final bool isSaved;
+  final bool isApplied;
 
   const JobInfoApi({
     required this.id,
@@ -38,9 +40,23 @@ class JobInfoApi {
     required this.status,
     required this.adminAction,
     required this.createdAt,
+    this.isSaved = false,
+    this.isApplied = false,
   });
 
   factory JobInfoApi.fromJson(Map<String, dynamic> json) {
+    // Parse is_saved and is_applied (can be int 0/1 or bool)
+    final isSavedValue = json['is_saved'];
+    final isAppliedValue = json['is_applied'];
+    
+    final isSaved = isSavedValue is bool 
+        ? isSavedValue 
+        : (isSavedValue is int ? isSavedValue == 1 : false);
+    
+    final isApplied = isAppliedValue is bool 
+        ? isAppliedValue 
+        : (isAppliedValue is int ? isAppliedValue == 1 : false);
+    
     return JobInfoApi(
       id: json['id'] ?? 0,
       title: json['title']?.toString() ?? '',
@@ -57,6 +73,8 @@ class JobInfoApi {
       status: json['status']?.toString() ?? '',
       adminAction: json['admin_action']?.toString() ?? '',
       createdAt: json['created_at']?.toString() ?? '',
+      isSaved: isSaved,
+      isApplied: isApplied,
     );
   }
 
@@ -95,6 +113,8 @@ class JobInfoApi {
       'status': status,
       'admin_action': adminAction,
       'created_at': createdAt,
+      'is_saved': isSaved ? 1 : 0,
+      'is_applied': isApplied ? 1 : 0,
     };
   }
 

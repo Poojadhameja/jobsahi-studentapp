@@ -10,22 +10,33 @@ import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
 class SetPasswordCodeScreen extends StatefulWidget {
-  const SetPasswordCodeScreen({super.key});
+  final String? purpose; // 'forgot_password' or 'phone_login'
+  final String? email; // For forgot password
+  final String? phoneNumber; // For phone login
+  final int? userId; // User ID for verification
+
+  const SetPasswordCodeScreen({
+    super.key,
+    this.purpose,
+    this.email,
+    this.phoneNumber,
+    this.userId,
+  });
 
   @override
   State<SetPasswordCodeScreen> createState() => _SetPasswordCodeScreenState();
 }
 
 class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
-  /// Controllers for code input fields (6 digits)
+  /// Controllers for code input fields (4 digits)
   final List<TextEditingController> _codeControllers = List.generate(
-    6,
+    4,
     (index) => TextEditingController(),
   );
 
   /// Focus nodes for code input fields
   final List<FocusNode> _codeFocusNodes = List.generate(
-    6,
+    4,
     (index) => FocusNode(),
   );
 
@@ -33,39 +44,80 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
   bool _isVerifying = false;
 
   /// Purpose for OTP verification
-  final String _purpose = 'forgot_password';
+  late String _purpose;
 
-  /// Email address where OTP was sent
+  /// Email address where OTP was sent (for forgot password)
   String _email = '';
+
+  /// Phone number where OTP was sent (for phone login)
+  String _phoneNumber = '';
 
   /// Current OTP value
   String _currentOtp = '';
 
-  /// User ID for password reset
+  /// User ID for verification
   int _userId = 0;
 
   @override
   void initState() {
     super.initState();
-    // Get email and userId from GoRouter extra parameter
+    
+    // Initialize purpose - default to forgot_password if not provided
+    _purpose = widget.purpose ?? 'forgot_password';
+    
+    // Initialize from widget parameters or GoRouter extra
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // First try widget parameters
+      if (widget.email != null) {
+        _email = widget.email!;
+      }
+      if (widget.phoneNumber != null) {
+        _phoneNumber = widget.phoneNumber!;
+      }
+      if (widget.userId != null) {
+        _userId = widget.userId!;
+      }
+      if (widget.purpose != null) {
+        _purpose = widget.purpose!;
+      }
+
+      // Then try GoRouter extra parameter (for backward compatibility)
       final extra = GoRouterState.of(context).extra;
       if (extra is Map<String, dynamic>) {
-        if (extra['email'] != null) {
+        if (extra['email'] != null && _email.isEmpty) {
           setState(() {
             _email = extra['email'] as String;
           });
         }
-        if (extra['userId'] != null) {
+        if (extra['phoneNumber'] != null && _phoneNumber.isEmpty) {
+          setState(() {
+            _phoneNumber = extra['phoneNumber'] as String;
+          });
+        }
+        if (extra['userId'] != null && _userId == 0) {
           setState(() {
             _userId = extra['userId'] as int;
+          });
+        }
+        if (extra['purpose'] != null) {
+          _purpose = extra['purpose'] as String;
+        }
+      }
+
+      // If still no data, try to get from Bloc state (for phone login)
+      if (_purpose == 'phone_login' && (_phoneNumber.isEmpty || _userId == 0)) {
+        final currentState = context.read<AuthBloc>().state;
+        if (currentState is OtpSentState) {
+          setState(() {
+            _phoneNumber = currentState.phoneNumber;
+            _userId = currentState.userId ?? 0;
           });
         }
       }
     });
 
     // Set up focus listeners for each field
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 4; i++) {
       _codeFocusNodes[i].addListener(() => _onFocusChanged(i));
     }
 
@@ -100,6 +152,25 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
             AppRoutes.setNewPassword,
             extra: {'userId': state.userId},
           );
+        } else if (state is OtpVerificationSuccess) {
+          // Handle phone login success
+          if (_purpose == 'phone_login') {
+            setState(() {
+              _isVerifying = false;
+            });
+            _showSuccessSnackBar('OTP verified successfully');
+            context.go(AppRoutes.loginVerifiedPopup);
+          }
+        } else if (state is OtpSentState) {
+          // Handle resend OTP success for phone login
+          if (_purpose == 'phone_login') {
+            setState(() {
+              _phoneNumber = state.phoneNumber;
+              _userId = state.userId ?? _userId;
+              _isVerifying = false;
+            });
+            _showSuccessSnackBar('OTP sent successfully');
+          }
         } else if (state is ResendOtpSuccess) {
           setState(() {
             _isVerifying = false;
@@ -158,9 +229,11 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
-                          "हमने आपके ईमेल पर 6 अंकों का सत्यापन कोड भेजा है",
-                          style: TextStyle(
+                        Text(
+                          _purpose == 'phone_login'
+                              ? "हमने आपके मोबाइल पर 4 अंकों का OTP भेजा है"
+                              : "हमने आपके ईमेल पर 4 अंकों का सत्यापन कोड भेजा है",
+                          style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF4F789B),
                           ),
@@ -196,10 +269,16 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
       children: [
         const SizedBox(height: 20),
 
-        // Email display
+        // Email/Phone display
         Center(
           child: Text(
-            _email.isNotEmpty ? _email : 'Loading...',
+            _purpose == 'phone_login'
+                ? (_phoneNumber.isNotEmpty && _phoneNumber.length == 10
+                    ? '+91 ${_phoneNumber.substring(0, 5)} ${_phoneNumber.substring(5)}'
+                    : _phoneNumber.isNotEmpty
+                        ? '+91 $_phoneNumber'
+                        : 'Loading...')
+                : (_email.isNotEmpty ? _email : 'Loading...'),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -223,7 +302,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
           },
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(6, (index) => _buildCodeField(index)),
+            children: List.generate(4, (index) => _buildCodeField(index)),
           ),
         ),
       ],
@@ -304,7 +383,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
       }
 
       // Move to next field
-      if (index < 5) {
+      if (index < 3) {
         _codeFocusNodes[index + 1].requestFocus();
       }
 
@@ -328,17 +407,17 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
     final cleanValue = pastedValue.replaceAll(RegExp(r'[^0-9]'), '');
 
     // Distribute characters starting from the current field
-    for (int i = 0; i < cleanValue.length && (startIndex + i) < 6; i++) {
+    for (int i = 0; i < cleanValue.length && (startIndex + i) < 4; i++) {
       _codeControllers[startIndex + i].text = cleanValue[i];
     }
 
     // Move focus to the next empty field or the last field
     final nextEmptyIndex = _findNextEmptyField(startIndex);
-    if (nextEmptyIndex < 6) {
+    if (nextEmptyIndex < 4) {
       _codeFocusNodes[nextEmptyIndex].requestFocus();
     } else {
       // All fields are filled, focus on the last field
-      _codeFocusNodes[5].requestFocus();
+      _codeFocusNodes[3].requestFocus();
     }
 
     // Update current OTP
@@ -352,18 +431,18 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
   /// Finds the next empty field starting from the given index
   int _findNextEmptyField(int startIndex) {
-    for (int i = startIndex; i < 6; i++) {
+    for (int i = startIndex; i < 4; i++) {
       if (_codeControllers[i].text.isEmpty) {
         return i;
       }
     }
-    return 6; // All fields are filled
+    return 4; // All fields are filled
   }
 
   /// Handles backspace key press
   void _handleBackspace() {
     // Find the currently focused field
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 4; i++) {
       if (_codeFocusNodes[i].hasFocus) {
         if (_codeControllers[i].text.isNotEmpty) {
           // Clear current field
@@ -381,7 +460,7 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
   /// Handles code submit (Enter key)
   void _handleCodeSubmit(String value, int index) {
-    if (value.isNotEmpty && index < 5) {
+    if (value.isNotEmpty && index < 3) {
       _codeFocusNodes[index + 1].requestFocus();
     } else if (_isAllFieldsFilled()) {
       _verifyCode();
@@ -461,8 +540,8 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
     // Dismiss keyboard instantly
     FocusScope.of(context).unfocus();
 
-    if (_currentOtp.length != 6) {
-      _showErrorSnackBar('Please enter a valid 6-digit code');
+    if (_currentOtp.length != 4) {
+      _showErrorSnackBar('Please enter a valid 4-digit code');
       return;
     }
 
@@ -472,37 +551,71 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
       return;
     }
 
-    // Dispatch OTP verification event to BLoC
-    context.read<AuthBloc>().add(
-      VerifyForgotPasswordOtpEvent(
-        userId: _userId,
-        otp: _currentOtp,
-        purpose: _purpose,
-      ),
-    );
+    // Dispatch OTP verification event to BLoC based on purpose
+    if (_purpose == 'phone_login') {
+      context.read<AuthBloc>().add(
+        VerifyOtpEvent(
+          otp: _currentOtp,
+          phoneNumber: _phoneNumber,
+          userId: _userId,
+        ),
+      );
+    } else {
+      context.read<AuthBloc>().add(
+        VerifyForgotPasswordOtpEvent(
+          userId: _userId,
+          otp: _currentOtp,
+          purpose: _purpose,
+        ),
+      );
+    }
   }
 
   /// Resends the verification code
   void _resendCode() {
-    print('🔵 _resendCode: Email: $_email, Purpose: $_purpose');
+    if (_purpose == 'phone_login') {
+      // Resend OTP for phone login
+      if (_phoneNumber.isNotEmpty) {
+        // Clear all input boxes before resending OTP
+        _clearAllInputBoxes();
 
-    if (_email.isNotEmpty) {
-      // Clear all input boxes before resending OTP
-      _clearAllInputBoxes();
-
-      // Dispatch resend OTP event to BLoC
-      context.read<AuthBloc>().add(
-        ResendOtpEvent(email: _email, purpose: _purpose),
-      );
+        // Dispatch resend OTP event to BLoC
+        context.read<AuthBloc>().add(
+          LoginWithOtpEvent(phoneNumber: _phoneNumber),
+        );
+      } else {
+        // Try to get from state if not stored
+        final currentState = context.read<AuthBloc>().state;
+        if (currentState is OtpSentState) {
+          _phoneNumber = currentState.phoneNumber;
+          _userId = currentState.userId ?? _userId;
+          _clearAllInputBoxes();
+          context.read<AuthBloc>().add(
+            LoginWithOtpEvent(phoneNumber: _phoneNumber),
+          );
+        } else {
+          _showErrorSnackBar('Phone number not available for resending OTP');
+        }
+      }
     } else {
-      print('🔴 _resendCode: Email is empty');
-      _showErrorSnackBar('Email not available for resending OTP');
+      // Resend OTP for forgot password
+      if (_email.isNotEmpty) {
+        // Clear all input boxes before resending OTP
+        _clearAllInputBoxes();
+
+        // Dispatch resend OTP event to BLoC
+        context.read<AuthBloc>().add(
+          ResendOtpEvent(email: _email, purpose: _purpose),
+        );
+      } else {
+        _showErrorSnackBar('Email not available for resending OTP');
+      }
     }
   }
 
   /// Clears all OTP input boxes
   void _clearAllInputBoxes() {
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 4; i++) {
       _codeControllers[i].clear();
     }
     _currentOtp = '';

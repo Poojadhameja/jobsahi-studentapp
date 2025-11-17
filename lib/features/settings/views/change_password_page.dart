@@ -116,46 +116,58 @@ class _ChangePasswordPageViewState extends State<_ChangePasswordPageView> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.largePadding),
-      decoration: BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    return Column(
+      children: [
+        // Back + header block similar to Policy/Terms
+        Container(
+          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Back button
+              IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppConstants.textPrimaryColor,
+                ),
+                onPressed: () => context.pop(),
+              ),
+              const SizedBox(height: 4),
+              // Centered icon and titles
+              Center(
+                child: Column(
+                  children: [
+                    const CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Color(0xFFE0E7EF),
+                      child: Icon(
+                        Icons.lock_outline,
+                        size: 45,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Change Password',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Keep your account secure with a strong password',
+                      style: TextStyle(fontSize: 14, color: Color(0xFF4F789B)),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.lock_outline, size: 48, color: AppConstants.primaryColor),
-          const SizedBox(height: AppConstants.defaultPadding),
-
-          Text(
-            'Change Your Password',
-            style: AppConstants.headingStyle.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: AppConstants.smallPadding),
-
-          Text(
-            'Enter your current password and choose a new one',
-            style: AppConstants.captionStyle.copyWith(
-              color: AppConstants.textSecondaryColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -173,8 +185,8 @@ class _ChangePasswordPageViewState extends State<_ChangePasswordPageView> {
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 1.0),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],

@@ -397,6 +397,14 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
             if (value.length < 6) {
               return AppConstants.passwordTooShort;
             }
+            // Enforce complexity: uppercase, lowercase, digit, special char
+            final hasUppercase = RegExp(r'[A-Z]').hasMatch(value);
+            final hasLowercase = RegExp(r'[a-z]').hasMatch(value);
+            final hasDigit = RegExp(r'[0-9]').hasMatch(value);
+            final hasSpecial = RegExp(r'[^A-Za-z0-9]').hasMatch(value);
+            if (!hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+              return 'Password must include uppercase, lowercase, number, and special character';
+            }
             return null;
           },
         ),

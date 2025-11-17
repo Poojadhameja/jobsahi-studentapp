@@ -230,6 +230,7 @@ class AppConstants {
   // Auth
   static const String createUserEndpoint = '/user/create_user.php';
   static const String loginEndpoint = '/auth/login.php';
+  static const String changePasswordEndpoint = '/auth/change_password.php';
 
   // Location
   static const String updateLocationEndpoint =
@@ -244,6 +245,9 @@ class AppConstants {
   static const String saveJobEndpoint = '/jobs/save_job.php';
   static const String unsaveJobEndpoint = '/jobs/unsave_job.php';
   static const String getSavedJobsEndpoint = '/student/get_saved_jobs.php';
+
+  // Feedback
+  static const String feedbackEndpoint = '/student/feedback.php';
 
   // Other (placeholders)
   static const String signupEndpoint = '/auth/signup';

@@ -27,6 +27,13 @@ abstract class AuthRepository {
     required String otp,
   });
 
+  Future<PhoneLoginResponse> phoneLogin({required String phoneNumber});
+
+  Future<LoginResponse> verifyPhoneLoginOtp({
+    required int userId,
+    required String otp,
+  });
+
   Future<ForgotPasswordResponse> generateOtp({
     required String email,
     required String purpose,
@@ -263,6 +270,92 @@ class AuthRepositoryImpl implements AuthRepository {
       return LoginResponse(
         success: false,
         message: AppConstants.userDoesNotExist,
+      );
+    }
+  }
+
+  @override
+  Future<PhoneLoginResponse> phoneLogin({required String phoneNumber}) async {
+    try {
+      debugPrint('🔵 Sending phone login OTP to: $phoneNumber');
+
+      final response = await _authApiService.phoneLogin(phoneNumber: phoneNumber);
+
+      debugPrint('🔵 Phone Login Repository Response success: ${response.success}');
+      debugPrint('🔵 Phone Login Repository Response message: ${response.message}');
+      debugPrint('🔵 Phone Login Repository Response userId: ${response.userId}');
+      debugPrint('🔵 Phone Login Repository Response expiresIn: ${response.expiresIn}');
+
+      return response;
+    } catch (e) {
+      debugPrint('🔴 Error in phone login repository: $e');
+      return PhoneLoginResponse(
+        success: false,
+        message: 'Failed to send OTP: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<LoginResponse> verifyPhoneLoginOtp({
+    required int userId,
+    required String otp,
+  }) async {
+    try {
+      debugPrint('🔵 Verifying phone login OTP for user: $userId');
+
+      final loginResponse = await _authApiService.verifyPhoneLoginOtp(
+        userId: userId,
+        otp: otp,
+      );
+
+      debugPrint('🔵 Verify Phone Login OTP Repository Response success: ${loginResponse.success}');
+      debugPrint('🔵 Verify Phone Login OTP Repository Response message: ${loginResponse.message}');
+
+      if (loginResponse.success &&
+          loginResponse.user != null &&
+          loginResponse.token != null) {
+        final user = loginResponse.user!;
+
+        // ✅ Role validation - only students can access the app
+        if (user.role != null && user.role != AppConstants.studentRole) {
+          debugPrint(
+            "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
+          );
+          return LoginResponse(
+            success: false,
+            message: AppConstants.userDoesNotExist,
+          );
+        }
+
+        // If role is null, we'll allow access but log a warning
+        if (user.role == null) {
+          debugPrint(
+            "⚠️ Warning: User role is null. Allowing access but this should be investigated.",
+          );
+        }
+
+        await _tokenStorage.storeLoginSession(
+          token: loginResponse.token!,
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          phone: user.phone,
+          role: user.role,
+        );
+
+        _apiService.setAuthToken(loginResponse.token!);
+        debugPrint(
+          "🔵 User data stored successfully with role: ${user.role}",
+        );
+      }
+
+      return loginResponse;
+    } catch (e) {
+      debugPrint('🔴 Error verifying phone login OTP: $e');
+      return LoginResponse(
+        success: false,
+        message: 'Failed to verify OTP: ${e.toString()}',
       );
     }
   }

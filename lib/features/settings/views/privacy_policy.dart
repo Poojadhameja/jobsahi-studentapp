@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../core/utils/app_constants.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
@@ -23,7 +25,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                       Icons.arrow_back,
                       color: AppConstants.textPrimaryColor,
                     ),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => context.go(AppRoutes.settings),
                   ),
                   const SizedBox(height: 4),
 
@@ -51,7 +53,7 @@ class PrivacyPolicyPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         const Text(
-                          "Learn how we protect your personal information",
+                          "Satpuda Group's Jobsahi.com",
                           style: TextStyle(
                             fontSize: 14,
                             color: Color(0xFF4F789B),
@@ -66,35 +68,34 @@ class PrivacyPolicyPage extends StatelessWidget {
               ),
             ),
 
-            // Main content
+            // Main content (styled like About page sections)
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.largePadding,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Personal Identification Information Section
-                    _buildSection(
-                      title: 'Personal Identification Information',
-                      content:
-                          'जब आप हमारी सेवाओं के साथ इंटरैक्ट करते हैं, तो आप जो जानकारी साझा करना चुनते हैं, हम उसे एकत्र कर सकते हैं',
+                    const SizedBox(height: 20),
+                    _buildCardSection(
+                      child: _buildSection(
+                        title: 'Personal Identification Information',
+                        content:
+                            'जब आप हमारी सेवाओं के साथ इंटरैक्ट करते हैं, तो आप जो जानकारी साझा करना चुनते हैं, हम उसे एकत्र कर सकते हैं। इसमें नाम, ईमेल, फोन नंबर, प्रोफाइल विवरण आदि शामिल हो सकते हैं।',
+                      ),
                     ),
-
-                    const SizedBox(height: AppConstants.largePadding),
-
-                    // Non-Personal Identification Information Section
-                    _buildSection(
-                      title: 'Non-Personal Identification Information',
-                      content:
-                          'हम उपयोगकर्ताओं से गैर-व्यक्तिगत जानकारी भी एकत्र कर सकते हैं, जैसे कि ब्राउज़र प्रकार, ऑपरेटिंग सिस्टम, IP एड्रेस, इंटरनेट सेवा प्रदाता, आदि',
+                    const SizedBox(height: 20),
+                    _buildCardSection(
+                      child: _buildSection(
+                        title: 'Non-Personal Identification Information',
+                        content:
+                            'हम गैर-व्यक्तिगत जानकारी भी एकत्र कर सकते हैं, जैसे ब्राउज़र/डिवाइस जानकारी, ऑपरेटिंग सिस्टम, IP एड्रेस और उपयोग पैटर्न ताकि अनुभव सुधारा जा सके।',
+                      ),
                     ),
-
-                    const SizedBox(height: AppConstants.largePadding),
-
-                    // How We Use Collected Information Section
-                    _buildUsageSection(),
-
-                    const SizedBox(height: AppConstants.largePadding),
+                    const SizedBox(height: 20),
+                    _buildCardSection(child: _buildUsageSection()),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -112,7 +113,7 @@ class PrivacyPolicyPage extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: AppConstants.textPrimaryColor,
             letterSpacing: 0.5,
@@ -122,8 +123,9 @@ class PrivacyPolicyPage extends StatelessWidget {
         Text(
           content,
           style: AppConstants.bodyStyle.copyWith(
-            color: const Color(0xFF424242),
-            height: 1.6,
+            color: const Color(0xFF4F789B),
+            height: 1.6, // About page line-height
+            fontSize: 14,
           ),
         ),
       ],
@@ -151,6 +153,26 @@ class PrivacyPolicyPage extends StatelessWidget {
         _buildUsageItem('To monitor the usage of our services'),
         _buildUsageItem('To detect, prevent and address technical issues'),
       ],
+    );
+  }
+
+  Widget _buildCardSection({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 

@@ -7,9 +7,13 @@ import '../../features/profile/bloc/profile_bloc.dart';
 import '../../features/courses/bloc/courses_bloc.dart';
 import '../../features/courses/repository/courses_repository.dart';
 import '../../features/jobs/repositories/jobs_repository.dart';
+import '../../features/interviews/bloc/interviews_bloc.dart';
+import '../../features/interviews/repositories/interviews_repository.dart';
 import '../../features/messages/bloc/messages_bloc.dart';
 import '../../features/settings/bloc/settings_bloc.dart';
 import '../../features/skill_test/bloc/skill_test_bloc.dart';
+import '../../features/feedback/bloc/feedback_bloc.dart';
+import '../../features/feedback/repository/feedback_repository.dart';
 import '../../shared/services/api_service.dart';
 import '../../shared/services/token_storage.dart';
 import '../../shared/services/inactivity_service.dart';
@@ -38,7 +42,10 @@ void _registerBlocs() {
 
   // Jobs BLoCs (register first to avoid circular dependency)
   sl.registerLazySingleton<JobsBloc>(
-    () => JobsBloc(jobsRepository: sl<JobsRepository>()),
+    () => JobsBloc(
+      jobsRepository: sl<JobsRepository>(),
+      interviewsRepository: sl<InterviewsRepository>(),
+    ),
   );
 
   // Home BLoCs (register after JobsBloc)
@@ -52,6 +59,11 @@ void _registerBlocs() {
     () => CoursesBloc(coursesRepository: sl<CoursesRepository>()),
   );
 
+  // Interviews BLoCs
+  sl.registerFactory<InterviewsBloc>(
+    () => InterviewsBloc(interviewsRepository: sl<InterviewsRepository>()),
+  );
+
   // Messages BLoCs
   sl.registerLazySingleton<MessagesBloc>(() => MessagesBloc());
 
@@ -60,6 +72,11 @@ void _registerBlocs() {
 
   // Skill Test BLoCs
   sl.registerLazySingleton<SkillTestBloc>(() => SkillTestBloc());
+
+  // Feedback BLoCs
+  sl.registerFactory<FeedbackBloc>(
+    () => FeedbackBloc(feedbackRepository: sl<FeedbackRepository>()),
+  );
 }
 
 /// Register all repositories
@@ -83,6 +100,16 @@ void _registerRepositories() {
   // Course repositories
   sl.registerLazySingleton<CoursesRepository>(
     () => CoursesRepositoryImpl(apiService: sl<ApiService>()),
+  );
+
+  // Interview repositories
+  sl.registerLazySingleton<InterviewsRepository>(
+    () => InterviewsRepositoryImpl(apiService: sl<ApiService>()),
+  );
+
+  // Feedback repositories
+  sl.registerLazySingleton<FeedbackRepository>(
+    () => FeedbackRepositoryImpl(apiService: sl<ApiService>()),
   );
 
   // Message repositories

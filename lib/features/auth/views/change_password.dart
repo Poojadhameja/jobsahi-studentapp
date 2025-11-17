@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/services/api_service.dart';
+import '../../../shared/services/token_storage.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_routes.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -384,23 +388,51 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       return;
     }
 
+    // Client-side checks
+    final currentPassword = _oldPasswordController.text.trim();
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (newPassword != confirmPassword) {
+      _showErrorDialog('Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      _showErrorDialog('Password must be at least 6 characters');
+      return;
+    }
+    if (newPassword == currentPassword) {
+      _showErrorDialog('New password must be different from current password');
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(milliseconds: 200));
+      // Ensure token is set in ApiService
+      final token = await TokenStorage.instance.getToken();
+      if (token != null && token.isNotEmpty) {
+        ApiService().setAuthToken(token);
+      }
 
-      // TODO: Implement actual password change API call here
-      // await ApiService.changePassword(
-      //   oldPassword: _oldPasswordController.text,
-      //   newPassword: _newPasswordController.text,
-      // );
+      final result = await ApiService().changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
 
-      // Show success message
-      if (mounted) {
+      final ok = result['status'] == true;
+      final message = (result['message'] ?? '').toString();
+
+      if (!mounted) return;
+
+      if (ok) {
         _showSuccessDialog();
+      } else {
+        _showErrorDialog(message.isNotEmpty
+            ? message
+            : 'Failed to change password');
       }
     } catch (e) {
       // Show error message
@@ -436,8 +468,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
+              // Close the dialog first using the root navigator
+              Navigator.of(context, rootNavigator: true).pop();
+              // Then return to previous page (Settings) if available,
+              // fallback to explicit Settings route on web if needed.
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                context.go(AppRoutes.settings);
+              }
             },
             child: Text(
               'OK',

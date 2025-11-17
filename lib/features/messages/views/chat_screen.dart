@@ -4,7 +4,6 @@ import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../bloc/messages_bloc.dart';
 import '../bloc/messages_event.dart';
-import '../bloc/messages_state.dart';
 
 class ChatScreen extends StatelessWidget {
   final Map<String, dynamic> company;
@@ -43,29 +42,44 @@ class _ChatScreenViewState extends State<_ChatScreenView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<MessagesBloc, MessagesState>(
-      builder: (context, state) {
-        List<Map<String, dynamic>> chatMessages = [];
-        if (state is ChatMessagesLoaded) {
-          chatMessages = state.chatMessages;
-        }
-
-        return KeyboardDismissWrapper(
-          child: Scaffold(
-            backgroundColor: AppConstants.cardBackgroundColor,
-            appBar: _buildAppBar(),
-            body: Column(
-              children: [
-                // Chat messages area
-                Expanded(child: _buildChatArea(chatMessages)),
-
-                // Input area
-                _buildInputArea(),
-              ],
-            ),
+    return KeyboardDismissWrapper(
+      child: Scaffold(
+        backgroundColor: AppConstants.cardBackgroundColor,
+        appBar: _buildAppBar(),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.construction_outlined,
+                size: 80,
+                color: AppConstants.textSecondaryColor.withOpacity(0.5),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Coming Soon',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppConstants.textPrimaryColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'We are working on this feature. It will be available soon!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppConstants.textSecondaryColor,
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 

@@ -139,6 +139,10 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
 
                     // Confirm password input
                     _buildConfirmPasswordInput(),
+                    const SizedBox(height: 20),
+
+                    // Password requirements card
+                    _buildPasswordRequirementsCard(),
                     const SizedBox(height: 24),
 
                     // Submit button
@@ -264,6 +268,102 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
           validator: validator,
         ),
         const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  /// Builds the password requirements card
+  Widget _buildPasswordRequirementsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with icon and title
+          Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0B537D),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.info,
+                  size: 16,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Password Requirements',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF144B75),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Requirements list
+          _buildRequirementItem('At least 6 characters long'),
+          const SizedBox(height: 12),
+          _buildRequirementItem('Include uppercase and lowercase letters'),
+          const SizedBox(height: 12),
+          _buildRequirementItem('Include numbers and special characters'),
+          const SizedBox(height: 12),
+          _buildRequirementItem('Avoid common passwords'),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a single requirement item with checkmark
+  Widget _buildRequirementItem(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: const BoxDecoration(
+            color: Color(0xFF5C9A24),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.check,
+            size: 14,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF4F789B),
+              height: 1.4,
+            ),
+          ),
+        ),
       ],
     );
   }

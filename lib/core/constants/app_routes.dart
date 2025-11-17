@@ -125,6 +125,9 @@ class AppRoutes {
   /// Student application detail
   static const String studentApplicationDetail = '/application/details/:id';
 
+  /// Interview detail
+  static const String interviewDetail = '/interviews/details/:id';
+
   // ==================== COURSES ROUTES ====================
 
   /// Course details with dynamic ID
@@ -154,9 +157,12 @@ class AppRoutes {
 
   /// About page
   static const String about = '/settings/about';
+  static const String contactUs = '/settings/contact-us';
 
   /// Help center
   static const String helpCenter = '/settings/help';
+  static const String feedback = '/settings/feedback';
+  static const String faqs = '/settings/faqs';
 
   /// Privacy policy
   static const String privacyPolicy = '/settings/privacy';
@@ -208,4 +214,8 @@ class AppRoutes {
   /// Generate student application detail route with ID
   static String studentApplicationDetailWithId(String id) =>
       '/application/details/$id';
+
+  /// Generate interview detail route with ID
+  static String interviewDetailWithId(String id) =>
+      '/interviews/details/$id';
 }

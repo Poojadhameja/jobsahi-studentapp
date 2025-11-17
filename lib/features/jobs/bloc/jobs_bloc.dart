@@ -6,16 +6,19 @@ import 'jobs_state.dart';
 import '../../../shared/data/job_data.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../core/utils/network_error_helper.dart';
 import '../repositories/jobs_repository.dart';
-import '../models/job.dart';
+import '../models/job.dart' hide CompanyInfo, JobStatistics;
 import '../models/job_detail_models.dart';
 import '../../profile/models/student_profile.dart';
+import '../../interviews/repositories/interviews_repository.dart';
 
 /// Jobs BLoC
 /// Handles all job-related business logic
 class JobsBloc extends Bloc<JobsEvent, JobsState> {
   final JobsRepository _jobsRepository;
   final ApiService _apiService;
+  final InterviewsRepository? _interviewsRepository;
 
   static const List<String> _monthNames = <String>[
     'Jan',
@@ -32,10 +35,14 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     'Dec',
   ];
 
-  JobsBloc({JobsRepository? jobsRepository, ApiService? apiService})
-    : _jobsRepository = jobsRepository ?? _createDefaultRepository(),
-      _apiService = apiService ?? ApiService(),
-      super(const JobsInitial()) {
+  JobsBloc({
+    JobsRepository? jobsRepository,
+    ApiService? apiService,
+    InterviewsRepository? interviewsRepository,
+  }) : _jobsRepository = jobsRepository ?? _createDefaultRepository(),
+       _apiService = apiService ?? ApiService(),
+       _interviewsRepository = interviewsRepository,
+       super(const JobsInitial()) {
     // Register event handlers
     on<LoadJobsEvent>(_onLoadJobs);
     on<SearchJobsEvent>(_onSearchJobs);
@@ -199,7 +206,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           ),
         );
       } else {
-        emit(JobsError(message: 'Failed to load jobs: ${e.toString()}'));
+        _handleJobsError(e, emit, defaultMessage: 'Failed to load jobs');
       }
     }
   }
@@ -271,6 +278,8 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       'description': jobInfo.description,
       'requirements': jobInfo.skillsRequired,
       'skills_required': jobInfo.skillsRequired,
+      'is_saved': jobInfo.isSaved,
+      'is_applied': jobInfo.isApplied,
       'benefits': [
         'Competitive salary',
         'Health insurance',
@@ -291,6 +300,30 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       'selected_applications': statistics.selectedApplications,
       'times_saved': statistics.timesSaved,
       'recruiter_id': companyInfo.recruiterId,
+    };
+  }
+
+  /// Convert CompanyInfo to Map format
+  Map<String, dynamic> _companyInfoToMap(CompanyInfo companyInfo) {
+    return {
+      'recruiter_id': companyInfo.recruiterId,
+      'company_name': companyInfo.companyName,
+      'company_logo': companyInfo.companyLogo,
+      'industry': companyInfo.industry,
+      'website': companyInfo.website,
+      'location': companyInfo.location,
+    };
+  }
+
+  /// Convert JobStatistics to Map format
+  Map<String, dynamic> _statisticsToMap(JobStatistics statistics) {
+    return {
+      'total_views': statistics.totalViews,
+      'total_applications': statistics.totalApplications,
+      'pending_applications': statistics.pendingApplications,
+      'shortlisted_applications': statistics.shortlistedApplications,
+      'selected_applications': statistics.selectedApplications,
+      'times_saved': statistics.timesSaved,
     };
   }
 
@@ -501,10 +534,58 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             emit(currentState.copyWith(savedJobIds: updatedSavedJobIds));
           }
 
+          // Update job details state immediately if on job details screen (before emitting success state)
+          final currentStateBeforeEmit = state;
+          if (currentStateBeforeEmit is JobDetailsLoaded) {
+            final jobDetailsState = currentStateBeforeEmit;
+            final jobId = jobDetailsState.job['id']?.toString() ?? '';
+            if (jobId == event.jobId) {
+              // Update the job map with is_saved = true immediately
+              final updatedJob = Map<String, dynamic>.from(jobDetailsState.job);
+              updatedJob['is_saved'] = true;
+
+              emit(
+                JobDetailsLoaded(
+                  job: updatedJob,
+                  isBookmarked: true,
+                  companyInfo: jobDetailsState.companyInfo,
+                  statistics: jobDetailsState.statistics,
+                ),
+              );
+
+              // Reload in background to sync with server
+              add(LoadJobDetailsEvent(jobId: jobId));
+            }
+          }
+
           // Emit success state
           emit(JobSavedState(jobId: event.jobId));
           debugPrint('✅ [JobsBloc] Job saved successfully');
         } else {
+          // Update job details state immediately if on job details screen (before emitting success state)
+          final currentStateBeforeEmit = state;
+          if (currentStateBeforeEmit is JobDetailsLoaded) {
+            final jobDetailsState = currentStateBeforeEmit;
+            final jobId = jobDetailsState.job['id']?.toString() ?? '';
+            if (jobId == event.jobId) {
+              // Update the job map with is_saved = true immediately
+              final updatedJob = Map<String, dynamic>.from(jobDetailsState.job);
+              updatedJob['is_saved'] = true;
+
+              emit(
+                JobDetailsLoaded(
+                  job: updatedJob,
+                  isBookmarked: true,
+                  companyInfo: jobDetailsState.companyInfo,
+                  statistics: jobDetailsState.statistics,
+                ),
+              );
+
+              // Reload in background to sync with server
+              add(LoadJobDetailsEvent(jobId: jobId));
+            }
+          }
+
           // Emit success state even if not in JobsLoaded state
           emit(JobSavedState(jobId: event.jobId));
         }
@@ -518,6 +599,30 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
 
           emit(currentState.copyWith(savedJobIds: updatedSavedJobIds));
         }
+        // Update job details state immediately if on job details screen (before emitting success state)
+        final currentStateBeforeEmit = state;
+        if (currentStateBeforeEmit is JobDetailsLoaded) {
+          final jobDetailsState = currentStateBeforeEmit;
+          final jobId = jobDetailsState.job['id']?.toString() ?? '';
+          if (jobId == event.jobId) {
+            // Update the job map with is_saved = true immediately
+            final updatedJob = Map<String, dynamic>.from(jobDetailsState.job);
+            updatedJob['is_saved'] = true;
+
+            emit(
+              JobDetailsLoaded(
+                job: updatedJob,
+                isBookmarked: true,
+                companyInfo: jobDetailsState.companyInfo,
+                statistics: jobDetailsState.statistics,
+              ),
+            );
+
+            // Reload in background to sync with server
+            add(LoadJobDetailsEvent(jobId: jobId));
+          }
+        }
+
         emit(JobSavedState(jobId: event.jobId));
       } else if (saveJobResponse.isJobNotFound) {
         // Job not found
@@ -591,6 +696,30 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           );
         }
 
+        // Update job details state immediately if on job details screen (before emitting success state)
+        final currentStateBeforeEmit = state;
+        if (currentStateBeforeEmit is JobDetailsLoaded) {
+          final jobDetailsState = currentStateBeforeEmit;
+          final jobId = jobDetailsState.job['id']?.toString() ?? '';
+          if (jobId == event.jobId) {
+            // Update the job map with is_saved = false immediately
+            final updatedJob = Map<String, dynamic>.from(jobDetailsState.job);
+            updatedJob['is_saved'] = false;
+
+            emit(
+              JobDetailsLoaded(
+                job: updatedJob,
+                isBookmarked: false,
+                companyInfo: jobDetailsState.companyInfo,
+                statistics: jobDetailsState.statistics,
+              ),
+            );
+
+            // Reload in background to sync with server
+            add(LoadJobDetailsEvent(jobId: jobId));
+          }
+        }
+
         // Emit success state
         emit(JobUnsavedState(jobId: event.jobId));
         debugPrint('✅ [JobsBloc] Job unsaved successfully');
@@ -614,6 +743,30 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
               savedJobIds: updatedSavedJobIds,
             ),
           );
+        }
+
+        // Update job details state immediately if on job details screen (before emitting success state)
+        final currentStateBeforeEmit = state;
+        if (currentStateBeforeEmit is JobDetailsLoaded) {
+          final jobDetailsState = currentStateBeforeEmit;
+          final jobId = jobDetailsState.job['id']?.toString() ?? '';
+          if (jobId == event.jobId) {
+            // Update the job map with is_saved = false immediately
+            final updatedJob = Map<String, dynamic>.from(jobDetailsState.job);
+            updatedJob['is_saved'] = false;
+
+            emit(
+              JobDetailsLoaded(
+                job: updatedJob,
+                isBookmarked: false,
+                companyInfo: jobDetailsState.companyInfo,
+                statistics: jobDetailsState.statistics,
+              ),
+            );
+
+            // Reload in background to sync with server
+            add(LoadJobDetailsEvent(jobId: jobId));
+          }
         }
 
         emit(JobUnsavedState(jobId: event.jobId));
@@ -812,13 +965,31 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       if (jobDetailsResponse.status) {
         // Convert JobDetailResponse to Map for UI compatibility
         final jobMap = _jobDetailResponseToMap(jobDetailsResponse);
-        final isBookmarked = UserData.savedJobIds.contains(event.jobId);
+        // Use is_saved from API response (preferred) or fallback to UserData check
+        final isBookmarked = jobDetailsResponse.data.jobInfo.isSaved;
+
+        // Extract company info and statistics separately
+        final companyInfoMap = _companyInfoToMap(
+          jobDetailsResponse.data.companyInfo,
+        );
+        final statisticsMap = _statisticsToMap(
+          jobDetailsResponse.data.statistics,
+        );
 
         debugPrint('🔵 [BLoC] Job details loaded successfully');
         debugPrint('🔵 [BLoC] Job Title: ${jobMap['title']}');
-        debugPrint('🔵 [BLoC] Company: ${jobMap['company_name']}');
+        debugPrint('🔵 [BLoC] Job ID: ${jobMap['id']}');
+        debugPrint('🔵 [BLoC] Company: ${companyInfoMap['company_name']}');
+        debugPrint('🔵 [BLoC] Is Saved: $isBookmarked');
 
-        emit(JobDetailsLoaded(job: jobMap, isBookmarked: isBookmarked));
+        emit(
+          JobDetailsLoaded(
+            job: jobMap,
+            isBookmarked: isBookmarked,
+            companyInfo: companyInfoMap,
+            statistics: statisticsMap,
+          ),
+        );
       } else {
         emit(JobsError(message: jobDetailsResponse.message));
       }
@@ -834,8 +1005,54 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     Emitter<JobsState> emit,
   ) async {
     try {
-      final isCurrentlyBookmarked = UserData.savedJobIds.contains(event.jobId);
+      // Check current bookmark state from multiple sources
+      bool isCurrentlyBookmarked = false;
 
+      // Priority 1: Check JobDetailsLoaded state (for job details screen)
+      if (state is JobDetailsLoaded) {
+        final currentState = state as JobDetailsLoaded;
+        // Check both isBookmarked and is_saved in job data
+        isCurrentlyBookmarked =
+            currentState.isBookmarked ||
+            (currentState.job['is_saved'] == true) ||
+            (currentState.job['is_saved'] == 1);
+      }
+      // Priority 2: Check JobsLoaded state (for job list screen)
+      else if (state is JobsLoaded) {
+        final currentState = state as JobsLoaded;
+        isCurrentlyBookmarked = currentState.savedJobIds.contains(event.jobId);
+      }
+      // Priority 3: Check JobSavedState/JobUnsavedState (recently saved/unsaved)
+      else if (state is JobSavedState) {
+        // If job was just saved, it should be bookmarked
+        final savedState = state as JobSavedState;
+        isCurrentlyBookmarked = savedState.jobId == event.jobId;
+      } else if (state is JobUnsavedState) {
+        // If job was just unsaved, it should not be bookmarked
+        isCurrentlyBookmarked = false;
+      }
+      // Priority 4: Check JobBookmarkToggled state (immediate toggle state)
+      else if (state is JobBookmarkToggled) {
+        // Use the current toggle state (since we're checking before toggling)
+        final toggledState = state as JobBookmarkToggled;
+        isCurrentlyBookmarked = toggledState.jobId == event.jobId
+            ? toggledState.isBookmarked
+            : false;
+      }
+      // Priority 5: Fallback to UserData check (read-only)
+      else {
+        isCurrentlyBookmarked = UserData.savedJobIds.contains(event.jobId);
+      }
+
+      // Emit toggle state immediately for better UX
+      emit(
+        JobBookmarkToggled(
+          jobId: event.jobId,
+          isBookmarked: !isCurrentlyBookmarked,
+        ),
+      );
+
+      // Call appropriate API based on current state
       if (isCurrentlyBookmarked) {
         // Call unsave job API
         add(UnsaveJobEvent(jobId: event.jobId));
@@ -843,20 +1060,6 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         // Call save job API
         add(SaveJobEvent(jobId: event.jobId));
       }
-
-      // Update local state immediately for better UX
-      if (isCurrentlyBookmarked) {
-        UserData.savedJobIds.remove(event.jobId);
-      } else {
-        UserData.savedJobIds.add(event.jobId);
-      }
-
-      emit(
-        JobBookmarkToggled(
-          jobId: event.jobId,
-          isBookmarked: !isCurrentlyBookmarked,
-        ),
-      );
     } catch (e) {
       debugPrint('🔴 [JobsBloc] Error toggling bookmark: $e');
       emit(JobsError(message: 'Failed to toggle bookmark: ${e.toString()}'));
@@ -896,12 +1099,16 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     Emitter<JobsState> emit,
   ) async {
     try {
+      // Emit loading state first
+      emit(const JobsLoading());
+
       final applications = await _apiService.getStudentAppliedJobs();
 
       final appliedJobs = <Map<String, dynamic>>[];
       final interviewJobs = <Map<String, dynamic>>[];
       final offerJobs = <Map<String, dynamic>>[];
 
+      // Process applied jobs (for Applied tab)
       for (final application in applications) {
         final normalized = _normalizeApplicationForTracker(application);
         final statusKey =
@@ -909,11 +1116,50 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
 
         if (_isOfferStatus(statusKey)) {
           offerJobs.add(normalized);
-        } else if (_isInterviewStatus(statusKey)) {
-          interviewJobs.add(normalized);
         } else {
           appliedJobs.add(normalized);
         }
+      }
+
+      // Fetch interviews separately for Shortlisted tab (ONLY from interview API)
+      final interviewsRepo = _interviewsRepository;
+      if (interviewsRepo != null) {
+        try {
+          debugPrint('🔵 [Jobs] Fetching interviews for Shortlisted tab...');
+          final interviewsResponse = await interviewsRepo.getInterviews();
+          if (interviewsResponse.status) {
+            for (final interview in interviewsResponse.data) {
+              // Convert interview to map format for UI
+              final interviewMap = interview.toMap();
+
+              // Add status as "Shortlisted" for all interviews
+              interviewMap['status'] = 'Shortlisted';
+
+              // Ensure all required fields are present
+              interviewMap['title'] = interview.jobTitle;
+              interviewMap['company_name'] = interview.companyName;
+              interviewMap['company'] = interview.companyName;
+
+              debugPrint(
+                '🔵 [Jobs] ✅ Added interview to Shortlisted tab - interview_id: ${interview.interviewId}, job_title: ${interview.jobTitle}',
+              );
+
+              interviewJobs.add(interviewMap);
+            }
+            debugPrint(
+              '🔵 [Jobs] Loaded ${interviewJobs.length} interviews for Shortlisted tab',
+            );
+          } else {
+            debugPrint('🔴 [Jobs] Interviews API returned status: false');
+          }
+        } catch (e) {
+          debugPrint('🔴 [Jobs] Failed to fetch interviews: $e');
+          // Continue without interview data
+        }
+      } else {
+        debugPrint(
+          '🔴 [Jobs] InterviewsRepository is null, cannot fetch interviews',
+        );
       }
 
       emit(
@@ -963,7 +1209,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   ) {
     final statusRaw = application['status']?.toString().toLowerCase() ?? '';
     final statusLabel = _mapApplicationStatusLabel(statusRaw);
-    final jobType = application['job_type']?.toString();
+    final jobType = application['job_type']?.toString() ?? '';
     final salaryText = _formatSalaryRange(
       application['salary_min'],
       application['salary_max'],
@@ -973,40 +1219,109 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     );
     final applicationId = application['application_id']?.toString() ?? '';
     final jobId = application['job_id']?.toString() ?? '';
-    final companyName =
-        application['company_name']?.toString() ??
-        application['company']?.toString() ??
-        'Company';
+
+    // Extract company name - prioritize company_name from API response
+    String companyName = 'Company';
+    final companyNameValue = application['company_name'];
+    if (companyNameValue != null) {
+      final companyNameStr = companyNameValue.toString().trim();
+      if (companyNameStr.isNotEmpty) {
+        companyName = companyNameStr;
+      }
+    }
+    if (companyName == 'Company') {
+      final companyValue = application['company'];
+      if (companyValue != null) {
+        final companyStr = companyValue.toString().trim();
+        if (companyStr.isNotEmpty) {
+          companyName = companyStr;
+        }
+      }
+    }
+
+    // Extract location from API response
+    final locationValue = application['location'];
+    final location =
+        (locationValue != null && locationValue.toString().trim().isNotEmpty)
+        ? locationValue.toString().trim()
+        : 'Location';
+
+    // Extract experience - if not available, format from job_type or default to Fresher
     final experienceRequired =
         application['experience_required']?.toString() ?? '';
+    String experienceDisplay = 'Fresher';
+    if (experienceRequired.isNotEmpty) {
+      experienceDisplay = experienceRequired;
+    } else if (jobType.isNotEmpty) {
+      experienceDisplay = _formatJobType(jobType) ?? 'Fresher';
+    }
+
+    // Extract deadline if available (may not be in API response)
     final deadline = _formatApplicationDate(
       application['application_deadline']?.toString(),
     );
 
+    // Handle interview-specific fields from interview API
+    final scheduledAt = application['scheduled_at']?.toString() ?? '';
+    final interviewMode = application['mode']?.toString() ?? '';
+    final interviewLocation = application['location']?.toString() ?? '';
+    final interviewStatus = application['status']?.toString() ?? '';
+    final interviewId = application['interview_id']?.toString() ?? '';
+
+    // Format interview date/time if available
+    String formattedInterviewDate = '';
+    String formattedInterviewTime = '';
+    if (scheduledAt.isNotEmpty) {
+      try {
+        final dateTime = DateTime.parse(scheduledAt);
+        formattedInterviewDate = _formatApplicationDate(scheduledAt);
+        final hour = dateTime.hour;
+        final minute = dateTime.minute.toString().padLeft(2, '0');
+        final period = hour >= 12 ? 'PM' : 'AM';
+        final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+        formattedInterviewTime = '$displayHour:$minute $period';
+      } catch (e) {
+        formattedInterviewDate = scheduledAt;
+      }
+    }
+
     return <String, dynamic>{
-      'id': applicationId,
+      'id': applicationId.isNotEmpty ? applicationId : interviewId,
       'application_id': applicationId,
+      'interview_id': interviewId,
       'job_id': jobId,
-      'title': application['job_title']?.toString() ?? 'Job Title',
+      'title': (application['job_title']?.toString() ?? 'Job Title').trim(),
       'company_name': companyName,
       'company': companyName,
-      'location': application['location']?.toString() ?? 'Location',
-      'experience': experienceRequired.isNotEmpty
-          ? experienceRequired
-          : _formatJobType(jobType) ?? 'Fresher',
+      'location': interviewLocation.isNotEmpty
+          ? interviewLocation.trim()
+          : location,
+      'experience': experienceDisplay,
       'type': _formatJobType(jobType) ?? 'Full-time',
       'skills': experienceRequired.isNotEmpty
           ? 'Experience: $experienceRequired'
-          : _formatJobType(jobType) ?? 'Full-time',
+          : (_formatJobType(jobType) ?? 'Full-time'),
       'appliedDate': appliedDate,
-      'interviewDate': appliedDate,
-      'positions': deadline != 'Recently'
+      'applied_at': application['applied_at']?.toString() ?? '',
+      'interviewDate': formattedInterviewDate.isNotEmpty
+          ? formattedInterviewDate
+          : appliedDate,
+      'interviewTime': formattedInterviewTime,
+      'scheduled_at': scheduledAt,
+      'mode': interviewMode,
+      'interviewStatus': interviewStatus.isNotEmpty
+          ? interviewStatus
+          : statusRaw,
+      'positions': deadline.isNotEmpty && deadline != 'Recently'
           ? 'Deadline: $deadline'
           : (jobId.isNotEmpty
                 ? 'Job ID: $jobId'
                 : 'Application ID: #$applicationId'),
       'status': statusLabel,
       'salary': salaryText,
+      'salary_min': application['salary_min']?.toString() ?? '',
+      'salary_max': application['salary_max']?.toString() ?? '',
+      'job_type': jobType,
       'raw_status': statusRaw,
     };
   }
@@ -1030,12 +1345,6 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         if (status.isEmpty) return 'Applied';
         return status[0].toUpperCase() + status.substring(1);
     }
-  }
-
-  bool _isInterviewStatus(String status) {
-    return status == 'shortlisted' ||
-        status.contains('interview') ||
-        status == 'screening';
   }
 
   bool _isOfferStatus(String status) {
@@ -1108,10 +1417,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   /// Handle remove saved job
   void _onRemoveSavedJob(RemoveSavedJobEvent event, Emitter<JobsState> emit) {
     try {
-      // Remove from saved job IDs
-      UserData.savedJobIds.remove(event.jobId);
-
-      // Update saved jobs list
+      // Update saved jobs list - remove the job from the list
       final updatedSavedJobs = JobData.savedJobs
           .where((job) => job['id'] != event.jobId)
           .toList();
@@ -1384,7 +1690,17 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
 
       emit(ReviewSubmitted(reviewId: reviewId));
     } catch (e) {
-      emit(JobsError(message: 'Failed to submit review: ${e.toString()}'));
+      _handleJobsError(e, emit, defaultMessage: 'Failed to submit review');
     }
+  }
+
+  /// Helper method to handle errors and emit appropriate error state
+  /// Detects network errors and formats messages accordingly
+  void _handleJobsError(dynamic error, Emitter<JobsState> emit, {String? defaultMessage}) {
+    final errorMessage = NetworkErrorHelper.isNetworkError(error)
+        ? NetworkErrorHelper.getNetworkErrorMessage(error)
+        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
+    
+    emit(JobsError(message: errorMessage));
   }
 }

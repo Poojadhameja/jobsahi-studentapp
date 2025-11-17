@@ -13,6 +13,7 @@ class ProfileHeaderCard extends StatelessWidget {
   final bool showEditButton;
   final VoidCallback? onEditPressed;
   final bool isCompact;
+  final EdgeInsets? margin;
 
   const ProfileHeaderCard({
     super.key,
@@ -25,14 +26,16 @@ class ProfileHeaderCard extends StatelessWidget {
     this.showEditButton = false,
     this.onEditPressed,
     this.isCompact = false,
+    this.margin,
   });
 
   @override
   Widget build(BuildContext context) {
     final hasBio = bio != null && bio!.trim().isNotEmpty;
+    final displayName = _capitalizeEachWord(name);
 
     return Container(
-      margin: const EdgeInsets.all(AppConstants.defaultPadding),
+      margin: margin ?? const EdgeInsets.all(AppConstants.defaultPadding),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -129,7 +132,7 @@ class ProfileHeaderCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            name,
+                            displayName,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: isCompact ? 16 : 20,
@@ -200,19 +203,7 @@ class ProfileHeaderCard extends StatelessWidget {
                         AppConstants.smallBorderRadius,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Profile Brief',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
+                    child: Text(
                           bio!.trim(),
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.92),
@@ -221,8 +212,6 @@ class ProfileHeaderCard extends StatelessWidget {
                           ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -232,6 +221,21 @@ class ProfileHeaderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Capitalize first letter of each word in a name string
+  String _capitalizeEachWord(String input) {
+    if (input.isEmpty) return input;
+    final words = input.trim().split(RegExp(r'\s+'));
+    final capitalized = words
+        .map((word) {
+          if (word.isEmpty) return word;
+          final first = word[0].toUpperCase();
+          final rest = word.length > 1 ? word.substring(1) : '';
+          return '$first$rest';
+        })
+        .join(' ');
+    return capitalized;
   }
 
   Widget _buildDefaultProfileImage(bool isCompact) {

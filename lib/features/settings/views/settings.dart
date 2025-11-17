@@ -40,17 +40,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
 
-                  // Notification icon
-                  IconButton(
-                    icon: const Icon(
-                      Icons.notifications_outlined,
-                      color: AppConstants.textPrimaryColor,
-                    ),
-                    onPressed: () {
-                      // Handle notification tap
-                      context.go(AppRoutes.notificationPermission);
-                    },
-                  ),
+                  // Notification icon removed
                 ],
               ),
             ),
@@ -65,7 +55,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.lock_outline,
                     title: 'Password Change / पासवर्ड बदलें',
                     onTap: () {
-                      context.go(AppRoutes.changePassword);
+                      context.push(AppRoutes.changePassword);
                     },
                   ),
                   _buildSettingItem(
@@ -78,18 +68,10 @@ class SettingsPage extends StatelessWidget {
                   ),
                   _buildSettingItem(
                     context,
-                    icon: Icons.info_outline,
-                    title: 'About / हमारे बारे में',
+                    icon: Icons.privacy_tip_outlined,
+                    title: 'Privacy Policy / गोपनीयता नीति',
                     onTap: () {
-                      context.go(AppRoutes.about);
-                    },
-                  ),
-                  _buildSettingItem(
-                    context,
-                    icon: Icons.help_outline,
-                    title: 'FAQs / सामान्य प्रश्न',
-                    onTap: () {
-                      context.go(AppRoutes.helpCenter);
+                      context.go(AppRoutes.privacyPolicy);
                     },
                   ),
                   _buildSettingItem(
@@ -98,14 +80,6 @@ class SettingsPage extends StatelessWidget {
                     title: 'Terms & Conditions / नियम और शर्तें',
                     onTap: () {
                       context.go(AppRoutes.termsConditions);
-                    },
-                  ),
-                  _buildSettingItem(
-                    context,
-                    icon: Icons.privacy_tip_outlined,
-                    title: 'Privacy Policy / गोपनीयता नीति',
-                    onTap: () {
-                      context.go(AppRoutes.privacyPolicy);
                     },
                   ),
                 ],
@@ -123,16 +97,23 @@ class SettingsPage extends StatelessWidget {
     required String title,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    final borderRadius = BorderRadius.circular(AppConstants.borderRadius);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: borderRadius,
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 4.0),
-        child: Row(
-          children: [
-            Icon(icon, color: AppConstants.primaryColor, size: 24),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
+          child: ListTile(
+            shape: RoundedRectangleBorder(borderRadius: borderRadius),
+            leading: Icon(icon, color: AppConstants.primaryColor, size: 24),
+            title: Text(
                 title,
                 style: TextStyle(
                   fontSize: 16,
@@ -140,13 +121,12 @@ class SettingsPage extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
-            Icon(
+            trailing: const Icon(
               Icons.arrow_forward_ios,
               size: 16,
               color: AppConstants.primaryColor,
             ),
-          ],
+          ),
         ),
       ),
     );
