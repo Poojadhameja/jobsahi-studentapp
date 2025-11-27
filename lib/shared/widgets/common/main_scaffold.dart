@@ -156,23 +156,122 @@ class _MainScaffoldState extends State<MainScaffold> {
   void _showExitConfirmation(BuildContext context) {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Exit App'),
-          content: const Text('Are you sure you want to exit the app?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon and Title
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppConstants.errorColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.exit_to_app_rounded,
+                          color: AppConstants.errorColor,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Exit App',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                          height: 1.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Are you sure you want to exit Jobsahi?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppConstants.textSecondaryColor,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Action buttons
+                Container(height: 1, color: Colors.grey.shade200),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(width: 1, height: 50, color: Colors.grey.shade200),
+                    Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(16),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            SystemNavigator.pop();
+                          },
+                          borderRadius: const BorderRadius.only(
+                            bottomRight: Radius.circular(16),
+                          ),
+                          splashColor: AppConstants.errorColor.withValues(alpha: 0.2),
+                          highlightColor: AppConstants.errorColor.withValues(alpha: 0.1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Exit',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppConstants.errorColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                SystemNavigator.pop();
-              },
-              child: const Text('Exit'),
-            ),
-          ],
+          ),
         );
       },
     );

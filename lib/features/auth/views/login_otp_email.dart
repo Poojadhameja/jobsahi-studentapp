@@ -28,8 +28,6 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
 
   /// 👁 for password toggle
 
-  /// Double back press handling
-  DateTime? _lastBackPressed;
 
   // Add controllers for text fields
   final TextEditingController _mobileController = TextEditingController();
@@ -264,48 +262,134 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
     );
   }
 
-  /// Handle back press with double tap to exit
+  /// Handle back press - show exit confirmation dialog
   void _handleBackPress() {
-    final now = DateTime.now();
-
-    if (_lastBackPressed == null ||
-        now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
-      // First back press - show exit message
-      _lastBackPressed = now;
-      _showExitMessage();
-    } else {
-      // Second back press within 2 seconds - exit app
-      _exitApp();
-    }
+    _showExitConfirmation(context);
   }
 
-  /// Show exit confirmation message
-  void _showExitMessage() {
-    // Create custom overlay with fade animations
-    final overlay = Overlay.of(context);
-    late OverlayEntry overlayEntry;
+  /// Show exit confirmation dialog
+  void _showExitConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon and Title
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppConstants.errorColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.exit_to_app_rounded,
+                          color: AppConstants.errorColor,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Exit App',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                          height: 1.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Are you sure you want to exit Jobsahi?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppConstants.textSecondaryColor,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
 
-    overlayEntry = OverlayEntry(
-      builder: (context) => _CustomExitSnackbar(
-        onDismiss: () {
-          overlayEntry.remove();
-        },
-      ),
+                // Action buttons
+                Container(height: 1, color: Colors.grey.shade200),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(width: 1, height: 50, color: Colors.grey.shade200),
+                    Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(16),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            SystemNavigator.pop();
+                          },
+                          borderRadius: const BorderRadius.only(
+                            bottomRight: Radius.circular(16),
+                          ),
+                          splashColor: AppConstants.errorColor.withValues(alpha: 0.2),
+                          highlightColor: AppConstants.errorColor.withValues(alpha: 0.1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Exit',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppConstants.errorColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
-
-    overlay.insert(overlayEntry);
-
-    // Auto dismiss after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (overlayEntry.mounted) {
-        overlayEntry.remove();
-      }
-    });
-  }
-
-  /// Exit the app
-  void _exitApp() {
-    SystemNavigator.pop();
   }
 
   /// Email / Phone toggle button
@@ -755,90 +839,3 @@ class SignInButton extends StatelessWidget {
   }
 }
 
-/// Custom exit snackbar with fade animations
-class _CustomExitSnackbar extends StatefulWidget {
-  final VoidCallback onDismiss;
-
-  const _CustomExitSnackbar({required this.onDismiss});
-
-  @override
-  State<_CustomExitSnackbar> createState() => _CustomExitSnackbarState();
-}
-
-class _CustomExitSnackbarState extends State<_CustomExitSnackbar>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    // Start animation
-    _animationController.forward();
-
-    // Start fade out after 1.2 seconds
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) {
-        _animationController.reverse().then((_) {
-          widget.onDismiss();
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 167,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Opacity(
-              opacity: _fadeAnimation.value,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: const Text(
-                    'Press back again to exit the app',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}

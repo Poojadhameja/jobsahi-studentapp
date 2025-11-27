@@ -34,6 +34,10 @@ class JobsLoaded extends JobsState {
   final bool showFilters;
   final Set<String> savedJobIds;
   final List<Map<String, dynamic>> featuredJobs;
+  
+  // Application Tracker cached data (to persist across navigation)
+  final List<Map<String, dynamic>>? trackerAppliedJobs;
+  final List<Map<String, dynamic>>? trackerInterviewJobs;
 
   const JobsLoaded({
     required this.allJobs,
@@ -45,6 +49,8 @@ class JobsLoaded extends JobsState {
     this.showFilters = false,
     required this.savedJobIds,
     required this.featuredJobs,
+    this.trackerAppliedJobs,
+    this.trackerInterviewJobs,
   });
 
   @override
@@ -58,6 +64,8 @@ class JobsLoaded extends JobsState {
     showFilters,
     savedJobIds,
     featuredJobs,
+    trackerAppliedJobs,
+    trackerInterviewJobs,
   ];
 
   /// Copy with method for immutable state updates
@@ -71,6 +79,8 @@ class JobsLoaded extends JobsState {
     bool? showFilters,
     Set<String>? savedJobIds,
     List<Map<String, dynamic>>? featuredJobs,
+    List<Map<String, dynamic>>? trackerAppliedJobs,
+    List<Map<String, dynamic>>? trackerInterviewJobs,
   }) {
     return JobsLoaded(
       allJobs: allJobs ?? this.allJobs,
@@ -82,6 +92,8 @@ class JobsLoaded extends JobsState {
       showFilters: showFilters ?? this.showFilters,
       savedJobIds: savedJobIds ?? this.savedJobIds,
       featuredJobs: featuredJobs ?? this.featuredJobs,
+      trackerAppliedJobs: trackerAppliedJobs ?? this.trackerAppliedJobs,
+      trackerInterviewJobs: trackerInterviewJobs ?? this.trackerInterviewJobs,
     );
   }
 }

@@ -18,8 +18,12 @@ class ApiService {
   final Dio _dio = Dio(
     BaseOptions(
       baseUrl: AppConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 15), // Reduced from 30 to 15 seconds
-      receiveTimeout: const Duration(seconds: 15), // Reduced from 30 to 15 seconds
+      connectTimeout: const Duration(
+        seconds: 15,
+      ), // Reduced from 30 to 15 seconds
+      receiveTimeout: const Duration(
+        seconds: 15,
+      ), // Reduced from 30 to 15 seconds
       sendTimeout: const Duration(seconds: 10), // Reduced from 30 to 10 seconds
       headers: {
         'Content-Type': 'application/json',
@@ -448,9 +452,7 @@ extension CoursesApi on ApiService {
     try {
       return await post(
         '/courses/save_course.php',
-        data: {
-          'course_id': courseId,
-        },
+        data: {'course_id': courseId},
       );
     } catch (e) {
       rethrow;
@@ -462,9 +464,7 @@ extension CoursesApi on ApiService {
     try {
       return await post(
         '/courses/unsave_course.php',
-        data: {
-          'course_id': courseId,
-        },
+        data: {'course_id': courseId},
       );
     } catch (e) {
       rethrow;
@@ -476,10 +476,7 @@ extension CoursesApi on ApiService {
     try {
       return await get(
         '/student/get_saved_courses.php',
-        queryParameters: {
-          'limit': limit,
-          'offset': offset,
-        },
+        queryParameters: {'limit': limit, 'offset': offset},
       );
     } catch (e) {
       rethrow;
@@ -521,19 +518,15 @@ extension AuthSettingsApi on ApiService {
       }
 
       // Normalize keys: expect { status: bool, message: string }
-      final status = (jsonData['status'] == true) ||
+      final status =
+          (jsonData['status'] == true) ||
           (jsonData['success'] == true) ||
           (jsonData['result'] == true);
-      final message = (jsonData['message'] ??
-              jsonData['msg'] ??
-              jsonData['error'] ??
-              '')
-          .toString();
+      final message =
+          (jsonData['message'] ?? jsonData['msg'] ?? jsonData['error'] ?? '')
+              .toString();
 
-      return {
-        'status': status,
-        'message': message,
-      };
+      return {'status': status, 'message': message};
     } catch (e) {
       rethrow;
     }
@@ -609,22 +602,22 @@ extension JobsApi on ApiService {
       }
     } catch (e) {
       debugPrint('🔴 [Jobs] Error fetching featured jobs: $e');
-      
+
       // Check for CORS-related errors
       final errorString = e.toString().toLowerCase();
       if (errorString.contains('cors') ||
           errorString.contains('cross-origin') ||
           errorString.contains('network error') ||
-          (e is DioException && 
-           (e.type == DioExceptionType.connectionError ||
-            e.type == DioExceptionType.unknown))) {
+          (e is DioException &&
+              (e.type == DioExceptionType.connectionError ||
+                  e.type == DioExceptionType.unknown))) {
         debugPrint('🔴 [Jobs] Possible CORS error detected');
         throw Exception(
           'CORS Error: Please ensure the server allows cross-origin requests. '
           'If testing on web, the server must include proper CORS headers.',
         );
       }
-      
+
       rethrow;
     }
   }
@@ -726,10 +719,7 @@ extension JobsApi on ApiService {
         payload['cover_letter'] = trimmedCoverLetter;
       }
 
-      final response = await post(
-        '/jobs/job_apply.php',
-        data: payload,
-      );
+      final response = await post('/jobs/job_apply.php', data: payload);
 
       debugPrint(
         '🔵 [Jobs] Job application response status: ${response.statusCode}',
@@ -817,7 +807,8 @@ extension StudentProfileApi on ApiService {
 
       final successFlag = jsonData['success'];
       final statusFlag = jsonData['status'];
-      final isSuccess = successFlag == true ||
+      final isSuccess =
+          successFlag == true ||
           successFlag == 'true' ||
           successFlag == 1 ||
           statusFlag == true ||
@@ -825,8 +816,8 @@ extension StudentProfileApi on ApiService {
           statusFlag == 1;
 
       if (!isSuccess) {
-        final message = jsonData['message']?.toString() ??
-            'Failed to load student profile';
+        final message =
+            jsonData['message']?.toString() ?? 'Failed to load student profile';
         debugPrint('🔴 [StudentProfile] API returned failure: $message');
         throw Exception(message);
       }
@@ -844,12 +835,16 @@ extension StudentProfileApi on ApiService {
         'success': jsonData['success'] ?? true,
         'message': jsonData['message'] ?? '',
         'data': dataPayload,
-        'meta': metaPayload is Map<String, dynamic> ? metaPayload : <String, dynamic>{},
+        'meta': metaPayload is Map<String, dynamic>
+            ? metaPayload
+            : <String, dynamic>{},
       };
 
       final result = StudentProfileResponse.fromJson(normalized);
-      debugPrint('🔵 [StudentProfile] Profiles fetched: '
-          '${result.data.profiles.length}');
+      debugPrint(
+        '🔵 [StudentProfile] Profiles fetched: '
+        '${result.data.profiles.length}',
+      );
       return result;
     } catch (e) {
       debugPrint('🔴 [StudentProfile] Error fetching student profile: $e');
@@ -874,12 +869,16 @@ extension StudentProfileApi on ApiService {
       debugPrint('🔵 [StudentProfile] Payload keys: ${payload.keys.toList()}');
       debugPrint('🔵 [StudentProfile] Payload structure:');
       debugPrint('   personal_info: ${payload['personal_info'] != null}');
-      debugPrint('   professional_info: ${payload['professional_info'] != null}');
+      debugPrint(
+        '   professional_info: ${payload['professional_info'] != null}',
+      );
       debugPrint('   documents: ${payload['documents'] != null}');
-      debugPrint('   social_links: ${payload['social_links'] is List ? 'List (${(payload['social_links'] as List).length} items)' : payload['social_links']?.runtimeType}');
+      debugPrint(
+        '   social_links: ${payload['social_links'] is List ? 'List (${(payload['social_links'] as List).length} items)' : payload['social_links']?.runtimeType}',
+      );
       debugPrint('   additional_info: ${payload['additional_info'] != null}');
       debugPrint('   contact_info: ${payload['contact_info'] != null}');
-      
+
       // Log social_links structure for debugging
       if (payload['social_links'] is List) {
         final socialLinks = payload['social_links'] as List;
@@ -887,11 +886,13 @@ extension StudentProfileApi on ApiService {
         for (int i = 0; i < socialLinks.length; i++) {
           final link = socialLinks[i];
           if (link is Map) {
-            debugPrint('   Link $i: title="${link['title']}", profile_url="${link['profile_url']}"');
+            debugPrint(
+              '   Link $i: title="${link['title']}", profile_url="${link['profile_url']}"',
+            );
           }
         }
       }
-      
+
       final response = await put(
         AppConstants.updateStudentProfileEndpoint,
         data: payload,
@@ -903,18 +904,16 @@ extension StudentProfileApi on ApiService {
       debugPrint(
         '🔵 [StudentProfile] Update Response Type: ${response.data?.runtimeType ?? 'null'}',
       );
-      debugPrint(
-        '🔵 [StudentProfile] Update Response Data: ${response.data}',
-      );
+      debugPrint('🔵 [StudentProfile] Update Response Data: ${response.data}');
 
       final rawData = response.data;
-      
+
       // Handle null response
       if (rawData == null) {
         debugPrint('🔴 [StudentProfile] Response data is null');
         throw Exception('Server returned an empty response');
       }
-      
+
       late final Map<String, dynamic> jsonData;
 
       if (rawData is Map<String, dynamic>) {
@@ -924,45 +923,65 @@ extension StudentProfileApi on ApiService {
           debugPrint('🔴 [StudentProfile] Response string is empty');
           throw Exception('Server returned an empty response');
         }
-        
+
         // Check if response is HTML (PHP error page) instead of JSON
         final trimmedResponse = rawData.trim();
-        if (trimmedResponse.startsWith('<') || trimmedResponse.startsWith('<!')) {
-          debugPrint('🔴 [StudentProfile] Server returned HTML instead of JSON');
-          debugPrint('🔴 [StudentProfile] HTML Response (first 500 chars): ${trimmedResponse.substring(0, trimmedResponse.length > 500 ? 500 : trimmedResponse.length)}');
-          
+        if (trimmedResponse.startsWith('<') ||
+            trimmedResponse.startsWith('<!')) {
+          debugPrint(
+            '🔴 [StudentProfile] Server returned HTML instead of JSON',
+          );
+          debugPrint(
+            '🔴 [StudentProfile] HTML Response (first 500 chars): ${trimmedResponse.substring(0, trimmedResponse.length > 500 ? 500 : trimmedResponse.length)}',
+          );
+
           // Try to extract error message from HTML
-          String errorMessage = 'Server returned an error page instead of JSON response';
-          if (trimmedResponse.contains('<b>') && trimmedResponse.contains('</b>')) {
+          String errorMessage =
+              'Server returned an error page instead of JSON response';
+          if (trimmedResponse.contains('<b>') &&
+              trimmedResponse.contains('</b>')) {
             final startIndex = trimmedResponse.indexOf('<b>') + 3;
             final endIndex = trimmedResponse.indexOf('</b>', startIndex);
             if (endIndex > startIndex) {
-              errorMessage = trimmedResponse.substring(startIndex, endIndex).trim();
+              errorMessage = trimmedResponse
+                  .substring(startIndex, endIndex)
+                  .trim();
             }
-          } else if (trimmedResponse.contains('Fatal error') || trimmedResponse.contains('Warning')) {
+          } else if (trimmedResponse.contains('Fatal error') ||
+              trimmedResponse.contains('Warning')) {
             // Extract PHP error message
-            final errorMatch = RegExp(r'(Fatal error|Warning|Parse error|Notice):\s*(.+?)(?:\n|$)').firstMatch(trimmedResponse);
+            final errorMatch = RegExp(
+              r'(Fatal error|Warning|Parse error|Notice):\s*(.+?)(?:\n|$)',
+            ).firstMatch(trimmedResponse);
             if (errorMatch != null) {
               errorMessage = errorMatch.group(2)?.trim() ?? errorMessage;
             }
           }
-          
-          throw Exception('Server error: $errorMessage. Please check server logs.');
+
+          throw Exception(
+            'Server error: $errorMessage. Please check server logs.',
+          );
         }
-        
+
         try {
           jsonData = jsonDecode(rawData) as Map<String, dynamic>;
         } catch (e) {
           debugPrint('🔴 [StudentProfile] Failed to decode response: $e');
-          debugPrint('🔴 [StudentProfile] Raw response string (first 500 chars): ${rawData.length > 500 ? rawData.substring(0, 500) : rawData}');
-          throw Exception('Invalid response format from server: ${e.toString()}');
+          debugPrint(
+            '🔴 [StudentProfile] Raw response string (first 500 chars): ${rawData.length > 500 ? rawData.substring(0, 500) : rawData}',
+          );
+          throw Exception(
+            'Invalid response format from server: ${e.toString()}',
+          );
         }
       } else {
         debugPrint(
           '🔴 [StudentProfile] Unexpected response type: ${rawData.runtimeType}',
         );
         debugPrint('🔴 [StudentProfile] Response value: $rawData');
-        throw Exception('Unexpected response format from server. Expected Map or String, got ${rawData.runtimeType}');
+        throw Exception(
+          'Unexpected response format from server. Expected Map or String, got ${rawData.runtimeType}',
+        );
       }
 
       final result = ProfileUpdateResponse.fromJson(jsonData);
@@ -1002,11 +1021,11 @@ extension StudentApplicationsApi on ApiService {
       }
 
       final statusFlag = jsonData['status'];
-      final isSuccess = statusFlag == true ||
+      final isSuccess =
+          statusFlag == true ||
           statusFlag == 1 ||
           statusFlag == '1' ||
-          (statusFlag is String &&
-              statusFlag.toLowerCase() == 'true');
+          (statusFlag is String && statusFlag.toLowerCase() == 'true');
 
       if (!isSuccess) {
         final message =
@@ -1053,7 +1072,8 @@ extension StudentApplicationsApi on ApiService {
       }
 
       final statusFlag = jsonData['status'];
-      final isSuccess = statusFlag == true ||
+      final isSuccess =
+          statusFlag == true ||
           statusFlag == 1 ||
           statusFlag == '1' ||
           (statusFlag is String && statusFlag.toLowerCase() == 'true');
@@ -1072,7 +1092,9 @@ extension StudentApplicationsApi on ApiService {
 
       throw Exception('Invalid application detail payload');
     } catch (e) {
-      debugPrint('🔴 [StudentApplications] Error fetching application detail: $e');
+      debugPrint(
+        '🔴 [StudentApplications] Error fetching application detail: $e',
+      );
       rethrow;
     }
   }
@@ -1099,7 +1121,8 @@ extension StudentApplicationsApi on ApiService {
       }
 
       final statusFlag = jsonData['status'];
-      final isSuccess = statusFlag == true ||
+      final isSuccess =
+          statusFlag == true ||
           statusFlag == 1 ||
           statusFlag == '1' ||
           (statusFlag is String && statusFlag.toLowerCase() == 'true');
@@ -1141,10 +1164,7 @@ extension StudentApplicationsApi on ApiService {
 
       final payload = {'attempts': attempts};
 
-      final response = await post(
-        '/student/skill-attempts.php',
-        data: payload,
-      );
+      final response = await post('/student/skill-attempts.php', data: payload);
 
       final rawData = response.data;
       late final Map<String, dynamic> jsonData;
@@ -1158,7 +1178,8 @@ extension StudentApplicationsApi on ApiService {
       }
 
       final statusFlag = jsonData['status'];
-      final isSuccess = statusFlag == true ||
+      final isSuccess =
+          statusFlag == true ||
           statusFlag == 1 ||
           statusFlag == '1' ||
           (statusFlag is String && statusFlag.toLowerCase() == 'true');
@@ -1167,7 +1188,8 @@ extension StudentApplicationsApi on ApiService {
       result['success'] = isSuccess;
       if (!isSuccess) {
         final message =
-            jsonData['message']?.toString() ?? 'Failed to submit skill attempts';
+            jsonData['message']?.toString() ??
+            'Failed to submit skill attempts';
         result['error_message'] = message;
       }
 
@@ -1200,7 +1222,8 @@ extension StudentApplicationsApi on ApiService {
       }
 
       final statusFlag = jsonData['status'];
-      final isSuccess = statusFlag == true ||
+      final isSuccess =
+          statusFlag == true ||
           statusFlag == 1 ||
           statusFlag == '1' ||
           (statusFlag is String && statusFlag.toLowerCase() == 'true');

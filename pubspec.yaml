@@ -104,6 +104,7 @@ flutter:
     - assets/images/logo/
     - assets/images/onboarding/
     - assets/images/home/
+    - assets/images/banner/
     - assets/images/company/
     - assets/images/social/
     - assets/images/profile/

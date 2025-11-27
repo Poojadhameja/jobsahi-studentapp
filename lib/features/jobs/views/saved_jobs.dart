@@ -9,20 +9,32 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
-import '../../../core/di/injection_container.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
 import '../bloc/jobs_state.dart';
 
-class SavedJobsScreen extends StatelessWidget {
+class SavedJobsScreen extends StatefulWidget {
   const SavedJobsScreen({super.key});
 
   @override
+  State<SavedJobsScreen> createState() => _SavedJobsScreenState();
+}
+
+class _SavedJobsScreenState extends State<SavedJobsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load saved jobs when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<JobsBloc>().add(const LoadSavedJobsEvent());
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<JobsBloc>()..add(const LoadSavedJobsEvent()),
-      child: const _SavedJobsScreenView(),
-    );
+    return const _SavedJobsScreenView();
   }
 }
 
@@ -63,9 +75,7 @@ class _SavedJobsScreenView extends StatelessWidget {
                 title: 'Saved jobs',
                 showBackButton: true,
               ),
-              body: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              body: const Center(child: CircularProgressIndicator()),
             );
           }
 
@@ -98,7 +108,9 @@ class _SavedJobsScreenView extends StatelessWidget {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        context.read<JobsBloc>().add(const LoadSavedJobsEvent());
+                        context.read<JobsBloc>().add(
+                          const LoadSavedJobsEvent(),
+                        );
                       },
                       child: const Text('Retry'),
                     ),
@@ -152,13 +164,16 @@ class _SavedJobsScreenView extends StatelessWidget {
                     ),
                   )
                 : RefreshIndicator(
+                    color: AppConstants.successColor,
                     onRefresh: () async {
                       context.read<JobsBloc>().add(const LoadSavedJobsEvent());
                       // Wait a bit for the state to update
                       await Future.delayed(const Duration(milliseconds: 500));
                     },
                     child: ListView.separated(
-                      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                      padding: const EdgeInsets.all(
+                        AppConstants.defaultPadding,
+                      ),
                       itemCount: savedJobs.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
@@ -166,19 +181,21 @@ class _SavedJobsScreenView extends StatelessWidget {
                         return JobCard(
                           job: job,
                           onTap: () => context.go(
-                            AppRoutes.jobDetailsWithId(job['id']?.toString() ?? ''),
+                            AppRoutes.jobDetailsWithId(
+                              job['id']?.toString() ?? '',
+                            ),
                           ),
                           onSaveToggle: () {
                             // Handle unsave job
                             final jobId = job['id']?.toString();
                             if (jobId != null) {
                               context.read<JobsBloc>().add(
-                                    UnsaveJobEvent(jobId: jobId),
-                                  );
+                                UnsaveJobEvent(jobId: jobId),
+                              );
                               // Reload saved jobs after unsaving
                               context.read<JobsBloc>().add(
-                                    const LoadSavedJobsEvent(),
-                                  );
+                                const LoadSavedJobsEvent(),
+                              );
                             }
                           },
                           isSaved: true,

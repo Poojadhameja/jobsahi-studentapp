@@ -40,8 +40,8 @@ class JobCard extends StatefulWidget {
 }
 
 class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
-  late AnimationController _shineController;
-  late Animation<double> _shineAnimation;
+  AnimationController? _shineController;
+  Animation<double>? _shineAnimation;
 
   @override
   void initState() {
@@ -51,17 +51,15 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
         vsync: this,
         duration: const Duration(seconds: 3),
       )..repeat();
-      _shineAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(
-        CurvedAnimation(parent: _shineController, curve: Curves.easeInOut),
+      _shineAnimation = Tween<double>(begin: -1.5, end: 1.5).animate(
+        CurvedAnimation(parent: _shineController!, curve: Curves.linear),
       );
     }
   }
 
   @override
   void dispose() {
-    if (widget.isFeatured) {
-      _shineController.dispose();
-    }
+    _shineController?.dispose();
     super.dispose();
   }
 
@@ -163,23 +161,25 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(
                     AppConstants.borderRadius,
                   ),
-                  child: AnimatedBuilder(
-                    animation: _shineAnimation,
+                  child: _shineAnimation != null
+                      ? AnimatedBuilder(
+                          animation: _shineAnimation!,
                     builder: (context, child) {
+                            final animValue = _shineAnimation!.value;
                       return Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment(
-                              _shineAnimation.value - 1,
-                              _shineAnimation.value + 0.5,
+                              animValue - 1.0,
+                              animValue - 1.0,
                             ),
                             end: Alignment(
-                              _shineAnimation.value,
-                              _shineAnimation.value - 0.5,
+                              animValue + 1.0,
+                              animValue + 1.0,
                             ),
                             colors: [
                               Colors.transparent,
-                              Colors.white.withValues(alpha: 0.15),
+                              Colors.white.withValues(alpha: 0.2),
                               Colors.transparent,
                             ],
                             stops: const [0.0, 0.5, 1.0],
@@ -187,7 +187,8 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
                         ),
                       );
                     },
-                  ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ),

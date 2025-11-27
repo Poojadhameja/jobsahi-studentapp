@@ -336,7 +336,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
           jobWithApplication['skill_test_response'] = skillTestInfo;
         }
 
-        context.goNamed(
+        context.pushNamed(
           'jobApplicationSuccess',
           pathParameters: {'id': jobId.toString()},
           extra: jobWithApplication,

@@ -112,8 +112,9 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     if (handled) return;
 
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+    // Use go_router's pop method for proper navigation
+    if (context.canPop()) {
+      context.pop();
     } else {
       context.go('/home');
     }

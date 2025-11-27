@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../core/constants/app_routes.dart';
 import 'package:go_router/go_router.dart';
 
 /// Profile Navigation App Bar Widget
@@ -40,8 +41,12 @@ class ProfileNavigationAppBar extends StatelessWidget
           ? IconButton(
               icon: Icon(Icons.arrow_back, color: textColor),
               onPressed: () {
-                // Navigate back to profile screen
-                context.pop();
+                // Navigate back to profile menu
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go(AppRoutes.profile);
+                }
               },
             )
           : null,

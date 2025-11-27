@@ -261,27 +261,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(const AuthLoading());
 
       if (event.name.isEmpty) {
-        emit(const AuthError(message: 'Please enter your name'));
+        emit(const AuthError(message: 'Please enter your full name'));
         return;
       }
-      if (event.name.trim().length < 6) {
-        emit(const AuthError(message: 'Name must be at least 6 letters long'));
-        return;
-      }
-      // Check if name contains at least 2 words (first name and surname)
+      // Check if name contains at least 2 words
       final nameParts = event.name.trim().split(RegExp(r'\s+'));
       if (nameParts.length < 2) {
         emit(
-          const AuthError(message: 'Please enter your full name with surname'),
+          const AuthError(
+            message: 'Please enter your full name with at least 2 words',
+          ),
         );
         return;
       }
-      // Check if all parts have at least 2 characters
+      // Check if each word has at least 3 letters
       for (String part in nameParts) {
-        if (part.length < 2) {
+        if (part.length < 3) {
           emit(
             const AuthError(
-              message: 'Each name part must be at least 2 letters',
+              message: 'Each word must be at least 3 letters long',
             ),
           );
           return;

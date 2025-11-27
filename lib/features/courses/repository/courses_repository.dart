@@ -4,7 +4,7 @@ import '../models/course.dart';
 
 /// Courses Repository Interface
 abstract class CoursesRepository {
-  Future<List<Course>> getCourses();
+  Future<List<Course>> getCourses({bool forceRefresh = false});
   Future<Course?> getCourseById(int id);
   Future<void> saveCourse(String courseId);
   Future<void> unsaveCourse(String courseId);
@@ -27,10 +27,11 @@ class CoursesRepositoryImpl implements CoursesRepository {
     : _apiService = apiService;
 
   @override
-  Future<List<Course>> getCourses() async {
+  Future<List<Course>> getCourses({bool forceRefresh = false}) async {
     try {
-      // Check if we have valid cached data
-      if (_cachedCourses != null &&
+      // Check if we have valid cached data (only if not forcing refresh)
+      if (!forceRefresh &&
+          _cachedCourses != null &&
           _cacheTimestamp != null &&
           DateTime.now().difference(_cacheTimestamp!) < _cacheValidity) {
         debugPrint(
@@ -121,10 +122,16 @@ class CoursesRepositoryImpl implements CoursesRepository {
         final status = json['status'] == true;
         if (!status) {
           // Treat already saved as non-fatal success for idempotency
-          final alreadySaved = (json['already_saved'] == true) ||
-              (json['message']?.toString().toLowerCase().contains('already saved') ?? false);
+          final alreadySaved =
+              (json['already_saved'] == true) ||
+              (json['message']?.toString().toLowerCase().contains(
+                    'already saved',
+                  ) ??
+                  false);
           if (!alreadySaved) {
-            throw Exception(json['message']?.toString() ?? 'Failed to save course');
+            throw Exception(
+              json['message']?.toString() ?? 'Failed to save course',
+            );
           }
         }
       } else {
@@ -147,9 +154,15 @@ class CoursesRepositoryImpl implements CoursesRepository {
         final status = json['status'] == true;
         if (!status) {
           // Treat not-saved as non-fatal success for idempotency
-          final notSaved = (json['message']?.toString().toLowerCase().contains("not saved") ?? false);
+          final notSaved =
+              (json['message']?.toString().toLowerCase().contains(
+                "not saved",
+              ) ??
+              false);
           if (!notSaved) {
-            throw Exception(json['message']?.toString() ?? 'Failed to unsave course');
+            throw Exception(
+              json['message']?.toString() ?? 'Failed to unsave course',
+            );
           }
         }
       } else {
@@ -167,9 +180,15 @@ class CoursesRepositoryImpl implements CoursesRepository {
   }
 
   @override
-  Future<SavedCoursesResult> getSavedCourses({int limit = 20, int offset = 0}) async {
+  Future<SavedCoursesResult> getSavedCourses({
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
-      final response = await _apiService.getSavedCourses(limit: limit, offset: offset);
+      final response = await _apiService.getSavedCourses(
+        limit: limit,
+        offset: offset,
+      );
       if (response.statusCode == 200) {
         final json = response.data as Map<String, dynamic>;
         if (json['status'] == true) {
@@ -200,7 +219,9 @@ class CoursesRepositoryImpl implements CoursesRepository {
 
           return SavedCoursesResult(courses: courses, savedCourseIds: ids);
         } else {
-          throw Exception(json['message']?.toString() ?? 'Failed to load saved courses');
+          throw Exception(
+            json['message']?.toString() ?? 'Failed to load saved courses',
+          );
         }
       } else {
         throw Exception('Failed to load saved courses: ${response.statusCode}');

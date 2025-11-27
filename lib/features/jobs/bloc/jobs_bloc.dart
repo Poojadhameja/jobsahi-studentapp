@@ -6,6 +6,7 @@ import 'jobs_state.dart';
 import '../../../shared/data/job_data.dart';
 import '../../../shared/data/user_data.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../shared/services/home_cache_service.dart';
 import '../../../core/utils/network_error_helper.dart';
 import '../repositories/jobs_repository.dart';
 import '../models/job.dart' hide CompanyInfo, JobStatistics;
@@ -87,6 +88,22 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
   /// Handle load jobs
   Future<void> _onLoadJobs(LoadJobsEvent event, Emitter<JobsState> emit) async {
     try {
+      // Preserve tracker data from current state if it exists
+      List<Map<String, dynamic>>? preservedTrackerApplied;
+      List<Map<String, dynamic>>? preservedTrackerInterviews;
+      
+      if (state is JobsLoaded) {
+        final currentState = state as JobsLoaded;
+        preservedTrackerApplied = currentState.trackerAppliedJobs;
+        preservedTrackerInterviews = currentState.trackerInterviewJobs;
+        debugPrint('🔵 [Jobs] Preserving tracker data: ${preservedTrackerApplied?.length ?? 0} applied, ${preservedTrackerInterviews?.length ?? 0} interviews');
+      } else if (state is ApplicationTrackerLoaded) {
+        final currentState = state as ApplicationTrackerLoaded;
+        preservedTrackerApplied = currentState.appliedJobs;
+        preservedTrackerInterviews = currentState.interviewJobs;
+        debugPrint('🔵 [Jobs] Preserving tracker data from ApplicationTrackerLoaded: ${preservedTrackerApplied.length} applied, ${preservedTrackerInterviews.length} interviews');
+      }
+      
       emit(const JobsLoading());
 
       // Load featured jobs from API
@@ -157,6 +174,8 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             appliedJobs: appliedJobs,
             savedJobIds: savedJobIds,
             featuredJobs: featuredJobs,
+            trackerAppliedJobs: preservedTrackerApplied,
+            trackerInterviewJobs: preservedTrackerInterviews,
           ),
         );
       } else {
@@ -194,6 +213,16 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         }
 
         final appliedJobs = JobData.appliedJobs;
+        
+        // Preserve tracker data from current state if it exists
+        List<Map<String, dynamic>>? preservedTrackerApplied;
+        List<Map<String, dynamic>>? preservedTrackerInterviews;
+        
+        if (state is JobsLoaded) {
+          final currentState = state as JobsLoaded;
+          preservedTrackerApplied = currentState.trackerAppliedJobs;
+          preservedTrackerInterviews = currentState.trackerInterviewJobs;
+        }
 
         emit(
           JobsLoaded(
@@ -203,6 +232,8 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             appliedJobs: appliedJobs,
             savedJobIds: savedJobIds,
             featuredJobs: [],
+            trackerAppliedJobs: preservedTrackerApplied,
+            trackerInterviewJobs: preservedTrackerInterviews,
           ),
         );
       } else {
@@ -833,61 +864,133 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     Emitter<JobsState> emit,
   ) async {
     try {
-      emit(const JobsLoading());
-      debugPrint('🔵 [JobsBloc] Loading saved jobs...');
+      // Try to load from cache first for offline support
+      final cacheService = HomeCacheService.instance;
+      await cacheService.initialize();
 
-      // Call the repository to fetch saved jobs via API
-      final savedJobsResponse = await _jobsRepository.getSavedJobs(
-        limit: event.limit,
-        offset: event.offset,
-      );
+      List<Map<String, dynamic>> savedJobs = [];
+      bool loadedFromCache = false;
 
-      if (savedJobsResponse.status) {
-        // Convert SavedJobItem to Map format - toMap() already handles deep conversion
-        final savedJobs = savedJobsResponse.data
-            .map((item) => item.toMap())
-            .toList();
-
+      // Load from cache if available
+      final cachedSavedJobs = await cacheService.getSavedJobs();
+      if (cachedSavedJobs != null && cachedSavedJobs.isNotEmpty) {
+        savedJobs = cachedSavedJobs;
+        loadedFromCache = true;
         debugPrint(
-          '✅ [JobsBloc] Loaded ${savedJobs.length} saved jobs successfully',
+          '🔵 [JobsBloc] Loaded ${savedJobs.length} saved jobs from cache',
         );
 
-        emit(
-          SavedJobsLoaded(
-            savedJobs: savedJobs,
-            pagination: savedJobsResponse.pagination,
-          ),
-        );
-      } else {
-        debugPrint(
-          '🔴 [JobsBloc] Failed to load saved jobs: ${savedJobsResponse.message}',
-        );
-        emit(
-          JobsError(
-            message: savedJobsResponse.message.isNotEmpty
-                ? savedJobsResponse.message
-                : 'Failed to load saved jobs',
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('🔴 [JobsBloc] Error loading saved jobs: $e');
-
-      // Check if it's an authentication error
-      final errorMessage = e.toString();
-      if (errorMessage.contains('User must be logged in') ||
-          errorMessage.contains('Unauthorized') ||
-          errorMessage.contains('No token provided')) {
-        debugPrint(
-          'ℹ️ [JobsBloc] User not authenticated, using mock data as fallback',
-        );
-        // Use mock data as fallback when user is not authenticated
-        final savedJobs = JobData.savedJobs;
-
+        // Emit cached data immediately for offline support
         emit(SavedJobsLoaded(savedJobs: savedJobs));
       } else {
-        emit(JobsError(message: 'Failed to load saved jobs: ${e.toString()}'));
+        emit(const JobsLoading());
       }
+
+      debugPrint('🔵 [JobsBloc] Loading saved jobs from API...');
+
+      // Try to load from API (will update cache if successful)
+      try {
+        final savedJobsResponse = await _jobsRepository.getSavedJobs(
+          limit: event.limit,
+          offset: event.offset,
+        );
+
+        if (savedJobsResponse.status) {
+          // Convert SavedJobItem to Map format - toMap() already handles deep conversion
+          savedJobs = savedJobsResponse.data
+              .map((item) => item.toMap())
+              .toList();
+
+          debugPrint(
+            '✅ [JobsBloc] Loaded ${savedJobs.length} saved jobs successfully from API',
+          );
+
+          // Store in cache for offline use
+          try {
+            await cacheService.storeSavedJobs(savedJobs);
+            debugPrint('🔵 [JobsBloc] Stored saved jobs in cache');
+          } catch (e) {
+            debugPrint('🔴 [JobsBloc] Failed to store saved jobs in cache: $e');
+          }
+
+          emit(
+            SavedJobsLoaded(
+              savedJobs: savedJobs,
+              pagination: savedJobsResponse.pagination,
+            ),
+          );
+        } else {
+          debugPrint(
+            '🔴 [JobsBloc] Failed to load saved jobs: ${savedJobsResponse.message}',
+          );
+
+          // If we have cached data, use it even if API fails
+          if (loadedFromCache && savedJobs.isNotEmpty) {
+            debugPrint('🔵 [JobsBloc] API failed but using cached data');
+            return;
+          }
+
+          emit(
+            JobsError(
+              message: savedJobsResponse.message.isNotEmpty
+                  ? savedJobsResponse.message
+                  : 'Failed to load saved jobs',
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('🔴 [JobsBloc] Error loading saved jobs from API: $e');
+
+        // If we have cached data, use it even if API fails
+        if (loadedFromCache && savedJobs.isNotEmpty) {
+          debugPrint('🔵 [JobsBloc] API error but using cached data');
+          return;
+        }
+
+        // Check if it's an authentication error
+        final errorMessage = e.toString();
+        if (errorMessage.contains('User must be logged in') ||
+            errorMessage.contains('Unauthorized') ||
+            errorMessage.contains('No token provided')) {
+          debugPrint(
+            'ℹ️ [JobsBloc] User not authenticated, using mock data as fallback',
+          );
+          // Use mock data as fallback when user is not authenticated
+          savedJobs = JobData.savedJobs;
+
+          // Store mock data in cache
+          try {
+            await cacheService.storeSavedJobs(savedJobs);
+          } catch (cacheError) {
+            debugPrint(
+              '🔴 [JobsBloc] Failed to store mock data in cache: $cacheError',
+            );
+          }
+
+          emit(SavedJobsLoaded(savedJobs: savedJobs));
+        } else {
+          emit(
+            JobsError(message: 'Failed to load saved jobs: ${e.toString()}'),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('🔴 [JobsBloc] Unexpected error loading saved jobs: $e');
+
+      // Try to load from cache as final fallback
+      try {
+        final cacheService = HomeCacheService.instance;
+        await cacheService.initialize();
+        final cachedSavedJobs = await cacheService.getSavedJobs();
+        if (cachedSavedJobs != null && cachedSavedJobs.isNotEmpty) {
+          emit(SavedJobsLoaded(savedJobs: cachedSavedJobs));
+          return;
+        }
+      } catch (cacheError) {
+        debugPrint('🔴 [JobsBloc] Cache fallback also failed: $cacheError');
+      }
+
+      emit(JobsError(message: 'Failed to load saved jobs: ${e.toString()}'));
     }
   }
 
@@ -1099,8 +1202,46 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     Emitter<JobsState> emit,
   ) async {
     try {
-      // Emit loading state first
-      emit(const JobsLoading());
+      debugPrint('🔵 [Bloc] LoadApplicationTrackerEvent received');
+      debugPrint('🔵 [Bloc] Current state: ${state.runtimeType}');
+      
+      // Check if we have cached tracker data in JobsLoaded state
+      List<Map<String, dynamic>>? cachedApplied;
+      List<Map<String, dynamic>>? cachedInterviews;
+      bool hasCachedData = false;
+      
+      if (state is JobsLoaded) {
+        final currentState = state as JobsLoaded;
+        if (currentState.trackerAppliedJobs != null && 
+            currentState.trackerInterviewJobs != null) {
+          cachedApplied = currentState.trackerAppliedJobs;
+          cachedInterviews = currentState.trackerInterviewJobs;
+          hasCachedData = true;
+          debugPrint('🔵 [Bloc] Found cached tracker data in JobsLoaded: ${cachedApplied!.length} applied, ${cachedInterviews!.length} interviews');
+        }
+      } else if (state is ApplicationTrackerLoaded) {
+        final currentState = state as ApplicationTrackerLoaded;
+        cachedApplied = currentState.appliedJobs;
+        cachedInterviews = currentState.interviewJobs;
+        hasCachedData = true;
+        debugPrint('🔵 [Bloc] Found cached tracker data in ApplicationTrackerLoaded: ${cachedApplied.length} applied, ${cachedInterviews.length} interviews');
+      }
+      
+      // If we have cached data, emit it immediately (no loading state)
+      if (hasCachedData && cachedApplied != null && cachedInterviews != null) {
+        debugPrint('🔵 [Bloc] Emitting cached data immediately, then fetching fresh data in background');
+        emit(
+          ApplicationTrackerLoaded(
+            appliedJobs: cachedApplied,
+            interviewJobs: cachedInterviews,
+            offerJobs: [], // We'll update this with fresh data
+          ),
+        );
+      } else {
+        // Only emit loading if we don't have cached data
+        debugPrint('🔵 [Bloc] No cached data, showing loading');
+        emit(const JobsLoading());
+      }
 
       final applications = await _apiService.getStudentAppliedJobs();
 
@@ -1696,11 +1837,18 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
 
   /// Helper method to handle errors and emit appropriate error state
   /// Detects network errors and formats messages accordingly
-  void _handleJobsError(dynamic error, Emitter<JobsState> emit, {String? defaultMessage}) {
+  void _handleJobsError(
+    dynamic error,
+    Emitter<JobsState> emit, {
+    String? defaultMessage,
+  }) {
     final errorMessage = NetworkErrorHelper.isNetworkError(error)
         ? NetworkErrorHelper.getNetworkErrorMessage(error)
-        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
-    
+        : NetworkErrorHelper.extractErrorMessage(
+            error,
+            defaultMessage: defaultMessage,
+          );
+
     emit(JobsError(message: errorMessage));
   }
 }

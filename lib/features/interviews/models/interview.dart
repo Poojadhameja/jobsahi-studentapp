@@ -10,6 +10,7 @@ class Interview {
   final String? location; // null for online interviews
   final String? platformName; // for online interviews
   final String? interviewLink; // for online interviews
+  final String? interviewInfo; // interview information/notes
   final double? salaryMin; // from job object
   final double? salaryMax; // from job object
   final String? appliedAt; // from job object
@@ -25,6 +26,7 @@ class Interview {
     this.location,
     this.platformName,
     this.interviewLink,
+    this.interviewInfo,
     this.salaryMin,
     this.salaryMax,
     this.appliedAt,
@@ -89,6 +91,7 @@ class Interview {
       location: interviewData['location'] as String?,
       platformName: interviewData['platform_name'] as String?,
       interviewLink: interviewData['interview_link'] as String?,
+      interviewInfo: interviewData['interview_info'] as String?,
       salaryMin: salaryMin,
       salaryMax: salaryMax,
       appliedAt: appliedAt,
@@ -107,6 +110,7 @@ class Interview {
       'location': location,
       'platform_name': platformName,
       'interview_link': interviewLink,
+      'interview_info': interviewInfo,
     };
   }
 
@@ -164,6 +168,7 @@ class Interview {
       'location': displayLocation,
       'platform_name': platformName,
       'interview_link': interviewLink,
+      'interview_info': interviewInfo,
       'interviewDate': scheduledAt.isNotEmpty ? _formatDate(scheduledAt) : '',
       'interviewTime': scheduledAt.isNotEmpty ? _formatTime(scheduledAt) : '',
       'salary': salaryText,

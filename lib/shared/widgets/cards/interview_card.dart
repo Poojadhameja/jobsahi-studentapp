@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_constants.dart';
 
 /// Interview Card Widget
@@ -26,6 +27,9 @@ class InterviewCard extends StatelessWidget {
     final mode = interview['mode'] ?? 'online';
     final status = interview['status'] ?? 'scheduled';
     final location = interview['location'] ?? '';
+    final platformName = interview['platform_name'] ?? '';
+    final interviewLink = interview['interview_link'] ?? '';
+    final interviewInfo = interview['interview_info'] ?? '';
 
     // Extract job_id from multiple possible keys
     String jobId = '';
@@ -191,7 +195,7 @@ class InterviewCard extends StatelessWidget {
                         ),
                       if (interviewDate.isNotEmpty || interviewTime.isNotEmpty)
                         const SizedBox(height: 8),
-                      // Mode and Location
+                      // Mode and Location/Platform
                       Row(
                         children: [
                           // Mode
@@ -221,7 +225,7 @@ class InterviewCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // Location (if not online)
+                          // Location (if offline)
                           if (mode.toLowerCase() != 'online' &&
                               location.isNotEmpty)
                             Expanded(
@@ -248,25 +252,24 @@ class InterviewCard extends StatelessWidget {
                             ),
                         ],
                       ),
-                      // Location for online interviews (Zoom link, etc.)
-                      if (mode.toLowerCase() == 'online' && location.isNotEmpty)
+                      // Platform name for online interviews
+                      if (mode.toLowerCase() == 'online' && platformName.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Row(
                             children: [
                               Icon(
-                                Icons.link,
+                                Icons.video_library,
                                 size: 14,
-                                color: AppConstants.primaryColor,
+                                color: AppConstants.textSecondaryColor,
                               ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  location,
-                                  style: TextStyle(
+                                  platformName,
+                                  style: const TextStyle(
                                     fontSize: 12,
-                                    color: AppConstants.primaryColor,
-                                    decoration: TextDecoration.underline,
+                                    color: AppConstants.textSecondaryColor,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -274,6 +277,65 @@ class InterviewCard extends StatelessWidget {
                             ],
                           ),
                         ),
+                      // Interview link for online interviews
+                      if (mode.toLowerCase() == 'online' && interviewLink.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: GestureDetector(
+                            onTap: () => _launchUrl(context, interviewLink),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.link,
+                                  size: 14,
+                                  color: AppConstants.primaryColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Join Meeting',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppConstants.primaryColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.open_in_new,
+                                  size: 14,
+                                  color: AppConstants.primaryColor,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      // Interview info (if available)
+                      if (interviewInfo.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: AppConstants.textSecondaryColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                interviewInfo,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppConstants.textSecondaryColor,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -323,5 +385,37 @@ class InterviewCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _launchUrl(BuildContext context, String url) async {
+    if (url.isEmpty) return;
+    
+    try {
+      String urlToLaunch = url.trim();
+      if (!urlToLaunch.startsWith('http://') &&
+          !urlToLaunch.startsWith('https://')) {
+        urlToLaunch = 'https://$urlToLaunch';
+      }
+
+      final uri = Uri.parse(urlToLaunch);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open link: ${e.toString()}'),
+            backgroundColor: AppConstants.errorColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }

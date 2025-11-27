@@ -38,9 +38,15 @@ class TabNavigationManager extends ChangeNotifier {
     print('🧭 Navigating to route: $route in tab $_currentTabIndex');
     print('📚 Current stack: $currentStack');
 
-    // Prevent duplicate entries
+    // Check if this route is already in the stack (not just the last one)
+    // If it's the last route, allow navigation to refresh the page
+    // Only skip if we're already on this exact route AND it's the last route
     if (currentStack.isNotEmpty && currentStack.last == route) {
-      print('⚠️ Duplicate route, skipping navigation');
+      // Allow navigation to same route to refresh/reload
+      print('🔄 Same route detected, allowing navigation to refresh');
+      // Still navigate to refresh the page
+      AppRouter.go(route);
+      notifyListeners();
       return;
     }
 

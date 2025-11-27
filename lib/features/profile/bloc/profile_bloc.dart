@@ -520,6 +520,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
     updatedProfile['name'] = event.name;
     updatedProfile['email'] = event.email;
+    updatedProfile['phone'] = event.phone;
     updatedProfile['location'] = event.location;
     updatedProfile['bio'] = event.bio;
 
@@ -820,16 +821,34 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       }
     }
 
-    final personalInfo = {
+    // Build personal_info - backend accepts both flat and nested structure
+    // Backend expects: dob OR date_of_birth in personal_info
+    final dobValue = _normalizeDate(userProfile['dateOfBirth']);
+    final genderValue = (userProfile['gender']?.toString() ?? '').trim().toLowerCase();
+    final locationValue = (userProfile['location']?.toString() ?? '').trim();
+    
+    final personalInfo = <String, dynamic>{
       'email': userProfile['email']?.toString() ?? '',
       'user_name': userProfile['name']?.toString() ?? '',
       'phone_number': userProfile['phone']?.toString() ?? '',
-      'date_of_birth': _normalizeDate(userProfile['dateOfBirth']),
-      'gender': (userProfile['gender']?.toString() ?? '').toLowerCase(),
-      'location': userProfile['location']?.toString() ?? '',
-      'latitude': latitude,
-      'longitude': longitude,
     };
+    
+    // Add optional fields only if they have values (backend only updates non-null fields)
+    if (dobValue.isNotEmpty) {
+      personalInfo['dob'] = dobValue; // Backend checks for 'dob' first
+      personalInfo['date_of_birth'] = dobValue; // Also send date_of_birth for compatibility
+    }
+    
+    if (genderValue.isNotEmpty) {
+      personalInfo['gender'] = genderValue;
+    }
+    
+    // Always include location (even if empty) so backend can clear it when user empties the field
+    personalInfo['location'] = locationValue;
+    
+    // Always include latitude/longitude (can be 0.0)
+    personalInfo['latitude'] = latitude;
+    personalInfo['longitude'] = longitude;
 
     // Skills - already a List<String>
     final skills = state.skills
@@ -943,37 +962,72 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       '🔵 [ProfileBloc] Final social_links payload: ${jsonEncode(socialLinksPayload)}',
     );
 
-    // Professional Info
-    final professionalInfo = {
+    // Professional Info - only include fields with values
+    final professionalInfo = <String, dynamic>{
       'skills': skills,
       'education': educationPayload,
       'experience': experiencePayload,
-      'projects': projectsPayload,
-      'job_type': userProfile['jobType']?.toString() ?? '',
-      'trade': userProfile['trade']?.toString() ?? '',
-      'languages': languages,
     };
-
-    // Contact Info - always include if available
-    final contactInfo = {
-      'contact_email': userProfile['contactEmail']?.toString() ?? '',
-      'contact_phone': userProfile['contactPhone']?.toString() ?? '',
-    };
+    
+    // Add optional fields only if they have values
+    if (projectsPayload.isNotEmpty) {
+      professionalInfo['projects'] = projectsPayload;
+    }
+    
+    final jobTypeValue = (userProfile['jobType']?.toString() ?? '').trim();
+    if (jobTypeValue.isNotEmpty) {
+      professionalInfo['job_type'] = jobTypeValue;
+    }
+    
+    final tradeValue = (userProfile['trade']?.toString() ?? '').trim();
+    if (tradeValue.isNotEmpty) {
+      professionalInfo['trade'] = tradeValue;
+    }
+    
+    if (languages.isNotEmpty) {
+      professionalInfo['languages'] = languages;
+    }
 
     // Build payload - match backend structure exactly
+    // Backend only updates fields that are provided (not null)
     final payload = <String, dynamic>{
       'personal_info': personalInfo,
       'professional_info': professionalInfo,
-      'documents': documents,
-      'social_links': socialLinksPayload,
-      'additional_info': {'bio': userProfile['bio']?.toString() ?? ''},
     };
+    
+    // Add documents only if it has any values
+    if (documents.isNotEmpty) {
+      payload['documents'] = documents;
+    }
+    
+    // Always send social_links (even if empty array) - backend handles empty arrays
+    payload['social_links'] = socialLinksPayload;
+    
+    // Add additional_info only if bio has value
+    final bioValue = (userProfile['bio']?.toString() ?? '').trim();
+    if (bioValue.isNotEmpty) {
+      payload['additional_info'] = {'bio': bioValue};
+    }
 
     // Add contact_info if either field has a value
-    if (contactInfo['contact_email']?.toString().trim().isNotEmpty == true ||
-        contactInfo['contact_phone']?.toString().trim().isNotEmpty == true) {
-      payload['contact_info'] = contactInfo;
+    final contactEmailValue = (userProfile['contactEmail']?.toString() ?? '').trim();
+    final contactPhoneValue = (userProfile['contactPhone']?.toString() ?? '').trim();
+    if (contactEmailValue.isNotEmpty || contactPhoneValue.isNotEmpty) {
+      final contactInfoPayload = <String, dynamic>{};
+      if (contactEmailValue.isNotEmpty) {
+        contactInfoPayload['contact_email'] = contactEmailValue;
+      }
+      if (contactPhoneValue.isNotEmpty) {
+        contactInfoPayload['contact_phone'] = contactPhoneValue;
+      }
+      payload['contact_info'] = contactInfoPayload;
     }
+
+    debugPrint('🔵 [ProfileBloc] Final payload structure:');
+    debugPrint('   personal_info keys: ${personalInfo.keys.toList()}');
+    debugPrint('   professional_info keys: ${professionalInfo.keys.toList()}');
+    debugPrint('   documents keys: ${documents.keys.toList()}');
+    debugPrint('   social_links count: ${socialLinksPayload.length}');
 
     return payload;
   }
@@ -1002,11 +1056,26 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           : '';
     }
 
-    return {
-      'resume': state.resumeDownloadUrl?.toString() ?? '',
-      'certificates': certificatesValue,
-      'aadhar_number': userProfile['aadharNumber']?.toString() ?? '',
-    };
+    final documents = <String, dynamic>{};
+    
+    // Add resume only if available
+    final resumeValue = state.resumeDownloadUrl?.toString() ?? '';
+    if (resumeValue.isNotEmpty) {
+      documents['resume'] = resumeValue;
+    }
+    
+    // Add certificates only if available
+    if (certificatesValue.isNotEmpty) {
+      documents['certificates'] = certificatesValue;
+    }
+    
+    // Add aadhar_number only if available (backend checks both flat and nested)
+    final aadharValue = (userProfile['aadharNumber']?.toString() ?? '').trim();
+    if (aadharValue.isNotEmpty) {
+      documents['aadhar_number'] = aadharValue;
+    }
+    
+    return documents;
   }
 
   Future<int?> _resolveUserId(Map<String, dynamic> userProfile) async {
@@ -1158,7 +1227,20 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   }
 
   String _formatErrorMessage(Object error) {
+    if (error is Exception) {
     final message = error.toString();
+      if (message.startsWith('Exception: ')) {
+        final extracted = message.substring('Exception: '.length);
+        return extracted.isEmpty ? 'An unexpected error occurred' : extracted;
+      }
+      return message.isEmpty ? 'An unexpected error occurred' : message;
+    }
+    
+    final message = error.toString();
+    if (message.isEmpty || message == 'null') {
+      return 'An unexpected error occurred';
+    }
+    
     return message.startsWith('Exception: ')
         ? message.substring('Exception: '.length)
         : message;

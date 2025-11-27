@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_constants.dart';
 
 class ContactUsPage extends StatelessWidget {
@@ -25,7 +27,11 @@ class ContactUsPage extends StatelessWidget {
                         Icons.arrow_back,
                         color: AppConstants.textPrimaryColor,
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        }
+                      },
                     ),
                     const SizedBox(height: 4),
                     Center(
@@ -62,7 +68,7 @@ class ContactUsPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _buildContactSection(),
+                    _buildContactSection(context),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -74,7 +80,7 @@ class ContactUsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildContactSection() {
+  Widget _buildContactSection(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -108,14 +114,22 @@ class ContactUsPage extends StatelessWidget {
           _buildContactRow(
             Icons.language_outlined,
             'Website',
-            'www.jobsahi.com',
+            'www.google.com',
+            isClickable: true,
+            onTap: () => _openWebsite(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContactRow(IconData icon, String label, String value) {
+  Widget _buildContactRow(
+    IconData icon,
+    String label,
+    String value, {
+    bool isClickable = false,
+    VoidCallback? onTap,
+  }) {
     return Row(
       children: [
         Icon(icon, size: 18, color: const Color(0xFF58B248)),
@@ -132,20 +146,70 @@ class ContactUsPage extends StatelessWidget {
                   color: Color(0xFF64748B),
                 ),
               ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppConstants.textPrimaryColor,
-                ),
-              ),
+              isClickable
+                  ? GestureDetector(
+                      onTap: onTap,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            value,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppConstants.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.open_in_new,
+                            size: 16,
+                            color: AppConstants.primaryColor,
+                          ),
+                        ],
+                      ),
+                    )
+                  : Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                    ),
             ],
           ),
         ),
       ],
     );
   }
+
+  Future<void> _openWebsite(BuildContext context) async {
+    const websiteUrl = 'https://www.google.com';
+
+    try {
+      final uri = Uri.parse(websiteUrl);
+
+      // Try launching URL directly - canLaunchUrl can be unreliable
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        // If external application mode fails, try platform default
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open website. Please try again.'),
+            backgroundColor: AppConstants.errorColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
 }
-
-

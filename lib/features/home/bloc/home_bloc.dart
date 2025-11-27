@@ -7,6 +7,7 @@ import '../../jobs/bloc/jobs_bloc.dart';
 import '../../jobs/bloc/jobs_event.dart' as jobs_events;
 import '../../jobs/bloc/jobs_state.dart' as jobs_states;
 import '../../../shared/services/api_service.dart';
+import '../../../shared/services/home_cache_service.dart';
 
 /// Home BLoC
 /// Handles all home screen related business logic
@@ -49,15 +50,61 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       emit(const HomeLoading());
 
-      // Load featured jobs from API
+      // Try to load from cache first for offline support
+      final cacheService = HomeCacheService.instance;
+      await cacheService.initialize();
+
       List<Map<String, dynamic>> featuredJobs = [];
+      List<Map<String, dynamic>> allJobs = [];
+      List<String> savedJobIds = [];
+      bool loadedFromCache = false;
+
+      // Load from cache if available
+      final cachedData = await cacheService.getHomeData();
+      if (cachedData != null && await cacheService.isCacheValid()) {
+        try {
+          allJobs = List<Map<String, dynamic>>.from(
+            cachedData['allJobs'] ?? [],
+          );
+          featuredJobs = List<Map<String, dynamic>>.from(
+            cachedData['featuredJobs'] ?? [],
+          );
+          savedJobIds = List<String>.from(cachedData['savedJobIds'] ?? []);
+          loadedFromCache = true;
+          debugPrint('🔵 [Home] Loaded data from cache');
+
+          // Emit cached data immediately for offline support
+          final sortedJobs = _sortJobsByFeaturedAndRecent(
+            allJobs,
+            featuredJobs,
+          );
+          emit(
+            HomeLoaded(
+              recommendedJobs: sortedJobs,
+              filteredJobs: sortedJobs,
+              featuredJobs: featuredJobs,
+              savedJobIds: savedJobIds.toSet(),
+              allJobs: sortedJobs,
+            ),
+          );
+        } catch (e) {
+          debugPrint('🔴 [Home] Error loading from cache: $e');
+        }
+      }
+
+      // Try to load from API (will update cache if successful)
       try {
         final featuredResponse = await _apiService.getFeaturedJobs();
-        featuredJobs = featuredResponse.data; // Data is already in Map format
-        debugPrint('🔵 [Home] Loaded ${featuredJobs.length} featured jobs');
+        featuredJobs = featuredResponse.data;
+        debugPrint(
+          '🔵 [Home] Loaded ${featuredJobs.length} featured jobs from API',
+        );
       } catch (e) {
-        debugPrint('🔴 [Home] Failed to load featured jobs: $e');
-        // Continue with empty featured jobs list
+        debugPrint('🔴 [Home] Failed to load featured jobs from API: $e');
+        // If no cache, continue with empty list
+        if (!loadedFromCache) {
+          featuredJobs = [];
+        }
       }
 
       // Load jobs using JobsBloc
@@ -66,28 +113,86 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Listen to JobsBloc state changes
       await for (final jobsState in _jobsBloc.stream) {
         if (jobsState is jobs_states.JobsLoaded) {
-          final recommendedJobs = jobsState.allJobs;
-          final filteredJobs = recommendedJobs;
+          allJobs = jobsState.allJobs;
+          savedJobIds = jobsState.savedJobIds.toList();
 
-          // Initialize saved job IDs from JobsBloc so icons reflect server state after refresh
-          final savedJobIds = jobsState.savedJobIds;
+          // Sort jobs: Featured jobs first (by recent), then non-featured jobs (by recent)
+          final sortedJobs = _sortJobsByFeaturedAndRecent(
+            allJobs,
+            featuredJobs,
+          );
+
+          final recommendedJobs = sortedJobs;
+          final filteredJobs = sortedJobs;
+
+          // Store in cache for offline use
+          try {
+            await cacheService.storeHomeData(
+              allJobs: allJobs,
+              featuredJobs: featuredJobs,
+              savedJobIds: savedJobIds,
+            );
+            debugPrint('🔵 [Home] Stored data in cache');
+          } catch (e) {
+            debugPrint('🔴 [Home] Failed to store in cache: $e');
+          }
 
           emit(
             HomeLoaded(
               recommendedJobs: recommendedJobs,
               filteredJobs: filteredJobs,
               featuredJobs: featuredJobs,
-              savedJobIds: savedJobIds,
-              allJobs: jobsState.allJobs,
+              savedJobIds: savedJobIds.toSet(),
+              allJobs: sortedJobs,
             ),
           );
           break; // Exit the stream after getting the data
         } else if (jobsState is jobs_states.JobsError) {
+          // If we have cached data, use it even if API fails
+          if (loadedFromCache) {
+            debugPrint('🔵 [Home] API failed but using cached data');
+            break;
+          }
           emit(HomeError(message: jobsState.message));
           break;
         }
       }
     } catch (e) {
+      // Try to load from cache as fallback
+      try {
+        final cacheService = HomeCacheService.instance;
+        await cacheService.initialize();
+        final cachedData = await cacheService.getHomeData();
+        if (cachedData != null) {
+          final allJobs = List<Map<String, dynamic>>.from(
+            cachedData['allJobs'] ?? [],
+          );
+          final featuredJobs = List<Map<String, dynamic>>.from(
+            cachedData['featuredJobs'] ?? [],
+          );
+          final savedJobIds = List<String>.from(
+            cachedData['savedJobIds'] ?? [],
+          );
+
+          final sortedJobs = _sortJobsByFeaturedAndRecent(
+            allJobs,
+            featuredJobs,
+          );
+          emit(
+            HomeLoaded(
+              recommendedJobs: sortedJobs,
+              filteredJobs: sortedJobs,
+              featuredJobs: featuredJobs,
+              savedJobIds: savedJobIds.toSet(),
+              allJobs: sortedJobs,
+            ),
+          );
+          return;
+        }
+      } catch (cacheError) {
+        debugPrint('🔴 [Home] Cache fallback also failed: $cacheError');
+      }
+
       _handleHomeError(e, emit, defaultMessage: 'Failed to load home data');
     }
   }
@@ -133,6 +238,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             );
           }
 
+          // Ensure sorting is maintained (featured first, then by recent)
+          filteredJobs = _sortJobsByFeaturedAndRecent(
+            filteredJobs,
+            currentState.featuredJobs,
+          );
+
           emit(
             currentState.copyWith(
               searchQuery: event.query,
@@ -161,6 +272,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   void _onClearSearch(ClearSearchEvent event, Emitter<HomeState> emit) {
     if (state is HomeLoaded) {
       final currentState = state as HomeLoaded;
+      // recommendedJobs is already sorted, so just use it directly
       emit(
         currentState.copyWith(
           searchQuery: '',
@@ -219,19 +331,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (state is! HomeLoaded) return;
 
     final currentState = state as HomeLoaded;
-    
+
     try {
       debugPrint('🔵 [HomeBloc] Saving job with ID: ${event.jobId}');
-      
+
       // Call JobsBloc to save job via API
       _jobsBloc.add(jobs_events.SaveJobEvent(jobId: event.jobId));
-      
+
       // Update local state immediately for better UX
       final newSavedJobIds = Set<String>.from(currentState.savedJobIds);
       newSavedJobIds.add(event.jobId);
-      
+
       emit(currentState.copyWith(savedJobIds: newSavedJobIds));
-      
+
       debugPrint('✅ [HomeBloc] Job save event dispatched to JobsBloc');
     } catch (e) {
       debugPrint('🔴 [HomeBloc] Error saving job: $e');
@@ -241,23 +353,26 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   /// Handle unsave job
-  Future<void> _onUnsaveJob(UnsaveJobEvent event, Emitter<HomeState> emit) async {
+  Future<void> _onUnsaveJob(
+    UnsaveJobEvent event,
+    Emitter<HomeState> emit,
+  ) async {
     if (state is! HomeLoaded) return;
 
     final currentState = state as HomeLoaded;
-    
+
     try {
       debugPrint('🔵 [HomeBloc] Unsaving job with ID: ${event.jobId}');
-      
+
       // Call JobsBloc to unsave job (if API supports it, otherwise just update local state)
       _jobsBloc.add(jobs_events.UnsaveJobEvent(jobId: event.jobId));
-      
+
       // Update local state immediately
       final newSavedJobIds = Set<String>.from(currentState.savedJobIds);
       newSavedJobIds.remove(event.jobId);
 
       emit(currentState.copyWith(savedJobIds: newSavedJobIds));
-      
+
       debugPrint('✅ [HomeBloc] Job unsave event dispatched');
     } catch (e) {
       debugPrint('🔴 [HomeBloc] Error unsaving job: $e');
@@ -290,7 +405,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       newFilters.remove(event.filterType);
 
       // Reapply remaining filters on base jobs
-      final filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+      var filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+
+      // Ensure sorting is maintained (featured first, then by recent)
+      filteredJobs = _sortJobsByFeaturedAndRecent(
+        filteredJobs,
+        currentState.featuredJobs,
+      );
 
       emit(
         currentState.copyWith(
@@ -306,7 +427,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     newFilters[event.filterType] = event.filterValue;
 
     // Apply filters on base jobs
-    final filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+    var filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+
+    // Ensure sorting is maintained (featured first, then by recent)
+    filteredJobs = _sortJobsByFeaturedAndRecent(
+      filteredJobs,
+      currentState.featuredJobs,
+    );
 
     emit(
       currentState.copyWith(
@@ -335,7 +462,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         : currentState.recommendedJobs;
 
     // Apply remaining filters on base jobs
-    final filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+    var filteredJobs = _applyMultipleFilters(baseJobs, newFilters);
+
+    // Ensure sorting is maintained (featured first, then by recent)
+    filteredJobs = _sortJobsByFeaturedAndRecent(
+      filteredJobs,
+      currentState.featuredJobs,
+    );
 
     emit(
       currentState.copyWith(
@@ -352,7 +485,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final currentState = state as HomeLoaded;
 
     // If search query exists, show search results; otherwise show all jobs
-    final filteredJobs = currentState.searchQuery.isNotEmpty
+    var filteredJobs = currentState.searchQuery.isNotEmpty
         ? currentState.recommendedJobs.where((job) {
             final queryLower = currentState.searchQuery.toLowerCase();
             return job['title'].toString().toLowerCase().contains(queryLower) ||
@@ -360,6 +493,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
                 job['location'].toString().toLowerCase().contains(queryLower);
           }).toList()
         : currentState.recommendedJobs;
+
+    // Ensure sorting is maintained (featured first, then by recent)
+    filteredJobs = _sortJobsByFeaturedAndRecent(
+      filteredJobs,
+      currentState.featuredJobs,
+    );
 
     emit(currentState.copyWith(activeFilters: {}, filteredJobs: filteredJobs));
   }
@@ -476,13 +615,128 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }).toList();
   }
 
+  /// Sort jobs: Featured jobs first (sorted by recent), then non-featured jobs (sorted by recent), closed jobs at the end
+  List<Map<String, dynamic>> _sortJobsByFeaturedAndRecent(
+    List<Map<String, dynamic>> jobs,
+    List<Map<String, dynamic>> featuredJobs,
+  ) {
+    // Create a set of featured job IDs for quick lookup
+    final featuredJobIds = featuredJobs.map((featuredJob) {
+      final id = featuredJob['id'];
+      return id is int ? id.toString() : id?.toString() ?? '';
+    }).toSet();
+
+    // Separate jobs into: featured open, featured closed, non-featured open, non-featured closed
+    final List<Map<String, dynamic>> featuredOpenJobs = [];
+    final List<Map<String, dynamic>> featuredClosedJobs = [];
+    final List<Map<String, dynamic>> nonFeaturedOpenJobs = [];
+    final List<Map<String, dynamic>> nonFeaturedClosedJobs = [];
+
+    for (final job in jobs) {
+      final jobId = job['id'] is int
+          ? job['id'].toString()
+          : job['id']?.toString() ?? '';
+
+      final isFeatured = featuredJobIds.contains(jobId);
+      final isClosed = _isJobClosed(job);
+
+      if (isFeatured) {
+        if (isClosed) {
+          featuredClosedJobs.add(job);
+        } else {
+          featuredOpenJobs.add(job);
+        }
+      } else {
+        if (isClosed) {
+          nonFeaturedClosedJobs.add(job);
+        } else {
+          nonFeaturedOpenJobs.add(job);
+        }
+      }
+    }
+
+    // Sort all lists by created_at (most recent first)
+    final sortedFeaturedOpen = _sortJobsByDate(featuredOpenJobs);
+    final sortedFeaturedClosed = _sortJobsByDate(featuredClosedJobs);
+    final sortedNonFeaturedOpen = _sortJobsByDate(nonFeaturedOpenJobs);
+    final sortedNonFeaturedClosed = _sortJobsByDate(nonFeaturedClosedJobs);
+
+    // Combine: featured open first, then non-featured open, then featured closed, then non-featured closed
+    return [
+      ...sortedFeaturedOpen,
+      ...sortedNonFeaturedOpen,
+      ...sortedFeaturedClosed,
+      ...sortedNonFeaturedClosed,
+    ];
+  }
+
+  /// Check if a job is closed
+  bool _isJobClosed(Map<String, dynamic> job) {
+    // Check status
+    final jobStatus = job['status']?.toString().toLowerCase() ?? '';
+    final isStatusClosed = jobStatus == 'closed' || jobStatus == 'expired';
+
+    // Check if deadline has passed
+    bool isDeadlinePassed = false;
+    final deadline = job['application_deadline'];
+    if (deadline != null) {
+      try {
+        final deadlineDate = DateTime.parse(deadline.toString());
+        final now = DateTime.now();
+        isDeadlinePassed = deadlineDate.difference(now).isNegative;
+      } catch (e) {
+        // If parsing fails, assume deadline is not passed
+        isDeadlinePassed = false;
+      }
+    }
+
+    return isStatusClosed || isDeadlinePassed;
+  }
+
+  /// Sort jobs by created_at date (most recent first)
+  List<Map<String, dynamic>> _sortJobsByDate(List<Map<String, dynamic>> jobs) {
+    return List<Map<String, dynamic>>.from(jobs)..sort((a, b) {
+      final dateA = _parseDate(a['created_at']);
+      final dateB = _parseDate(b['created_at']);
+
+      // Most recent first (descending order)
+      return dateB.compareTo(dateA);
+    });
+  }
+
+  /// Parse date string to DateTime
+  DateTime _parseDate(dynamic dateValue) {
+    if (dateValue == null) {
+      return DateTime(1970); // Very old date for null values
+    }
+
+    try {
+      if (dateValue is String) {
+        return DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        return dateValue;
+      }
+    } catch (e) {
+      debugPrint('🔴 [Home] Error parsing date: $dateValue, error: $e');
+    }
+
+    return DateTime(1970); // Very old date for invalid values
+  }
+
   /// Helper method to handle errors and emit appropriate error state
   /// Detects network errors and formats messages accordingly
-  void _handleHomeError(dynamic error, Emitter<HomeState> emit, {String? defaultMessage}) {
+  void _handleHomeError(
+    dynamic error,
+    Emitter<HomeState> emit, {
+    String? defaultMessage,
+  }) {
     final errorMessage = NetworkErrorHelper.isNetworkError(error)
         ? NetworkErrorHelper.getNetworkErrorMessage(error)
-        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
-    
+        : NetworkErrorHelper.extractErrorMessage(
+            error,
+            defaultMessage: defaultMessage,
+          );
+
     emit(HomeError(message: errorMessage));
   }
 }

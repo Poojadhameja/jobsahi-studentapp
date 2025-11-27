@@ -58,27 +58,6 @@ class AppRoutes {
   /// Profile details screen
   static const String profileDetails = '/profile/details';
 
-  /// Profile edit screen
-  static const String profileEdit = '/profile/edit';
-
-  /// Profile experience edit
-  static const String profileExperienceEdit = '/profile/edit/experience';
-
-  /// Profile education edit
-  static const String profileEducationEdit = '/profile/edit/education';
-
-  /// Profile skills edit
-  static const String profileSkillsEdit = '/profile/edit/skills';
-
-  /// Profile certificates edit
-  static const String profileCertificatesEdit = '/profile/edit/certificates';
-
-  /// Profile resume edit
-  static const String profileResumeEdit = '/profile/edit/resume';
-
-  /// Profile summary edit
-  static const String profileSummaryEdit = '/profile/edit/summary';
-
   /// Personalize job feed
   static const String personalizeJobfeed = '/profile/personalize';
 

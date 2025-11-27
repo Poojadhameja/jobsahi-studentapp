@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
@@ -60,25 +61,12 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
         title: widget.company['name'] ?? 'Company',
         showBackButton: true,
         actions: [
-          IconButton(
-            onPressed: () {
-              // TODO: Implement visit website functionality
-            },
-            icon: const Icon(Icons.public),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 10),
-            child: Center(
-              child: Text(
-                'Visit',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppConstants.textPrimaryColor,
-                ),
-              ),
+          if (widget.company['website'] != null && widget.company['website'].toString().isNotEmpty)
+            IconButton(
+              onPressed: () => _launchUrl(widget.company['website'].toString()),
+              icon: const Icon(Icons.public),
+              tooltip: 'Visit Website',
             ),
-          ),
         ],
       ),
       body: Column(
@@ -641,6 +629,8 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
 
   /// Reusable row for a company info item
   Widget _buildCompanyInfoRow(IconData icon, String label, String value) {
+    final isWebsite = label.toLowerCase() == 'website';
+    
     return Row(
       children: [
         Icon(icon, color: AppConstants.textSecondaryColor),
@@ -655,16 +645,76 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
             ),
           ),
         ),
-        Text(
-          value,
-          textAlign: TextAlign.right,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppConstants.textSecondaryColor,
-          ),
-        ),
+        isWebsite
+            ? GestureDetector(
+                onTap: () => _launchUrl(value),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        value,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppConstants.primaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.open_in_new,
+                      size: 14,
+                      color: AppConstants.primaryColor,
+                    ),
+                  ],
+                ),
+              )
+            : Text(
+                value,
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppConstants.textSecondaryColor,
+                ),
+              ),
       ],
     );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    if (url.isEmpty) return;
+    
+    try {
+      String urlToLaunch = url.trim();
+      if (!urlToLaunch.startsWith('http://') &&
+          !urlToLaunch.startsWith('https://')) {
+        urlToLaunch = 'https://$urlToLaunch';
+      }
+
+      final uri = Uri.parse(urlToLaunch);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open website: ${e.toString()}'),
+            backgroundColor: AppConstants.errorColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   /// Builds the company life grid

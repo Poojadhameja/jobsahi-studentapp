@@ -16,21 +16,57 @@ import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
-import 'saved_courses.dart';
 
-class LearningCenterPage extends StatelessWidget {
+class LearningCenterPage extends StatefulWidget {
   const LearningCenterPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Use the root-level bloc instead of creating a new one
-    // Load courses when page is first accessed
-    final bloc = context.read<CoursesBloc>();
-    // Only load if not already loaded
-    if (bloc.state is! CoursesLoaded) {
-      bloc.add(LoadCoursesEvent());
-    }
+  State<LearningCenterPage> createState() => _LearningCenterPageState();
+}
 
+class _LearningCenterPageState extends State<LearningCenterPage> {
+  bool _hasLoadedInitially = false;
+  DateTime? _lastLoadTime;
+
+  @override
+  void initState() {
+    super.initState();
+    // Always load courses when page is accessed (with force refresh for rewrite)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CoursesBloc>().add(
+          const LoadCoursesEvent(forceRefresh: true),
+        );
+        _hasLoadedInitially = true;
+        _lastLoadTime = DateTime.now();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload courses when navigating back to this page
+    // Only reload if enough time has passed (at least 1 second) to avoid multiple reloads
+    if (_hasLoadedInitially && _lastLoadTime != null) {
+      final timeSinceLastLoad = DateTime.now().difference(_lastLoadTime!);
+      if (timeSinceLastLoad.inSeconds >= 1) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // Always rewrite when coming back to page (force refresh)
+            // This ensures fresh data is loaded every time we navigate to this page
+            context.read<CoursesBloc>().add(
+              const LoadCoursesEvent(forceRefresh: true),
+            );
+            _lastLoadTime = DateTime.now();
+          }
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return _LearningCenterPageView();
   }
 }
@@ -65,12 +101,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
                               ],
                               tabContents: [
                                 _buildLearningCenterTab(innerContext, state),
-                                SavedCoursesPage(
-                                  onBrowseAll: () {
-                                    final c = DefaultTabController.maybeOf(innerContext);
-                                    c?.animateTo(0);
-                                  },
-                                ),
+                                _buildSavedCoursesTab(),
                               ],
                             );
                           },
@@ -126,27 +157,63 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
       return NoInternetErrorWidget(
         errorMessage: state.message,
         onRetry: () {
-          context.read<CoursesBloc>().add(LoadCoursesEvent());
+          context.read<CoursesBloc>().add(
+            const LoadCoursesEvent(forceRefresh: true),
+          );
         },
         showImage: true,
         enablePullToRefresh: true,
       );
     }
 
-    // Show cached data immediately if available, even during loading
-    if (state is CoursesLoading && state is! CoursesLoaded) {
-      // Check if we have any cached courses to show
+    // Handle CourseSavedState or CourseUnsavedState - reload courses
+    // These states should not be emitted from courses list, but handle as fallback
+    if (state is CourseSavedState || state is CourseUnsavedState) {
+      // Reload courses to get updated state
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<CoursesBloc>().add(
+            const LoadCoursesEvent(forceRefresh: true),
+          );
+        }
+      });
       return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text(
-              'Loading courses...',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppConstants.textSecondaryColor,
+        child: CircularProgressIndicator(color: AppConstants.successColor),
+      );
+    }
+
+    // Show green loader on initial state or loading state (first time load)
+    if (state is CoursesInitial ||
+        (state is CoursesLoading && state is! CoursesLoaded)) {
+      // Show minimal loading indicator without full page reload
+      // This allows the page structure to remain visible
+      return RefreshIndicator(
+        color: AppConstants.successColor,
+        onRefresh: () async {
+          context.read<CoursesBloc>().add(
+            const LoadCoursesEvent(forceRefresh: true),
+          );
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: CustomScrollView(
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: AppConstants.successColor),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Loading courses...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppConstants.textSecondaryColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -155,8 +222,11 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
     }
 
     return RefreshIndicator(
+      color: AppConstants.successColor,
       onRefresh: () async {
-        context.read<CoursesBloc>().add(const LoadCoursesEvent());
+        context.read<CoursesBloc>().add(
+          const LoadCoursesEvent(forceRefresh: true),
+        );
         // Wait for the API call to complete
         await Future.delayed(const Duration(milliseconds: 500));
       },
@@ -170,34 +240,48 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
       final hasActiveFilters =
           state.searchQuery.isNotEmpty || state.hasActiveFilters();
 
-      return EmptyStateWidget(
-        icon: Icons.school_outlined,
-        title: 'No courses found',
-        subtitle: 'Try adjusting your search or filters',
-        actionButton: hasActiveFilters
-            ? ElevatedButton(
-                onPressed: () {
-                  final bloc = context.read<CoursesBloc>();
-                  bloc.add(const ClearSearchEvent());
-                  bloc.add(const ClearAllFiltersEvent());
-                  // Do not toggle filters visibility here; keep chips section open
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConstants.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.borderRadius,
-                    ),
-                  ),
-                ),
-                child: const Text('Clear All'),
-              )
-            : null,
+      return RefreshIndicator(
+        color: AppConstants.successColor,
+        onRefresh: () async {
+          context.read<CoursesBloc>().add(
+            const LoadCoursesEvent(forceRefresh: true),
+          );
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: EmptyStateWidget(
+              icon: Icons.school_outlined,
+              title: 'No courses found',
+              subtitle: 'Try adjusting your search or filters',
+              actionButton: hasActiveFilters
+                  ? ElevatedButton(
+                      onPressed: () {
+                        final bloc = context.read<CoursesBloc>();
+                        bloc.add(const ClearSearchEvent());
+                        bloc.add(const ClearAllFiltersEvent());
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                      ),
+                      child: const Text('Clear All'),
+                    )
+                  : null,
+            ),
+          ),
+        ),
       );
     }
 
@@ -598,6 +682,230 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
           ),
         );
       },
+    );
+  }
+
+  /// Builds the Saved Courses tab
+  /// Replica of All Courses tab - just filters by savedCourseIds
+  Widget _buildSavedCoursesTab() {
+    return BlocBuilder<CoursesBloc, CoursesState>(
+      builder: (context, state) {
+        if (state is CoursesLoaded) {
+          // Filter courses by savedCourseIds - same as All Courses but filtered
+          final savedCourses = state.allCourses.where((course) {
+            final courseId = course['id'] is int
+                ? course['id'].toString()
+                : course['id']?.toString() ?? '';
+            return state.savedCourseIds.contains(courseId);
+          }).toList();
+
+          // Apply search and filters if active (same as All Courses tab)
+          var filteredSavedCourses = savedCourses;
+
+          // Apply search query if exists
+          if (state.searchQuery.isNotEmpty) {
+            filteredSavedCourses = filteredSavedCourses.where((course) {
+              final queryLower = state.searchQuery.toLowerCase();
+              final title = course['title']?.toString().toLowerCase() ?? '';
+              final description =
+                  course['description']?.toString().toLowerCase() ?? '';
+              final institute =
+                  course['institute']?.toString().toLowerCase() ?? '';
+              return title.contains(queryLower) ||
+                  description.contains(queryLower) ||
+                  institute.contains(queryLower);
+            }).toList();
+          }
+
+          // Apply filters if active
+          filteredSavedCourses = _applyCourseFilters(
+            filteredSavedCourses,
+            state.selectedCategory,
+            state.selectedLevel,
+            state.selectedDuration,
+            state.selectedInstitute,
+          );
+
+          // Use the same courses content builder (replica of All Courses)
+          return RefreshIndicator(
+            color: AppConstants.successColor,
+            onRefresh: () async {
+              context.read<CoursesBloc>().add(
+                const LoadCoursesEvent(forceRefresh: true),
+              );
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: _buildCoursesContentWithList(
+              context,
+              state,
+              filteredSavedCourses,
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  /// Apply filters to courses list (helper method for saved courses tab)
+  List<Map<String, dynamic>> _applyCourseFilters(
+    List<Map<String, dynamic>> courses,
+    String category,
+    String level,
+    String duration,
+    String institute,
+  ) {
+    var filteredCourses = courses;
+
+    if (category != 'All' && category.isNotEmpty) {
+      filteredCourses = filteredCourses.where((course) {
+        final courseCategory =
+            course['category']?.toString().toLowerCase() ?? '';
+        return courseCategory.contains(category.toLowerCase());
+      }).toList();
+    }
+
+    if (level != 'All' && level.isNotEmpty) {
+      filteredCourses = filteredCourses.where((course) {
+        final courseLevel = course['level']?.toString().toLowerCase() ?? '';
+        return courseLevel.contains(level.toLowerCase());
+      }).toList();
+    }
+
+    if (duration != 'All' && duration.isNotEmpty) {
+      filteredCourses = filteredCourses.where((course) {
+        final courseDuration =
+            course['duration']?.toString().toLowerCase() ?? '';
+        return courseDuration.contains(duration.toLowerCase());
+      }).toList();
+    }
+
+    if (institute != 'All' && institute.isNotEmpty) {
+      filteredCourses = filteredCourses.where((course) {
+        final courseInstitute =
+            course['institute']?.toString().toLowerCase() ?? '';
+        return courseInstitute.contains(institute.toLowerCase());
+      }).toList();
+    }
+
+    return filteredCourses;
+  }
+
+  /// Build courses content with custom list (for saved courses tab)
+  Widget _buildCoursesContentWithList(
+    BuildContext context,
+    CoursesState state,
+    List<Map<String, dynamic>> courses,
+  ) {
+    // Check if courses are empty and show empty state
+    if (courses.isEmpty) {
+      final hasActiveFilters =
+          state is CoursesLoaded &&
+          (state.searchQuery.isNotEmpty || state.hasActiveFilters());
+
+      return RefreshIndicator(
+        color: AppConstants.successColor,
+        onRefresh: () async {
+          context.read<CoursesBloc>().add(
+            const LoadCoursesEvent(forceRefresh: true),
+          );
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: EmptyStateWidget(
+              icon: Icons.school_outlined,
+              title: 'No saved courses found',
+              subtitle: 'Try adjusting your search or filters',
+              actionButton: hasActiveFilters
+                  ? ElevatedButton(
+                      onPressed: () {
+                        final bloc = context.read<CoursesBloc>();
+                        bloc.add(const ClearSearchEvent());
+                        bloc.add(const ClearAllFiltersEvent());
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                      ),
+                      child: const Text('Clear All'),
+                    )
+                  : null,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final filterPadding = (state is CoursesLoaded && state.showFilters)
+        ? 92.0
+        : 12.0;
+
+    return CustomScrollView(
+      slivers: [
+        // Animated spacing at top
+        SliverToBoxAdapter(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: filterPadding - 12,
+          ),
+        ),
+        // Course list as SliverList
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppConstants.defaultPadding,
+            12,
+            AppConstants.defaultPadding,
+            0,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (index >= courses.length) return null;
+              final course = courses[index];
+              return Container(
+                margin: const EdgeInsets.only(
+                  bottom: AppConstants.smallPadding,
+                ),
+                child: CourseCard(
+                  course: course,
+                  onTap: () {
+                    NavigationHelper.navigateTo(
+                      AppRoutes.courseDetailsWithId(course['id']),
+                    );
+                  },
+                  onSaveToggle: () {
+                    final courseId = course['id']?.toString();
+                    if (courseId != null && state is CoursesLoaded) {
+                      final isSaved = state.savedCourseIds.contains(courseId);
+                      if (isSaved) {
+                        context.read<CoursesBloc>().add(
+                          UnsaveCourseEvent(courseId: courseId),
+                        );
+                      } else {
+                        context.read<CoursesBloc>().add(
+                          SaveCourseEvent(courseId: courseId),
+                        );
+                      }
+                    }
+                  },
+                ),
+              );
+            }, childCount: courses.length),
+          ),
+        ),
+      ],
     );
   }
 }

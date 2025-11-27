@@ -8,10 +8,23 @@ class PrivacyPolicyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        // Handle system back button
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(AppRoutes.settings);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
           children: [
             // Header section with icon, title, description and back button
             Container(
@@ -25,7 +38,13 @@ class PrivacyPolicyPage extends StatelessWidget {
                       Icons.arrow_back,
                       color: AppConstants.textPrimaryColor,
                     ),
-                    onPressed: () => context.go(AppRoutes.settings),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(AppRoutes.settings);
+                      }
+                    },
                   ),
                   const SizedBox(height: 4),
 
@@ -102,6 +121,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -8,24 +8,39 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppConstants.backgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header section with back icon, title, and notification icon
-            Container(
-              padding: const EdgeInsets.all(AppConstants.defaultPadding),
-              child: Row(
-                children: [
-                  // Back button
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: AppConstants.textPrimaryColor,
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        // Handle system back button
+        if (context.canPop()) {
+          context.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppConstants.backgroundColor,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Header section with back icon, title, and notification icon
+              Container(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: Row(
+                  children: [
+                    // Back button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        }
+                      },
                     ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
 
                   // Title
                   Expanded(
@@ -63,7 +78,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.notifications_outlined,
                     title: 'Notification / नोटिफिकेशन',
                     onTap: () {
-                      context.go(AppRoutes.notificationPermission);
+                      context.push(AppRoutes.notificationPermission);
                     },
                   ),
                   _buildSettingItem(
@@ -71,7 +86,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy / गोपनीयता नीति',
                     onTap: () {
-                      context.go(AppRoutes.privacyPolicy);
+                      context.push(AppRoutes.privacyPolicy);
                     },
                   ),
                   _buildSettingItem(
@@ -79,7 +94,7 @@ class SettingsPage extends StatelessWidget {
                     icon: Icons.article_outlined,
                     title: 'Terms & Conditions / नियम और शर्तें',
                     onTap: () {
-                      context.go(AppRoutes.termsConditions);
+                      context.push(AppRoutes.termsConditions);
                     },
                   ),
                 ],
@@ -87,6 +102,7 @@ class SettingsPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

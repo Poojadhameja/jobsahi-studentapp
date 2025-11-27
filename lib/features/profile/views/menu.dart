@@ -87,50 +87,62 @@ class _MenuScreenState extends State<MenuScreen> {
     return bioString;
   }
 
+  /// Handle back navigation
+  void _handleBackNavigation(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.home);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return KeyboardDismissWrapper(
-      child: Scaffold(
-        backgroundColor: AppConstants.cardBackgroundColor,
-        appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _handleBackNavigation(context);
+        }
+      },
+      child: KeyboardDismissWrapper(
+        child: Scaffold(
           backgroundColor: AppConstants.cardBackgroundColor,
-          elevation: 0,
-          title: const Text(
-            'Menu',
-            style: TextStyle(
-              color: AppConstants.textPrimaryColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
+          appBar: AppBar(
+            backgroundColor: AppConstants.cardBackgroundColor,
+            elevation: 0,
+            title: const Text(
+              'Menu',
+              style: TextStyle(
+                color: AppConstants.textPrimaryColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppConstants.textPrimaryColor,
+              ),
+              onPressed: () {
+                _handleBackNavigation(context);
+              },
             ),
           ),
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: AppConstants.textPrimaryColor,
-            ),
-            onPressed: () {
-              // Navigate back to previous screen
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go(AppRoutes.home);
-              }
-            },
-          ),
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.defaultPadding),
-            child: Column(
-              children: [
-                // Profile header
-                _buildProfileHeader(context),
-                const SizedBox(height: AppConstants.largePadding),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              child: Column(
+                children: [
+                  // Profile header
+                  _buildProfileHeader(context),
+                  const SizedBox(height: AppConstants.largePadding),
 
-                // Menu options
-                _buildMenuOptions(context),
-              ],
+                  // Menu options
+                  _buildMenuOptions(context),
+                ],
+              ),
             ),
           ),
         ),

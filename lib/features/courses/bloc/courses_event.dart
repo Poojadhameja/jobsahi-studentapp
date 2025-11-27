@@ -7,10 +7,11 @@ abstract class CoursesEvent extends Equatable {
 
 /// Load courses event
 class LoadCoursesEvent extends CoursesEvent {
-  const LoadCoursesEvent();
+  final bool forceRefresh;
+  const LoadCoursesEvent({this.forceRefresh = false});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [forceRefresh];
 }
 
 /// Search courses event

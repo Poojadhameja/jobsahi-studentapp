@@ -139,18 +139,20 @@ class DeleteExperienceEvent extends ProfileEvent {
 class UpdateProfileHeaderInlineEvent extends ProfileEvent {
   final String name;
   final String email;
+  final String phone;
   final String location;
   final String? bio;
 
   const UpdateProfileHeaderInlineEvent({
     required this.name,
     required this.email,
+    required this.phone,
     required this.location,
     this.bio,
   });
 
   @override
-  List<Object?> get props => [name, email, location, bio];
+  List<Object?> get props => [name, email, phone, location, bio];
 }
 
 /// Inline resume update event

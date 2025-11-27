@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
@@ -6,16 +7,13 @@ import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/common/navigation_helper.dart';
 import '../../../shared/widgets/common/empty_state_widget.dart';
+import '../../../shared/widgets/common/custom_tab_structure.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../../../shared/widgets/activity_tracker.dart';
+import '../../../shared/services/home_cache_service.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
-import '../../courses/bloc/courses_bloc.dart';
-import '../../courses/bloc/courses_event.dart' as courses;
-import '../../jobs/bloc/jobs_bloc.dart';
-import '../../jobs/bloc/jobs_event.dart' as jobs_events;
-import '../../jobs/bloc/jobs_state.dart' as jobs_states;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,19 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // Load home data when screen initializes
     context.read<HomeBloc>().add(const LoadHomeDataEvent());
-
-    // Preload courses in background for faster access
-    _preloadCourses();
-  }
-
-  /// Preload courses in background
-  void _preloadCourses() {
-    // Add a small delay to not interfere with home loading
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        context.read<CoursesBloc>().add(const courses.LoadCoursesEvent());
-      }
-    });
   }
 
   @override
@@ -97,8 +82,24 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   TabController? _tabController;
+  int _currentBannerIndex = 0;
+  Timer? _bannerTimer;
+  bool _isBannerLoading = true;
+  late AnimationController _skeletonController;
+  bool _allImagesPreloaded = false;
+  bool _isUserHolding = false;
+
+  // Banner images from assets (default, will be loaded from cache if available)
+  List<String> _bannerImages = [
+    'assets/images/banner/banner1.jpg',
+    'assets/images/banner/banner2.jpg',
+    'assets/images/banner/banner3.jpg',
+    'assets/images/banner/banner4.jpg',
+    'assets/images/banner/banner5.jpg',
+  ];
 
   @override
   void initState() {
@@ -109,11 +110,207 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       animationDuration: const Duration(milliseconds: 400),
     );
 
+    _skeletonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+
+    // Load banner images from cache or use default
+    _loadBannerImages();
+    // Timer will start after first image loads (see frameBuilder)
+
     // Removed auto-loading saved jobs on tab switch to avoid redundant API calls
+  }
+
+  /// Load banner images from cache or use default
+  Future<void> _loadBannerImages() async {
+    // Only load once - if already loaded, don't reload
+    if (_allImagesPreloaded) {
+      debugPrint('🔵 [Home] Banner images already loaded, skipping reload');
+      return;
+    }
+
+    try {
+      final cacheService = HomeCacheService.instance;
+      await cacheService.initialize();
+
+      // Try to load from cache
+      final cachedBanners = await cacheService.getBannerImages();
+      if (cachedBanners != null && cachedBanners.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _bannerImages = cachedBanners;
+          });
+        }
+        debugPrint(
+          '🔵 [Home] Loaded ${_bannerImages.length} banner images from cache',
+        );
+      } else {
+        // Store default banner images in cache for first time
+        await cacheService.storeBannerImages(_bannerImages);
+        debugPrint('🔵 [Home] Stored default banner images in cache');
+      }
+    } catch (e) {
+      debugPrint('🔴 [Home] Error loading banner images from cache: $e');
+    }
+
+    // Preload all banner images to prevent white gaps
+    _preloadAllBannerImages();
+  }
+
+  /// Preload all banner images to ensure smooth transitions
+  void _preloadAllBannerImages() {
+    // Only preload once - if already preloaded, don't reload
+    if (_allImagesPreloaded) {
+      debugPrint('🔵 [Home] Banner images already preloaded, skipping');
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted && !_allImagesPreloaded) {
+        // Preload all images and ensure they are fully loaded and decoded
+        final List<Future<void>> loadFutures = [];
+
+        for (int i = 0; i < _bannerImages.length; i++) {
+          final imagePath = _bannerImages[i];
+          final imageProvider = AssetImage(imagePath);
+
+          // Create a future that ensures image is fully loaded and decoded
+          final loadFuture = precacheImage(imageProvider, context)
+              .then((_) async {
+                // Additional step: Resolve the image to ensure it's fully decoded
+                final resolved = imageProvider.resolve(
+                  ImageConfiguration(
+                    size: Size(MediaQuery.of(context).size.width, 180),
+                  ),
+                );
+
+                // Wait for the image to be fully decoded
+                final completer = Completer<void>();
+                final listener = ImageStreamListener(
+                  (ImageInfo info, bool synchronousCall) {
+                    if (!completer.isCompleted) {
+                      completer.complete();
+                    }
+                  },
+                  onError: (exception, stackTrace) {
+                    if (!completer.isCompleted) {
+                      completer.complete();
+                    }
+                  },
+                );
+
+                resolved.addListener(listener);
+
+                // Wait for image to load with timeout
+                try {
+                  await completer.future.timeout(
+                    const Duration(seconds: 5),
+                    onTimeout: () {
+                      if (!completer.isCompleted) {
+                        completer.complete();
+                      }
+                    },
+                  );
+                } catch (e) {
+                  if (!completer.isCompleted) {
+                    completer.complete();
+                  }
+                } finally {
+                  resolved.removeListener(listener);
+                }
+              })
+              .catchError((error) {
+                // Continue even if image fails to load
+              });
+
+          loadFutures.add(loadFuture);
+        }
+
+        // Wait for all images to be fully loaded and decoded
+        try {
+          await Future.wait(loadFutures);
+
+          // Store banner images in cache after successful load
+          final cacheService = HomeCacheService.instance;
+          await cacheService.initialize();
+          await cacheService.storeBannerImages(_bannerImages);
+          debugPrint('🔵 [Home] Stored banner images in cache after load');
+        } catch (e) {
+          // Continue even if some images fail
+          debugPrint('🔴 [Home] Error storing banner images in cache: $e');
+        }
+
+        if (mounted && !_allImagesPreloaded) {
+          setState(() {
+            _allImagesPreloaded = true;
+          });
+
+          // Additional delay to ensure all images are in memory and ready
+          await Future.delayed(const Duration(milliseconds: 300));
+
+          if (mounted && (_bannerTimer == null || !_bannerTimer!.isActive)) {
+            _startBannerTimer();
+          }
+        }
+      }
+    });
+  }
+
+  void _startBannerTimer() {
+    // Only start timer if not already running
+    if (_bannerTimer != null && _bannerTimer!.isActive) {
+      debugPrint('🔵 [Home] Banner timer already running, skipping restart');
+      return;
+    }
+
+    _bannerTimer?.cancel();
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      // Continue running even when widget is not visible
+      // Only pause if user is holding, not based on mounted state
+      if (!_isUserHolding) {
+        // Use postFrameCallback to safely update state even if widget is not visible
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _currentBannerIndex =
+                  (_currentBannerIndex + 1) % _bannerImages.length;
+            });
+          } else {
+            // Update index even if not mounted, so when user returns it's at correct position
+            _currentBannerIndex =
+                (_currentBannerIndex + 1) % _bannerImages.length;
+          }
+        });
+      }
+    });
+  }
+
+  /// Pause banner auto-scroll when user holds
+  void _pauseBannerTimer() {
+    if (!_isUserHolding) {
+      setState(() {
+        _isUserHolding = true;
+      });
+    }
+  }
+
+  /// Resume banner auto-scroll when user releases
+  void _resumeBannerTimer() {
+    if (_isUserHolding) {
+      setState(() {
+        _isUserHolding = false;
+      });
+      // Timer will automatically resume since _isUserHolding is now false
+      // No need to restart timer as it's still running
+    }
   }
 
   @override
   void dispose() {
+    // Don't cancel banner timer - let it continue running
+    // _bannerTimer?.cancel(); // Commented out to keep timer running
+    _skeletonController.dispose();
     _tabController?.dispose();
     super.dispose();
   }
@@ -128,7 +325,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   @override
+  bool get wantKeepAlive => true; // Keep widget alive to maintain banner timer
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return BlocBuilder<HomeBloc, HomeState>(
       builder: (context, state) {
         final isLoading = state is HomeLoading;
@@ -146,16 +347,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         }
 
         return SafeArea(
-          child: Stack(
-            children: [
-              // Main content with NestedScrollView
-              NestedScrollView(
+          child: KeyboardDismissWrapper(
+            child: Container(
+              color: Colors.white,
+              child: NestedScrollView(
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: _StickyTabBarDelegate(child: _buildTabBar()),
-                    ),
+                    // Banner Sliver - scrollable (not sticky)
+                    SliverToBoxAdapter(child: _buildBanner()),
                   ];
                 },
                 body: isLoading
@@ -165,13 +364,67 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ),
                       )
                     : homeLoaded != null
-                    ? TabBarView(
-                        controller: tabController,
-                        physics: const ClampingScrollPhysics(),
-                        children: [
-                          _buildAllJobsTab(homeLoaded),
-                          _buildSavedJobsTab(homeLoaded),
-                        ],
+                    ? DefaultTabController(
+                        length: 2,
+                        child: Builder(
+                          builder: (innerContext) {
+                            return Stack(
+                              children: [
+                                // Main content structure (same as courses section)
+                                CustomTabStructure(
+                                  tabs: const [
+                                    TabConfig(title: 'All Jobs'),
+                                    TabConfig(title: 'Saved Jobs'),
+                                  ],
+                                  tabContents: [
+                                    _buildAllJobsTab(),
+                                    _buildSavedJobsTab(),
+                                  ],
+                                ),
+                                // Filter chips overlay - positioned right after tab bar (same as courses section)
+                                Positioned(
+                                  top:
+                                      56, // Tab bar height (48px) + bottom padding (8px) = 56px
+                                  left: 0,
+                                  right: 0,
+                                  child: BlocBuilder<HomeBloc, HomeState>(
+                                    builder: (context, state) {
+                                      if (state is HomeLoaded) {
+                                        final showFilters = state.showFilters;
+                                        return TweenAnimationBuilder<double>(
+                                          tween: Tween(
+                                            begin: 0.0,
+                                            end: showFilters ? 1.0 : 0.0,
+                                          ),
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          curve: Curves.easeInOut,
+                                          builder: (context, value, child) {
+                                            return ClipRect(
+                                              child: Transform.translate(
+                                                offset: Offset(
+                                                  0,
+                                                  -80 * (1 - value),
+                                                ),
+                                                child: Opacity(
+                                                  opacity: value,
+                                                  child: child,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: _buildFiltersSection(),
+                                        );
+                                      }
+                                      return const SizedBox.shrink();
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       )
                     : const Center(
                         child: CircularProgressIndicator(
@@ -179,39 +432,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ),
                       ),
               ),
-              // Filter chips overlay - positioned above everything with z-index
-              if (!isLoading && homeLoaded != null)
-                Positioned(
-                  top: 56, // Below the pinned tab bar (48 + 8 bottom padding)
-                  left: 0,
-                  right: 0,
-                  child: BlocBuilder<HomeBloc, HomeState>(
-                    builder: (context, state) {
-                      if (state is HomeLoaded) {
-                        final showFilters = state.showFilters;
-                        return TweenAnimationBuilder<double>(
-                          tween: Tween(
-                            begin: 0.0,
-                            end: showFilters ? 1.0 : 0.0,
-                          ),
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          builder: (context, value, child) {
-                            return ClipRect(
-                              child: Transform.translate(
-                                offset: Offset(0, -80 * (1 - value)),
-                                child: Opacity(opacity: value, child: child),
-                              ),
-                            );
-                          },
-                          child: _buildFiltersSection(),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ),
-            ],
+            ),
           ),
         );
       },
@@ -235,138 +456,386 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
-  /// Builds the tab bar
-  Widget _buildTabBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppConstants.cardBackgroundColor,
-        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5)),
+  /// Builds a single banner image widget
+  Widget _buildBannerImage(int index) {
+    // Calculate cache dimensions based on screen width for better performance
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cacheWidth = (screenWidth * MediaQuery.of(context).devicePixelRatio)
+        .round();
+    final cacheHeight = (180 * MediaQuery.of(context).devicePixelRatio).round();
+
+    return SizedBox.expand(
+      key: ValueKey('banner_$index'),
+      child: Image.asset(
+        _bannerImages[index],
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        cacheWidth: cacheWidth,
+        cacheHeight: cacheHeight,
+        alignment: Alignment.center,
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+          // If image is already loaded (precached), show it immediately
+          if (wasSynchronouslyLoaded || frame != null) {
+            // Update loading state only for the first image
+            if (index == 0 && _isBannerLoading) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _isBannerLoading) {
+                  setState(() {
+                    _isBannerLoading = false;
+                  });
+                }
+              });
+            }
+            return child;
+          }
+          // If image is not loaded yet, show a placeholder that matches the image background
+          // This prevents white flash during transitions
+          return Container(color: Colors.grey.shade300, child: child);
+        },
+        errorBuilder: (context, error, stackTrace) {
+          if (index == _currentBannerIndex && mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _isBannerLoading = false;
+                });
+              }
+            });
+          }
+          return Container(
+            color: AppConstants.primaryColor,
+            child: Center(
+              child: Icon(
+                Icons.image_outlined,
+                size: 64,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+          );
+        },
       ),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
-        child: TabBar(
-          controller: tabController,
-          labelColor: AppConstants.primaryColor,
-          unselectedLabelColor: AppConstants.textSecondaryColor,
-          indicatorColor: AppConstants.primaryColor,
-          indicatorWeight: 3,
-          dividerColor: Colors.transparent,
-          tabs: const [
-            Tab(text: 'All Jobs'),
-            Tab(text: 'Saved Jobs'),
-          ],
+    );
+  }
+
+  /// Builds the banner carousel
+  Widget _buildBanner() {
+    return Container(
+      height: 180,
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppConstants.defaultPadding,
+        vertical: AppConstants.defaultPadding,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        border: _isBannerLoading
+            ? Border.all(color: Colors.grey.withValues(alpha: 0.2), width: 1)
+            : null,
+        boxShadow: _isBannerLoading
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        child: GestureDetector(
+          onTapDown: (_) => _pauseBannerTimer(),
+          onTapUp: (_) => _resumeBannerTimer(),
+          onTapCancel: () => _resumeBannerTimer(),
+          child: Stack(
+            children: [
+              // Skeleton loader with green loader in center
+              if (_isBannerLoading)
+                SizedBox.expand(
+                  child: AnimatedBuilder(
+                    animation: _skeletonController,
+                    builder: (context, child) {
+                      return Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(
+                              -1.0 - _skeletonController.value * 2,
+                              0.0,
+                            ),
+                            end: Alignment(
+                              1.0 - _skeletonController.value * 2,
+                              0.0,
+                            ),
+                            colors: [
+                              Colors.white,
+                              Colors.grey[50]!,
+                              Colors.white,
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
+                          ),
+                        ),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppConstants.secondaryColor,
+                            strokeWidth: 3,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              // Stack-based cross-fade transition to prevent white space
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 600),
+                switchInCurve: Curves.easeInOut,
+                switchOutCurve: Curves.easeInOut,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                layoutBuilder:
+                    (Widget? currentChild, List<Widget> previousChildren) {
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: <Widget>[
+                          // Keep previous images visible during fade out
+                          ...previousChildren,
+                          // Show current image fading in
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
+                child: _buildBannerImage(_currentBannerIndex),
+              ),
+              // Page indicators (small dots)
+              Positioned(
+                bottom: 12,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _bannerImages.length,
+                    (index) => Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _currentBannerIndex == index
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   /// Builds the All Jobs tab
-  Widget _buildAllJobsTab(HomeLoaded state) {
-    return _buildRecommendedJobsSection(state.filteredJobs);
+  Widget _buildAllJobsTab() {
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        if (state is HomeLoaded) {
+          return _buildRecommendedJobsSection(state.filteredJobs);
+        }
+        return const SizedBox.shrink();
+      },
+    );
   }
 
   /// Builds the Saved Jobs tab
-  Widget _buildSavedJobsTab(HomeLoaded state) {
-    final currentState = context.read<HomeBloc>().state;
-    final filterPadding =
-        (currentState is HomeLoaded && currentState.showFilters) ? 92.0 : 12.0;
-
-    // Use BlocBuilder to listen to JobsBloc for saved jobs from API
-    return BlocBuilder<JobsBloc, jobs_states.JobsState>(
-      builder: (context, jobsState) {
-        // Show loading state
-        if (jobsState is jobs_states.JobsLoading) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text(
-                  'Loading saved jobs...',
-                  style: TextStyle(color: AppConstants.textSecondaryColor),
-                ),
-              ],
-            ),
-          );
-        }
-
-        // Get saved jobs from API response
-        List<Map<String, dynamic>> savedJobs = [];
-        if (jobsState is jobs_states.SavedJobsLoaded) {
-          savedJobs = jobsState.savedJobs;
-        } else {
-          // Fallback: use jobs from HomeBloc state filtered by savedJobIds
-          savedJobs = state.allJobs.where((job) {
+  /// Replica of All Jobs tab - just filters by savedJobIds
+  Widget _buildSavedJobsTab() {
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        if (state is HomeLoaded) {
+          // Filter jobs by savedJobIds - same as All Jobs but filtered
+          final savedJobs = state.allJobs.where((job) {
             final jobId = job['id'] is int
                 ? job['id'].toString()
                 : job['id']?.toString() ?? '';
             return state.savedJobIds.contains(jobId);
           }).toList();
-        }
 
-        // Show empty state
-        if (savedJobs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.bookmark_border,
-                  size: 80,
-                  color: AppConstants.textSecondaryColor,
-                ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                const Text(
-                  'No saved jobs',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppConstants.primaryColor,
-                  ),
-                ),
-                const SizedBox(height: AppConstants.smallPadding),
-                Text(
-                  'Save jobs to view them here',
-                  style: TextStyle(color: AppConstants.textSecondaryColor),
-                ),
-                const SizedBox(height: AppConstants.defaultPadding),
-                ElevatedButton(
-                  onPressed: () {
-                    // Slide to All Jobs tab (index 0)
-                    tabController.animateTo(0);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.borderRadius,
-                      ),
-                    ),
-                  ),
-                  child: const Text('Browse Jobs'),
-                ),
-              ],
-            ),
-          );
-        }
+          // Apply search and filters if active (same as All Jobs tab)
+          var filteredSavedJobs = savedJobs;
 
-        // Show saved jobs list
-        return RefreshIndicator(
-          onRefresh: () async {
-            context.read<JobsBloc>().add(
-              const jobs_events.LoadSavedJobsEvent(),
+          // Apply search query if exists
+          if (state.searchQuery.isNotEmpty) {
+            filteredSavedJobs = filteredSavedJobs.where((job) {
+              final queryLower = state.searchQuery.toLowerCase();
+              return job['title'].toString().toLowerCase().contains(
+                    queryLower,
+                  ) ||
+                  job['company'].toString().toLowerCase().contains(
+                    queryLower,
+                  ) ||
+                  job['location'].toString().toLowerCase().contains(queryLower);
+            }).toList();
+          }
+
+          // Apply active filters if exists
+          if (state.activeFilters.isNotEmpty) {
+            filteredSavedJobs = _applyFiltersToJobs(
+              filteredSavedJobs,
+              state.activeFilters,
             );
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
-          child: CustomScrollView(
+          }
+
+          // Use the same recommended jobs section builder (replica of All Jobs)
+          return _buildRecommendedJobsSection(filteredSavedJobs);
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  /// Apply filters to jobs list (helper method for saved jobs tab)
+  List<Map<String, dynamic>> _applyFiltersToJobs(
+    List<Map<String, dynamic>> jobs,
+    Map<String, String?> filters,
+  ) {
+    if (filters.isEmpty) return jobs;
+
+    var filteredJobs = jobs;
+
+    for (final entry in filters.entries) {
+      final filterType = entry.key;
+      final filterValue = entry.value;
+
+      if (filterValue == null || filterValue.isEmpty) continue;
+
+      filteredJobs = filteredJobs.where((job) {
+        switch (filterType) {
+          case 'fields':
+            final title = job['title']?.toString().toLowerCase() ?? '';
+            final description =
+                job['description']?.toString().toLowerCase() ?? '';
+            final filterLower = filterValue.toLowerCase();
+            return title.contains(filterLower) ||
+                description.contains(filterLower);
+
+          case 'salary':
+            final salary = job['salary']?.toString() ?? '';
+            return salary.toLowerCase().contains(filterValue.toLowerCase());
+
+          case 'location':
+            final location = job['location']?.toString().toLowerCase() ?? '';
+            return location.contains(filterValue.toLowerCase());
+
+          case 'job_type':
+            final jobType =
+                job['job_type_display']?.toString() ??
+                job['job_type']?.toString() ??
+                '';
+            final normalizedType = jobType.toLowerCase();
+            final filterLower = filterValue.toLowerCase();
+
+            if (filterLower == 'full-time') {
+              return normalizedType.contains('full');
+            } else if (filterLower == 'part-time') {
+              return normalizedType.contains('part');
+            } else if (filterLower == 'internship') {
+              return normalizedType.contains('intern');
+            }
+            return false;
+
+          case 'work_mode':
+            final isRemote = job['is_remote'] ?? false;
+            final filterLower = filterValue.toLowerCase();
+
+            if (filterLower == 'remote') {
+              return isRemote;
+            } else if (filterLower == 'on-site') {
+              return !isRemote;
+            }
+            return false;
+
+          default:
+            return true;
+        }
+      }).toList();
+    }
+
+    return filteredJobs;
+  }
+
+  /// Builds the recommended jobs section
+  Widget _buildRecommendedJobsSection(List<Map<String, dynamic>> jobs) {
+    return RefreshIndicator(
+      color: AppConstants.successColor,
+      onRefresh: () async {
+        context.read<HomeBloc>().add(const LoadHomeDataEvent());
+        await Future.delayed(const Duration(milliseconds: 500));
+      },
+      child: BlocBuilder<HomeBloc, HomeState>(
+        builder: (context, state) {
+          // Check if jobs are empty and show empty state
+          if (jobs.isEmpty) {
+            final hasActiveFilters =
+                state is HomeLoaded &&
+                (state.searchQuery.isNotEmpty ||
+                    state.activeFilters.isNotEmpty);
+
+            return RefreshIndicator(
+              color: AppConstants.successColor,
+              onRefresh: () async {
+                context.read<HomeBloc>().add(const LoadHomeDataEvent());
+                await Future.delayed(const Duration(milliseconds: 500));
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: EmptyStateWidget(
+                    icon: Icons.search_off,
+                    title: 'No jobs found',
+                    subtitle: 'Try adjusting your search or filters',
+                    actionButton: hasActiveFilters
+                        ? ElevatedButton(
+                            onPressed: () {
+                              final bloc = context.read<HomeBloc>();
+                              bloc.add(const ClearSearchEvent());
+                              bloc.add(const ClearAllFiltersEvent());
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppConstants.primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppConstants.borderRadius,
+                                ),
+                              ),
+                            ),
+                            child: const Text('Clear All'),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          final filterPadding = (state is HomeLoaded && state.showFilters)
+              ? 92.0
+              : 12.0;
+
+          return CustomScrollView(
             slivers: [
-              // Animated spacing at top
+              // Animated spacing at top (same as courses section)
               SliverToBoxAdapter(
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
@@ -384,17 +853,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    final job = savedJobs[index];
-                    // Safely extract job ID
-                    final jobId = job['id'] is int
-                        ? job['id'].toString()
-                        : job['id']?.toString() ?? '';
-
-                    // Check if this job is featured
-                    final currentState = context.read<HomeBloc>().state;
+                    final job = jobs[index];
+                    final currentState = BlocProvider.of<HomeBloc>(
+                      context,
+                    ).state;
                     final homeLoaded = currentState is HomeLoaded
                         ? currentState
                         : null;
+
+                    // Check if this job is featured
+                    final jobId = job['id'] is int
+                        ? job['id'].toString()
+                        : job['id']?.toString() ?? '';
                     final isFeatured =
                         homeLoaded != null &&
                         homeLoaded.featuredJobs.any((featuredJob) {
@@ -415,132 +885,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       },
                       onSaveToggle: () {
                         _handleSaveToggle(job);
-                        // Reload saved jobs after toggle
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          context.read<JobsBloc>().add(
-                            const jobs_events.LoadSavedJobsEvent(),
-                          );
-                        });
                       },
-                      isSaved: true,
+                      isSaved:
+                          homeLoaded != null &&
+                          homeLoaded.savedJobIds.contains(jobId),
                       isFeatured: isFeatured,
                     );
-                  }, childCount: savedJobs.length),
+                  }, childCount: jobs.length),
                 ),
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// Builds the recommended jobs section
-  Widget _buildRecommendedJobsSection(List<Map<String, dynamic>> jobs) {
-    return BlocBuilder<HomeBloc, HomeState>(
-      builder: (context, state) {
-        // Check if jobs are empty and show empty state
-        if (jobs.isEmpty) {
-          final hasActiveFilters =
-              state is HomeLoaded &&
-              (state.searchQuery.isNotEmpty || state.activeFilters.isNotEmpty);
-
-          return EmptyStateWidget(
-            icon: Icons.search_off,
-            title: 'No jobs found',
-            subtitle: 'Try adjusting your search or filters',
-            actionButton: hasActiveFilters
-                ? ElevatedButton(
-                    onPressed: () {
-                      final bloc = context.read<HomeBloc>();
-                      bloc.add(const ClearSearchEvent());
-                      bloc.add(const ClearAllFiltersEvent());
-                      // Do not toggle filters visibility here; keep chips section open
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
-                        ),
-                      ),
-                    ),
-                    child: const Text('Clear All'),
-                  )
-                : null,
           );
-        }
-
-        final filterPadding = (state is HomeLoaded && state.showFilters)
-            ? 92.0
-            : 12.0;
-        return CustomScrollView(
-          slivers: [
-            // Animated spacing at top
-            SliverToBoxAdapter(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                height: filterPadding - 12,
-              ),
-            ),
-            // Job list as SliverList
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.defaultPadding,
-                12,
-                AppConstants.defaultPadding,
-                0,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final job = jobs[index];
-                  final currentState = BlocProvider.of<HomeBloc>(context).state;
-                  final homeLoaded = currentState is HomeLoaded
-                      ? currentState
-                      : null;
-
-                  // Check if this job is featured
-                  final jobId = job['id'] is int
-                      ? job['id'].toString()
-                      : job['id']?.toString() ?? '';
-                  final isFeatured =
-                      homeLoaded != null &&
-                      homeLoaded.featuredJobs.any((featuredJob) {
-                        final featuredJobId = featuredJob['id'] is int
-                            ? featuredJob['id'].toString()
-                            : featuredJob['id']?.toString() ?? '';
-                        return featuredJobId == jobId;
-                      });
-
-                  return JobCard(
-                    job: job,
-                    onTap: () {
-                      if (jobId.isNotEmpty) {
-                        NavigationHelper.navigateTo(
-                          AppRoutes.jobDetailsWithId(jobId),
-                        );
-                      }
-                    },
-                    onSaveToggle: () {
-                      _handleSaveToggle(job);
-                    },
-                    isSaved:
-                        homeLoaded != null &&
-                        homeLoaded.savedJobIds.contains(jobId),
-                    isFeatured: isFeatured,
-                  );
-                }, childCount: jobs.length),
-              ),
-            ),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 
@@ -559,6 +916,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             decoration: const BoxDecoration(
               color: AppConstants.cardBackgroundColor,
               border: Border(
+                top: BorderSide(color: Colors.grey, width: 0.5),
                 bottom: BorderSide(color: Colors.grey, width: 0.5),
               ),
             ),
@@ -732,33 +1090,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         );
       },
     );
-  }
-}
-
-/// Delegate for sticky tab bar
-class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-
-  _StickyTabBarDelegate({required this.child});
-
-  @override
-  double get minExtent => 56.0; // 48 + 8 bottom padding
-
-  @override
-  double get maxExtent => 56.0; // 48 + 8 bottom padding
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
-    return oldDelegate.child != child;
   }
 }
 

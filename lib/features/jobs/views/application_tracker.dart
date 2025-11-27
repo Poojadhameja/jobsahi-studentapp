@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/profile_navigation_app_bar.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/common/empty_state_widget.dart';
@@ -29,9 +30,21 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         try {
+          final currentState = context.read<JobsBloc>().state;
+          print('🟢 [Tracker] Widget initState - Current BLoC state: ${currentState.runtimeType}');
+          
+          if (currentState is ApplicationTrackerLoaded) {
+            print('🟢 [Tracker] Previous data exists: ${currentState.appliedJobs.length} applied, ${currentState.interviewJobs.length} interviews');
+            print('🟢 [Tracker] Refreshing data in background...');
+          } else {
+            print('🟡 [Tracker] No previous data, will load with loading indicator');
+          }
+          
+          // Always dispatch event to refresh data (BLoC will decide if loading should show)
           context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
         } catch (e) {
           // BLoC not available, ignore
+          print('🔴 [Tracker] Error accessing BLoC: $e');
         }
       }
     });
@@ -54,8 +67,14 @@ class _ApplicationTrackerScreenView extends StatefulWidget {
 }
 
 class _ApplicationTrackerScreenViewState
-    extends State<_ApplicationTrackerScreenView> with TickerProviderStateMixin {
+    extends State<_ApplicationTrackerScreenView>
+    with TickerProviderStateMixin {
   TabController? _tabController;
+  
+  // Cache the last loaded data to prevent showing empty state during reload
+  List<Map<String, dynamic>> _cachedAppliedJobs = [];
+  List<Map<String, dynamic>> _cachedInterviewJobs = [];
+  bool _cacheInitialized = false;
 
   @override
   void initState() {
@@ -65,6 +84,47 @@ class _ApplicationTrackerScreenViewState
       vsync: this,
       animationDuration: const Duration(milliseconds: 400),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Initialize cache from BLoC state if available (only once)
+    if (!_cacheInitialized) {
+      _initializeCacheFromBloC();
+      _cacheInitialized = true;
+    }
+  }
+
+  /// Initialize cache from existing BLoC state if available
+  void _initializeCacheFromBloC() {
+    try {
+      final currentState = context.read<JobsBloc>().state;
+      print('🟢 [Tracker] Initializing cache from BLoC state: ${currentState.runtimeType}');
+      
+      if (currentState is ApplicationTrackerLoaded) {
+        _cachedAppliedJobs = currentState.appliedJobs;
+        _cachedInterviewJobs = currentState.interviewJobs;
+        print('🟢 [Tracker] Cache initialized from ApplicationTrackerLoaded: ${_cachedAppliedJobs.length} applied, ${_cachedInterviewJobs.length} interviews');
+      } 
+      // Check JobsLoaded state for cached tracker data
+      else if (currentState is JobsLoaded) {
+        if (currentState.trackerAppliedJobs != null && 
+            currentState.trackerInterviewJobs != null) {
+          _cachedAppliedJobs = currentState.trackerAppliedJobs!;
+          _cachedInterviewJobs = currentState.trackerInterviewJobs!;
+          print('🟢 [Tracker] Cache initialized from JobsLoaded.trackerData: ${_cachedAppliedJobs.length} applied, ${_cachedInterviewJobs.length} interviews');
+        } else {
+          print('🟡 [Tracker] JobsLoaded state exists but has no tracker data, cache remains empty');
+        }
+      }
+      else {
+        print('🟡 [Tracker] No previous ApplicationTrackerLoaded state, cache remains empty');
+      }
+    } catch (e) {
+      print('🔴 [Tracker] Error initializing cache: $e');
+    }
   }
 
   @override
@@ -83,7 +143,7 @@ class _ApplicationTrackerScreenViewState
   /// Handles both string and nested map formats
   String _getCompanyName(Map<String, dynamic> job, [String fallback = '']) {
     String companyName = '';
-    
+
     // First try company_name (flat string from SavedJobItem.toMap())
     if (job['company_name'] != null) {
       final name = job['company_name'];
@@ -127,81 +187,127 @@ class _ApplicationTrackerScreenViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<JobsBloc, JobsState>(
-      listener: (context, state) {
-        if (state is ApplicationViewed) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Viewing application: ${state.applicationId}'),
-              backgroundColor: AppConstants.successColor,
-            ),
-          );
-        } else if (state is ApplyForMoreJobsState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Apply for more jobs functionality will be implemented here',
-              ),
-              backgroundColor: AppConstants.successColor,
-            ),
-          );
-        } else if (state is JobsError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-          );
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        // Handle system back button - navigate back to menu if from profile
+        if (widget.isFromProfile) {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(AppRoutes.profile);
+          }
+        } else {
+          // Normal navigation for bottom nav
+          if (context.canPop()) {
+            context.pop();
+          }
         }
       },
-      child: BlocBuilder<JobsBloc, JobsState>(
-        builder: (context, state) {
-          // Show loading state with green loader
-          // Check for initial state or loading state, or if data is not loaded yet
-          if (state is JobsLoading || 
-              state is JobsInitial ||
-              (state is! ApplicationTrackerLoaded && state is! JobsError)) {
-            return Scaffold(
-              backgroundColor: AppConstants.backgroundColor,
-              appBar: widget.isFromProfile
-                  ? ProfileNavigationAppBar(title: 'Application Tracker')
-                  : null,
-              body: const Center(
-                child: CircularProgressIndicator(
-                  color: AppConstants.successColor,
+      child: BlocListener<JobsBloc, JobsState>(
+        listener: (context, state) {
+          if (state is ApplicationViewed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Viewing application: ${state.applicationId}'),
+                backgroundColor: AppConstants.successColor,
+              ),
+            );
+          } else if (state is ApplyForMoreJobsState) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Apply for more jobs functionality will be implemented here',
                 ),
+                backgroundColor: AppConstants.successColor,
+              ),
+            );
+          } else if (state is JobsError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
               ),
             );
           }
-
-          List<Map<String, dynamic>> appliedJobs = [];
-          List<Map<String, dynamic>> interviewJobs = [];
-
-          if (state is ApplicationTrackerLoaded) {
-            appliedJobs = state.appliedJobs;
-            interviewJobs = state.interviewJobs;
-          }
-
-          return KeyboardDismissWrapper(
-            child: Scaffold(
-              backgroundColor: AppConstants.backgroundColor,
-              appBar: widget.isFromProfile
-                  ? ProfileNavigationAppBar(title: 'Application Tracker')
-                  : null,
-              body: Column(
-                children: [
-                  if (!widget.isFromProfile) _buildTabBar(),
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildAppliedTab(context, appliedJobs),
-                        _buildInterviewTab(context, interviewJobs),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
         },
+        child: KeyboardDismissWrapper(
+          child: Scaffold(
+            backgroundColor: AppConstants.backgroundColor,
+            appBar: widget.isFromProfile
+                ? ProfileNavigationAppBar(title: 'Application Tracker')
+                : null,
+            body: BlocBuilder<JobsBloc, JobsState>(
+              builder: (context, state) {
+                print('🟢 [Tracker] BlocBuilder - State: ${state.runtimeType}, Cache: ${_cachedAppliedJobs.length} applied, ${_cachedInterviewJobs.length} interviews');
+                
+                // Get data from state and update cache when data is available
+                List<Map<String, dynamic>> appliedJobs = _cachedAppliedJobs;
+                List<Map<String, dynamic>> interviewJobs = _cachedInterviewJobs;
+
+                if (state is ApplicationTrackerLoaded) {
+                  // Update cache with latest data
+                  _cachedAppliedJobs = state.appliedJobs;
+                  _cachedInterviewJobs = state.interviewJobs;
+                  appliedJobs = state.appliedJobs;
+                  interviewJobs = state.interviewJobs;
+                  print('🟢 [Tracker] Cache updated from ApplicationTrackerLoaded: ${appliedJobs.length} applied, ${interviewJobs.length} interviews');
+                }
+                // Also check JobsLoaded for tracker data
+                else if (state is JobsLoaded && 
+                         state.trackerAppliedJobs != null && 
+                         state.trackerInterviewJobs != null) {
+                  // Update cache with tracker data from JobsLoaded
+                  _cachedAppliedJobs = state.trackerAppliedJobs!;
+                  _cachedInterviewJobs = state.trackerInterviewJobs!;
+                  appliedJobs = state.trackerAppliedJobs!;
+                  interviewJobs = state.trackerInterviewJobs!;
+                  print('🟢 [Tracker] Cache updated from JobsLoaded.trackerData: ${appliedJobs.length} applied, ${interviewJobs.length} interviews');
+                }
+
+                // Show loading state ONLY on very first load (when cache is empty AND no data in JobsLoaded)
+                bool hasDataAvailable = _cachedAppliedJobs.isNotEmpty || 
+                                       _cachedInterviewJobs.isNotEmpty ||
+                                       (state is JobsLoaded && 
+                                        state.trackerAppliedJobs != null && 
+                                        state.trackerInterviewJobs != null);
+                
+                final showLoading = (state is JobsLoading || state is JobsInitial) && !hasDataAvailable;
+                    
+                if (showLoading) {
+                  print('🟡 [Tracker] Showing loading spinner (no data available)');
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppConstants.secondaryColor,
+                    ),
+                  );
+                }
+                
+                print('🟢 [Tracker] Showing content (data available: ${appliedJobs.length} applied, ${interviewJobs.length} interviews)');
+
+
+                // Always show content - use cached data during reload to prevent empty state flash
+                return Column(
+                  children: [
+                    if (!widget.isFromProfile) _buildTabBar(),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildAppliedTab(context, appliedJobs),
+                          _buildInterviewTab(context, interviewJobs),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -229,9 +335,26 @@ class _ApplicationTrackerScreenViewState
     BuildContext context,
     List<Map<String, dynamic>> appliedJobs,
   ) {
-    return Padding(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: _buildAppliedCard(context, appliedJobs),
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        // Update appliedJobs from state if available
+        List<Map<String, dynamic>> currentAppliedJobs = appliedJobs;
+        if (state is ApplicationTrackerLoaded) {
+          currentAppliedJobs = state.appliedJobs;
+        }
+
+        return RefreshIndicator(
+          color: AppConstants.successColor,
+          onRefresh: () async {
+            context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: _buildAppliedCard(context, currentAppliedJobs),
+          ),
+        );
+      },
     );
   }
 
@@ -240,9 +363,26 @@ class _ApplicationTrackerScreenViewState
     BuildContext context,
     List<Map<String, dynamic>> interviewJobs,
   ) {
-    return Padding(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: _buildInterviewCards(context, interviewJobs),
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        // Get latest data from state
+        List<Map<String, dynamic>> currentInterviewJobs = interviewJobs;
+        if (state is ApplicationTrackerLoaded) {
+          currentInterviewJobs = state.interviewJobs;
+        }
+
+        return RefreshIndicator(
+          color: AppConstants.successColor,
+          onRefresh: () async {
+            context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: _buildInterviewCards(context, currentInterviewJobs),
+          ),
+        );
+      },
     );
   }
 
@@ -252,61 +392,115 @@ class _ApplicationTrackerScreenViewState
     List<Map<String, dynamic>> appliedJobs,
   ) {
     if (appliedJobs.isEmpty) {
-      return EmptyStateWidget(
-        icon: Icons.description_outlined,
-        title: 'No Applied Jobs',
-        subtitle: 'You haven\'t applied to any jobs yet.\nBrowse jobs and apply to the ones you\'re interested in.',
-        actionButton: ElevatedButton(
-          onPressed: () {
-            context.goNamed('home');
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppConstants.primaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 14,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                AppConstants.borderRadius,
+      return RefreshIndicator(
+        color: AppConstants.successColor,
+        onRefresh: () async {
+          context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: EmptyStateWidget(
+              icon: Icons.description_outlined,
+              title: 'No Applied Jobs',
+              subtitle:
+                  'You haven\'t applied to any jobs yet.\nBrowse jobs and apply to the ones you\'re interested in.',
+              actionButton: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      context.goNamed('home');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                    ),
+                    child: const Text(
+                      'Browse Jobs',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.read<JobsBloc>().add(
+                        const LoadApplicationTrackerEvent(),
+                      );
+                    },
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Reload'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.successColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          child: const Text(
-            'Browse Jobs',
-          style: TextStyle(
-            fontSize: 16,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ),
       );
     }
 
-    return ListView.builder(
-      itemCount: appliedJobs.length,
-      itemBuilder: (context, index) {
-        final job = appliedJobs[index];
-        final applicationId =
-            job['application_id']?.toString() ??
-            job['id']?.toString() ??
-            '$index';
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: _buildAppliedJobCard(
-            context: context,
-            jobTitle: _capitalizeFirst(job['title']?.toString() ?? 'Job Title'),
-            companyName: _getCompanyName(job, 'Company Name'),
-            location: job['location']?.toString() ?? 'Location',
-            experience: job['experience']?.toString() ?? 'Fresher',
-            appliedDate: job['appliedDate']?.toString() ?? 'Applied Date',
-            positions: job['positions']?.toString() ?? 'Positions',
-            salary: job['salary']?.toString() ?? '',
-            applicationId: applicationId,
-            jobData: job,
-            status: job['status']?.toString() ?? 'Applied',
-          ),
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        // Get latest data from state
+        List<Map<String, dynamic>> currentAppliedJobs = appliedJobs;
+        if (state is ApplicationTrackerLoaded) {
+          currentAppliedJobs = state.appliedJobs;
+        }
+
+        return ListView.builder(
+          itemCount: currentAppliedJobs.length,
+          itemBuilder: (context, index) {
+            final job = currentAppliedJobs[index];
+            final applicationId =
+                job['application_id']?.toString() ??
+                job['id']?.toString() ??
+                '$index';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildAppliedJobCard(
+                context: context,
+                jobTitle: _capitalizeFirst(
+                  job['title']?.toString() ?? 'Job Title',
+                ),
+                companyName: _getCompanyName(job, 'Company Name'),
+                location: job['location']?.toString() ?? 'Location',
+                experience: job['experience']?.toString() ?? 'Fresher',
+                appliedDate: job['appliedDate']?.toString() ?? 'Applied Date',
+                positions: job['positions']?.toString() ?? 'Positions',
+                salary: job['salary']?.toString() ?? '',
+                applicationId: applicationId,
+                jobData: job,
+                status: job['status']?.toString() ?? 'Applied',
+              ),
+            );
+          },
         );
       },
     );
@@ -336,9 +530,9 @@ class _ApplicationTrackerScreenViewState
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with icon, title, company, and status badge
-              _buildJobHeader(jobTitle, companyName, status),
+          children: [
+            // Header with icon, title, company, and status badge
+            _buildJobHeader(jobTitle, companyName, status),
             const SizedBox(height: AppConstants.smallPadding),
             // Job info (location and experience)
             _buildJobInfo(location, experience),
@@ -405,10 +599,7 @@ class _ApplicationTrackerScreenViewState
         // Status badge (only show for Shortlisted, hide for Applied)
         if (status.toLowerCase() == 'shortlisted')
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 6,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppConstants.successColor, // Green for shortlisted
               borderRadius: BorderRadius.circular(16),
@@ -532,101 +723,161 @@ class _ApplicationTrackerScreenViewState
     List<Map<String, dynamic>> interviewJobs,
   ) {
     if (interviewJobs.isEmpty) {
-      return EmptyStateWidget(
-        icon: Icons.star_outline,
-        title: 'No Shortlisted Jobs',
-        subtitle: 'You haven\'t been shortlisted for any jobs yet.\nBrowse jobs and apply to the ones you\'re interested in.',
-        actionButton: ElevatedButton(
-          onPressed: () {
-            context.goNamed('home');
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppConstants.primaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 32,
-              vertical: 14,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                AppConstants.borderRadius,
+      return RefreshIndicator(
+        color: AppConstants.successColor,
+        onRefresh: () async {
+          context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: EmptyStateWidget(
+              icon: Icons.star_outline,
+              title: 'No Shortlisted Jobs',
+              subtitle:
+                  'You haven\'t been shortlisted for any jobs yet.\nBrowse jobs and apply to the ones you\'re interested in.',
+              actionButton: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      context.goNamed('home');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                    ),
+                    child: const Text(
+                      'Browse Jobs',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      context.read<JobsBloc>().add(
+                        const LoadApplicationTrackerEvent(),
+                      );
+                    },
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Reload'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.successColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          child: const Text(
-            'Browse Jobs',
-          style: TextStyle(
-            fontSize: 16,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ),
       );
     }
 
-    return ListView.builder(
-      itemCount: interviewJobs.length,
-      itemBuilder: (context, index) {
-        final job = interviewJobs[index];
-        
-        // Get backend data - prioritize interview data from API
-        final mode = job['mode']?.toString() ?? '';
-        final isOnline = mode.toLowerCase() == 'online';
-        
-        // For location: online uses platform_name, offline uses location
-        String displayLocation = '';
-        if (isOnline) {
-          // Show platform name instead of link for online interviews
-          displayLocation = job['platform_name']?.toString() ?? '';
-        } else {
-          displayLocation = job['location']?.toString() ?? '';
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        // Get latest data from state
+        List<Map<String, dynamic>> currentInterviewJobs = interviewJobs;
+        if (state is ApplicationTrackerLoaded) {
+          currentInterviewJobs = state.interviewJobs;
         }
-        
-        // Get interview date/time from backend (scheduled_at)
-        String interviewDate = '';
-        String interviewTime = '';
-        final scheduledAt = job['scheduled_at']?.toString() ?? '';
-        if (scheduledAt.isNotEmpty) {
-          try {
-            final dateTime = DateTime.parse(scheduledAt);
-            final day = dateTime.day.toString().padLeft(2, '0');
-            final month = _getMonthName(dateTime.month);
-            final year = dateTime.year.toString();
-            interviewDate = '$day $month $year';
-            
-            final hour = dateTime.hour;
-            final minute = dateTime.minute.toString().padLeft(2, '0');
-            final period = hour >= 12 ? 'PM' : 'AM';
-            final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-            interviewTime = '$displayHour:$minute $period';
-          } catch (e) {
-            // Fallback to formatted fields if parsing fails
-            interviewDate = job['interviewDate']?.toString() ?? 
-                           job['appliedDate']?.toString() ?? '';
-            interviewTime = job['interviewTime']?.toString() ?? '';
-          }
-        } else {
-          // Fallback to formatted fields if scheduled_at not available
-          interviewDate = job['interviewDate']?.toString() ?? 
-                         job['appliedDate']?.toString() ?? '';
-          interviewTime = job['interviewTime']?.toString() ?? '';
-        }
-        
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: ShortlistedJobCard(
-            jobTitle: _capitalizeFirst(job['title']?.toString() ?? 'Job Title'),
-            companyName: _getCompanyName(job, 'Company Name'),
-            location: displayLocation,
-            interviewDate: interviewDate,
-            interviewTime: interviewTime,
-            mode: mode,
-            status: job['status']?.toString() ?? 'Shortlisted',
-            salary: job['salary']?.toString() ?? '',
-            appliedDate: job['appliedDate']?.toString() ?? '',
-            appliedTime: job['appliedTime']?.toString() ?? '',
-            jobData: job,
-          ),
+
+        return ListView.builder(
+          itemCount: currentInterviewJobs.length,
+          itemBuilder: (context, index) {
+            final job = currentInterviewJobs[index];
+
+            // Get backend data - prioritize interview data from API
+            final mode = job['mode']?.toString() ?? '';
+            final isOnline = mode.toLowerCase() == 'online';
+
+            // For location: online uses platform_name, offline uses location
+            String displayLocation = '';
+            if (isOnline) {
+              // Show platform name instead of link for online interviews
+              displayLocation = job['platform_name']?.toString() ?? '';
+            } else {
+              displayLocation = job['location']?.toString() ?? '';
+            }
+
+            // Get interview date/time from backend (scheduled_at)
+            String interviewDate = '';
+            String interviewTime = '';
+            final scheduledAt = job['scheduled_at']?.toString() ?? '';
+            if (scheduledAt.isNotEmpty) {
+              try {
+                final dateTime = DateTime.parse(scheduledAt);
+                final day = dateTime.day.toString().padLeft(2, '0');
+                final month = _getMonthName(dateTime.month);
+                final year = dateTime.year.toString();
+                interviewDate = '$day $month $year';
+
+                final hour = dateTime.hour;
+                final minute = dateTime.minute.toString().padLeft(2, '0');
+                final period = hour >= 12 ? 'PM' : 'AM';
+                final displayHour = hour > 12
+                    ? hour - 12
+                    : (hour == 0 ? 12 : hour);
+                interviewTime = '$displayHour:$minute $period';
+              } catch (e) {
+                // Fallback to formatted fields if parsing fails
+                interviewDate =
+                    job['interviewDate']?.toString() ??
+                    job['appliedDate']?.toString() ??
+                    '';
+                interviewTime = job['interviewTime']?.toString() ?? '';
+              }
+            } else {
+              // Fallback to formatted fields if scheduled_at not available
+              interviewDate =
+                  job['interviewDate']?.toString() ??
+                  job['appliedDate']?.toString() ??
+                  '';
+              interviewTime = job['interviewTime']?.toString() ?? '';
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: ShortlistedJobCard(
+                jobTitle: _capitalizeFirst(
+                  job['title']?.toString() ?? 'Job Title',
+                ),
+                companyName: _getCompanyName(job, 'Company Name'),
+                location: displayLocation,
+                interviewDate: interviewDate,
+                interviewTime: interviewTime,
+                mode: mode,
+                status: job['status']?.toString() ?? 'Shortlisted',
+                salary: job['salary']?.toString() ?? '',
+                appliedDate: job['appliedDate']?.toString() ?? '',
+                appliedTime: job['appliedTime']?.toString() ?? '',
+                jobData: job,
+              ),
+            );
+          },
         );
       },
     );
@@ -650,5 +901,4 @@ class _ApplicationTrackerScreenViewState
     ];
     return months[month - 1];
   }
-
 }

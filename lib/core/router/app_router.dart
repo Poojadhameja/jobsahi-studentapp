@@ -47,13 +47,6 @@ import '../../features/profile/views/profile_builder_steps.dart';
 import '../../features/profile/views/menu.dart';
 import '../../features/profile/views/profile_details.dart';
 import '../../features/profile/views/personalize_jobfeed.dart';
-import '../../features/profile/views/profile_details/profile_edit.dart';
-import '../../features/profile/views/profile_details/experience_edit.dart';
-import '../../features/profile/views/profile_details/education_edit.dart';
-import '../../features/profile/views/profile_details/skills_edit.dart';
-import '../../features/profile/views/profile_details/certificates_edit.dart';
-import '../../features/profile/views/profile_details/resume_edit.dart';
-import '../../features/profile/views/profile_details/profile_summary_edit.dart';
 
 // Settings screens
 import '../../features/settings/views/settings.dart';
@@ -381,48 +374,6 @@ class AppRouter {
         name: 'profileDetails',
         builder: (context, state) =>
             const ProfileDetailsScreen(isFromBottomNavigation: false),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileEdit,
-        name: 'profileEdit',
-        builder: (context, state) => const ProfileEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileExperienceEdit,
-        name: 'profileExperienceEdit',
-        builder: (context, state) => const ExperienceEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileEducationEdit,
-        name: 'profileEducationEdit',
-        builder: (context, state) => const EducationEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileSkillsEdit,
-        name: 'profileSkillsEdit',
-        builder: (context, state) => const SkillsEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileCertificatesEdit,
-        name: 'profileCertificatesEdit',
-        builder: (context, state) => const CertificatesEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileResumeEdit,
-        name: 'profileResumeEdit',
-        builder: (context, state) => const ResumeEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileSummaryEdit,
-        name: 'profileSummaryEdit',
-        builder: (context, state) => const ProfileSummaryEditScreen(),
       ),
 
       GoRoute(

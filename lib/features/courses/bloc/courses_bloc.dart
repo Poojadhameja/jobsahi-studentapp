@@ -4,6 +4,7 @@ import 'courses_event.dart';
 import 'courses_state.dart';
 import '../../../core/utils/network_error_helper.dart';
 import '../repository/courses_repository.dart';
+import '../../../shared/services/courses_cache_service.dart';
 
 /// Courses BLoC
 /// Handles all course-related business logic
@@ -34,21 +35,71 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     LoadCoursesEvent event,
     Emitter<CoursesState> emit,
   ) async {
+    // Declare variables outside try block for catch block access
+    bool loadedFromCache = false;
+    List<Map<String, dynamic>> allCourses = [];
+    List<Map<String, dynamic>> savedCourses = [];
+    Set<String> savedCourseIds = <String>{};
+
     try {
-      // Only show loading if we don't have any data
-      if (state is! CoursesLoaded) {
-        emit(const CoursesLoading());
+      // Try to load from cache first for offline support (like jobs section)
+      final cacheService = CoursesCacheService.instance;
+      await cacheService.initialize();
+
+      // Always try to load from cache first (even on force refresh)
+      // This shows cached data immediately while fresh data loads in background
+      final cachedData = await cacheService.getCoursesData();
+      if (cachedData != null && await cacheService.isCacheValid()) {
+        try {
+          allCourses = List<Map<String, dynamic>>.from(
+            cachedData['allCourses'] ?? [],
+          );
+          savedCourses = List<Map<String, dynamic>>.from(
+            cachedData['savedCourses'] ?? [],
+          );
+          savedCourseIds = Set<String>.from(cachedData['savedCourseIds'] ?? []);
+          loadedFromCache = true;
+          debugPrint('🔵 [Courses] Loaded data from cache');
+
+          // Emit cached data immediately for offline support (no loading state)
+          // This prevents reload on first time - shows cached data while fresh data loads
+          emit(
+            CoursesLoaded(
+              allCourses: allCourses,
+              filteredCourses: allCourses,
+              savedCourses: savedCourses,
+              enrolledCourses: [],
+              savedCourseIds: savedCourseIds,
+              enrolledCourseIds: <String>{},
+              selectedCategory: 'All',
+              selectedLevel: 'All',
+              selectedDuration: 'All',
+              selectedInstitute: 'All',
+            ),
+          );
+        } catch (e) {
+          debugPrint('🔴 [Courses] Error loading from cache: $e');
+        }
       }
 
-      // Fetch courses from API (will use cache if available)
-      final courses = await _coursesRepository.getCourses();
+      // Only show loading if we don't have cached data
+      if (!loadedFromCache) {
+        if (state is CoursesInitial) {
+          emit(const CoursesLoading());
+        } else if (state is! CoursesLoaded && !event.forceRefresh) {
+          emit(const CoursesLoading());
+        }
+      }
 
-      // Convert API courses to UI format
-      var allCourses = courses.map((course) => course.toUIMap()).toList();
+      // Fetch courses from API (force refresh if requested)
+      final courses = await _coursesRepository.getCourses(
+        forceRefresh: event.forceRefresh,
+      );
 
-      // Fetch saved courses and hydrate saved flags
-      Set<String> savedCourseIds = <String>{};
-      List<Map<String, dynamic>> savedCourses = <Map<String, dynamic>>[];
+      // Convert API courses to UI format (update existing variables)
+      allCourses = courses.map((course) => course.toUIMap()).toList();
+
+      // Fetch saved courses and hydrate saved flags (update existing variables)
       try {
         final saved = await _coursesRepository.getSavedCourses();
         savedCourseIds = saved.savedCourseIds;
@@ -66,9 +117,24 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         return {...c, 'isSaved': c['isSaved'] == true};
       }).toList();
 
+      // Sort courses by created_at (most recent first)
+      allCourses = _sortCoursesByRecent(allCourses);
+
       // Initialize enrolled placeholders (no API yet)
       final enrolledCourses = <Map<String, dynamic>>[];
       final enrolledCourseIds = <String>{};
+
+      // Store in cache for offline use
+      try {
+        await cacheService.storeCoursesData(
+          allCourses: allCourses,
+          savedCourses: savedCourses,
+          savedCourseIds: savedCourseIds,
+        );
+        debugPrint('🔵 [Courses] Stored data in cache');
+      } catch (e) {
+        debugPrint('🔴 [Courses] Failed to store in cache: $e');
+      }
 
       emit(
         CoursesLoaded(
@@ -85,7 +151,49 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         ),
       );
     } catch (e) {
-      // Emit error if API fails - no fallback to mock data
+      // If API fails but we have cached data, use it
+      if (loadedFromCache) {
+        debugPrint('🔵 [Courses] API failed but using cached data');
+        return;
+      }
+
+      // Try to load from cache as fallback
+      try {
+        final cacheService = CoursesCacheService.instance;
+        await cacheService.initialize();
+        final cachedData = await cacheService.getCoursesData();
+        if (cachedData != null) {
+          final fallbackAllCourses = List<Map<String, dynamic>>.from(
+            cachedData['allCourses'] ?? [],
+          );
+          final fallbackSavedCourses = List<Map<String, dynamic>>.from(
+            cachedData['savedCourses'] ?? [],
+          );
+          final fallbackSavedCourseIds = Set<String>.from(
+            cachedData['savedCourseIds'] ?? [],
+          );
+
+          emit(
+            CoursesLoaded(
+              allCourses: fallbackAllCourses,
+              filteredCourses: fallbackAllCourses,
+              savedCourses: fallbackSavedCourses,
+              enrolledCourses: [],
+              savedCourseIds: fallbackSavedCourseIds,
+              enrolledCourseIds: <String>{},
+              selectedCategory: 'All',
+              selectedLevel: 'All',
+              selectedDuration: 'All',
+              selectedInstitute: 'All',
+            ),
+          );
+          return;
+        }
+      } catch (cacheError) {
+        debugPrint('🔴 [Courses] Cache fallback also failed: $cacheError');
+      }
+
+      // Emit error if API fails and no cache available
       _handleCoursesError(e, emit, defaultMessage: 'Failed to load courses');
     }
   }
@@ -228,7 +336,17 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
               savedCourseIds: updatedSavedCourseIds,
             ),
           );
+
+          // Don't emit CourseSavedState here - it causes white page in courses list
+          // CourseSavedState is only needed for course details page
         }
+      } else if (state is CourseDetailsLoaded) {
+        // Handle save from course details page
+        final detailsState = state as CourseDetailsLoaded;
+        await _coursesRepository.saveCourse(event.courseId);
+        final updatedCourse = {...detailsState.course, 'isSaved': true};
+        emit(CourseDetailsLoaded(course: updatedCourse));
+        emit(CourseSavedState(courseId: event.courseId));
       }
     } catch (e) {
       emit(CoursesError(message: 'Failed to save course: ${e.toString()}'));
@@ -282,6 +400,16 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
             savedCourseIds: updatedSavedCourseIds,
           ),
         );
+
+        // Don't emit CourseUnsavedState here - it causes white page in courses list
+        // CourseUnsavedState is only needed for course details page
+      } else if (state is CourseDetailsLoaded) {
+        // Handle unsave from course details page
+        final detailsState = state as CourseDetailsLoaded;
+        await _coursesRepository.unsaveCourse(event.courseId);
+        final updatedCourse = {...detailsState.course, 'isSaved': false};
+        emit(CourseDetailsLoaded(course: updatedCourse));
+        emit(CourseUnsavedState(courseId: event.courseId));
       }
     } catch (e) {
       emit(CoursesError(message: 'Failed to unsave course: ${e.toString()}'));
@@ -350,8 +478,11 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
       emit(const CoursesLoading());
 
       final saved = await _coursesRepository.getSavedCourses();
-      final savedCourses = saved.courses;
+      var savedCourses = saved.courses;
       final savedCourseIds = saved.savedCourseIds;
+
+      // Sort saved courses by created_at (most recent first)
+      savedCourses = _sortCoursesByRecent(savedCourses);
 
       emit(
         CoursesLoaded(
@@ -416,8 +547,8 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     RefreshCoursesEvent event,
     Emitter<CoursesState> emit,
   ) async {
-    // Reload courses
-    add(const LoadCoursesEvent());
+    // Reload courses with force refresh
+    add(const LoadCoursesEvent(forceRefresh: true));
   }
 
   /// Handle clear search
@@ -531,7 +662,53 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
 
     // All filters and search work together in combination
     // Result: courses that match search query AND category AND level AND duration AND institute
-    return filteredCourses;
+
+    // Sort filtered courses by created_at (most recent first)
+    return _sortCoursesByRecent(filteredCourses);
+  }
+
+  /// Sort courses by created_at date (most recent first)
+  /// If created_at is not available, sort by ID in descending order (higher ID = newer)
+  List<Map<String, dynamic>> _sortCoursesByRecent(
+    List<Map<String, dynamic>> courses,
+  ) {
+    return List<Map<String, dynamic>>.from(courses)..sort((a, b) {
+      final dateA = _parseDate(a['created_at']);
+      final dateB = _parseDate(b['created_at']);
+
+      // If both have valid dates, sort by date (most recent first)
+      if (dateA != null && dateB != null) {
+        return dateB.compareTo(dateA);
+      }
+
+      // If only one has a date, prioritize it
+      if (dateA != null) return -1;
+      if (dateB != null) return 1;
+
+      // If neither has a date, sort by ID (higher ID = newer, assuming auto-increment)
+      final idA = int.tryParse(a['id']?.toString() ?? '0') ?? 0;
+      final idB = int.tryParse(b['id']?.toString() ?? '0') ?? 0;
+      return idB.compareTo(idA);
+    });
+  }
+
+  /// Parse date string to DateTime
+  DateTime? _parseDate(dynamic dateValue) {
+    if (dateValue == null || dateValue.toString().isEmpty) {
+      return null;
+    }
+
+    try {
+      if (dateValue is String) {
+        return DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        return dateValue;
+      }
+    } catch (e) {
+      debugPrint('🔴 [Courses] Error parsing date: $dateValue, error: $e');
+    }
+
+    return null;
   }
 
   /// Handle load course details
@@ -631,11 +808,18 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
 
   /// Helper method to handle errors and emit appropriate error state
   /// Detects network errors and formats messages accordingly
-  void _handleCoursesError(dynamic error, Emitter<CoursesState> emit, {String? defaultMessage}) {
+  void _handleCoursesError(
+    dynamic error,
+    Emitter<CoursesState> emit, {
+    String? defaultMessage,
+  }) {
     final errorMessage = NetworkErrorHelper.isNetworkError(error)
         ? NetworkErrorHelper.getNetworkErrorMessage(error)
-        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
-    
+        : NetworkErrorHelper.extractErrorMessage(
+            error,
+            defaultMessage: defaultMessage,
+          );
+
     emit(CoursesError(message: errorMessage));
   }
 }

@@ -7,6 +7,20 @@ class Course {
   final String duration;
   final String fee;
   final String adminAction;
+  final String? createdAt;
+  // New fields from updated API
+  final int? categoryId;
+  final String? categoryName;
+  final String? taggedSkills;
+  final int? batchLimit;
+  final String? status;
+  final String? instructorName;
+  final String? mode; // online/offline
+  final bool? certificationAllowed;
+  final String? moduleTitle;
+  final String? moduleDescription;
+  final String? media; // Course banner/image URL
+  final String? updatedAt;
 
   Course({
     required this.id,
@@ -16,6 +30,19 @@ class Course {
     required this.duration,
     required this.fee,
     required this.adminAction,
+    this.createdAt,
+    this.categoryId,
+    this.categoryName,
+    this.taggedSkills,
+    this.batchLimit,
+    this.status,
+    this.instructorName,
+    this.mode,
+    this.certificationAllowed,
+    this.moduleTitle,
+    this.moduleDescription,
+    this.media,
+    this.updatedAt,
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -27,6 +54,19 @@ class Course {
       duration: json['duration']?.toString() ?? '',
       fee: json['fee']?.toString() ?? '0.00',
       adminAction: json['admin_action']?.toString() ?? '',
+      createdAt: json['created_at']?.toString() ?? json['course_created_at']?.toString(),
+      categoryId: json['category_id'] as int?,
+      categoryName: json['category_name']?.toString(),
+      taggedSkills: json['tagged_skills']?.toString(),
+      batchLimit: json['batch_limit'] as int?,
+      status: json['status']?.toString(),
+      instructorName: json['instructor_name']?.toString(),
+      mode: json['mode']?.toString(),
+      certificationAllowed: json['certification_allowed'] as bool?,
+      moduleTitle: json['module_title']?.toString(),
+      moduleDescription: json['module_description']?.toString(),
+      media: json['media']?.toString(),
+      updatedAt: json['updated_at']?.toString(),
     );
   }
 
@@ -39,11 +79,32 @@ class Course {
       'duration': duration,
       'fee': fee,
       'admin_action': adminAction,
+      if (createdAt != null) 'created_at': createdAt,
+      if (categoryId != null) 'category_id': categoryId,
+      if (categoryName != null) 'category_name': categoryName,
+      if (taggedSkills != null) 'tagged_skills': taggedSkills,
+      if (batchLimit != null) 'batch_limit': batchLimit,
+      if (status != null) 'status': status,
+      if (instructorName != null) 'instructor_name': instructorName,
+      if (mode != null) 'mode': mode,
+      if (certificationAllowed != null) 'certification_allowed': certificationAllowed,
+      if (moduleTitle != null) 'module_title': moduleTitle,
+      if (moduleDescription != null) 'module_description': moduleDescription,
+      if (media != null) 'media': media,
+      if (updatedAt != null) 'updated_at': updatedAt,
     };
   }
 
   // Convert to the format expected by the UI
   Map<String, dynamic> toUIMap() {
+    // Parse tagged skills into a list
+    final List<String> skillsList = [];
+    if (taggedSkills != null && taggedSkills!.isNotEmpty) {
+      skillsList.addAll(
+        taggedSkills!.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty),
+      );
+    }
+
     return {
       'id': id.toString(),
       'title': title,
@@ -51,16 +112,30 @@ class Course {
       'description': description,
       'duration': duration,
       'fees': double.tryParse(fee) ?? 0.0,
-      'category': 'General', // Default category since API doesn't provide this
+      'category': categoryName ?? 'General',
+      'category_id': categoryId,
       'rating': 4.0, // Default rating
       'totalRatings': 0, // Default ratings count
       'institute': 'Institute $instituteId', // Default institute name
+      'institute_id': instituteId,
       'level': 'Beginner', // Default level
       'isSaved': false, // Default saved status
-      'imageUrl': 'assets/images/courses/default.png', // Default image
+      'imageUrl': media ?? 'assets/images/courses/default.png',
+      'media': media,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'status': status,
+      'instructor_name': instructorName,
+      'mode': mode,
+      'certification_allowed': certificationAllowed ?? false,
+      'module_title': moduleTitle,
+      'module_description': moduleDescription,
+      'batch_limit': batchLimit,
+      'tagged_skills': taggedSkills,
+      'skills_list': skillsList,
       'benefits': [
+        if (certificationAllowed == true) 'Industry certification',
         'Professional training',
-        'Industry certification',
         'Practical hands-on experience',
         'Career guidance',
       ],
@@ -75,6 +150,19 @@ class Course {
     String? duration,
     String? fee,
     String? adminAction,
+    String? createdAt,
+    int? categoryId,
+    String? categoryName,
+    String? taggedSkills,
+    int? batchLimit,
+    String? status,
+    String? instructorName,
+    String? mode,
+    bool? certificationAllowed,
+    String? moduleTitle,
+    String? moduleDescription,
+    String? media,
+    String? updatedAt,
   }) {
     return Course(
       id: id ?? this.id,
@@ -84,6 +172,19 @@ class Course {
       duration: duration ?? this.duration,
       fee: fee ?? this.fee,
       adminAction: adminAction ?? this.adminAction,
+      createdAt: createdAt ?? this.createdAt,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      taggedSkills: taggedSkills ?? this.taggedSkills,
+      batchLimit: batchLimit ?? this.batchLimit,
+      status: status ?? this.status,
+      instructorName: instructorName ?? this.instructorName,
+      mode: mode ?? this.mode,
+      certificationAllowed: certificationAllowed ?? this.certificationAllowed,
+      moduleTitle: moduleTitle ?? this.moduleTitle,
+      moduleDescription: moduleDescription ?? this.moduleDescription,
+      media: media ?? this.media,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -97,7 +198,20 @@ class Course {
         other.description == description &&
         other.duration == duration &&
         other.fee == fee &&
-        other.adminAction == adminAction;
+        other.adminAction == adminAction &&
+        other.createdAt == createdAt &&
+        other.categoryId == categoryId &&
+        other.categoryName == categoryName &&
+        other.taggedSkills == taggedSkills &&
+        other.batchLimit == batchLimit &&
+        other.status == status &&
+        other.instructorName == instructorName &&
+        other.mode == mode &&
+        other.certificationAllowed == certificationAllowed &&
+        other.moduleTitle == moduleTitle &&
+        other.moduleDescription == moduleDescription &&
+        other.media == media &&
+        other.updatedAt == updatedAt;
   }
 
   @override
@@ -108,7 +222,20 @@ class Course {
         description.hashCode ^
         duration.hashCode ^
         fee.hashCode ^
-        adminAction.hashCode;
+        adminAction.hashCode ^
+        (createdAt?.hashCode ?? 0) ^
+        (categoryId?.hashCode ?? 0) ^
+        (categoryName?.hashCode ?? 0) ^
+        (taggedSkills?.hashCode ?? 0) ^
+        (batchLimit?.hashCode ?? 0) ^
+        (status?.hashCode ?? 0) ^
+        (instructorName?.hashCode ?? 0) ^
+        (mode?.hashCode ?? 0) ^
+        (certificationAllowed?.hashCode ?? 0) ^
+        (moduleTitle?.hashCode ?? 0) ^
+        (moduleDescription?.hashCode ?? 0) ^
+        (media?.hashCode ?? 0) ^
+        (updatedAt?.hashCode ?? 0);
   }
 
   @override
@@ -161,18 +288,32 @@ class CoursesResponse {
 /// Course Details API response model
 class CourseDetailsResponse {
   final bool status;
+  final String message;
+  final String? userRole;
   final Course course;
 
-  CourseDetailsResponse({required this.status, required this.course});
+  CourseDetailsResponse({
+    required this.status,
+    required this.course,
+    this.message = '',
+    this.userRole,
+  });
 
   factory CourseDetailsResponse.fromJson(Map<String, dynamic> json) {
     return CourseDetailsResponse(
       status: json['status'] ?? false,
+      message: json['message']?.toString() ?? '',
+      userRole: json['user_role']?.toString(),
       course: Course.fromJson(json['course'] ?? {}),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'status': status, 'course': course.toJson()};
+    return {
+      'status': status,
+      'message': message,
+      if (userRole != null) 'user_role': userRole,
+      'course': course.toJson(),
+    };
   }
 }
