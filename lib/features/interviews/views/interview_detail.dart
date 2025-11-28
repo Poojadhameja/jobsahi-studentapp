@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/interviews_bloc.dart';
 import '../bloc/interviews_event.dart';
 import '../bloc/interviews_state.dart';
@@ -11,10 +12,7 @@ import '../models/interview_detail.dart';
 class InterviewDetailScreen extends StatefulWidget {
   final int interviewId;
 
-  const InterviewDetailScreen({
-    super.key,
-    required this.interviewId,
-  });
+  const InterviewDetailScreen({super.key, required this.interviewId});
 
   @override
   State<InterviewDetailScreen> createState() => _InterviewDetailScreenState();
@@ -34,8 +32,8 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<InterviewsBloc>().add(
-              LoadInterviewDetailEvent(interviewId: widget.interviewId),
-            );
+          LoadInterviewDetailEvent(interviewId: widget.interviewId),
+        );
       }
     });
   }
@@ -43,22 +41,58 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: AppConstants.cardBackgroundColor,
-        appBar: const SimpleAppBar(
-          title: 'Interview Details',
-          showBackButton: true,
-        ),
-        body: BlocBuilder<InterviewsBloc, InterviewsState>(
-          builder: (context, state) {
-            if (state is InterviewDetailLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: AppConstants.successColor,
-                ),
-              );
-            }
+      backgroundColor: AppConstants.cardBackgroundColor,
+      appBar: const SimpleAppBar(
+        title: 'Interview Details',
+        showBackButton: true,
+      ),
+      body: BlocBuilder<InterviewsBloc, InterviewsState>(
+        builder: (context, state) {
+          if (state is InterviewDetailLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: AppConstants.successColor,
+              ),
+            );
+          }
 
-            if (state is InterviewDetailError) {
+          if (state is InterviewDetailError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    state.message,
+                    style: const TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      final bloc = context.read<InterviewsBloc>();
+                      bloc.add(
+                        LoadInterviewDetailEvent(
+                          interviewId: widget.interviewId,
+                        ),
+                      );
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (state is InterviewDetailLoaded) {
+            try {
+              final detail = InterviewDetail.fromJson(state.interviewDetail);
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                child: _buildInterviewDetailContent(context, detail),
+              );
+            } catch (e) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -70,55 +104,19 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      state.message,
+                      'Failed to parse interview details: $e',
                       style: const TextStyle(fontSize: 16),
                       textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        final bloc = context.read<InterviewsBloc>();
-                        bloc.add(LoadInterviewDetailEvent(interviewId: widget.interviewId));
-                      },
-                      child: const Text('Retry'),
                     ),
                   ],
                 ),
               );
             }
+          }
 
-            if (state is InterviewDetailLoaded) {
-              try {
-                final detail = InterviewDetail.fromJson(state.interviewDetail);
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                  child: _buildInterviewDetailContent(context, detail),
-                );
-              } catch (e) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Failed to parse interview details: $e',
-                        style: const TextStyle(fontSize: 16),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-            }
-
-            return const SizedBox.shrink();
-          },
-        ),
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 
@@ -185,7 +183,9 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: AppConstants.successColor,
-                  borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.smallBorderRadius,
+                  ),
                 ),
                 child: const Icon(Icons.work, color: Colors.white, size: 24),
               ),
@@ -284,7 +284,8 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           ),
           // For online: show platform with join meeting button
           if (isOnline) ...[
-            if (detail.platformName != null && detail.platformName!.isNotEmpty) ...[
+            if (detail.platformName != null &&
+                detail.platformName!.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildPlatformWithJoinButton(
                 detail.platformName!,
@@ -293,7 +294,8 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
             ],
           ] else ...[
             // For offline: show location
-            if (detail.interviewLocation != null && detail.interviewLocation!.isNotEmpty) ...[
+            if (detail.interviewLocation != null &&
+                detail.interviewLocation!.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildInfoRow(
                 Icons.pin_drop,
@@ -303,7 +305,8 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
             ],
           ],
           // Show interview info (renamed from feedback)
-          if (detail.interviewInfo != null && detail.interviewInfo!.isNotEmpty) ...[
+          if (detail.interviewInfo != null &&
+              detail.interviewInfo!.isNotEmpty) ...[
             const SizedBox(height: 12),
             _buildInfoRow(
               Icons.info_outline,
@@ -377,11 +380,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           ],
           if (job.skillsRequired.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _buildInfoRow(
-              Icons.code,
-              'Skills Required',
-              job.skillsRequired,
-            ),
+            _buildInfoRow(Icons.code, 'Skills Required', job.skillsRequired),
           ],
           if (job.noOfVacancies > 0) ...[
             const SizedBox(height: 12),
@@ -433,11 +432,7 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
           ),
           if (company.companyAddress.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _buildInfoRow(
-              Icons.location_on,
-              'Address',
-              company.companyAddress,
-            ),
+            _buildInfoRow(Icons.location_on, 'Address', company.companyAddress),
           ],
         ],
       ),
@@ -472,66 +467,68 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
             ),
           ),
           const SizedBox(height: AppConstants.defaultPadding),
-          ...detail.panel.map((panelist) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppConstants.backgroundColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person,
-                            size: 18,
-                            color: AppConstants.primaryColor,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              panelist.panelistName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppConstants.textPrimaryColor,
-                              ),
+          ...detail.panel.map(
+            (panelist) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppConstants.backgroundColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          size: 18,
+                          color: AppConstants.primaryColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            panelist.panelistName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppConstants.textPrimaryColor,
                             ),
-                          ),
-                          if (panelist.rating != null)
-                            Row(
-                              children: [
-                                ...List.generate(5, (index) {
-                                  return Icon(
-                                    index < panelist.rating!
-                                        ? Icons.star
-                                        : Icons.star_border,
-                                    size: 16,
-                                    color: Colors.orange,
-                                  );
-                                }),
-                              ],
-                            ),
-                        ],
-                      ),
-                      if (panelist.feedback != null &&
-                          panelist.feedback!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          panelist.feedback!,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppConstants.textSecondaryColor,
                           ),
                         ),
+                        if (panelist.rating != null)
+                          Row(
+                            children: [
+                              ...List.generate(5, (index) {
+                                return Icon(
+                                  index < panelist.rating!
+                                      ? Icons.star
+                                      : Icons.star_border,
+                                  size: 16,
+                                  color: Colors.orange,
+                                );
+                              }),
+                            ],
+                          ),
                       ],
+                    ),
+                    if (panelist.feedback != null &&
+                        panelist.feedback!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        panelist.feedback!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppConstants.textSecondaryColor,
+                        ),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -661,18 +658,17 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
   }
 
   /// Builds platform with join meeting button
-  Widget _buildPlatformWithJoinButton(String platformName, String? meetingLink) {
+  Widget _buildPlatformWithJoinButton(
+    String platformName,
+    String? meetingLink,
+  ) {
     final hasMeetingLink = meetingLink != null && meetingLink.isNotEmpty;
     final link = meetingLink ?? '';
-    
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.video_library,
-          size: 18,
-          color: AppConstants.primaryColor,
-        ),
+        Icon(Icons.video_library, size: 18, color: AppConstants.primaryColor),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -735,22 +731,12 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open: $url'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          TopSnackBar.showError(context, message: 'Could not open: $url');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening link: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        TopSnackBar.showError(context, message: 'Error opening link: $e');
       }
     }
   }
@@ -800,4 +786,3 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
     return months[month - 1];
   }
 }
-

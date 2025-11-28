@@ -7,6 +7,7 @@ import '../../../shared/data/user_data.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../../shared/widgets/loaders/jobsahi_loader.dart';
 import '../../../shared/widgets/profile/profile_header_card.dart';
 import '../../../shared/services/location_service.dart';
@@ -196,8 +197,8 @@ class _MenuScreenState extends State<MenuScreen> {
           return FutureBuilder<String>(
             future: _getUserLocation(),
             builder: (context, snapshot) {
-              final detectedLocation = snapshot.connectionState ==
-                          ConnectionState.done &&
+              final detectedLocation =
+                  snapshot.connectionState == ConnectionState.done &&
                       snapshot.hasData &&
                       snapshot.data!.isNotEmpty
                   ? snapshot.data
@@ -209,8 +210,10 @@ class _MenuScreenState extends State<MenuScreen> {
 
         if (state is ProfileError) {
           // Check if it's a network error
-          final isNetworkError = NetworkErrorHelper.isNetworkError(state.message);
-          
+          final isNetworkError = NetworkErrorHelper.isNetworkError(
+            state.message,
+          );
+
           if (isNetworkError) {
             return NoInternetErrorWidget(
               errorMessage: state.message,
@@ -221,7 +224,7 @@ class _MenuScreenState extends State<MenuScreen> {
               enablePullToRefresh: true,
             );
           }
-          
+
           // For non-network errors, show fallback with error message
           final fallbackUser = UserData.currentUser;
           return Column(
@@ -230,7 +233,8 @@ class _MenuScreenState extends State<MenuScreen> {
               ProfileHeaderCard(
                 name: fallbackUser['name'] ?? 'User Name',
                 email: fallbackUser['email'] ?? 'user@email.com',
-                location: _extractLocation(fallbackUser['location'] ?? '') ??
+                location:
+                    _extractLocation(fallbackUser['location'] ?? '') ??
                     'Location not provided',
                 profileImagePath: fallbackUser['profileImage'],
                 bio: _extractBio(fallbackUser['bio']),
@@ -246,12 +250,17 @@ class _MenuScreenState extends State<MenuScreen> {
                 ),
               ),
               TextButton.icon(
-                onPressed: () => context
-                    .read<ProfileBloc>()
-                    .add(const LoadProfileDataEvent()),
-                icon: const Icon(Icons.refresh, color: AppConstants.primaryColor),
-                label: const Text('Retry',
-                    style: TextStyle(color: AppConstants.primaryColor)),
+                onPressed: () => context.read<ProfileBloc>().add(
+                  const LoadProfileDataEvent(),
+                ),
+                icon: const Icon(
+                  Icons.refresh,
+                  color: AppConstants.primaryColor,
+                ),
+                label: const Text(
+                  'Retry',
+                  style: TextStyle(color: AppConstants.primaryColor),
+                ),
               ),
             ],
           );
@@ -407,13 +416,7 @@ class _MenuScreenState extends State<MenuScreen> {
           } else if (state is AuthError) {
             // Hide the dialog and show error
             Navigator.of(dialogContext).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppConstants.errorColor,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            TopSnackBar.showError(context, message: state.message);
           }
         },
         child: _LogoutDialog(),

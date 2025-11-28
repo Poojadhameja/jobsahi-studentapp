@@ -6,6 +6,7 @@ import '../../../core/utils/app_constants.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 
 class JobStepScreen extends StatefulWidget {
   final Map<String, dynamic> job;
@@ -36,29 +37,27 @@ class _JobStepScreenState extends State<JobStepScreen> {
     return WillPopScope(
       onWillPop: _handleBackNavigation,
       child: Scaffold(
-            backgroundColor: AppConstants.cardBackgroundColor,
+        backgroundColor: AppConstants.cardBackgroundColor,
         appBar: SimpleAppBar(
-              title: 'Job Application / नौकरी आवेदन',
-              showBackButton: true,
+          title: 'Job Application / नौकरी आवेदन',
+          showBackButton: true,
           onBack: _navigateBack,
-            ),
-            body: SafeArea(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppConstants.defaultPadding),
                   child: _buildMainCard(),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                    decoration: BoxDecoration(
-                      color: AppConstants.cardBackgroundColor,
-                      border: Border(
-                        top: BorderSide(color: Colors.grey.shade200),
-                      ),
-                    ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                decoration: BoxDecoration(
+                  color: AppConstants.cardBackgroundColor,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -68,8 +67,9 @@ class _JobStepScreenState extends State<JobStepScreen> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppConstants.borderRadius),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
                       ),
                       elevation: 2,
                     ),
@@ -92,13 +92,13 @@ class _JobStepScreenState extends State<JobStepScreen> {
                             ),
                           ),
                   ),
-                    ),
-                  ),
-                ],
-          ),
+                ),
               ),
-            ),
-          );
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMainCard() {
@@ -116,11 +116,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
           children: [
             _buildJobOverviewSection(widget.job),
             const SizedBox(height: AppConstants.largePadding),
-            Divider(
-              height: 1,
-              thickness: 0.6,
-              color: Colors.grey.shade300,
-            ),
+            Divider(height: 1, thickness: 0.6, color: Colors.grey.shade300),
             const SizedBox(height: AppConstants.largePadding),
             _buildCoverLetterSection(),
           ],
@@ -186,9 +182,9 @@ class _JobStepScreenState extends State<JobStepScreen> {
             fontSize: 17,
             fontWeight: FontWeight.bold,
             color: AppConstants.textPrimaryColor,
-            ),
           ),
-          const SizedBox(height: AppConstants.defaultPadding),
+        ),
+        const SizedBox(height: AppConstants.defaultPadding),
         TextFormField(
           controller: _coverLetterController,
           maxLines: 14,
@@ -207,25 +203,20 @@ class _JobStepScreenState extends State<JobStepScreen> {
             helperText:
                 'Minimum 50 characters required  •  Chars: $_coverLetterCharCount/50',
             helperStyle: TextStyle(
-              color:
-                  _isCoverLetterMinReached ? AppConstants.successColor : Colors.grey[600],
+              color: _isCoverLetterMinReached
+                  ? AppConstants.successColor
+                  : Colors.grey[600],
               fontSize: 12,
             ),
             filled: true,
             fillColor: const Color(0xFFF1F5F9),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey.shade300,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey.shade300,
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -265,7 +256,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
       if (jobId == null) {
         _showErrorSnackBar('Invalid job information. Please try again later.');
         return;
-  }
+      }
 
       final studentIdString = await _tokenStorage.getUserId();
       int? studentId = _parseId(studentIdString);
@@ -294,15 +285,11 @@ class _JobStepScreenState extends State<JobStepScreen> {
 
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              response.message.isNotEmpty
-                  ? response.message
-                  : 'Application submitted successfully.',
-            ),
-            backgroundColor: AppConstants.successColor,
-                        ),
+        TopSnackBar.showSuccess(
+          context,
+          message: response.message.isNotEmpty
+              ? response.message
+              : 'Application submitted successfully.',
         );
 
         final jobWithApplication = Map<String, dynamic>.from(widget.job);
@@ -315,11 +302,13 @@ class _JobStepScreenState extends State<JobStepScreen> {
             response.data?['status'] ?? 'pending';
 
         Map<String, dynamic>? skillTestInfo;
-        final applicationIdValue = response.data?['application_id'] ??
+        final applicationIdValue =
+            response.data?['application_id'] ??
             response.data?['id'] ??
             response.data?['applicationId'];
-        final applicationId =
-            int.tryParse(applicationIdValue?.toString() ?? '');
+        final applicationId = int.tryParse(
+          applicationIdValue?.toString() ?? '',
+        );
 
         if (applicationId != null) {
           try {
@@ -398,14 +387,6 @@ class _JobStepScreenState extends State<JobStepScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TopSnackBar.showError(context, message: message);
   }
 }
-
-

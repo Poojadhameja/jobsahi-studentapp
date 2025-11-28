@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 
 class ShortlistedJobCard extends StatelessWidget {
   /// Capitalizes the first letter of a string
@@ -311,13 +312,9 @@ class ShortlistedJobCard extends StatelessWidget {
 
           // Show error if no interview_id
           debugPrint('🔵 [ShortlistedCard] ❌ No valid interview_id');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Interview ID not available. Please try again later.',
-              ),
-              backgroundColor: Colors.orange,
-            ),
+          TopSnackBar.showInfo(
+            context,
+            message: 'Interview ID not available. Please try again later.',
           );
         },
         style: ElevatedButton.styleFrom(

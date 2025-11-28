@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 
 /// Interview Card Widget
 /// Displays interview information in a card format
@@ -408,12 +409,9 @@ class InterviewCard extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not open link: ${e.toString()}'),
-            backgroundColor: AppConstants.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
+        TopSnackBar.showError(
+          context,
+          message: 'Could not open link: ${e.toString()}',
         );
       }
     }

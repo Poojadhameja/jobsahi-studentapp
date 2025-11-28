@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/di/injection_container.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../feedback/bloc/feedback_bloc.dart';
 import '../../feedback/bloc/feedback_event.dart';
 import '../../feedback/bloc/feedback_state.dart';
@@ -228,17 +229,17 @@ class _FeedbackPageState extends State<FeedbackPage> {
               BlocConsumer<FeedbackBloc, FeedbackState>(
                 listener: (context, state) {
                   if (state is FeedbackSubmittedSuccess) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 3),
-                      ),
+                    TopSnackBar.showSuccess(
+                      context,
+                      message: state.message,
+                      duration: const Duration(seconds: 3),
                     );
                     _subjectController.clear();
                     _feedbackController.clear();
                     setState(() {});
-                    context.read<FeedbackBloc>().add(const ClearFeedbackFormEvent());
+                    context.read<FeedbackBloc>().add(
+                      const ClearFeedbackFormEvent(),
+                    );
                   } else if (state is FeedbackError) {
                     String errorMessage = state.message;
                     if (state.isRateLimitError) {
@@ -246,15 +247,14 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         errorMessage += '\n${state.messageEn}';
                       }
                       if (state.resetDate != null) {
-                        errorMessage += '\n\nPlease try again after ${state.resetDate}';
+                        errorMessage +=
+                            '\n\nPlease try again after ${state.resetDate}';
                       }
                     }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(errorMessage),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 5),
-                      ),
+                    TopSnackBar.showError(
+                      context,
+                      message: errorMessage,
+                      duration: const Duration(seconds: 5),
                     );
                   }
                 },
@@ -263,13 +263,17 @@ class _FeedbackPageState extends State<FeedbackPage> {
                   final subjectText = _subjectController.text.trim();
                   final feedbackText = _feedbackController.text.trim();
                   final isEnabled =
-                      subjectText.length >= 5 && feedbackText.length >= 15 && !isLoading;
+                      subjectText.length >= 5 &&
+                      feedbackText.length >= 15 &&
+                      !isLoading;
 
                   return Container(
                     padding: const EdgeInsets.all(AppConstants.defaultPadding),
                     decoration: BoxDecoration(
                       color: AppConstants.cardBackgroundColor,
-                      border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                      border: Border(
+                        top: BorderSide(color: Colors.grey.shade200),
+                      ),
                     ),
                     child: SizedBox(
                       width: double.infinity,
@@ -277,11 +281,11 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         onPressed: isEnabled
                             ? () {
                                 context.read<FeedbackBloc>().add(
-                                      SubmitFeedbackEvent(
-                                        feedback: _feedbackController.text.trim(),
-                                        subject: _subjectController.text.trim(),
-                                      ),
-                                    );
+                                  SubmitFeedbackEvent(
+                                    feedback: _feedbackController.text.trim(),
+                                    subject: _subjectController.text.trim(),
+                                  ),
+                                );
                               }
                             : null,
                         style: ElevatedButton.styleFrom(
@@ -302,8 +306,9 @@ class _FeedbackPageState extends State<FeedbackPage> {
                                 width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Text(
@@ -325,5 +330,3 @@ class _FeedbackPageState extends State<FeedbackPage> {
     );
   }
 }
-
-

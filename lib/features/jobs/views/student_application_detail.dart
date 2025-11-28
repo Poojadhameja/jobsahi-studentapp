@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 
 class StudentApplicationDetailScreen extends StatefulWidget {
   final String applicationId;
@@ -16,7 +17,8 @@ class StudentApplicationDetailScreen extends StatefulWidget {
   });
 
   /// Get navigation source from initial data
-  String? get navigationSource => initialData?['_navigation_source']?.toString();
+  String? get navigationSource =>
+      initialData?['_navigation_source']?.toString();
 
   @override
   State<StudentApplicationDetailScreen> createState() =>
@@ -81,8 +83,11 @@ class _StudentApplicationDetailScreenState
         _formatSalaryRange(merged['salary_min'], merged['salary_max']);
     // Map status - if status is "open" or empty, default to "Applied" since user has an application
     final rawStatus = merged['status']?.toString() ?? '';
-    final applicationStatus = merged['application_status']?.toString() ?? rawStatus;
-    merged['status_label'] = _mapStatusLabel(applicationStatus.isNotEmpty ? applicationStatus : 'applied');
+    final applicationStatus =
+        merged['application_status']?.toString() ?? rawStatus;
+    merged['status_label'] = _mapStatusLabel(
+      applicationStatus.isNotEmpty ? applicationStatus : 'applied',
+    );
 
     final skillOverviewRaw = merged['skill_test_overview'];
     if (skillOverviewRaw is Map<String, dynamic>) {
@@ -100,7 +105,7 @@ class _StudentApplicationDetailScreenState
   @override
   Widget build(BuildContext context) {
     final navigationSource = widget.navigationSource;
-    
+
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
       appBar: SimpleAppBar(
@@ -186,7 +191,10 @@ class _StudentApplicationDetailScreenState
   }
 
   /// Build application detail content with separate cards (matching interview details structure)
-  Widget _buildApplicationDetailContent(BuildContext context, Map<String, dynamic> data) {
+  Widget _buildApplicationDetailContent(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) {
     final title =
         data['job_title']?.toString() ??
         data['title']?.toString() ??
@@ -202,7 +210,11 @@ class _StudentApplicationDetailScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header Card
-        _buildHeaderCard(_capitalizeFirst(title), _capitalizeFirst(company), statusLabel),
+        _buildHeaderCard(
+          _capitalizeFirst(title),
+          _capitalizeFirst(company),
+          statusLabel,
+        ),
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Job Information Card
@@ -248,7 +260,9 @@ class _StudentApplicationDetailScreenState
                 height: 48,
                 decoration: BoxDecoration(
                   color: AppConstants.successColor,
-                  borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.smallBorderRadius,
+                  ),
                 ),
                 child: const Icon(Icons.work, color: Colors.white, size: 24),
               ),
@@ -388,8 +402,10 @@ class _StudentApplicationDetailScreenState
   /// Builds the application information card
   Widget _buildApplicationInfoCard(Map<String, dynamic> data) {
     final statusLabel = data['status_label']?.toString() ?? 'Applied';
-    final appliedAt = data['formatted_applied_at']?.toString() ?? 
-                     data['applied_at']?.toString() ?? 'Not available';
+    final appliedAt =
+        data['formatted_applied_at']?.toString() ??
+        data['applied_at']?.toString() ??
+        'Not available';
     final coverLetter =
         (data['cover_letter'] ?? data['cover_letter_text'])
             ?.toString()
@@ -422,17 +438,9 @@ class _StudentApplicationDetailScreenState
             ),
           ),
           const SizedBox(height: AppConstants.defaultPadding),
-          _buildInfoRow(
-            Icons.description,
-            'Application Status',
-            statusLabel,
-          ),
+          _buildInfoRow(Icons.description, 'Application Status', statusLabel),
           const SizedBox(height: 12),
-          _buildInfoRow(
-            Icons.calendar_today,
-            'Applied On',
-            appliedAt,
-          ),
+          _buildInfoRow(Icons.calendar_today, 'Applied On', appliedAt),
           if (coverLetter.isNotEmpty) ...[
             const SizedBox(height: AppConstants.defaultPadding),
             const Divider(),
@@ -482,17 +490,20 @@ class _StudentApplicationDetailScreenState
     final String routeId = jobId.isNotEmpty ? jobId : testId;
     final bool canNavigate = routeId.isNotEmpty && jobPayload != null;
     final bool isLoading = _isStartingSkillTest;
-    
+
     // Check if skill test is not available/required
     final bool hasSkillTest = available && (canStart || testId.isNotEmpty);
-    
+
     // Get score and maxScore from overview
     final scoreValue = _toDouble(overview['score']);
     final maxScoreValue = _toDouble(overview['maxScore']);
-    
+
     // Calculate score percentage and determine color
     double? scorePercentage;
-    if (scoreValue != null && maxScoreValue != null && maxScoreValue > 0 && hasCompleted) {
+    if (scoreValue != null &&
+        maxScoreValue != null &&
+        maxScoreValue > 0 &&
+        hasCompleted) {
       scorePercentage = (scoreValue / maxScoreValue * 100);
     } else if (scoreText != null && hasCompleted) {
       // Fallback: Extract percentage from scoreText (format: "X / Y (Z%)")
@@ -511,14 +522,14 @@ class _StudentApplicationDetailScreenState
         }
       }
     }
-    
+
     // Determine color based on score or availability (subtle approach)
     Color iconColor;
     Color borderColor;
-    
+
     // Keep background neutral, only change icon and border colors
     const Color sectionColor = Color(0xFFF5F7FB);
-    
+
     if (!hasSkillTest) {
       // Not available - Blue
       iconColor = AppConstants.primaryColor;
@@ -577,217 +588,218 @@ class _StudentApplicationDetailScreenState
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: borderColor),
             ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.quiz_outlined,
-                    color: hasCompleted && scorePercentage != null 
-                        ? iconColor.withValues(alpha: 0.9) 
-                        : iconColor,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Skill Test',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: hasCompleted && scorePercentage != null
-                              ? iconColor.withValues(alpha: 0.9)
-                              : AppConstants.textPrimaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        statusLabel,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: hasCompleted && scorePercentage != null
-                              ? iconColor.withValues(alpha: 0.9)
-                              : (!hasSkillTest 
-                                  ? AppConstants.primaryColor 
-                                  : AppConstants.textSecondaryColor),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (scoreText != null) ...[
-              Row(
-                children: [
-                  Icon(
-                    Icons.stacked_line_chart,
-                    size: 18,
-                    color: hasCompleted && scorePercentage != null 
-                        ? iconColor.withValues(alpha: 0.9) 
-                        : AppConstants.primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    scoreText,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: hasCompleted && scorePercentage != null 
-                          ? iconColor.withValues(alpha: 0.9) 
-                          : AppConstants.textPrimaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
-            if (progressText != null) ...[
-              Row(
-                children: [
-                  Icon(
-                    Icons.list_alt_outlined,
-                    size: 18,
-                    color: hasCompleted && scorePercentage != null 
-                        ? iconColor.withValues(alpha: 0.9) 
-                        : AppConstants.primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    progressText,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: hasCompleted && scorePercentage != null 
-                          ? iconColor.withValues(alpha: 0.9) 
-                          : AppConstants.textSecondaryColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
-            if (completedLabel != null &&
-                completedLabel.isNotEmpty &&
-                hasCompleted) ...[
-              Row(
-                children: [
-                  Icon(
-                    Icons.event_available_outlined,
-                    size: 18,
-                    color: hasCompleted && scorePercentage != null 
-                        ? iconColor.withValues(alpha: 0.9) 
-                        : AppConstants.primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Completed on $completedLabel',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: hasCompleted && scorePercentage != null 
-                          ? iconColor.withValues(alpha: 0.9) 
-                          : AppConstants.textSecondaryColor,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-            // Only show button if skill test is required and not completed
-            if (!hasCompleted && canStart)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (!isLoading && canNavigate)
-                      ? () => _startSkillTest(application, overview)
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.secondaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.borderRadius,
-                      ),
-                    ),
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          buttonLabel,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
-            // Show message if skill test is not available/required
-            if (!hasCompleted && !hasSkillTest)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppConstants.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppConstants.primaryColor.withValues(alpha: 0.3)),
-                ),
-                child: Row(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 18,
-                      color: AppConstants.primaryColor,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: iconColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.quiz_outlined,
+                        color: hasCompleted && scorePercentage != null
+                            ? iconColor.withValues(alpha: 0.9)
+                            : iconColor,
+                        size: 26,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 14),
                     Expanded(
-                      child: Text(
-                        'The skill test is not available or required. Once available, it will appear here.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppConstants.primaryColor,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Skill Test',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: hasCompleted && scorePercentage != null
+                                  ? iconColor.withValues(alpha: 0.9)
+                                  : AppConstants.textPrimaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            statusLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: hasCompleted && scorePercentage != null
+                                  ? iconColor.withValues(alpha: 0.9)
+                                  : (!hasSkillTest
+                                        ? AppConstants.primaryColor
+                                        : AppConstants.textSecondaryColor),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            if (hasCompleted && scoreText == null)
-              const Text(
-                'Skill test completed.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppConstants.textSecondaryColor,
-                ),
-              ),
-          ],
-        ),
+                const SizedBox(height: 16),
+                if (scoreText != null) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.stacked_line_chart,
+                        size: 18,
+                        color: hasCompleted && scorePercentage != null
+                            ? iconColor.withValues(alpha: 0.9)
+                            : AppConstants.primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        scoreText,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: hasCompleted && scorePercentage != null
+                              ? iconColor.withValues(alpha: 0.9)
+                              : AppConstants.textPrimaryColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (progressText != null) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.list_alt_outlined,
+                        size: 18,
+                        color: hasCompleted && scorePercentage != null
+                            ? iconColor.withValues(alpha: 0.9)
+                            : AppConstants.primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        progressText,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: hasCompleted && scorePercentage != null
+                              ? iconColor.withValues(alpha: 0.9)
+                              : AppConstants.textSecondaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (completedLabel != null &&
+                    completedLabel.isNotEmpty &&
+                    hasCompleted) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.event_available_outlined,
+                        size: 18,
+                        color: hasCompleted && scorePercentage != null
+                            ? iconColor.withValues(alpha: 0.9)
+                            : AppConstants.primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Completed on $completedLabel',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: hasCompleted && scorePercentage != null
+                              ? iconColor.withValues(alpha: 0.9)
+                              : AppConstants.textSecondaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Only show button if skill test is required and not completed
+                if (!hasCompleted && canStart)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: (!isLoading && canNavigate)
+                          ? () => _startSkillTest(application, overview)
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.secondaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.borderRadius,
+                          ),
+                        ),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              buttonLabel,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                // Show message if skill test is not available/required
+                if (!hasCompleted && !hasSkillTest)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppConstants.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppConstants.primaryColor.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: AppConstants.primaryColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'The skill test is not available or required. Once available, it will appear here.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppConstants.primaryColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (hasCompleted && scoreText == null)
+                  const Text(
+                    'Skill test completed.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppConstants.textSecondaryColor,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-
 
   /// Builds an info row with icon and text (matching interview details structure)
   Widget _buildInfoRow(
@@ -831,7 +843,6 @@ class _StudentApplicationDetailScreenState
       ],
     );
   }
-
 
   String _formatDateTime(String? raw) {
     if (raw == null || raw.isEmpty) return 'Not available';
@@ -967,15 +978,15 @@ class _StudentApplicationDetailScreenState
     final testId = overview['test_id']?.toString() ?? '';
 
     // Check if skill test is available (has questions)
-    final bool hasSkillTest = available && (canStartNow || alreadyExists || testId.isNotEmpty);
-    
+    final bool hasSkillTest =
+        available && (canStartNow || alreadyExists || testId.isNotEmpty);
+
     // Update status label if skill test is not available
     final String finalStatusLabel = !hasSkillTest && !hasCompleted
         ? 'Not available'
         : statusLabel;
-    
-    final ctaEnabled =
-        !hasCompleted && hasSkillTest && jobId.isNotEmpty;
+
+    final ctaEnabled = !hasCompleted && hasSkillTest && jobId.isNotEmpty;
     final ctaLabel = hasCompleted
         ? 'Skill Test Completed'
         : !hasSkillTest
@@ -1043,12 +1054,11 @@ class _StudentApplicationDetailScreenState
 
   void _showSnackBar(String message, {bool isError = true}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : AppConstants.primaryColor,
-      ),
-    );
+    if (isError) {
+      TopSnackBar.showError(context, message: message);
+    } else {
+      TopSnackBar.showInfo(context, message: message);
+    }
   }
 
   Future<void> _startSkillTest(
@@ -1142,14 +1152,15 @@ class _StudentApplicationDetailScreenState
   void _handleBackNavigation(BuildContext context, String? navigationSource) {
     if (navigationSource == 'job_details') {
       // Navigate back to job details page
-      final jobId = widget.initialData?['id']?.toString() ??
+      final jobId =
+          widget.initialData?['id']?.toString() ??
           widget.initialData?['job_id']?.toString();
-      
+
       if (jobId != null && jobId.isNotEmpty) {
         final jobPayload = Map<String, dynamic>.from(widget.initialData ?? {});
         jobPayload['id'] = jobId;
         jobPayload['job_id'] = jobId;
-        
+
         context.goNamed(
           'jobDetails',
           pathParameters: {'id': jobId},
@@ -1163,14 +1174,15 @@ class _StudentApplicationDetailScreenState
       return;
     } else if (navigationSource == 'job_application_success') {
       // Navigate back to job application success page
-      final jobId = widget.initialData?['id']?.toString() ??
+      final jobId =
+          widget.initialData?['id']?.toString() ??
           widget.initialData?['job_id']?.toString();
-      
+
       if (jobId != null && jobId.isNotEmpty) {
         final jobPayload = Map<String, dynamic>.from(widget.initialData ?? {});
         jobPayload['id'] = jobId;
         jobPayload['job_id'] = jobId;
-        
+
         context.goNamed(
           'jobApplicationSuccess',
           pathParameters: {'id': jobId},
@@ -1179,7 +1191,7 @@ class _StudentApplicationDetailScreenState
         return;
       }
     }
-    
+
     // Default: pop if possible, otherwise go to home
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();

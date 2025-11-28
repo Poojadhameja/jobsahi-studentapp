@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/di/injection_container.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../feedback/bloc/feedback_bloc.dart';
 import '../../feedback/bloc/feedback_event.dart';
 import '../../feedback/bloc/feedback_state.dart';
@@ -38,8 +39,8 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     // Set initial tab based on constructor argument
-    _tabController.index = (widget.initialTabIndex >= 0 &&
-            widget.initialTabIndex <= 1)
+    _tabController.index =
+        (widget.initialTabIndex >= 0 && widget.initialTabIndex <= 1)
         ? widget.initialTabIndex
         : 0;
   }
@@ -316,12 +317,10 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
         BlocConsumer<FeedbackBloc, FeedbackState>(
           listener: (context, state) {
             if (state is FeedbackSubmittedSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 3),
-                ),
+              TopSnackBar.showSuccess(
+                context,
+                message: state.message,
+                duration: const Duration(seconds: 3),
               );
               _subjectController.clear();
               _feedbackController.clear();
@@ -330,7 +329,7 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
               context.read<FeedbackBloc>().add(const ClearFeedbackFormEvent());
             } else if (state is FeedbackError) {
               String errorMessage = state.message;
-              
+
               // Show rate limit error with more details
               if (state.isRateLimitError) {
                 errorMessage = state.message;
@@ -338,16 +337,15 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
                   errorMessage += '\n${state.messageEn}';
                 }
                 if (state.resetDate != null) {
-                  errorMessage += '\n\nPlease try again after ${state.resetDate}';
+                  errorMessage +=
+                      '\n\nPlease try again after ${state.resetDate}';
                 }
               }
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(errorMessage),
-                  backgroundColor: Colors.red,
-                  duration: const Duration(seconds: 5),
-                ),
+              TopSnackBar.showError(
+                context,
+                message: errorMessage,
+                duration: const Duration(seconds: 5),
               );
             }
           },
@@ -355,62 +353,63 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
             final isLoading = state is FeedbackSubmitting;
             final subjectText = _subjectController.text.trim();
             final feedbackText = _feedbackController.text.trim();
-            final isEnabled = subjectText.length >= 5 &&
+            final isEnabled =
+                subjectText.length >= 5 &&
                 feedbackText.length >= 15 &&
                 !isLoading;
 
             return Container(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          decoration: BoxDecoration(
-            color: AppConstants.cardBackgroundColor,
-            border: Border(top: BorderSide(color: Colors.grey.shade200)),
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
+              padding: const EdgeInsets.all(AppConstants.defaultPadding),
+              decoration: BoxDecoration(
+                color: AppConstants.cardBackgroundColor,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
                   onPressed: isEnabled
                       ? () {
                           context.read<FeedbackBloc>().add(
-                                SubmitFeedbackEvent(
-                                  feedback: _feedbackController.text.trim(),
-                                  subject: _subjectController.text.trim(),
-                                ),
-                              );
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppConstants.secondaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.borderRadius,
+                            SubmitFeedbackEvent(
+                              feedback: _feedbackController.text.trim(),
+                              subject: _subjectController.text.trim(),
+                            ),
+                          );
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.secondaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
+                    ),
+                    elevation: 2,
+                    disabledBackgroundColor: Colors.grey[300],
                   ),
-                ),
-                elevation: 2,
-                disabledBackgroundColor: Colors.grey[300],
-              ),
                   child: isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : Text(
-                'Submit Feedback',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                            color: isEnabled
-                      ? Colors.white
-                      : Colors.grey[600],
+                          'Submit Feedback',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isEnabled ? Colors.white : Colors.grey[600],
+                          ),
+                        ),
                 ),
               ),
-            ),
-          ),
             );
           },
         ),
@@ -617,4 +616,3 @@ class _HelpCenterPageViewState extends State<_HelpCenterPageView>
     );
   }
 }
-

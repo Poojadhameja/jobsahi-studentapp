@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -279,10 +280,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -304,11 +302,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
                   color: Color(0xFF0B537D),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.info,
-                  size: 16,
-                  color: Colors.white,
-                ),
+                child: const Icon(Icons.info, size: 16, color: Colors.white),
               ),
               const SizedBox(width: 8),
               const Text(
@@ -347,11 +341,7 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
             color: Color(0xFF5C9A24),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
-            Icons.check,
-            size: 14,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.check, size: 14, color: Colors.white),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -418,11 +408,6 @@ class _SetNewPasswordScreenState extends State<SetNewPasswordScreen> {
 
   /// Shows error snackbar
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-      ),
-    );
+    TopSnackBar.showError(context, message: message);
   }
 }

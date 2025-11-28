@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/app_constants.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/skill_test_bloc.dart';
 import '../bloc/skill_test_event.dart';
 import '../bloc/skill_test_state.dart';
@@ -152,12 +153,10 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
           .difference(state.startTime)
           .inSeconds;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Time is up! Test submitted automatically.'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
+      TopSnackBar.showInfo(
+        context,
+        message: 'Time is up! Test submitted automatically.',
+        duration: const Duration(seconds: 2),
       );
 
       bloc.add(
@@ -192,14 +191,10 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
 
       if (answeredCount < totalQuestions) {
         final remaining = totalQuestions - answeredCount;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Please answer all questions before submitting. $remaining question${remaining > 1 ? 's' : ''} remaining.',
-            ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
-          ),
+        TopSnackBar.showInfo(
+          context,
+          message: 'Please answer all questions before submitting. $remaining question${remaining > 1 ? 's' : ''} remaining.',
+          duration: const Duration(seconds: 3),
         );
         return;
       }
@@ -229,9 +224,10 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
           _showResultDialog(context, state);
         } else if (state is SkillTestError) {
           _timer?.cancel();
-          ScaffoldMessenger.of(
+          TopSnackBar.showError(
             context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+            message: state.message,
+          );
         }
       },
       child: BlocBuilder<SkillTestBloc, SkillTestState>(

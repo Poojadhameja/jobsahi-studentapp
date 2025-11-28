@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -639,11 +640,9 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
 
       // Check if terms are accepted
       if (!isTermsAccepted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('कृपया नियम, प्राइवेसी और शुल्क से सहमत हों'),
-            backgroundColor: Colors.red,
-          ),
+        TopSnackBar.showError(
+          context,
+          message: 'कृपया नियम, प्राइवेसी और शुल्क से सहमत हों',
         );
         return;
       }
@@ -662,9 +661,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
 
   /// Shows error snackbar
   void _showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
+    TopSnackBar.showError(context, message: message);
   }
 }
 

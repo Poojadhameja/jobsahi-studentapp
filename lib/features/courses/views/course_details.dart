@@ -15,6 +15,7 @@ import '../../../core/di/injection_container.dart';
 import '../../../shared/widgets/common/navigation_helper.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 
 class CourseDetailsPage extends StatelessWidget {
   final Map<String, dynamic> course;
@@ -60,9 +61,7 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
     return BlocListener<CoursesBloc, CoursesState>(
       listener: (context, state) {
         if (state is CoursesError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-          );
+          TopSnackBar.showError(context, message: state.message);
         }
       },
       child: BlocBuilder<CoursesBloc, CoursesState>(
@@ -763,11 +762,9 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
           ),
           onPressed: () {
             // TODO: Implement enrollment functionality
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Enrollment functionality coming soon'),
-                backgroundColor: AppConstants.successColor,
-              ),
+            TopSnackBar.showInfo(
+              context,
+              message: 'Enrollment functionality coming soon',
             );
           },
           child: const Text(

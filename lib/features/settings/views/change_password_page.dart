@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
@@ -46,20 +47,13 @@ class _ChangePasswordPageViewState extends State<_ChangePasswordPageView> {
     return BlocListener<SettingsBloc, SettingsState>(
       listener: (context, state) {
         if (state is PasswordChangedSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Password changed successfully'),
-              backgroundColor: AppConstants.successColor,
-            ),
+          TopSnackBar.showSuccess(
+            context,
+            message: 'Password changed successfully',
           );
           context.pop();
         } else if (state is SettingsError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppConstants.errorColor,
-            ),
-          );
+          TopSnackBar.showError(context, message: state.message);
         }
       },
       child: BlocBuilder<SettingsBloc, SettingsState>(

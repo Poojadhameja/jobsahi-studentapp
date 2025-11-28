@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 
 /// Job Application Success Screen
 /// Shows confirmation after successful job application submission
@@ -212,11 +213,9 @@ class JobApplicationSuccessScreen extends StatelessWidget {
         job['applicationId']?.toString();
 
     if (applicationId == null || applicationId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Application ID not available.'),
-          backgroundColor: Colors.red,
-        ),
+      TopSnackBar.showError(
+        context,
+        message: 'Application ID not available.',
       );
       return;
     }

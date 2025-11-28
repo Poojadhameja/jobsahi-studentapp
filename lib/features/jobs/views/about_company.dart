@@ -9,6 +9,7 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../../core/di/injection_container.dart';
 import 'write_review.dart';
 import '../bloc/jobs_bloc.dart';
@@ -61,7 +62,8 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
         title: widget.company['name'] ?? 'Company',
         showBackButton: true,
         actions: [
-          if (widget.company['website'] != null && widget.company['website'].toString().isNotEmpty)
+          if (widget.company['website'] != null &&
+              widget.company['website'].toString().isNotEmpty)
             IconButton(
               onPressed: () => _launchUrl(widget.company['website'].toString()),
               icon: const Icon(Icons.public),
@@ -525,7 +527,6 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
 
           // Reviews will be loaded from API
           // Individual review cards will be displayed here based on API data
-
           const SizedBox(height: AppConstants.defaultPadding),
 
           // Write review button
@@ -579,7 +580,7 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
   /// Reusable row for a company info item
   Widget _buildCompanyInfoRow(IconData icon, String label, String value) {
     final isWebsite = label.toLowerCase() == 'website';
-    
+
     return Row(
       children: [
         Icon(icon, color: AppConstants.textSecondaryColor),
@@ -636,7 +637,7 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
 
   Future<void> _launchUrl(String url) async {
     if (url.isEmpty) return;
-    
+
     try {
       String urlToLaunch = url.trim();
       if (!urlToLaunch.startsWith('http://') &&
@@ -655,12 +656,9 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not open website: ${e.toString()}'),
-            backgroundColor: AppConstants.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
+        TopSnackBar.showError(
+          context,
+          message: 'Could not open website: ${e.toString()}',
         );
       }
     }

@@ -6,6 +6,7 @@ import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/profile_navigation_app_bar.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/common/empty_state_widget.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../../shared/widgets/cards/shortlisted_job_card.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
@@ -58,7 +59,7 @@ class _ApplicationTrackerScreenViewState
     extends State<_ApplicationTrackerScreenView>
     with TickerProviderStateMixin {
   TabController? _tabController;
-  
+
   // Cache the last loaded data to prevent showing empty state during reload
   List<Map<String, dynamic>> _cachedAppliedJobs = [];
   List<Map<String, dynamic>> _cachedInterviewJobs = [];
@@ -78,7 +79,7 @@ class _ApplicationTrackerScreenViewState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Initialize cache from BLoC state if available (only once, before first build)
     if (!_cacheInitialized) {
       _initializeCacheFromBloC();
@@ -90,18 +91,18 @@ class _ApplicationTrackerScreenViewState
   void _initializeCacheFromBloC() {
     try {
       final currentState = context.read<JobsBloc>().state;
-      
+
       if (currentState is ApplicationTrackerLoaded) {
         _cachedAppliedJobs = List.from(currentState.appliedJobs);
         _cachedInterviewJobs = List.from(currentState.interviewJobs);
         _hasLoadedOnce = true; // Mark as loaded if cache exists
-      } 
+      }
       // Check JobsLoaded state for cached tracker data
       else if (currentState is JobsLoaded) {
-        if (currentState.trackerAppliedJobs != null && 
+        if (currentState.trackerAppliedJobs != null &&
             currentState.trackerInterviewJobs != null &&
-            (currentState.trackerAppliedJobs!.isNotEmpty || 
-             currentState.trackerInterviewJobs!.isNotEmpty)) {
+            (currentState.trackerAppliedJobs!.isNotEmpty ||
+                currentState.trackerInterviewJobs!.isNotEmpty)) {
           _cachedAppliedJobs = List.from(currentState.trackerAppliedJobs!);
           _cachedInterviewJobs = List.from(currentState.trackerInterviewJobs!);
           _hasLoadedOnce = true; // Mark as loaded if cache exists
@@ -195,28 +196,18 @@ class _ApplicationTrackerScreenViewState
       child: BlocListener<JobsBloc, JobsState>(
         listener: (context, state) {
           if (state is ApplicationViewed) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Viewing application: ${state.applicationId}'),
-                backgroundColor: AppConstants.successColor,
-              ),
+            TopSnackBar.showSuccess(
+              context,
+              message: 'Viewing application: ${state.applicationId}',
             );
           } else if (state is ApplyForMoreJobsState) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
+            TopSnackBar.showInfo(
+              context,
+              message:
                   'Apply for more jobs functionality will be implemented here',
-                ),
-                backgroundColor: AppConstants.successColor,
-              ),
             );
           } else if (state is JobsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
+            TopSnackBar.showError(context, message: state.message);
           }
         },
         child: KeyboardDismissWrapper(
@@ -230,23 +221,26 @@ class _ApplicationTrackerScreenViewState
                 // Always rebuild for these states
                 if (current is ApplicationTrackerLoaded) return true;
                 if (current is JobsError) return true;
-                if (current is JobsLoading && previous is! JobsLoading) return true;
-                
+                if (current is JobsLoading && previous is! JobsLoading)
+                  return true;
+
                 // Rebuild when JobsLoaded has tracker data
                 if (current is JobsLoaded) {
                   // If we're on the tracker screen and JobsLoaded has tracker data, rebuild
-                  if (current.trackerAppliedJobs != null || 
+                  if (current.trackerAppliedJobs != null ||
                       current.trackerInterviewJobs != null) {
                     // Check if tracker data actually changed
                     if (previous is JobsLoaded) {
-                      return previous.trackerAppliedJobs != current.trackerAppliedJobs ||
-                             previous.trackerInterviewJobs != current.trackerInterviewJobs;
+                      return previous.trackerAppliedJobs !=
+                              current.trackerAppliedJobs ||
+                          previous.trackerInterviewJobs !=
+                              current.trackerInterviewJobs;
                     }
                     // First time seeing JobsLoaded with tracker data
                     return true;
                   }
                 }
-                
+
                 // Don't rebuild for other state changes
                 return false;
               },
@@ -259,7 +253,7 @@ class _ApplicationTrackerScreenViewState
                   // Mark as loaded at least once
                   _hasLoadedOnce = true;
                   // Update cache with latest data only if different
-                  if (_cachedAppliedJobs != state.appliedJobs || 
+                  if (_cachedAppliedJobs != state.appliedJobs ||
                       _cachedInterviewJobs != state.interviewJobs) {
                     _cachedAppliedJobs = List.from(state.appliedJobs);
                     _cachedInterviewJobs = List.from(state.interviewJobs);
@@ -268,21 +262,23 @@ class _ApplicationTrackerScreenViewState
                   interviewJobs = state.interviewJobs;
                 }
                 // Also check JobsLoaded for tracker data
-                else if (state is JobsLoaded && 
-                         state.trackerAppliedJobs != null && 
-                         state.trackerInterviewJobs != null) {
+                else if (state is JobsLoaded &&
+                    state.trackerAppliedJobs != null &&
+                    state.trackerInterviewJobs != null) {
                   // Mark as loaded since we have data from JobsLoaded
-                  if (!_hasLoadedOnce && 
-                      (state.trackerAppliedJobs!.isNotEmpty || 
-                       state.trackerInterviewJobs!.isNotEmpty)) {
+                  if (!_hasLoadedOnce &&
+                      (state.trackerAppliedJobs!.isNotEmpty ||
+                          state.trackerInterviewJobs!.isNotEmpty)) {
                     _hasLoadedOnce = true;
                   }
-                  
+
                   // Update cache with tracker data from JobsLoaded only if different
-                  if (_cachedAppliedJobs != state.trackerAppliedJobs! || 
+                  if (_cachedAppliedJobs != state.trackerAppliedJobs! ||
                       _cachedInterviewJobs != state.trackerInterviewJobs!) {
                     _cachedAppliedJobs = List.from(state.trackerAppliedJobs!);
-                    _cachedInterviewJobs = List.from(state.trackerInterviewJobs!);
+                    _cachedInterviewJobs = List.from(
+                      state.trackerInterviewJobs!,
+                    );
                   }
                   appliedJobs = state.trackerAppliedJobs!;
                   interviewJobs = state.trackerInterviewJobs!;
@@ -290,14 +286,15 @@ class _ApplicationTrackerScreenViewState
 
                 // Determine if we should show loading state inside tabs
                 // (instead of replacing entire widget with loading spinner)
-                final hasAnyCachedData = _cachedAppliedJobs.isNotEmpty || 
-                                        _cachedInterviewJobs.isNotEmpty;
-                final isCurrentlyLoading = state is JobsLoading || state is JobsInitial;
-                
+                final hasAnyCachedData =
+                    _cachedAppliedJobs.isNotEmpty ||
+                    _cachedInterviewJobs.isNotEmpty;
+                final isCurrentlyLoading =
+                    state is JobsLoading || state is JobsInitial;
+
                 // Check if this is first load with no cache
-                final isFirstLoad = isCurrentlyLoading && 
-                                   !_hasLoadedOnce && 
-                                   !hasAnyCachedData;
+                final isFirstLoad =
+                    isCurrentlyLoading && !_hasLoadedOnce && !hasAnyCachedData;
 
                 // Always show tabs structure - show loading inside tabs if needed
                 return Column(
@@ -699,11 +696,9 @@ class _ApplicationTrackerScreenViewState
       child: ElevatedButton(
         onPressed: () {
           if (applicationId.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Application ID not available.'),
-                backgroundColor: Colors.red,
-              ),
+            TopSnackBar.showError(
+              context,
+              message: 'Application ID not available.',
             );
             return;
           }

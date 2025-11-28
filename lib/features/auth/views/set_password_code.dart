@@ -5,6 +5,7 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -61,10 +62,10 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize purpose - default to forgot_password if not provided
     _purpose = widget.purpose ?? 'forgot_password';
-    
+
     // Initialize from widget parameters or GoRouter extra
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // First try widget parameters
@@ -274,10 +275,10 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
           child: Text(
             _purpose == 'phone_login'
                 ? (_phoneNumber.isNotEmpty && _phoneNumber.length == 10
-                    ? '+91 ${_phoneNumber.substring(0, 5)} ${_phoneNumber.substring(5)}'
-                    : _phoneNumber.isNotEmpty
-                        ? '+91 $_phoneNumber'
-                        : 'Loading...')
+                      ? '+91 ${_phoneNumber.substring(0, 5)} ${_phoneNumber.substring(5)}'
+                      : _phoneNumber.isNotEmpty
+                      ? '+91 $_phoneNumber'
+                      : 'Loading...')
                 : (_email.isNotEmpty ? _email : 'Loading...'),
             style: const TextStyle(
               fontSize: 16,
@@ -626,21 +627,11 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
   /// Shows error snackbar
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-      ),
-    );
+    TopSnackBar.showError(context, message: message);
   }
 
   /// Shows success snackbar
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-      ),
-    );
+    TopSnackBar.showSuccess(context, message: message);
   }
 }

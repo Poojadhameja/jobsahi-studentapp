@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -27,7 +28,6 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   bool _isSubmitting = false; // Track submission state locally
 
   /// 👁 for password toggle
-
 
   // Add controllers for text fields
   final TextEditingController _mobileController = TextEditingController();
@@ -63,23 +63,17 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           setState(() {
             _isSubmitting = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              duration: const Duration(seconds: 3),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
+          TopSnackBar.showError(
+            context,
+            message: state.message,
+            duration: const Duration(seconds: 3),
           );
         } else if (state is OtpSentState) {
           debugPrint("🔵 LoginScreen navigating to OTP code screen");
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OTP sent successfully'),
-              duration: Duration(seconds: 2),
-              backgroundColor: AppConstants.textPrimaryColor,
-              behavior: SnackBarBehavior.floating,
-            ),
+          TopSnackBar.showSuccess(
+            context,
+            message: 'OTP sent successfully',
+            duration: const Duration(seconds: 2),
           );
           // Navigate to set password code screen (reused for phone login)
           context.push(
@@ -350,7 +344,11 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
                         ),
                       ),
                     ),
-                    Container(width: 1, height: 50, color: Colors.grey.shade200),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: Colors.grey.shade200,
+                    ),
                     Expanded(
                       child: Material(
                         color: Colors.transparent,
@@ -365,8 +363,12 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
                           borderRadius: const BorderRadius.only(
                             bottomRight: Radius.circular(16),
                           ),
-                          splashColor: AppConstants.errorColor.withValues(alpha: 0.2),
-                          highlightColor: AppConstants.errorColor.withValues(alpha: 0.1),
+                          splashColor: AppConstants.errorColor.withValues(
+                            alpha: 0.2,
+                          ),
+                          highlightColor: AppConstants.errorColor.withValues(
+                            alpha: 0.1,
+                          ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             alignment: Alignment.center,
@@ -838,4 +840,3 @@ class SignInButton extends StatelessWidget {
     );
   }
 }
-

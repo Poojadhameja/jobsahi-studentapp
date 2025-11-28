@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../../shared/data/job_data.dart';
 import '../../../shared/data/user_data.dart';
 import '../bloc/jobs_bloc.dart';
@@ -123,20 +124,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       listener: (context, state) {
         // Show snackbar on error but keep showing basic job info
         if (state is JobsError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-              action: SnackBarAction(
-                label: 'पुनः प्रयास करें',
-                textColor: Colors.white,
-                onPressed: () {
-                  context.read<JobsBloc>().add(
-                    LoadJobDetailsEvent(jobId: widget.job['id'] ?? ''),
-                  );
-                },
-              ),
-            ),
+          TopSnackBar.showError(
+            context,
+            message: '${state.message} (पुनः प्रयास करें)',
           );
         }
         // Removed snackbars for JobSavedState and JobUnsavedState
@@ -765,12 +755,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not open website: ${e.toString()}'),
-            backgroundColor: AppConstants.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
+        TopSnackBar.showError(
+          context,
+          message: 'Could not open website: ${e.toString()}',
         );
       }
     }
@@ -1201,11 +1188,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
     final jobId = currentJob['id']?.toString();
     if (jobId == null || jobId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to determine job ID for application.'),
-          backgroundColor: Colors.red,
-        ),
+      TopSnackBar.showError(
+        context,
+        message: 'Unable to determine job ID for application.',
       );
       return;
     }

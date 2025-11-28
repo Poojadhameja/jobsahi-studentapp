@@ -8,6 +8,7 @@ import '../../../core/utils/app_constants.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../../shared/widgets/cards/job_card.dart';
 import '../bloc/jobs_bloc.dart';
 import '../bloc/jobs_event.dart';
@@ -46,21 +47,14 @@ class _SavedJobsScreenView extends StatelessWidget {
     return BlocListener<JobsBloc, JobsState>(
       listener: (context, state) {
         if (state is SavedJobRemoved) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Job removed from saved jobs: ${state.jobId}'),
-              backgroundColor: AppConstants.successColor,
-            ),
+          TopSnackBar.showSuccess(
+            context,
+            message: 'Job removed from saved jobs: ${state.jobId}',
           );
           // Reload saved jobs after removal
           context.read<JobsBloc>().add(const LoadSavedJobsEvent());
         } else if (state is JobUnsavedState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Job unsaved successfully'),
-              backgroundColor: AppConstants.successColor,
-            ),
-          );
+          TopSnackBar.showSuccess(context, message: 'Job unsaved successfully');
           // Reload saved jobs after unsaving
           context.read<JobsBloc>().add(const LoadSavedJobsEvent());
         }

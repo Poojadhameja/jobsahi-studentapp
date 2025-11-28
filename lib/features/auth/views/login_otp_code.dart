@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -53,7 +54,9 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
     if (currentState is OtpSentState && _storedPhoneNumber == null) {
       _storedPhoneNumber = currentState.phoneNumber;
       _storedUserId = currentState.userId;
-      debugPrint('🔵 Stored phone number: $_storedPhoneNumber, userId: $_storedUserId');
+      debugPrint(
+        '🔵 Stored phone number: $_storedPhoneNumber, userId: $_storedUserId',
+      );
     }
 
     return BlocListener<AuthBloc, AuthState>(
@@ -62,7 +65,9 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
         if (state is OtpSentState) {
           _storedPhoneNumber = state.phoneNumber;
           _storedUserId = state.userId;
-          debugPrint('🔵 Updated stored phone number: $_storedPhoneNumber, userId: $_storedUserId');
+          debugPrint(
+            '🔵 Updated stored phone number: $_storedPhoneNumber, userId: $_storedUserId',
+          );
         }
 
         if (state is OtpVerificationLoading) {
@@ -75,22 +80,16 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
           setState(() {
             _isSubmitting = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              duration: const Duration(seconds: 3),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
+          TopSnackBar.showError(
+            context,
+            message: state.message,
+            duration: const Duration(seconds: 3),
           );
         } else if (state is OtpVerificationSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OTP verified successfully'),
-              duration: Duration(seconds: 2),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
+          TopSnackBar.showSuccess(
+            context,
+            message: 'OTP verified successfully',
+            duration: const Duration(seconds: 2),
           );
           // Use go instead of push to replace the route and prevent back navigation
           context.go(AppRoutes.loginVerifiedPopup);
@@ -180,7 +179,7 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
       builder: (context, state) {
         // Use stored phone number or get from current state
         String phoneNumber = _storedPhoneNumber ?? '';
-        
+
         if (phoneNumber.isEmpty && state is OtpSentState) {
           phoneNumber = state.phoneNumber;
           _storedPhoneNumber = phoneNumber;
@@ -190,7 +189,8 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
         String formattedPhone = '+91 XXXXX XXXXX';
         if (phoneNumber.isNotEmpty && phoneNumber.length == 10) {
           // Format as +91 XXXXX XXXXX (first 5 digits, then last 5 digits)
-          formattedPhone = '+91 ${phoneNumber.substring(0, 5)} ${phoneNumber.substring(5)}';
+          formattedPhone =
+              '+91 ${phoneNumber.substring(0, 5)} ${phoneNumber.substring(5)}';
         } else if (phoneNumber.isNotEmpty) {
           // If not exactly 10 digits, just show with +91 prefix
           formattedPhone = '+91 $phoneNumber';
@@ -368,13 +368,11 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
 
     // If still no phone number, show error
     if (_storedPhoneNumber == null || _storedPhoneNumber!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Phone number not found. Please go back and request a new OTP.'),
-          duration: Duration(seconds: 3),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
+      TopSnackBar.showError(
+        context,
+        message:
+            'Phone number not found. Please go back and request a new OTP.',
+        duration: const Duration(seconds: 3),
       );
       return;
     }
@@ -394,7 +392,7 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
   void _resendOTP() {
     // Use stored phone number or get from current state
     String phoneNumber = _storedPhoneNumber ?? '';
-    
+
     if (phoneNumber.isEmpty) {
       final currentState = context.read<AuthBloc>().state;
       if (currentState is OtpSentState) {
@@ -404,20 +402,15 @@ class _LoginOtpCodeScreenState extends State<LoginOtpCodeScreen> {
     }
 
     if (phoneNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Phone number not found. Please go back and try again.'),
-          duration: Duration(seconds: 3),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
+      TopSnackBar.showError(
+        context,
+        message: 'Phone number not found. Please go back and try again.',
+        duration: const Duration(seconds: 3),
       );
       return;
     }
 
     // Dispatch resend OTP event to BLoC
-    context.read<AuthBloc>().add(
-      LoginWithOtpEvent(phoneNumber: phoneNumber),
-    );
+    context.read<AuthBloc>().add(LoginWithOtpEvent(phoneNumber: phoneNumber));
   }
 }
