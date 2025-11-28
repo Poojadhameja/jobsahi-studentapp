@@ -283,6 +283,11 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           final contactEmail = profile.contactInfo?.contactEmail ?? '';
           final contactPhone = profile.contactInfo?.contactPhone ?? '';
 
+          // Fix: If bio is same as user name (backend default), set it to empty
+          final bioValue = profile.additionalInfo.bio.trim();
+          final userName = profile.personalInfo.userName.trim();
+          final finalBio = (bioValue == userName || bioValue.isEmpty) ? '' : bioValue;
+
           userProfile = {
             'id': profile.userId.toString(),
             'name': profile.personalInfo.userName,
@@ -293,7 +298,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             'location': profile.personalInfo.location,
             'gender': profile.personalInfo.gender,
             'dateOfBirth': profile.personalInfo.dateOfBirth,
-            'bio': profile.additionalInfo.bio,
+            'bio': finalBio,
             'profileImage': null,
             'portfolioLink': portfolioLink ?? '',
             'linkedinUrl': linkedinUrl ?? '',

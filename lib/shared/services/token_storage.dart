@@ -150,13 +150,33 @@ class TokenStorage {
     return results.every((result) => result);
   }
 
-  /// Clear only tokens (keep user data)
+  /// Clear only tokens (keep user data and cache)
   Future<bool> clearTokens() async {
     if (_prefs == null) await initialize();
 
     final results = await Future.wait([
       _prefs!.remove(_tokenKey),
       _prefs!.remove(_refreshTokenKey),
+    ]);
+
+    return results.every((result) => result);
+  }
+
+  /// Clear auth data but preserve cache (for logout)
+  /// This clears tokens, login status, and user data but keeps app cache intact
+  Future<bool> clearAuthData() async {
+    if (_prefs == null) await initialize();
+
+    final results = await Future.wait([
+      _prefs!.remove(_tokenKey),
+      _prefs!.remove(_refreshTokenKey),
+      _prefs!.remove(_userDataKey),
+      _prefs!.remove(_isLoggedInKey),
+      _prefs!.remove(_userIdKey),
+      _prefs!.remove(_userEmailKey),
+      _prefs!.remove(_userNameKey),
+      _prefs!.remove(_userPhoneKey),
+      _prefs!.remove(_userRoleKey),
     ]);
 
     return results.every((result) => result);

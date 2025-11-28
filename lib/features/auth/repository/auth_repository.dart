@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../shared/services/fcm_service.dart';
+import '../../../shared/services/profile_cache_service.dart';
 import '../../../core/utils/app_constants.dart';
 import '../services/auth_api_service.dart';
 
@@ -594,19 +595,41 @@ class AuthRepositoryImpl implements AuthRepository {
         debugPrint('🔴 No user ID found for logout');
       }
 
-      // Clear local data regardless of API result
-      await _tokenStorage.clearAll();
+      // Clear auth data
+      await _tokenStorage.clearAuthData();
       _apiService.clearAuthToken();
-      debugPrint('🔵 User logged out successfully (local data cleared)');
+      
+      // Clear profile cache on logout (to prevent old user data showing)
+      try {
+        final profileCacheService = ProfileCacheService.instance;
+        await profileCacheService.clearCache();
+        await profileCacheService.clearProfileImageCache();
+        debugPrint('🔵 Profile cache cleared on logout');
+      } catch (e) {
+        debugPrint('⚠️ Error clearing profile cache: $e');
+      }
+      
+      debugPrint('🔵 User logged out successfully (auth data cleared, profile cache cleared)');
       return true;
     } catch (e) {
       debugPrint('🔴 Error during logout: $e');
 
-      // Clear local data even if there's an error
+      // Clear auth data even if there's an error
       try {
-        await _tokenStorage.clearAll();
+        await _tokenStorage.clearAuthData();
         _apiService.clearAuthToken();
-        debugPrint('🔵 Local data cleared despite error');
+        
+        // Clear profile cache on logout (to prevent old user data showing)
+        try {
+          final profileCacheService = ProfileCacheService.instance;
+          await profileCacheService.clearCache();
+          await profileCacheService.clearProfileImageCache();
+          debugPrint('🔵 Profile cache cleared on logout (despite error)');
+        } catch (cacheError) {
+          debugPrint('⚠️ Error clearing profile cache: $cacheError');
+        }
+        
+        debugPrint('🔵 Auth data cleared despite error (profile cache cleared)');
         return true;
       } catch (clearError) {
         debugPrint('🔴 Error clearing local data: $clearError');

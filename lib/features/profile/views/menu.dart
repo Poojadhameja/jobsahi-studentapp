@@ -29,13 +29,10 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
-    // Trigger profile load when entering the menu if not already in progress/completed.
+    // Always force refresh profile data when entering menu to ensure fresh data
+    // This prevents showing old user data from cache
     final profileBloc = context.read<ProfileBloc>();
-    final currentState = profileBloc.state;
-    if (currentState is! ProfileLoading &&
-        currentState is! ProfileDetailsLoaded) {
-      profileBloc.add(const LoadProfileDataEvent());
-    }
+    profileBloc.add(const LoadProfileDataEvent(forceRefresh: true));
   }
 
   /// Gets user's saved location for display (without requesting permission)
