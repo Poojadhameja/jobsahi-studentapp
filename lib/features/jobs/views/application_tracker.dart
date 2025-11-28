@@ -593,7 +593,7 @@ class _ApplicationTrackerScreenViewState
                   fontWeight: FontWeight.bold,
                   color: AppConstants.textPrimaryColor,
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
@@ -632,15 +632,41 @@ class _ApplicationTrackerScreenViewState
 
   /// Builds job info section (location and experience)
   Widget _buildJobInfo(String location, String experience) {
-    return Text(
-      '$location • $experience',
-      style: const TextStyle(
-        fontSize: 14,
-        color: AppConstants.textSecondaryColor,
-        height: 1.4,
-      ),
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            location,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppConstants.textSecondaryColor,
+              height: 1.4,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const Text(
+          ' • ',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppConstants.textSecondaryColor,
+            height: 1.4,
+          ),
+        ),
+        Flexible(
+          child: Text(
+            experience,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppConstants.textSecondaryColor,
+              height: 1.4,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 

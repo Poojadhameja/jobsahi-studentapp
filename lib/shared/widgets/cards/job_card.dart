@@ -164,29 +164,29 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
                   child: _shineAnimation != null
                       ? AnimatedBuilder(
                           animation: _shineAnimation!,
-                    builder: (context, child) {
+                          builder: (context, child) {
                             final animValue = _shineAnimation!.value;
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment(
-                              animValue - 1.0,
-                              animValue - 1.0,
-                            ),
-                            end: Alignment(
-                              animValue + 1.0,
-                              animValue + 1.0,
-                            ),
-                            colors: [
-                              Colors.transparent,
-                              Colors.white.withValues(alpha: 0.2),
-                              Colors.transparent,
-                            ],
-                            stops: const [0.0, 0.5, 1.0],
-                          ),
-                        ),
-                      );
-                    },
+                            return Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment(
+                                    animValue - 1.0,
+                                    animValue - 1.0,
+                                  ),
+                                  end: Alignment(
+                                    animValue + 1.0,
+                                    animValue + 1.0,
+                                  ),
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.white.withValues(alpha: 0.2),
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.5, 1.0],
+                                ),
+                              ),
+                            );
+                          },
                         )
                       : const SizedBox.shrink(),
                 ),
@@ -303,7 +303,7 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: AppConstants.textPrimaryColor,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
@@ -749,12 +749,16 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
         children: [
           Icon(icon, size: 12, color: AppConstants.primaryColor),
           const SizedBox(width: 3),
-          Text(
-            label.isEmpty ? value : '$label: $value',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppConstants.textSecondaryColor,
+          Flexible(
+            child: Text(
+              label.isEmpty ? value : '$label: $value',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: AppConstants.textSecondaryColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

@@ -216,55 +216,49 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       color: AppConstants.secondaryColor,
                     ),
                   )
-                : RefreshIndicator(
-                    color: AppConstants.secondaryColor,
-                    onRefresh: () async {
-                      final jobId = currentJob['id']?.toString() ?? '';
-                      if (jobId.isNotEmpty) {
-                        context.read<JobsBloc>().add(
-                          LoadJobDetailsEvent(jobId: jobId),
-                        );
-                      }
-                      await Future.delayed(const Duration(milliseconds: 500));
-                    },
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: DefaultTabController(
-                        length: 3,
-                        child: Column(
-                          children: [
-                            // Job header section with card
-                            Padding(
-                              padding: const EdgeInsets.all(
-                                AppConstants.defaultPadding,
-                              ),
-                              child: _buildJobHeaderCard(
-                                context,
-                                currentJob,
-                                isBookmarked,
-                                companyInfo,
-                              ),
-                            ),
-
-                            // Tab bar (fixed at bottom of header)
-                            _buildTabBar(),
-
-                            // Tab content with fixed height based on screen
-                            SizedBox(
-                              height:
-                                  MediaQuery.of(context).size.height -
-                                  MediaQuery.of(context).padding.top -
-                                  kToolbarHeight -
-                                  200,
-                              child: _buildTabContent(
-                                currentJob,
-                                companyInfo,
-                                statistics,
-                              ),
-                            ),
-                          ],
+                : DefaultTabController(
+                    length: 3,
+                    child: Column(
+                      children: [
+                        // Job header section with card (fixed)
+                        Padding(
+                          padding: const EdgeInsets.all(
+                            AppConstants.defaultPadding,
+                          ),
+                          child: _buildJobHeaderCard(
+                            context,
+                            currentJob,
+                            isBookmarked,
+                            companyInfo,
+                          ),
                         ),
-                      ),
+
+                        // Tab bar (fixed)
+                        _buildTabBar(),
+
+                        // Tab content (scrollable)
+                        Expanded(
+                          child: RefreshIndicator(
+                            color: AppConstants.secondaryColor,
+                            onRefresh: () async {
+                              final jobId = currentJob['id']?.toString() ?? '';
+                              if (jobId.isNotEmpty) {
+                                context.read<JobsBloc>().add(
+                                  LoadJobDetailsEvent(jobId: jobId),
+                                );
+                              }
+                              await Future.delayed(
+                                const Duration(milliseconds: 500),
+                              );
+                            },
+                            child: _buildTabContent(
+                              currentJob,
+                              companyInfo,
+                              statistics,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
           ),
@@ -332,7 +326,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                               fontWeight: FontWeight.bold,
                               color: AppConstants.textPrimaryColor,
                             ),
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 6),
@@ -357,6 +351,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                 color: AppConstants.successColor,
                                 fontWeight: FontWeight.w500,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -464,7 +460,12 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   /// Builds the description tab
   Widget _buildAboutTab(Map<String, dynamic> currentJob) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: EdgeInsets.fromLTRB(
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding + 40, // Extra padding for bottom button
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -570,6 +571,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
   /// Builds simple job information section with icons
   Widget _buildSimpleJobInformation(Map<String, dynamic> currentJob) {
+    final jobName = currentJob['title']?.toString() ?? 'Job Name';
     final salary = currentJob['salary']?.toString() ?? 'Salary not specified';
     final location =
         currentJob['location']?.toString() ?? 'Location not specified';
@@ -577,6 +579,17 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Job Name
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildInfoItemWithIcon(
+            Icons.work,
+            'Job Name',
+            jobName,
+            maxLines: 2,
+          ),
+        ),
+
         // Salary
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -590,6 +603,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             Icons.location_on,
             'Location',
             location,
+            maxLines: 2,
           ),
         ),
 
@@ -658,6 +672,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     String label,
     String value, {
     bool isClickable = false,
+    int? maxLines,
   }) {
     final isWebsite = label.toLowerCase() == 'website';
 
@@ -725,6 +740,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           color: AppConstants.textPrimaryColor,
                           fontWeight: FontWeight.w600,
                         ),
+                        maxLines: maxLines,
+                        overflow: maxLines != null
+                            ? TextOverflow.ellipsis
+                            : null,
                       ),
               ],
             ),
@@ -808,7 +827,12 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         revenue != null;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: EdgeInsets.fromLTRB(
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding + 50, // Extra padding for bottom button
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -873,12 +897,25 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: AppConstants.defaultPadding),
+                  // Company Name
+                  if (companyInfo != null &&
+                      companyInfo['company_name'] != null &&
+                      companyInfo['company_name'].toString().isNotEmpty) ...[
+                    _buildInfoItemWithIcon(
+                      Icons.business,
+                      'Company Name',
+                      companyInfo['company_name'].toString(),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   if (website != null && website.isNotEmpty) ...[
                     _buildInfoItemWithIcon(
                       Icons.public,
                       'Website',
                       website,
                       isClickable: true,
+                      maxLines: 1,
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -887,6 +924,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       Icons.location_on_outlined,
                       'Headquarters',
                       headquarters,
+                      maxLines: 2,
                     ),
                     const SizedBox(height: 12),
                   ],

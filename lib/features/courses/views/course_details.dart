@@ -118,52 +118,46 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                         color: AppConstants.secondaryColor,
                       ),
                     )
-                  : RefreshIndicator(
-                      color: AppConstants.secondaryColor,
-                      onRefresh: () async {
-                        final courseId = int.tryParse(
-                          displayCourse['id']?.toString() ?? '',
-                        );
-                        if (courseId != null) {
-                          context.read<CoursesBloc>().add(
-                            LoadCourseDetailsEvent(courseId: courseId),
-                          );
-                        }
-                        await Future.delayed(const Duration(milliseconds: 500));
-                      },
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: DefaultTabController(
-                          length: 3,
-                          child: Column(
-                            children: [
-                              // Course header section with card
-                              Padding(
-                                padding: const EdgeInsets.all(
-                                  AppConstants.defaultPadding,
-                                ),
-                                child: _buildCourseHeaderCard(
-                                  context,
-                                  displayCourse,
-                                  isBookmarked,
-                                ),
-                              ),
-
-                              // Tab bar (fixed at bottom of header)
-                              _buildTabBar(),
-
-                              // Tab content with fixed height based on screen
-                              SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height -
-                                    MediaQuery.of(context).padding.top -
-                                    kToolbarHeight -
-                                    200,
-                                child: _buildTabContent(displayCourse),
-                              ),
-                            ],
+                  : DefaultTabController(
+                      length: 3,
+                      child: Column(
+                        children: [
+                          // Course header section with card (fixed)
+                          Padding(
+                            padding: const EdgeInsets.all(
+                              AppConstants.defaultPadding,
+                            ),
+                            child: _buildCourseHeaderCard(
+                              context,
+                              displayCourse,
+                              isBookmarked,
+                            ),
                           ),
-                        ),
+
+                          // Tab bar (fixed)
+                          _buildTabBar(),
+
+                          // Tab content (scrollable)
+                          Expanded(
+                            child: RefreshIndicator(
+                              color: AppConstants.secondaryColor,
+                              onRefresh: () async {
+                                final courseId = int.tryParse(
+                                  displayCourse['id']?.toString() ?? '',
+                                );
+                                if (courseId != null) {
+                                  context.read<CoursesBloc>().add(
+                                    LoadCourseDetailsEvent(courseId: courseId),
+                                  );
+                                }
+                                await Future.delayed(
+                                  const Duration(milliseconds: 500),
+                                );
+                              },
+                              child: _buildTabContent(displayCourse),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
             ),
@@ -232,7 +226,7 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                               fontWeight: FontWeight.bold,
                               color: AppConstants.textPrimaryColor,
                             ),
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 6),
@@ -243,34 +237,49 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                               color: AppConstants.successColor,
                               fontWeight: FontWeight.w500,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
                     // Bookmark button
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      alignment: Alignment.topCenter,
-                      onPressed: () {
-                        final courseId = currentCourse['id']?.toString() ?? '';
-                        if (isBookmarked) {
-                          context.read<CoursesBloc>().add(
-                            UnsaveCourseEvent(courseId: courseId),
-                          );
-                        } else {
-                          context.read<CoursesBloc>().add(
-                            SaveCourseEvent(courseId: courseId),
-                          );
-                        }
-                      },
-                      icon: Icon(
-                        isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                        color: isBookmarked
-                            ? AppConstants.warningColor
-                            : Colors.grey.shade600,
-                        size: 24,
+                    Material(
+                      color: Colors.transparent,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: () {
+                          final courseId =
+                              currentCourse['id']?.toString() ?? '';
+                          if (isBookmarked) {
+                            context.read<CoursesBloc>().add(
+                              UnsaveCourseEvent(courseId: courseId),
+                            );
+                          } else {
+                            context.read<CoursesBloc>().add(
+                              SaveCourseEvent(courseId: courseId),
+                            );
+                          }
+                        },
+                        customBorder: const CircleBorder(),
+                        splashColor: Colors.grey.shade300,
+                        highlightColor: Colors.grey.shade200,
+                        radius: 20,
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            isBookmarked
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
+                            color: isBookmarked
+                                ? AppConstants.successColor
+                                : Colors.grey.shade600,
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -344,7 +353,12 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
   /// Builds the About tab
   Widget _buildAboutTab(Map<String, dynamic> currentCourse) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: EdgeInsets.fromLTRB(
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding + 40, // Extra padding for bottom button
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -446,6 +460,7 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
 
   /// Builds simple course information section with icons
   Widget _buildSimpleCourseInformation(Map<String, dynamic> currentCourse) {
+    final courseName = currentCourse['title']?.toString() ?? 'Course Name';
     final fee = currentCourse['fees'] != null
         ? '₹${currentCourse['fees'].toString()}'
         : 'Fee not specified';
@@ -459,6 +474,17 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Course Name
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildInfoItemWithIcon(
+            Icons.school,
+            'Course Name',
+            courseName,
+            maxLines: 2,
+          ),
+        ),
+
         // Fee
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -530,7 +556,12 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
   }
 
   /// Builds an info item with icon (similar to job details)
-  Widget _buildInfoItemWithIcon(IconData icon, String label, String value) {
+  Widget _buildInfoItemWithIcon(
+    IconData icon,
+    String label,
+    String value, {
+    int? maxLines,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -569,6 +600,8 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                     color: AppConstants.textPrimaryColor,
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: maxLines,
+                  overflow: maxLines != null ? TextOverflow.ellipsis : null,
                 ),
               ],
             ),
@@ -653,7 +686,12 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
         currentCourse['institute']?.toString() ?? 'Institute $instituteId';
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: EdgeInsets.fromLTRB(
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding,
+        AppConstants.defaultPadding + 50, // Extra padding for bottom button
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -681,6 +719,7 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                   Icons.school,
                   'Institute Name',
                   instituteName,
+                  maxLines: 2,
                 ),
                 if (instituteId.isNotEmpty) ...[
                   const SizedBox(height: 12),

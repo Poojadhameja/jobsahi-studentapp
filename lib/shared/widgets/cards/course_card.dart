@@ -72,7 +72,7 @@ class CourseCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: AppConstants.textPrimaryColor,
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
@@ -82,6 +82,8 @@ class CourseCard extends StatelessWidget {
                   fontSize: 14,
                   color: AppConstants.textSecondaryColor,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -130,7 +132,9 @@ class CourseCard extends StatelessWidget {
               backgroundColor: AppConstants.successColor,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+                borderRadius: BorderRadius.circular(
+                  AppConstants.smallBorderRadius,
+                ),
               ),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
@@ -156,7 +160,9 @@ class CourseCard extends StatelessWidget {
               height: 40,
               alignment: Alignment.center,
               child: Icon(
-                course['isSaved'] == true ? Icons.bookmark : Icons.bookmark_border,
+                course['isSaved'] == true
+                    ? Icons.bookmark
+                    : Icons.bookmark_border,
                 color: course['isSaved'] == true
                     ? AppConstants.primaryColor
                     : AppConstants.textSecondaryColor,
@@ -223,7 +229,7 @@ class CompactCourseCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: AppConstants.textPrimaryColor,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -236,6 +242,8 @@ class CompactCourseCard extends StatelessWidget {
                 fontSize: 12,
                 color: AppConstants.textSecondaryColor,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
@@ -267,7 +275,10 @@ class CompactCourseCard extends StatelessWidget {
                     ),
                     child: const Text(
                       'Course View',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),

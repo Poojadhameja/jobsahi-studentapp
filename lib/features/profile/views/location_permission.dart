@@ -118,43 +118,53 @@ class _LocationPermissionViewState extends State<_LocationPermissionView>
                   ),
                 ),
                 child: SafeArea(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.largePadding,
-                        vertical: AppConstants.largePadding,
-                      ),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 40),
-
-                          // Location icon image
-                          _buildLocationIcon(),
-                          const SizedBox(height: 40),
-
-                          // Main question
-                          _buildMainQuestion(hasPermission),
-                          const SizedBox(height: 16),
-
-                          // Description text
-                          _buildDescription(hasPermission),
-                          const SizedBox(height: 50),
-
-                          // Allow location access button
-                          _buildAllowLocationButton(
-                            context,
-                            isProcessing,
-                            hasPermission,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
                           ),
-                          const SizedBox(height: 20),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppConstants.largePadding,
+                              vertical: AppConstants.largePadding,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 40),
 
-                          // Skip button for users who don't want to grant location permission
-                          _buildSkipButton(context, isProcessing),
+                                // Location icon image
+                                _buildLocationIcon(),
+                                const SizedBox(height: 40),
 
-                          const SizedBox(height: 40),
-                        ],
-                      ),
-                    ),
+                                // Main question
+                                _buildMainQuestion(hasPermission),
+                                const SizedBox(height: 16),
+
+                                // Description text
+                                _buildDescription(hasPermission),
+                                const SizedBox(height: 50),
+
+                                // Allow location access button
+                                _buildAllowLocationButton(
+                                  context,
+                                  isProcessing,
+                                  hasPermission,
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Skip button for users who don't want to grant location permission
+                                _buildSkipButton(context, isProcessing),
+
+                                const SizedBox(height: 40),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

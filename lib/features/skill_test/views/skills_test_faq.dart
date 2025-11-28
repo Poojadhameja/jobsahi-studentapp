@@ -193,7 +193,8 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
         final remaining = totalQuestions - answeredCount;
         TopSnackBar.showInfo(
           context,
-          message: 'Please answer all questions before submitting. $remaining question${remaining > 1 ? 's' : ''} remaining.',
+          message:
+              'Please answer all questions before submitting. $remaining question${remaining > 1 ? 's' : ''} remaining.',
           duration: const Duration(seconds: 3),
         );
         return;
@@ -224,10 +225,7 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
           _showResultDialog(context, state);
         } else if (state is SkillTestError) {
           _timer?.cancel();
-          TopSnackBar.showError(
-            context,
-            message: state.message,
-          );
+          TopSnackBar.showError(context, message: state.message);
         }
       },
       child: BlocBuilder<SkillTestBloc, SkillTestState>(

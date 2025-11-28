@@ -114,7 +114,7 @@ class ShortlistedJobCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: AppConstants.textPrimaryColor,
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
@@ -236,20 +236,46 @@ class ShortlistedJobCard extends StatelessWidget {
           color: AppConstants.textSecondaryColor,
           height: 1.4,
         ),
-        maxLines: 2,
+        maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
     }
 
-    return Text(
-      '$modeText • $locationText',
-      style: const TextStyle(
-        fontSize: 14,
-        color: AppConstants.textSecondaryColor,
-        height: 1.4,
-      ),
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            modeText,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppConstants.textSecondaryColor,
+              height: 1.4,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const Text(
+          ' • ',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppConstants.textSecondaryColor,
+            height: 1.4,
+          ),
+        ),
+        Flexible(
+          child: Text(
+            locationText,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppConstants.textSecondaryColor,
+              height: 1.4,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
