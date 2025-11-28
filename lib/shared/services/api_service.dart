@@ -128,6 +128,24 @@ class ApiService {
     }
   }
 
+  /// Make a PATCH request
+  Future<Response> patch(
+    String endpoint, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        endpoint,
+        data: data,
+        queryParameters: queryParameters,
+      );
+      return response;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
   /// Make a PUT request
   Future<Response> put(
     String endpoint, {
