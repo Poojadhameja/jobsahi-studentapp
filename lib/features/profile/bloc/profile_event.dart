@@ -7,10 +7,12 @@ abstract class ProfileEvent extends Equatable {
 
 /// Load profile data event
 class LoadProfileDataEvent extends ProfileEvent {
-  const LoadProfileDataEvent();
+  final bool forceRefresh;
+  
+  const LoadProfileDataEvent({this.forceRefresh = false});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [forceRefresh];
 }
 
 /// Update profile event

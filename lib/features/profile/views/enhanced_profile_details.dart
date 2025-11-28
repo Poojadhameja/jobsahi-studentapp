@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../../shared/services/location_service.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
@@ -32,14 +33,36 @@ class EnhancedProfileDetailsScreen extends StatelessWidget {
   }
 }
 
-class _EnhancedProfileDetailsView extends StatelessWidget {
+class _EnhancedProfileDetailsView extends StatefulWidget {
   final bool isFromBottomNavigation;
 
   const _EnhancedProfileDetailsView({required this.isFromBottomNavigation});
 
   @override
+  State<_EnhancedProfileDetailsView> createState() =>
+      _EnhancedProfileDetailsViewState();
+}
+
+class _EnhancedProfileDetailsViewState
+    extends State<_EnhancedProfileDetailsView> {
+  ProfileDetailsLoaded? _cachedState;
+
+  @override
   Widget build(BuildContext context) {
     return BlocConsumer<ProfileBloc, ProfileState>(
+      buildWhen: (previous, current) {
+        // If we have cached state and current is loading, keep showing cached
+        if (_cachedState != null && current is ProfileLoading) {
+          return false; // Don't rebuild, keep showing cached content
+        }
+        // Update cache when we get loaded state
+        if (current is ProfileDetailsLoaded) {
+          _cachedState = current;
+          return true;
+        }
+        // Rebuild for other state changes
+        return true;
+      },
       listenWhen: (previous, current) {
         if (current is ProfileDetailsLoaded) {
           if (current.statusMessage == null) {
@@ -56,61 +79,66 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
       },
       listener: (context, state) {
         if (state is CertificateDeletedSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppConstants.successColor,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          TopSnackBar.showSuccess(context, message: state.message);
         } else if (state is ProfileImageRemovedSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile image removed successfully!'),
-              backgroundColor: AppConstants.successColor,
-              behavior: SnackBarBehavior.floating,
-            ),
+          TopSnackBar.showSuccess(
+            context,
+            message: 'Profile image removed successfully!',
           );
         } else if (state is ProfileError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppConstants.errorColor,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          TopSnackBar.showError(context, message: state.message);
         } else if (state is ProfileDetailsLoaded) {
           final message = state.statusMessage;
           if (message != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                backgroundColor: state.statusIsError
-                    ? AppConstants.errorColor
-                    : AppConstants.successColor,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            if (state.statusIsError) {
+              TopSnackBar.showError(context, message: message);
+            } else {
+              TopSnackBar.showSuccess(context, message: message);
+            }
           }
         }
       },
       builder: (context, state) {
+        // Show cached content during reload (like courses section)
+        if (state is ProfileLoading && _cachedState != null) {
+          return _buildEnhancedProfileDetails(context, _cachedState!);
+        }
+
         if (state is ProfileDetailsLoaded) {
           return _buildEnhancedProfileDetails(context, state);
         } else if (state is ProfileError) {
           return Scaffold(
             backgroundColor: AppConstants.backgroundColor,
-            body: NoInternetErrorWidget(
-              errorMessage: state.message,
-              onRetry: () {
-                context.read<ProfileBloc>().add(const LoadProfileDataEvent());
+            body: RefreshIndicator(
+              color: AppConstants.primaryColor,
+              onRefresh: () async {
+                context.read<ProfileBloc>().add(
+                  const LoadProfileDataEvent(forceRefresh: true),
+                );
+                await Future.delayed(const Duration(milliseconds: 500));
               },
-              showImage: true,
-              enablePullToRefresh: true,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height,
+                  child: NoInternetErrorWidget(
+                    errorMessage: state.message,
+                    onRetry: () {
+                      context.read<ProfileBloc>().add(
+                        const LoadProfileDataEvent(forceRefresh: true),
+                      );
+                    },
+                    showImage: true,
+                    enablePullToRefresh:
+                        false, // We handle it with RefreshIndicator
+                  ),
+                ),
+              ),
             ),
           );
         }
-        // Show content immediately or simple loading without text
+
+        // Show loading only on first load
         return Scaffold(
           backgroundColor: AppConstants.backgroundColor,
           body: Center(
@@ -132,41 +160,52 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         backgroundColor: AppConstants.backgroundColor,
         body: Stack(
           children: [
-            SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Profile Header
-                  _buildProfileHeader(context, state),
+            RefreshIndicator(
+              color: AppConstants.primaryColor,
+              onRefresh: () async {
+                // Force refresh from API (rewrite system) - same as courses section
+                context.read<ProfileBloc>().add(
+                  const LoadProfileDataEvent(forceRefresh: true),
+                );
+                // Wait for the API call to complete
+                await Future.delayed(const Duration(milliseconds: 500));
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    // Green loader line above blue box when syncing
+                    if (state.isSyncing)
+                      Container(
+                        width: double.infinity,
+                        height: 3,
+                        child: LinearProgressIndicator(
+                          minHeight: 3,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppConstants.successColor,
+                          ),
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ),
+                    // Profile Header
+                    _buildProfileHeader(context, state),
 
-                  // Profile Content
-                  Padding(
-                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                    child: Column(
-                      children: [
-                        // Profile Sections
-                        _buildProfileSections(context, state),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (state.isSyncing)
-              Align(
-                alignment: Alignment.topCenter,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: LinearProgressIndicator(
-                      minHeight: 4,
-                      color: AppConstants.primaryColor,
-                      backgroundColor: AppConstants.primaryColor.withValues(
-                        alpha: 0.2,
+                    // Profile Content
+                    Padding(
+                      padding: const EdgeInsets.all(
+                        AppConstants.defaultPadding,
+                      ),
+                      child: Column(
+                        children: [
+                          // Profile Sections
+                          _buildProfileSections(context, state),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -208,7 +247,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Back Button
-                  if (!isFromBottomNavigation)
+                  if (!widget.isFromBottomNavigation)
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.of(context).pop(),
@@ -771,32 +810,12 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                                                 }
 
                                                 // Show loading indicator
-                                                scaffoldMessenger.showSnackBar(
-                                                  const SnackBar(
-                                                    content: Row(
-                                                      children: [
-                                                        SizedBox(
-                                                          width: 20,
-                                                          height: 20,
-                                                          child: CircularProgressIndicator(
-                                                            strokeWidth: 2,
-                                                            valueColor:
-                                                                AlwaysStoppedAnimation<
-                                                                  Color
-                                                                >(Colors.white),
-                                                          ),
-                                                        ),
-                                                        SizedBox(width: 16),
-                                                        Text(
-                                                          'Getting location...',
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    duration: Duration(
-                                                      seconds: 12,
-                                                    ),
-                                                    behavior: SnackBarBehavior
-                                                        .floating,
+                                                TopSnackBar.showInfo(
+                                                  context,
+                                                  message:
+                                                      'Getting location...',
+                                                  duration: const Duration(
+                                                    seconds: 12,
                                                   ),
                                                 );
 
@@ -877,24 +896,10 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                                                       errorMessage ??
                                                       'Could not get location. Please check GPS and try again.';
 
-                                                  scaffoldMessenger
-                                                      .showSnackBar(
-                                                        SnackBar(
-                                                          content: Text(
-                                                            message,
-                                                          ),
-                                                          backgroundColor:
-                                                              AppConstants
-                                                                  .errorColor,
-                                                          behavior:
-                                                              SnackBarBehavior
-                                                                  .floating,
-                                                          duration:
-                                                              const Duration(
-                                                                seconds: 4,
-                                                              ),
-                                                        ),
-                                                      );
+                                                  TopSnackBar.showError(
+                                                    context,
+                                                    message: message,
+                                                  );
                                                   return;
                                                 }
 
@@ -935,49 +940,36 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                                                 isLocationLoading = false;
 
                                                 // Show result
-                                                scaffoldMessenger.showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      addressResult != null &&
-                                                              addressResult
-                                                                  .trim()
-                                                                  .isNotEmpty
-                                                          ? 'Location: ${addressResult.trim()}'
-                                                          : 'Coordinates filled. Enter city and state manually.',
-                                                    ),
-                                                    backgroundColor:
-                                                        addressResult != null &&
-                                                            addressResult
-                                                                .trim()
-                                                                .isNotEmpty
-                                                        ? AppConstants
-                                                              .successColor
-                                                        : AppConstants
-                                                              .warningColor,
-                                                    behavior: SnackBarBehavior
-                                                        .floating,
-                                                    duration: const Duration(
-                                                      seconds: 2,
-                                                    ),
-                                                  ),
-                                                );
+                                                final locationMessage =
+                                                    addressResult != null &&
+                                                        addressResult
+                                                            .trim()
+                                                            .isNotEmpty
+                                                    ? 'Location: ${addressResult.trim()}'
+                                                    : 'Coordinates filled. Enter city and state manually.';
+
+                                                if (addressResult != null &&
+                                                    addressResult
+                                                        .trim()
+                                                        .isNotEmpty) {
+                                                  TopSnackBar.showSuccess(
+                                                    context,
+                                                    message: locationMessage,
+                                                  );
+                                                } else {
+                                                  TopSnackBar.showInfo(
+                                                    context,
+                                                    message: locationMessage,
+                                                  );
+                                                }
                                               } else {
                                                 // Permission denied
                                                 isLocationLoading = false;
                                                 setModalState(() {});
-                                                scaffoldMessenger.showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
+                                                TopSnackBar.showError(
+                                                  context,
+                                                  message:
                                                       'Location permission denied. Please enable it in settings.',
-                                                    ),
-                                                    backgroundColor:
-                                                        AppConstants.errorColor,
-                                                    behavior: SnackBarBehavior
-                                                        .floating,
-                                                    duration: Duration(
-                                                      seconds: 3,
-                                                    ),
-                                                  ),
                                                 );
                                               }
                                             } catch (e) {
@@ -985,19 +977,10 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                                               setModalState(() {});
                                               scaffoldMessenger
                                                   .hideCurrentSnackBar();
-                                              scaffoldMessenger.showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
+                                              TopSnackBar.showError(
+                                                context,
+                                                message:
                                                     'Error getting location: ${e.toString()}',
-                                                  ),
-                                                  backgroundColor:
-                                                      AppConstants.errorColor,
-                                                  behavior:
-                                                      SnackBarBehavior.floating,
-                                                  duration: const Duration(
-                                                    seconds: 3,
-                                                  ),
-                                                ),
                                               );
                                             }
                                           } else {
@@ -1816,12 +1799,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
         (skill) => skill.toLowerCase() == trimmedValue.toLowerCase(),
       );
       if (exists) {
-        ScaffoldMessenger.of(parentContext).showSnackBar(
-          const SnackBar(
-            content: Text('Skill already exists.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        TopSnackBar.showInfo(parentContext, message: 'Skill already exists.');
         return;
       }
       setModalState(() {
@@ -2114,11 +2092,9 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
               );
 
               if (hasInvalidEntry) {
-                ScaffoldMessenger.of(parentContext).showSnackBar(
-                  const SnackBar(
-                    content: Text('Company and position are required.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                TopSnackBar.showError(
+                  parentContext,
+                  message: 'Company and position are required.',
                 );
                 return;
               }
@@ -2642,13 +2618,9 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
                 );
 
                 if (hasInvalidEntry) {
-                  ScaffoldMessenger.of(parentContext).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Qualification and institute are required.',
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  TopSnackBar.showError(
+                    parentContext,
+                    message: 'Qualification and institute are required.',
                   );
                   return;
                 }
@@ -3227,13 +3199,10 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
               final hasOtherValues = updated.isNotEmpty || url.isNotEmpty;
 
               if (name.isEmpty && hasOtherValues) {
-                ScaffoldMessenger.of(parentContext).showSnackBar(
-                  const SnackBar(
-                    content: Text(
+                TopSnackBar.showError(
+                  parentContext,
+                  message:
                       'Resume name is required when other details are provided.',
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
                 );
                 return;
               }
@@ -3521,23 +3490,17 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
               }
 
               if (hasValidationError) {
-                ScaffoldMessenger.of(parentContext).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Please provide a name for each certificate.',
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                TopSnackBar.showError(
+                  parentContext,
+                  message: 'Please provide a name for each certificate.',
                 );
                 return;
               }
 
               if (urlValidationMessage != null) {
-                ScaffoldMessenger.of(parentContext).showSnackBar(
-                  SnackBar(
-                    content: Text(urlValidationMessage),
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                TopSnackBar.showError(
+                  parentContext,
+                  message: urlValidationMessage,
                 );
                 return;
               }
@@ -6180,13 +6143,7 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
 
   Future<void> _openUrl(BuildContext context, String url) async {
     if (url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid URL'),
-          backgroundColor: AppConstants.errorColor,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      TopSnackBar.showError(context, message: 'Invalid URL');
       return;
     }
 
@@ -6214,23 +6171,17 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
       } catch (launchError) {
         // If both modes fail, show error
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Could not open link. Please try again.'),
-              backgroundColor: AppConstants.errorColor,
-              behavior: SnackBarBehavior.floating,
-            ),
+          TopSnackBar.showError(
+            context,
+            message: 'Could not open link. Please try again.',
           );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening URL: ${e.toString()}'),
-            backgroundColor: AppConstants.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
+        TopSnackBar.showError(
+          context,
+          message: 'Error opening URL: ${e.toString()}',
         );
       }
     }
@@ -6240,22 +6191,13 @@ class _EnhancedProfileDetailsView extends StatelessWidget {
     final message = url != null && url.isNotEmpty
         ? 'Opening resume: $url'
         : 'Downloading resume...';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TopSnackBar.showInfo(context, message: message);
   }
 
   void _downloadDocument(BuildContext context, Map<String, dynamic> document) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Downloading ${document['name'] ?? 'document'}...'),
-        backgroundColor: AppConstants.primaryColor,
-        behavior: SnackBarBehavior.floating,
-      ),
+    TopSnackBar.showInfo(
+      context,
+      message: 'Downloading ${document['name'] ?? 'document'}...',
     );
   }
 

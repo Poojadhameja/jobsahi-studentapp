@@ -7,15 +7,17 @@ import '../../../shared/data/user_data.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/location_service.dart';
 import '../../../shared/services/token_storage.dart';
+import '../../../shared/services/profile_cache_service.dart';
 import '../../../core/utils/network_error_helper.dart';
 import '../models/student_profile.dart';
 
 /// Profile BLoC
-/// Handles all profile-related business logic
+/// Handles all profile-related business logic with proper caching
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final ApiService _apiService = ApiService();
   final TokenStorage _tokenStorage = TokenStorage.instance;
   final LocationService _locationService = LocationService.instance;
+  final ProfileCacheService _cacheService = ProfileCacheService.instance;
   int _statusMessageCounter = 0;
 
   ProfileBloc() : super(const ProfileInitial()) {
@@ -65,13 +67,80 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<SaveSkillsChangesEvent>(_onSaveSkillsChanges);
   }
 
-  /// Handle load profile data
+  /// Handle load profile data with caching support
   Future<void> _onLoadProfileData(
     LoadProfileDataEvent event,
     Emitter<ProfileState> emit,
   ) async {
     try {
-      emit(const ProfileLoading());
+      // Initialize cache service
+      await _cacheService.initialize();
+      
+      // Check cache first (unless force refresh)
+      Map<String, dynamic>? cachedData;
+      bool useCache = false;
+      
+      if (!event.forceRefresh) {
+        final isCacheValid = await _cacheService.isCacheValid(maxAgeHours: 24);
+        if (isCacheValid) {
+          cachedData = await _cacheService.getProfileData();
+          if (cachedData != null && cachedData.isNotEmpty) {
+            useCache = true;
+            debugPrint('✅ [ProfileBloc] Using cached profile data');
+            
+            // Emit cached data immediately
+            emit(
+              ProfileDetailsLoaded(
+                userProfile: Map<String, dynamic>.from(
+                  cachedData['userProfile'] ?? {},
+                ),
+                skills: List<String>.from(cachedData['skills'] ?? []),
+                education: List<Map<String, dynamic>>.from(
+                  cachedData['education'] ?? [],
+                ),
+                experience: List<Map<String, dynamic>>.from(
+                  cachedData['experience'] ?? [],
+                ),
+                jobPreferences: Map<String, dynamic>.from(
+                  cachedData['jobPreferences'] ?? {},
+                ),
+                sectionExpansionStates: {
+                  'profile': false,
+                  'summary': false,
+                  'education': false,
+                  'skills': false,
+                  'experience': false,
+                  'resume': false,
+                  'certificates': false,
+                  'contact': false,
+                  'general_info': false,
+                  'social': false,
+                },
+                certificates: List<Map<String, dynamic>>.from(
+                  cachedData['certificates'] ?? [],
+                ),
+                profileImagePath: cachedData['profileImagePath'],
+                profileImageName: cachedData['profileImageName'],
+                resumeFileName: cachedData['resumeFileName'],
+                lastResumeUpdatedDate: cachedData['lastResumeUpdatedDate'],
+                resumeFileSize: cachedData['resumeFileSize'] ?? 0,
+                resumeDownloadUrl: cachedData['resumeDownloadUrl'],
+                isSyncing: false,
+                statusMessage: null,
+                statusIsError: false,
+                statusMessageKey: 0,
+              ),
+            );
+          }
+        }
+      }
+      
+      // If force refresh or no cache, show loading
+      if (event.forceRefresh || !useCache) {
+        emit(const ProfileLoading());
+      }
+      
+      // Initialize default values
       var userProfile = Map<String, dynamic>.from(UserData.currentUser);
       var skills = List<String>.from(UserData.currentUser['skills'] ?? []);
       var education = <Map<String, dynamic>>[];
@@ -81,31 +150,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         'preferredLocation': UserData.currentUser['preferredLocation'] ?? '',
         'expectedSalary': UserData.currentUser['expectedSalary'] ?? '',
       };
-      var certificates = <Map<String, dynamic>>[
-        {
-          'name': 'ITI Certificate.pdf',
-          'type': 'Certificate',
-          'uploadDate': '15 July 2024',
-          'size': 1024000,
-          'extension': 'pdf',
-        },
-        {
-          'name': 'Safety Training License.pdf',
-          'type': 'License',
-          'uploadDate': '10 July 2024',
-          'size': 850000,
-          'extension': 'pdf',
-        },
-        {
-          'name': 'Aadhar Card.jpg',
-          'type': 'ID Proof',
-          'uploadDate': '5 July 2024',
-          'size': 450000,
-          'extension': 'jpg',
-        },
-      ];
+      var certificates = <Map<String, dynamic>>[];
+      
       String? profileImagePath = userProfile['profileImage'] as String?;
-      String? profileImageName = 'profile_photo.jpg';
+      String? profileImageName;
       String? resumeFileName = userProfile['resume_file_name'] as String?;
       String? lastResumeUpdatedDate =
           userProfile['resume_last_updated'] as String?;
@@ -277,6 +325,23 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           debugPrint('🔵 [ProfileBloc] Skills count: ${skills.length}');
           debugPrint('🔵 [ProfileBloc] Experience count: ${experience.length}');
           loadedFromApi = true;
+          
+          // Store in cache after successful API load
+          await _cacheService.storeProfileData(
+            userProfile: userProfile,
+            skills: skills,
+            education: education,
+            experience: experience,
+            jobPreferences: jobPreferences,
+            certificates: certificates,
+            profileImagePath: profileImagePath,
+            profileImageName: profileImageName,
+            resumeFileName: resumeFileName,
+            lastResumeUpdatedDate: lastResumeUpdatedDate,
+            resumeFileSize: resumeFileSize,
+            resumeDownloadUrl: resumeDownloadUrl,
+          );
+          debugPrint('✅ [ProfileBloc] Profile data cached successfully');
         } else {
           debugPrint('⚠️ [ProfileBloc] API returned an empty profile list');
         }
@@ -307,14 +372,14 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       userProfile.putIfAbsent('longitude', () => 0.0);
       userProfile.putIfAbsent('projects', () => <Map<String, dynamic>>[]);
 
-      emit(
-        ProfileDetailsLoaded(
+      // Store in cache if loaded from API (even if it failed, store what we have)
+      if (loadedFromApi || event.forceRefresh) {
+        await _cacheService.storeProfileData(
           userProfile: userProfile,
           skills: skills,
           education: education,
           experience: experience,
           jobPreferences: jobPreferences,
-          sectionExpansionStates: sectionExpansionStates,
           certificates: certificates,
           profileImagePath: profileImagePath,
           profileImageName: profileImageName,
@@ -322,12 +387,33 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           lastResumeUpdatedDate: lastResumeUpdatedDate,
           resumeFileSize: resumeFileSize,
           resumeDownloadUrl: resumeDownloadUrl,
-          isSyncing: false,
-          statusMessage: null,
-          statusIsError: false,
-          statusMessageKey: 0,
-        ),
-      );
+        );
+      }
+
+      // Only emit if we're not using cached data (already emitted above)
+      if (!useCache || event.forceRefresh) {
+        emit(
+          ProfileDetailsLoaded(
+            userProfile: userProfile,
+            skills: skills,
+            education: education,
+            experience: experience,
+            jobPreferences: jobPreferences,
+            sectionExpansionStates: sectionExpansionStates,
+            certificates: certificates,
+            profileImagePath: profileImagePath,
+            profileImageName: profileImageName,
+            resumeFileName: resumeFileName,
+            lastResumeUpdatedDate: lastResumeUpdatedDate,
+            resumeFileSize: resumeFileSize,
+            resumeDownloadUrl: resumeDownloadUrl,
+            isSyncing: false,
+            statusMessage: null,
+            statusIsError: false,
+            statusMessageKey: 0,
+          ),
+        );
+      }
     } catch (e) {
       _handleError(e, emit, defaultMessage: 'Failed to load profile');
     }
@@ -483,13 +569,14 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
   }
 
-  /// Handle refresh profile data
+  /// Handle refresh profile data (force reload from API)
   Future<void> _onRefreshProfileData(
     RefreshProfileDataEvent event,
     Emitter<ProfileState> emit,
   ) async {
-    // Reload profile data
-    add(const LoadProfileDataEvent());
+    // Force refresh - clear cache and reload from API
+    await _cacheService.clearCache();
+    add(const LoadProfileDataEvent(forceRefresh: true));
   }
 
   /// Handle toggle section expand/collapse
@@ -530,10 +617,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     await _syncProfileWithServer(updatedState, emit, source: 'profile_header');
   }
 
-  void _onInlineResumeUpdate(
+  Future<void> _onInlineResumeUpdate(
     UpdateProfileResumeInlineEvent event,
     Emitter<ProfileState> emit,
-  ) {
+  ) async {
     if (state is ProfileDetailsLoaded) {
       final currentState = state as ProfileDetailsLoaded;
       final sanitizedName = event.fileName.trim();
@@ -547,16 +634,19 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
                   (cert['type'] ?? '').toString().toLowerCase() == 'resume',
             );
 
-      emit(
-        currentState.copyWith(
-          resumeFileName: sanitizedName.isNotEmpty ? sanitizedName : null,
-          lastResumeUpdatedDate: sanitizedDate.isNotEmpty
-              ? sanitizedDate
-              : null,
-          resumeDownloadUrl: sanitizedUrl.isNotEmpty ? sanitizedUrl : null,
-          certificates: updatedCertificates,
-        ),
+      final updatedState = currentState.copyWith(
+        resumeFileName: sanitizedName.isNotEmpty ? sanitizedName : null,
+        lastResumeUpdatedDate: sanitizedDate.isNotEmpty
+            ? sanitizedDate
+            : null,
+        resumeDownloadUrl: sanitizedUrl.isNotEmpty ? sanitizedUrl : null,
+        certificates: updatedCertificates,
       );
+      
+      emit(updatedState);
+      
+      // Update cache
+      await _updateCacheFromState(updatedState);
     }
   }
 
@@ -772,14 +862,20 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           ? response.message
           : 'Student profile updated successfully';
 
-      emit(
-        pendingState.copyWith(
-          isSyncing: false,
-          statusMessage: message,
-          statusIsError: !response.isSuccessful,
-          statusMessageKey: _nextStatusKey(),
-        ),
+      final updatedState = pendingState.copyWith(
+        isSyncing: false,
+        statusMessage: message,
+        statusIsError: !response.isSuccessful,
+        statusMessageKey: _nextStatusKey(),
       );
+
+      emit(updatedState);
+
+      // Update cache after successful sync
+      if (response.isSuccessful) {
+        await _updateCacheFromState(updatedState);
+        debugPrint('✅ [ProfileBloc] Cache updated after profile sync');
+      }
     } catch (e) {
       final errorMessage =
           'Failed to update profile: ${_formatErrorMessage(e)}';
@@ -792,6 +888,28 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           statusMessageKey: _nextStatusKey(),
         ),
       );
+    }
+  }
+
+  /// Helper method to update cache from current state
+  Future<void> _updateCacheFromState(ProfileDetailsLoaded state) async {
+    try {
+      await _cacheService.storeProfileData(
+        userProfile: state.userProfile,
+        skills: state.skills,
+        education: state.education,
+        experience: state.experience,
+        jobPreferences: state.jobPreferences,
+        certificates: state.certificates,
+        profileImagePath: state.profileImagePath,
+        profileImageName: state.profileImageName,
+        resumeFileName: state.resumeFileName,
+        lastResumeUpdatedDate: state.lastResumeUpdatedDate,
+        resumeFileSize: state.resumeFileSize,
+        resumeDownloadUrl: state.resumeDownloadUrl,
+      );
+    } catch (e) {
+      debugPrint('⚠️ [ProfileBloc] Failed to update cache: $e');
     }
   }
 
