@@ -217,24 +217,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     ),
                   )
                 : DefaultTabController(
-                    length: 3,
-                    child: Column(
-                      children: [
+                        length: 3,
+                        child: Column(
+                          children: [
                         // Job header section with card (fixed)
-                        Padding(
-                          padding: const EdgeInsets.all(
-                            AppConstants.defaultPadding,
-                          ),
-                          child: _buildJobHeaderCard(
-                            context,
-                            currentJob,
-                            isBookmarked,
-                            companyInfo,
-                          ),
-                        ),
+                            Padding(
+                              padding: const EdgeInsets.all(
+                                AppConstants.defaultPadding,
+                              ),
+                              child: _buildJobHeaderCard(
+                                context,
+                                currentJob,
+                                isBookmarked,
+                                companyInfo,
+                              ),
+                            ),
 
                         // Tab bar (fixed)
-                        _buildTabBar(),
+                            _buildTabBar(),
 
                         // Tab content (scrollable)
                         Expanded(
@@ -251,14 +251,14 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                 const Duration(milliseconds: 500),
                               );
                             },
-                            child: _buildTabContent(
-                              currentJob,
-                              companyInfo,
-                              statistics,
+                              child: _buildTabContent(
+                                currentJob,
+                                companyInfo,
+                                statistics,
                             ),
-                          ),
-                        ),
-                      ],
+                              ),
+                            ),
+                          ],
                     ),
                   ),
           ),

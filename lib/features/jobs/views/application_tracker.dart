@@ -59,7 +59,7 @@ class _ApplicationTrackerScreenViewState
     extends State<_ApplicationTrackerScreenView>
     with TickerProviderStateMixin {
   TabController? _tabController;
-
+  
   // Cache the last loaded data to prevent showing empty state during reload
   List<Map<String, dynamic>> _cachedAppliedJobs = [];
   List<Map<String, dynamic>> _cachedInterviewJobs = [];
@@ -79,7 +79,7 @@ class _ApplicationTrackerScreenViewState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
+    
     // Initialize cache from BLoC state if available (only once, before first build)
     if (!_cacheInitialized) {
       _initializeCacheFromBloC();
@@ -91,18 +91,18 @@ class _ApplicationTrackerScreenViewState
   void _initializeCacheFromBloC() {
     try {
       final currentState = context.read<JobsBloc>().state;
-
+      
       if (currentState is ApplicationTrackerLoaded) {
         _cachedAppliedJobs = List.from(currentState.appliedJobs);
         _cachedInterviewJobs = List.from(currentState.interviewJobs);
         _hasLoadedOnce = true; // Mark as loaded if cache exists
-      }
+      } 
       // Check JobsLoaded state for cached tracker data
       else if (currentState is JobsLoaded) {
-        if (currentState.trackerAppliedJobs != null &&
+        if (currentState.trackerAppliedJobs != null && 
             currentState.trackerInterviewJobs != null &&
-            (currentState.trackerAppliedJobs!.isNotEmpty ||
-                currentState.trackerInterviewJobs!.isNotEmpty)) {
+            (currentState.trackerAppliedJobs!.isNotEmpty || 
+             currentState.trackerInterviewJobs!.isNotEmpty)) {
           _cachedAppliedJobs = List.from(currentState.trackerAppliedJobs!);
           _cachedInterviewJobs = List.from(currentState.trackerInterviewJobs!);
           _hasLoadedOnce = true; // Mark as loaded if cache exists
@@ -223,11 +223,11 @@ class _ApplicationTrackerScreenViewState
                 if (current is JobsError) return true;
                 if (current is JobsLoading && previous is! JobsLoading)
                   return true;
-
+                
                 // Rebuild when JobsLoaded has tracker data
                 if (current is JobsLoaded) {
                   // If we're on the tracker screen and JobsLoaded has tracker data, rebuild
-                  if (current.trackerAppliedJobs != null ||
+                  if (current.trackerAppliedJobs != null || 
                       current.trackerInterviewJobs != null) {
                     // Check if tracker data actually changed
                     if (previous is JobsLoaded) {
@@ -240,7 +240,7 @@ class _ApplicationTrackerScreenViewState
                     return true;
                   }
                 }
-
+                
                 // Don't rebuild for other state changes
                 return false;
               },
@@ -253,7 +253,7 @@ class _ApplicationTrackerScreenViewState
                   // Mark as loaded at least once
                   _hasLoadedOnce = true;
                   // Update cache with latest data only if different
-                  if (_cachedAppliedJobs != state.appliedJobs ||
+                  if (_cachedAppliedJobs != state.appliedJobs || 
                       _cachedInterviewJobs != state.interviewJobs) {
                     _cachedAppliedJobs = List.from(state.appliedJobs);
                     _cachedInterviewJobs = List.from(state.interviewJobs);
@@ -262,18 +262,18 @@ class _ApplicationTrackerScreenViewState
                   interviewJobs = state.interviewJobs;
                 }
                 // Also check JobsLoaded for tracker data
-                else if (state is JobsLoaded &&
-                    state.trackerAppliedJobs != null &&
-                    state.trackerInterviewJobs != null) {
+                else if (state is JobsLoaded && 
+                         state.trackerAppliedJobs != null && 
+                         state.trackerInterviewJobs != null) {
                   // Mark as loaded since we have data from JobsLoaded
-                  if (!_hasLoadedOnce &&
-                      (state.trackerAppliedJobs!.isNotEmpty ||
-                          state.trackerInterviewJobs!.isNotEmpty)) {
+                  if (!_hasLoadedOnce && 
+                      (state.trackerAppliedJobs!.isNotEmpty || 
+                       state.trackerInterviewJobs!.isNotEmpty)) {
                     _hasLoadedOnce = true;
                   }
-
+                  
                   // Update cache with tracker data from JobsLoaded only if different
-                  if (_cachedAppliedJobs != state.trackerAppliedJobs! ||
+                  if (_cachedAppliedJobs != state.trackerAppliedJobs! || 
                       _cachedInterviewJobs != state.trackerInterviewJobs!) {
                     _cachedAppliedJobs = List.from(state.trackerAppliedJobs!);
                     _cachedInterviewJobs = List.from(
@@ -288,10 +288,10 @@ class _ApplicationTrackerScreenViewState
                 // (instead of replacing entire widget with loading spinner)
                 final hasAnyCachedData =
                     _cachedAppliedJobs.isNotEmpty ||
-                    _cachedInterviewJobs.isNotEmpty;
+                                        _cachedInterviewJobs.isNotEmpty;
                 final isCurrentlyLoading =
                     state is JobsLoading || state is JobsInitial;
-
+                
                 // Check if this is first load with no cache
                 final isFirstLoad =
                     isCurrentlyLoading && !_hasLoadedOnce && !hasAnyCachedData;
@@ -637,13 +637,13 @@ class _ApplicationTrackerScreenViewState
         Flexible(
           child: Text(
             location,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppConstants.textSecondaryColor,
-              height: 1.4,
-            ),
+      style: const TextStyle(
+        fontSize: 14,
+        color: AppConstants.textSecondaryColor,
+        height: 1.4,
+      ),
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+      overflow: TextOverflow.ellipsis,
           ),
         ),
         const Text(

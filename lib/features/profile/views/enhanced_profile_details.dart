@@ -791,22 +791,75 @@ class _EnhancedProfileDetailsViewState
                                                 if (!gpsEnabled) {
                                                   isLocationLoading = false;
                                                   setModalState(() {});
-                                                  scaffoldMessenger.showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
+                                                  // Show GPS warning snackbar
+                                                  TopSnackBar.showGPSWarning(
+                                                    context,
+                                                    message:
                                                         'Please enable GPS to get your location',
-                                                      ),
-                                                      backgroundColor:
-                                                          AppConstants
-                                                              .errorColor,
-                                                      behavior: SnackBarBehavior
-                                                          .floating,
-                                                      duration: Duration(
-                                                        seconds: 3,
-                                                      ),
+                                                    duration: const Duration(
+                                                      seconds: 5,
                                                     ),
                                                   );
-                                                  return;
+                                                  // Try to get location - this will trigger system GPS "Turn on" dialog
+                                                  // The system will automatically show the GPS enable dialog
+                                                  try {
+                                                    // This will trigger the system GPS enable dialog
+                                                    // System will show "Turn on" popup automatically
+                                                    final locationData =
+                                                        await locationService
+                                                            .getCurrentLocation(
+                                                              context: context,
+                                                            );
+                                                    if (locationData != null &&
+                                                        context.mounted) {
+                                                      // GPS was enabled and location obtained
+                                                      // Now reverse geocode and update location field
+                                                      isLocationLoading = true;
+                                                      setModalState(() {});
+
+                                                      // Reverse geocode to get address
+                                                      final address =
+                                                          await _reverseGeocode(
+                                                            locationData
+                                                                .latitude,
+                                                            locationData
+                                                                .longitude,
+                                                          );
+
+                                                      if (address != null &&
+                                                          context.mounted) {
+                                                        locationController
+                                                                .text =
+                                                            address;
+                                                        isLocationLoading =
+                                                            false;
+                                                        setModalState(() {});
+                                                        TopSnackBar.showSuccess(
+                                                          context,
+                                                          message:
+                                                              'Location updated successfully',
+                                                        );
+                                                      } else {
+                                                        // Fallback to coordinates if geocoding fails
+                                                        locationController
+                                                                .text =
+                                                            '${locationData.latitude.toStringAsFixed(4)}, ${locationData.longitude.toStringAsFixed(4)}';
+                                                        isLocationLoading =
+                                                            false;
+                                                        setModalState(() {});
+                                                      }
+                                                      return;
+                                                    } else {
+                                                      // User cancelled GPS dialog or GPS still disabled
+                                                      return;
+                                                    }
+                                                  } catch (e) {
+                                                    debugPrint(
+                                                      '❌ GPS dialog cancelled or error: $e',
+                                                    );
+                                                    // User cancelled the system GPS dialog
+                                                    return;
+                                                  }
                                                 }
 
                                                 // Show loading indicator
@@ -6076,66 +6129,132 @@ class _EnhancedProfileDetailsViewState
     return await showDialog<bool>(
       context: context,
       barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
+        return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: const Row(
-            children: [
-              Icon(Icons.my_location, color: Color(0xFF58B248), size: 24),
-              SizedBox(width: 12),
-              Text(
-                'Get Current Location',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppConstants.textPrimaryColor,
+          backgroundColor: Colors.white,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with icon and title
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppConstants.successColor.withValues(
+                            alpha: 0.1,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.my_location,
+                          color: AppConstants.successColor,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Text(
+                          'Get Current Location',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: AppConstants.textPrimaryColor,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          content: const Text(
-            'Do you want to get your current location?',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppConstants.textSecondaryColor,
+                // Content
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Do you want to get your current location?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade700,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                // Action buttons
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade200, width: 1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop(false);
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 17,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 56,
+                        color: Colors.grey.shade200,
+                      ),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop(true);
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.only(
+                                bottomRight: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                          child: const Text(
+                            'Get',
+                            style: TextStyle(
+                              fontSize: 17,
+                              color: AppConstants.successColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(false);
-              },
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppConstants.textSecondaryColor,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF58B248),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-              child: const Text(
-                'Get Current Location',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
         );
       },
     );

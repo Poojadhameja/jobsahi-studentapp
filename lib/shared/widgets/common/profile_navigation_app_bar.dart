@@ -37,6 +37,8 @@ class ProfileNavigationAppBar extends StatelessWidget
     return AppBar(
       backgroundColor: backgroundColor,
       elevation: 0,
+      scrolledUnderElevation: 0, // Prevent color change on scroll
+      surfaceTintColor: Colors.transparent, // Prevent tint on scroll
       leading: showBackButton
           ? IconButton(
               icon: Icon(Icons.arrow_back, color: textColor),

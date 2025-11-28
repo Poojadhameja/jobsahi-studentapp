@@ -68,8 +68,8 @@ class _MainScaffoldState extends State<MainScaffold> {
         backgroundColor: AppConstants.cardBackgroundColor,
         appBar: _buildAppBar(
           _navigationManager.currentTabIndex,
-          hideForFromProfile: fromProfileParam &&
-              location.startsWith('/application-tracker'),
+          hideForFromProfile:
+              fromProfileParam && location.startsWith('/application-tracker'),
         ),
         body: widget.child,
         bottomNavigationBar: CustomBottomNavigation(
@@ -81,8 +81,10 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   /// Build appropriate app bar based on current tab
-  PreferredSizeWidget? _buildAppBar(int currentIndex,
-      {bool hideForFromProfile = false}) {
+  PreferredSizeWidget? _buildAppBar(
+    int currentIndex, {
+    bool hideForFromProfile = false,
+  }) {
     if (hideForFromProfile) return null;
     switch (currentIndex) {
       case 0:
@@ -147,13 +149,13 @@ class _MainScaffoldState extends State<MainScaffold> {
     final state = GoRouterState.of(context);
     final fromProfileParam = state.uri.queryParameters['fromProfile'] == 'true';
     final location = state.uri.path;
-    
+
     // If coming from profile menu, navigate back to menu
     if (fromProfileParam && location.startsWith('/application-tracker')) {
       context.go('/profile/menu');
       return;
     }
-    
+
     final handled = _navigationManager.handleBackNavigation();
 
     if (!handled && currentIndex == 0) {
@@ -245,7 +247,11 @@ class _MainScaffoldState extends State<MainScaffold> {
                         ),
                       ),
                     ),
-                    Container(width: 1, height: 50, color: Colors.grey.shade200),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: Colors.grey.shade200,
+                    ),
                     Expanded(
                       child: Material(
                         color: Colors.transparent,
@@ -260,8 +266,12 @@ class _MainScaffoldState extends State<MainScaffold> {
                           borderRadius: const BorderRadius.only(
                             bottomRight: Radius.circular(16),
                           ),
-                          splashColor: AppConstants.errorColor.withValues(alpha: 0.2),
-                          highlightColor: AppConstants.errorColor.withValues(alpha: 0.1),
+                          splashColor: AppConstants.errorColor.withValues(
+                            alpha: 0.2,
+                          ),
+                          highlightColor: AppConstants.errorColor.withValues(
+                            alpha: 0.1,
+                          ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             alignment: Alignment.center,
@@ -298,11 +308,15 @@ class _MainScaffoldState extends State<MainScaffold> {
     int currentIndex,
   ) {
     return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight + 16), // Same as jobs section
+      preferredSize: const Size.fromHeight(
+        kToolbarHeight + 16,
+      ), // Same as jobs section
       child: AppBar(
-        backgroundColor: AppConstants.cardBackgroundColor, // Same as jobs section
+        backgroundColor:
+            AppConstants.cardBackgroundColor, // Same as jobs section
         elevation: 0,
-        toolbarHeight: kToolbarHeight + 16, // Same as jobs section (56 + 16 = 72)
+        toolbarHeight:
+            kToolbarHeight + 16, // Same as jobs section (56 + 16 = 72)
         titleSpacing: 0,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -329,9 +343,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       padding: const EdgeInsets.only(top: 8, bottom: 8), // Same as jobs section
       child: Row(
         children: [
-          Expanded(
-            child: _LearningCenterSearchBox(),
-          ),
+          Expanded(child: _LearningCenterSearchBox()),
           const SizedBox(width: 8), // Same spacing as jobs section
           // Filter Button with clicking effect and animation
           BlocBuilder<CoursesBloc, CoursesState>(
@@ -344,15 +356,20 @@ class _MainScaffoldState extends State<MainScaffold> {
                   onTap: () {
                     context.read<CoursesBloc>().add(const ToggleFiltersEvent());
                   },
-                  borderRadius: BorderRadius.circular(22.5), // Same as jobs section
+                  borderRadius: BorderRadius.circular(
+                    22.5,
+                  ), // Same as jobs section
                   child: Container(
                     width: 45, // Same as jobs section
                     height: 45, // Same as jobs section
                     decoration: BoxDecoration(
                       color: isFilterVisible
                           ? AppConstants.primaryColor
-                          : AppConstants.backgroundColor, // Same as jobs section
-                      borderRadius: BorderRadius.circular(22.5), // Same as jobs section
+                          : AppConstants
+                                .backgroundColor, // Same as jobs section
+                      borderRadius: BorderRadius.circular(
+                        22.5,
+                      ), // Same as jobs section
                       border: Border.all(
                         color: AppConstants.borderColor, // Same as jobs section
                         width: 1,
@@ -363,7 +380,10 @@ class _MainScaffoldState extends State<MainScaffold> {
                       transitionBuilder: (child, animation) {
                         return ScaleTransition(
                           scale: animation,
-                          child: FadeTransition(opacity: animation, child: child),
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
                         );
                       },
                       child: Icon(

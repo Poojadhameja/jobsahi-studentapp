@@ -21,6 +21,8 @@ class TabAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: AppConstants.cardBackgroundColor,
       elevation: 0,
+      scrolledUnderElevation: 0, // Prevent color change on scroll
+      surfaceTintColor: Colors.transparent, // Prevent tint on scroll
       leading: IconButton(
         onPressed: onBackPressed ?? () => context.go('/home'),
         icon: Icon(

@@ -76,6 +76,45 @@ class FcmService {
     }
   }
 
+  /// Request notification permissions (public method)
+  Future<NotificationSettings> requestPermissions() async {
+    try {
+      NotificationSettings settings =
+          await _firebaseMessaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      debugPrint('🔔 Notification permission status: ${settings.authorizationStatus}');
+      
+      // Save token if permission granted and user is logged in
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        await _getAndSaveToken();
+      }
+      
+      return settings;
+    } catch (e) {
+      debugPrint('🔴 Error requesting notification permissions: $e');
+      rethrow;
+    }
+  }
+
+  /// Get current notification permission status
+  Future<NotificationSettings> getPermissionStatus() async {
+    try {
+      return await _firebaseMessaging.getNotificationSettings();
+    } catch (e) {
+      debugPrint('🔴 Error getting notification permission status: $e');
+      rethrow;
+    }
+  }
+
   /// Initialize local notifications for foreground notifications
   Future<void> _initializeLocalNotifications() async {
     // Android initialization settings
@@ -219,7 +258,26 @@ class FcmService {
   /// Handle local notification tap
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('👆 Local notification tapped: ${response.payload}');
-    // Handle local notification tap if needed
+    
+    if (response.payload == null || response.payload!.isEmpty) {
+      // If no payload, just navigate to home
+      AppRouter.push(AppRoutes.home);
+      return;
+    }
+
+    try {
+      // Parse payload - it's stored as data.toString() in _showLocalNotification
+      // We need to extract the data from the notification
+      // Since payload is stored as data.toString(), we'll need to handle navigation
+      // based on the notification type if available
+      
+      // For now, navigate to home as default
+      // In a real scenario, you might want to store notification data differently
+      AppRouter.push(AppRoutes.home);
+    } catch (e) {
+      debugPrint('🔴 Error handling local notification tap: $e');
+      AppRouter.push(AppRoutes.home);
+    }
   }
 
   /// Get FCM token
