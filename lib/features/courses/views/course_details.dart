@@ -320,7 +320,7 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
         tabs: [
           Tab(text: 'About'),
           Tab(text: 'Institute'),
-          Tab(text: 'Reviews and Rating'),
+          Tab(text: 'Reviews'),
         ],
       ),
     );

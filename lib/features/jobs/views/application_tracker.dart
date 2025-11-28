@@ -26,25 +26,13 @@ class _ApplicationTrackerScreenState extends State<ApplicationTrackerScreen> {
   @override
   void initState() {
     super.initState();
-    // Add event after the widget is built and BLoC is available
+    // Dispatch event after widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         try {
-          final currentState = context.read<JobsBloc>().state;
-          print('🟢 [Tracker] Widget initState - Current BLoC state: ${currentState.runtimeType}');
-          
-          if (currentState is ApplicationTrackerLoaded) {
-            print('🟢 [Tracker] Previous data exists: ${currentState.appliedJobs.length} applied, ${currentState.interviewJobs.length} interviews');
-            print('🟢 [Tracker] Refreshing data in background...');
-          } else {
-            print('🟡 [Tracker] No previous data, will load with loading indicator');
-          }
-          
-          // Always dispatch event to refresh data (BLoC will decide if loading should show)
           context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
         } catch (e) {
-          // BLoC not available, ignore
-          print('🔴 [Tracker] Error accessing BLoC: $e');
+          debugPrint('Error dispatching LoadApplicationTrackerEvent: $e');
         }
       }
     });
@@ -75,6 +63,7 @@ class _ApplicationTrackerScreenViewState
   List<Map<String, dynamic>> _cachedAppliedJobs = [];
   List<Map<String, dynamic>> _cachedInterviewJobs = [];
   bool _cacheInitialized = false;
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
@@ -90,7 +79,7 @@ class _ApplicationTrackerScreenViewState
   void didChangeDependencies() {
     super.didChangeDependencies();
     
-    // Initialize cache from BLoC state if available (only once)
+    // Initialize cache from BLoC state if available (only once, before first build)
     if (!_cacheInitialized) {
       _initializeCacheFromBloC();
       _cacheInitialized = true;
@@ -101,29 +90,25 @@ class _ApplicationTrackerScreenViewState
   void _initializeCacheFromBloC() {
     try {
       final currentState = context.read<JobsBloc>().state;
-      print('🟢 [Tracker] Initializing cache from BLoC state: ${currentState.runtimeType}');
       
       if (currentState is ApplicationTrackerLoaded) {
-        _cachedAppliedJobs = currentState.appliedJobs;
-        _cachedInterviewJobs = currentState.interviewJobs;
-        print('🟢 [Tracker] Cache initialized from ApplicationTrackerLoaded: ${_cachedAppliedJobs.length} applied, ${_cachedInterviewJobs.length} interviews');
+        _cachedAppliedJobs = List.from(currentState.appliedJobs);
+        _cachedInterviewJobs = List.from(currentState.interviewJobs);
+        _hasLoadedOnce = true; // Mark as loaded if cache exists
       } 
       // Check JobsLoaded state for cached tracker data
       else if (currentState is JobsLoaded) {
         if (currentState.trackerAppliedJobs != null && 
-            currentState.trackerInterviewJobs != null) {
-          _cachedAppliedJobs = currentState.trackerAppliedJobs!;
-          _cachedInterviewJobs = currentState.trackerInterviewJobs!;
-          print('🟢 [Tracker] Cache initialized from JobsLoaded.trackerData: ${_cachedAppliedJobs.length} applied, ${_cachedInterviewJobs.length} interviews');
-        } else {
-          print('🟡 [Tracker] JobsLoaded state exists but has no tracker data, cache remains empty');
+            currentState.trackerInterviewJobs != null &&
+            (currentState.trackerAppliedJobs!.isNotEmpty || 
+             currentState.trackerInterviewJobs!.isNotEmpty)) {
+          _cachedAppliedJobs = List.from(currentState.trackerAppliedJobs!);
+          _cachedInterviewJobs = List.from(currentState.trackerInterviewJobs!);
+          _hasLoadedOnce = true; // Mark as loaded if cache exists
         }
       }
-      else {
-        print('🟡 [Tracker] No previous ApplicationTrackerLoaded state, cache remains empty');
-      }
     } catch (e) {
-      print('🔴 [Tracker] Error initializing cache: $e');
+      debugPrint('Error initializing tracker cache: $e');
     }
   }
 
@@ -241,66 +226,97 @@ class _ApplicationTrackerScreenViewState
                 ? ProfileNavigationAppBar(title: 'Application Tracker')
                 : null,
             body: BlocBuilder<JobsBloc, JobsState>(
-              builder: (context, state) {
-                print('🟢 [Tracker] BlocBuilder - State: ${state.runtimeType}, Cache: ${_cachedAppliedJobs.length} applied, ${_cachedInterviewJobs.length} interviews');
+              buildWhen: (previous, current) {
+                // Always rebuild for these states
+                if (current is ApplicationTrackerLoaded) return true;
+                if (current is JobsError) return true;
+                if (current is JobsLoading && previous is! JobsLoading) return true;
                 
+                // Rebuild when JobsLoaded has tracker data
+                if (current is JobsLoaded) {
+                  // If we're on the tracker screen and JobsLoaded has tracker data, rebuild
+                  if (current.trackerAppliedJobs != null || 
+                      current.trackerInterviewJobs != null) {
+                    // Check if tracker data actually changed
+                    if (previous is JobsLoaded) {
+                      return previous.trackerAppliedJobs != current.trackerAppliedJobs ||
+                             previous.trackerInterviewJobs != current.trackerInterviewJobs;
+                    }
+                    // First time seeing JobsLoaded with tracker data
+                    return true;
+                  }
+                }
+                
+                // Don't rebuild for other state changes
+                return false;
+              },
+              builder: (context, state) {
                 // Get data from state and update cache when data is available
                 List<Map<String, dynamic>> appliedJobs = _cachedAppliedJobs;
                 List<Map<String, dynamic>> interviewJobs = _cachedInterviewJobs;
 
                 if (state is ApplicationTrackerLoaded) {
-                  // Update cache with latest data
-                  _cachedAppliedJobs = state.appliedJobs;
-                  _cachedInterviewJobs = state.interviewJobs;
+                  // Mark as loaded at least once
+                  _hasLoadedOnce = true;
+                  // Update cache with latest data only if different
+                  if (_cachedAppliedJobs != state.appliedJobs || 
+                      _cachedInterviewJobs != state.interviewJobs) {
+                    _cachedAppliedJobs = List.from(state.appliedJobs);
+                    _cachedInterviewJobs = List.from(state.interviewJobs);
+                  }
                   appliedJobs = state.appliedJobs;
                   interviewJobs = state.interviewJobs;
-                  print('🟢 [Tracker] Cache updated from ApplicationTrackerLoaded: ${appliedJobs.length} applied, ${interviewJobs.length} interviews');
                 }
                 // Also check JobsLoaded for tracker data
                 else if (state is JobsLoaded && 
                          state.trackerAppliedJobs != null && 
                          state.trackerInterviewJobs != null) {
-                  // Update cache with tracker data from JobsLoaded
-                  _cachedAppliedJobs = state.trackerAppliedJobs!;
-                  _cachedInterviewJobs = state.trackerInterviewJobs!;
+                  // Mark as loaded since we have data from JobsLoaded
+                  if (!_hasLoadedOnce && 
+                      (state.trackerAppliedJobs!.isNotEmpty || 
+                       state.trackerInterviewJobs!.isNotEmpty)) {
+                    _hasLoadedOnce = true;
+                  }
+                  
+                  // Update cache with tracker data from JobsLoaded only if different
+                  if (_cachedAppliedJobs != state.trackerAppliedJobs! || 
+                      _cachedInterviewJobs != state.trackerInterviewJobs!) {
+                    _cachedAppliedJobs = List.from(state.trackerAppliedJobs!);
+                    _cachedInterviewJobs = List.from(state.trackerInterviewJobs!);
+                  }
                   appliedJobs = state.trackerAppliedJobs!;
                   interviewJobs = state.trackerInterviewJobs!;
-                  print('🟢 [Tracker] Cache updated from JobsLoaded.trackerData: ${appliedJobs.length} applied, ${interviewJobs.length} interviews');
                 }
 
-                // Show loading state ONLY on very first load (when cache is empty AND no data in JobsLoaded)
-                bool hasDataAvailable = _cachedAppliedJobs.isNotEmpty || 
-                                       _cachedInterviewJobs.isNotEmpty ||
-                                       (state is JobsLoaded && 
-                                        state.trackerAppliedJobs != null && 
-                                        state.trackerInterviewJobs != null);
+                // Determine if we should show loading state inside tabs
+                // (instead of replacing entire widget with loading spinner)
+                final hasAnyCachedData = _cachedAppliedJobs.isNotEmpty || 
+                                        _cachedInterviewJobs.isNotEmpty;
+                final isCurrentlyLoading = state is JobsLoading || state is JobsInitial;
                 
-                final showLoading = (state is JobsLoading || state is JobsInitial) && !hasDataAvailable;
-                    
-                if (showLoading) {
-                  print('🟡 [Tracker] Showing loading spinner (no data available)');
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppConstants.secondaryColor,
-                    ),
-                  );
-                }
-                
-                print('🟢 [Tracker] Showing content (data available: ${appliedJobs.length} applied, ${interviewJobs.length} interviews)');
+                // Check if this is first load with no cache
+                final isFirstLoad = isCurrentlyLoading && 
+                                   !_hasLoadedOnce && 
+                                   !hasAnyCachedData;
 
-
-                // Always show content - use cached data during reload to prevent empty state flash
+                // Always show tabs structure - show loading inside tabs if needed
                 return Column(
                   children: [
                     if (!widget.isFromProfile) _buildTabBar(),
                     Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildAppliedTab(context, appliedJobs),
-                          _buildInterviewTab(context, interviewJobs),
-                        ],
-                      ),
+                      child: isFirstLoad
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: AppConstants.secondaryColor,
+                              ),
+                            )
+                          : TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _buildAppliedTab(context, appliedJobs),
+                                _buildInterviewTab(context, interviewJobs),
+                              ],
+                            ),
                     ),
                   ],
                 );

@@ -35,6 +35,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return ActivityTracker(
       child: KeyboardDismissWrapper(
         child: BlocBuilder<HomeBloc, HomeState>(
+          buildWhen: (previous, current) {
+            // Only rebuild if state type changes
+            return previous.runtimeType != current.runtimeType;
+          },
           builder: (context, state) {
             if (state is HomeError) {
               return Center(
@@ -112,7 +116,7 @@ class _HomePageState extends State<HomePage>
 
     _skeletonController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
     )..repeat();
 
     // Load banner images from cache or use default
@@ -247,7 +251,7 @@ class _HomePageState extends State<HomePage>
           });
 
           // Additional delay to ensure all images are in memory and ready
-          await Future.delayed(const Duration(milliseconds: 300));
+          await Future.delayed(const Duration(milliseconds: 150));
 
           if (mounted && (_bannerTimer == null || !_bannerTimer!.isActive)) {
             _startBannerTimer();
@@ -266,21 +270,10 @@ class _HomePageState extends State<HomePage>
 
     _bannerTimer?.cancel();
     _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      // Continue running even when widget is not visible
-      // Only pause if user is holding, not based on mounted state
-      if (!_isUserHolding) {
-        // Use postFrameCallback to safely update state even if widget is not visible
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
-              _currentBannerIndex =
-                  (_currentBannerIndex + 1) % _bannerImages.length;
-            });
-          } else {
-            // Update index even if not mounted, so when user returns it's at correct position
-            _currentBannerIndex =
-                (_currentBannerIndex + 1) % _bannerImages.length;
-          }
+      if (!_isUserHolding && mounted) {
+        setState(() {
+          _currentBannerIndex =
+              (_currentBannerIndex + 1) % _bannerImages.length;
         });
       }
     });
@@ -308,8 +301,7 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
-    // Don't cancel banner timer - let it continue running
-    // _bannerTimer?.cancel(); // Commented out to keep timer running
+    _bannerTimer?.cancel();
     _skeletonController.dispose();
     _tabController?.dispose();
     super.dispose();
@@ -331,6 +323,20 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     return BlocBuilder<HomeBloc, HomeState>(
+      buildWhen: (previous, current) {
+        // Rebuild only on relevant state changes
+        if (previous is HomeLoading && current is HomeLoaded) return true;
+        if (previous is HomeLoaded && current is HomeError) return true;
+        if (current is HomeError) return true;
+        if (previous is! HomeLoaded || current is! HomeLoaded) return true;
+        // For HomeLoaded states, check if data actually changed
+        final prevLoaded = previous as HomeLoaded;
+        final currLoaded = current as HomeLoaded;
+        return prevLoaded.filteredJobs != currLoaded.filteredJobs ||
+               prevLoaded.recommendedJobs != currLoaded.recommendedJobs ||
+               prevLoaded.savedJobIds != currLoaded.savedJobIds ||
+               prevLoaded.showFilters != currLoaded.showFilters;
+      },
       builder: (context, state) {
         final isLoading = state is HomeLoading;
         final homeLoaded = state is HomeLoaded ? state : null;
@@ -874,9 +880,10 @@ class _HomePageState extends State<HomePage>
                           return featuredJobId == jobId;
                         });
 
-                    return JobCard(
-                      job: job,
-                      onTap: () {
+                    return RepaintBoundary(
+                      child: JobCard(
+                        job: job,
+                        onTap: () {
                         if (jobId.isNotEmpty) {
                           NavigationHelper.navigateTo(
                             AppRoutes.jobDetailsWithId(jobId),
@@ -886,10 +893,11 @@ class _HomePageState extends State<HomePage>
                       onSaveToggle: () {
                         _handleSaveToggle(job);
                       },
-                      isSaved:
-                          homeLoaded != null &&
-                          homeLoaded.savedJobIds.contains(jobId),
-                      isFeatured: isFeatured,
+                        isSaved:
+                            homeLoaded != null &&
+                            homeLoaded.savedJobIds.contains(jobId),
+                        isFeatured: isFeatured,
+                      ),
                     );
                   }, childCount: jobs.length),
                 ),
@@ -1132,16 +1140,18 @@ class JobList extends StatelessWidget {
               return featuredJobId == jobId;
             });
 
-        return JobCard(
-          job: job,
-          onTap: () {
+        return RepaintBoundary(
+          child: JobCard(
+            job: job,
+            onTap: () {
             if (jobId.isNotEmpty) {
               NavigationHelper.navigateTo(AppRoutes.jobDetailsWithId(jobId));
             }
           },
-          onSaveToggle: onSaveToggle != null ? () => onSaveToggle!(job) : null,
-          isSaved: isSaved != null ? isSaved!(job) : false,
-          isFeatured: isFeatured,
+            onSaveToggle: onSaveToggle != null ? () => onSaveToggle!(job) : null,
+            isSaved: isSaved != null ? isSaved!(job) : false,
+            isFeatured: isFeatured,
+          ),
         );
       }).toList(),
     );

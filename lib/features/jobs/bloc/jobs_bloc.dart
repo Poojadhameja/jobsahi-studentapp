@@ -1202,10 +1202,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     Emitter<JobsState> emit,
   ) async {
     try {
-      debugPrint('🔵 [Bloc] LoadApplicationTrackerEvent received');
-      debugPrint('🔵 [Bloc] Current state: ${state.runtimeType}');
-      
-      // Check if we have cached tracker data in JobsLoaded state
+      // Check if we have cached tracker data in current state
       List<Map<String, dynamic>>? cachedApplied;
       List<Map<String, dynamic>>? cachedInterviews;
       bool hasCachedData = false;
@@ -1213,36 +1210,48 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       if (state is JobsLoaded) {
         final currentState = state as JobsLoaded;
         if (currentState.trackerAppliedJobs != null && 
-            currentState.trackerInterviewJobs != null) {
+            currentState.trackerInterviewJobs != null &&
+            (currentState.trackerAppliedJobs!.isNotEmpty || 
+             currentState.trackerInterviewJobs!.isNotEmpty)) {
           cachedApplied = currentState.trackerAppliedJobs;
           cachedInterviews = currentState.trackerInterviewJobs;
           hasCachedData = true;
-          debugPrint('🔵 [Bloc] Found cached tracker data in JobsLoaded: ${cachedApplied!.length} applied, ${cachedInterviews!.length} interviews');
         }
       } else if (state is ApplicationTrackerLoaded) {
         final currentState = state as ApplicationTrackerLoaded;
-        cachedApplied = currentState.appliedJobs;
-        cachedInterviews = currentState.interviewJobs;
-        hasCachedData = true;
-        debugPrint('🔵 [Bloc] Found cached tracker data in ApplicationTrackerLoaded: ${cachedApplied.length} applied, ${cachedInterviews.length} interviews');
+        if (currentState.appliedJobs.isNotEmpty || 
+            currentState.interviewJobs.isNotEmpty) {
+          cachedApplied = currentState.appliedJobs;
+          cachedInterviews = currentState.interviewJobs;
+          hasCachedData = true;
+        }
       }
       
-      // If we have cached data, emit it immediately (no loading state)
-      if (hasCachedData && cachedApplied != null && cachedInterviews != null) {
-        debugPrint('🔵 [Bloc] Emitting cached data immediately, then fetching fresh data in background');
+      // If we have cached data with actual items, emit it immediately (no loading state)
+      if (hasCachedData && 
+          cachedApplied != null && 
+          cachedInterviews != null &&
+          (cachedApplied.isNotEmpty || cachedInterviews.isNotEmpty)) {
         emit(
           ApplicationTrackerLoaded(
-            appliedJobs: cachedApplied,
-            interviewJobs: cachedInterviews,
-            offerJobs: [], // We'll update this with fresh data
+            appliedJobs: List.from(cachedApplied),
+            interviewJobs: List.from(cachedInterviews),
+            offerJobs: const [],
           ),
         );
       } else {
-        // Only emit loading if we don't have cached data
-        debugPrint('🔵 [Bloc] No cached data, showing loading');
+        // Emit loading state for first load or when cache is empty
         emit(const JobsLoading());
       }
 
+      // Store reference to current JobsLoaded state BEFORE making API call
+      // We need to capture it now because state might change during async operations
+      JobsLoaded? jobsLoadedStateSnapshot;
+      final currentStateBeforeApi = state;
+      if (currentStateBeforeApi is JobsLoaded) {
+        jobsLoadedStateSnapshot = currentStateBeforeApi;
+      }
+      
       final applications = await _apiService.getStudentAppliedJobs();
 
       final appliedJobs = <Map<String, dynamic>>[];
@@ -1303,6 +1312,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         );
       }
 
+      // First emit ApplicationTrackerLoaded for immediate UI update
       emit(
         ApplicationTrackerLoaded(
           appliedJobs: appliedJobs,
@@ -1310,6 +1320,22 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           offerJobs: offerJobs,
         ),
       );
+      
+      // CRITICAL: Store tracker data back in JobsLoaded state for persistence
+      // This ensures cache is available on next visit
+      if (jobsLoadedStateSnapshot != null) {
+        // Restore the JobsLoaded state with updated tracker data
+        // Using addPostFrameCallback to ensure ApplicationTrackerLoaded is processed first
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (!emit.isDone) {
+          emit(
+            jobsLoadedStateSnapshot.copyWith(
+              trackerAppliedJobs: appliedJobs,
+              trackerInterviewJobs: interviewJobs,
+            ),
+          );
+        }
+      }
     } catch (e) {
       debugPrint('🔴 [Jobs] Failed to load application tracker: $e');
       emit(

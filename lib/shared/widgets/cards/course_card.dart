@@ -86,16 +86,6 @@ class CourseCard extends StatelessWidget {
             ],
           ),
         ),
-        // Save/bookmark button
-        IconButton(
-          onPressed: onSaveToggle,
-          icon: Icon(
-            course['isSaved'] == true ? Icons.bookmark : Icons.bookmark_border,
-            color: course['isSaved'] == true
-                ? AppConstants.primaryColor
-                : AppConstants.textSecondaryColor,
-          ),
-        ),
       ],
     );
   }
@@ -125,56 +115,57 @@ class CourseCard extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const Spacer(),
-        // Rating
-        _buildRating(),
-      ],
-    );
-  }
-
-  Widget _buildRating() {
-    final rating = course['rating'] ?? 0.0;
-    final totalRatings = course['totalRatings'] ?? 0;
-
-    return Row(
-      children: [
-        ...List.generate(5, (index) {
-          return Icon(
-            index < rating.floor() ? Icons.star : Icons.star_border,
-            color: Colors.orange,
-            size: 16,
-          );
-        }),
-        const SizedBox(width: 4),
-        Text(
-          '($totalRatings)',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppConstants.textSecondaryColor,
-          ),
-        ),
       ],
     );
   }
 
   Widget _buildActionButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.successColor,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+    return Row(
+      children: [
+        // Course View button
+        Expanded(
+          child: ElevatedButton(
+            onPressed: onTap,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.successColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Text(
+              'Course View',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        child: const Text(
-          'Course View',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        // Save button on the right side (matching job card style)
+        const SizedBox(width: 8),
+        Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onSaveToggle,
+            customBorder: const CircleBorder(),
+            splashColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade200,
+            radius: 20,
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              child: Icon(
+                course['isSaved'] == true ? Icons.bookmark : Icons.bookmark_border,
+                color: course['isSaved'] == true
+                    ? AppConstants.primaryColor
+                    : AppConstants.textSecondaryColor,
+                size: 24,
+              ),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -236,18 +227,6 @@ class CompactCourseCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                IconButton(
-                  onPressed: onSaveToggle,
-                  icon: Icon(
-                    course['isSaved'] == true
-                        ? Icons.bookmark
-                        : Icons.bookmark_border,
-                    color: course['isSaved'] == true
-                        ? AppConstants.primaryColor
-                        : AppConstants.textSecondaryColor,
-                    size: 20,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: AppConstants.smallPadding),
@@ -270,34 +249,52 @@ class CompactCourseCard extends StatelessWidget {
             const Spacer(),
             Row(
               children: [
-                ...List.generate(5, (index) {
-                  final rating = course['rating'] ?? 0.0;
-                  return Icon(
-                    index < rating.floor() ? Icons.star : Icons.star_border,
-                    color: Colors.orange,
-                    size: 14,
-                  );
-                }),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: onTap,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.successColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.smallBorderRadius,
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onTap,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.successColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.smallBorderRadius,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                    child: const Text(
+                      'Course View',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
-                    minimumSize: Size.zero,
                   ),
-                  child: const Text(
-                    'Course View',
-                    style: TextStyle(fontSize: 12),
+                ),
+                const SizedBox(width: 6),
+                Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: onSaveToggle,
+                    customBorder: const CircleBorder(),
+                    splashColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade200,
+                    radius: 16,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        course['isSaved'] == true
+                            ? Icons.bookmark
+                            : Icons.bookmark_border,
+                        color: course['isSaved'] == true
+                            ? AppConstants.primaryColor
+                            : AppConstants.textSecondaryColor,
+                        size: 18,
+                      ),
+                    ),
                   ),
                 ),
               ],

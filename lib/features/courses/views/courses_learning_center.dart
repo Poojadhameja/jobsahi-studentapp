@@ -25,43 +25,19 @@ class LearningCenterPage extends StatefulWidget {
 }
 
 class _LearningCenterPageState extends State<LearningCenterPage> {
-  bool _hasLoadedInitially = false;
-  DateTime? _lastLoadTime;
-
   @override
   void initState() {
     super.initState();
-    // Always load courses when page is accessed (with force refresh for rewrite)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<CoursesBloc>().add(
-          const LoadCoursesEvent(forceRefresh: true),
-        );
-        _hasLoadedInitially = true;
-        _lastLoadTime = DateTime.now();
-      }
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reload courses when navigating back to this page
-    // Only reload if enough time has passed (at least 1 second) to avoid multiple reloads
-    if (_hasLoadedInitially && _lastLoadTime != null) {
-      final timeSinceLastLoad = DateTime.now().difference(_lastLoadTime!);
-      if (timeSinceLastLoad.inSeconds >= 1) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            // Always rewrite when coming back to page (force refresh)
-            // This ensures fresh data is loaded every time we navigate to this page
-            context.read<CoursesBloc>().add(
-              const LoadCoursesEvent(forceRefresh: true),
-            );
-            _lastLoadTime = DateTime.now();
-          }
-        });
-      }
+    // Load courses only if not already loaded
+    final currentState = context.read<CoursesBloc>().state;
+    if (currentState is! CoursesLoaded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<CoursesBloc>().add(
+            const LoadCoursesEvent(forceRefresh: false),
+          );
+        }
+      });
     }
   }
 
@@ -81,6 +57,17 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CoursesBloc, CoursesState>(
+      buildWhen: (previous, current) {
+        // Only rebuild on actual state changes
+        if (previous.runtimeType != current.runtimeType) return true;
+        if (previous is CoursesLoaded && current is CoursesLoaded) {
+          // For loaded states, check if data actually changed
+          return previous.filteredCourses != current.filteredCourses ||
+                 previous.savedCourseIds != current.savedCourseIds ||
+                 previous.showFilters != current.showFilters;
+        }
+        return true;
+      },
       builder: (context, state) {
         return KeyboardDismissWrapper(
           child: Container(
@@ -118,6 +105,15 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
                   left: 0,
                   right: 0,
                   child: BlocBuilder<CoursesBloc, CoursesState>(
+                    buildWhen: (previous, current) {
+                      // Only rebuild when filters visibility changes
+                      if (previous is! CoursesLoaded || current is! CoursesLoaded) return true;
+                      return previous.showFilters != current.showFilters ||
+                             previous.selectedCategory != current.selectedCategory ||
+                             previous.selectedLevel != current.selectedLevel ||
+                             previous.selectedDuration != current.selectedDuration ||
+                             previous.selectedInstitute != current.selectedInstitute;
+                    },
                     builder: (context, state) {
                       if (state is CoursesLoaded) {
                         final showFilters = state.showFilters;
@@ -158,7 +154,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
         errorMessage: state.message,
         onRetry: () {
           context.read<CoursesBloc>().add(
-            const LoadCoursesEvent(forceRefresh: true),
+            const LoadCoursesEvent(forceRefresh: false),
           );
         },
         showImage: true,
@@ -173,7 +169,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           context.read<CoursesBloc>().add(
-            const LoadCoursesEvent(forceRefresh: true),
+            const LoadCoursesEvent(forceRefresh: false),
           );
         }
       });
@@ -191,7 +187,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
         color: AppConstants.successColor,
         onRefresh: () async {
           context.read<CoursesBloc>().add(
-            const LoadCoursesEvent(forceRefresh: true),
+            const LoadCoursesEvent(forceRefresh: false),
           );
           await Future.delayed(const Duration(milliseconds: 500));
         },
@@ -314,11 +310,12 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
                   final courses = state.filteredCourses;
                   if (index >= courses.length) return null;
                   final course = courses[index];
-                  return Container(
-                    margin: const EdgeInsets.only(
-                      bottom: AppConstants.smallPadding,
-                    ),
-                    child: CourseCard(
+                  return RepaintBoundary(
+                    child: Container(
+                      margin: const EdgeInsets.only(
+                        bottom: AppConstants.smallPadding,
+                      ),
+                      child: CourseCard(
                       course: course,
                       onTap: () {
                         NavigationHelper.navigateTo(
@@ -342,6 +339,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
                           }
                         }
                       },
+                    ),
                     ),
                   );
                 }
@@ -689,6 +687,16 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
   /// Replica of All Courses tab - just filters by savedCourseIds
   Widget _buildSavedCoursesTab() {
     return BlocBuilder<CoursesBloc, CoursesState>(
+      buildWhen: (previous, current) {
+        // Rebuild only when saved courses or filters change
+        if (previous is! CoursesLoaded || current is! CoursesLoaded) return true;
+        return previous.savedCourseIds != current.savedCourseIds ||
+               previous.searchQuery != current.searchQuery ||
+               previous.selectedCategory != current.selectedCategory ||
+               previous.selectedLevel != current.selectedLevel ||
+               previous.selectedDuration != current.selectedDuration ||
+               previous.selectedInstitute != current.selectedInstitute;
+      },
       builder: (context, state) {
         if (state is CoursesLoaded) {
           // Filter courses by savedCourseIds - same as All Courses but filtered
@@ -874,11 +882,12 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
             delegate: SliverChildBuilderDelegate((context, index) {
               if (index >= courses.length) return null;
               final course = courses[index];
-              return Container(
-                margin: const EdgeInsets.only(
-                  bottom: AppConstants.smallPadding,
-                ),
-                child: CourseCard(
+              return RepaintBoundary(
+                child: Container(
+                  margin: const EdgeInsets.only(
+                    bottom: AppConstants.smallPadding,
+                  ),
+                  child: CourseCard(
                   course: course,
                   onTap: () {
                     NavigationHelper.navigateTo(
@@ -900,6 +909,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
                       }
                     }
                   },
+                  ),
                 ),
               );
             }, childCount: courses.length),

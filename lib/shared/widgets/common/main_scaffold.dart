@@ -133,7 +133,6 @@ class _MainScaffoldState extends State<MainScaffold> {
     else
       index = 0; // Default to home
 
-    print('📍 Path: $path -> Tab Index: $index');
     return index;
   }
 
@@ -144,6 +143,17 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   /// Handle back press with stack navigation logic
   void _handleBackPress(BuildContext context, int currentIndex) {
+    // Check if we're on application tracker with fromProfile parameter
+    final state = GoRouterState.of(context);
+    final fromProfileParam = state.uri.queryParameters['fromProfile'] == 'true';
+    final location = state.uri.path;
+    
+    // If coming from profile menu, navigate back to menu
+    if (fromProfileParam && location.startsWith('/application-tracker')) {
+      context.go('/profile/menu');
+      return;
+    }
+    
     final handled = _navigationManager.handleBackNavigation();
 
     if (!handled && currentIndex == 0) {
