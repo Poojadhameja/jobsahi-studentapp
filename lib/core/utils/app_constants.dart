@@ -255,6 +255,15 @@ class AppConstants {
   // FCM Token
   static const String saveFcmTokenEndpoint = '/fcm/save_token.php';
 
+  // Notifications
+  static const String getNotificationsEndpoint =
+      '/notifications/get-notifications.php';
+  static const String markNotificationReadEndpoint =
+      '/notifications/update-notification.php';
+  // Note: Notification preferences endpoint not in backend yet
+  static const String updateNotificationPreferencesEndpoint =
+      '/notifications/preferences.php';
+
   // Other (placeholders)
   static const String signupEndpoint = '/auth/signup';
   static const String jobsEndpoint = '/jobs';

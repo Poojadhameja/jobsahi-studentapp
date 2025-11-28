@@ -69,7 +69,9 @@ void _registerBlocs() {
   sl.registerLazySingleton<MessagesBloc>(() => MessagesBloc());
 
   // Settings BLoCs
-  sl.registerLazySingleton<SettingsBloc>(() => SettingsBloc());
+  sl.registerLazySingleton<SettingsBloc>(
+    () => SettingsBloc(apiService: sl<ApiService>()),
+  );
 
   // Skill Test BLoCs
   sl.registerLazySingleton<SkillTestBloc>(() => SkillTestBloc());

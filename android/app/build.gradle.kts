@@ -48,4 +48,13 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    
+    // Firebase BoM (version control automatically - Latest 2024)
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    
+    // Firebase Analytics (mandatory)
+    implementation("com.google.firebase:firebase-analytics")
+    
+    // Firebase Cloud Messaging (for push notifications)
+    implementation("com.google.firebase:firebase-messaging")
 }

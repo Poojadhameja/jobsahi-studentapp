@@ -68,7 +68,7 @@ dependencies:
   # HTTP client for reverse geocoding
   http: ^1.1.0
   
-  # Firebase Cloud Messaging for push notifications
+  # Firebase Cloud Messaging for push notifications (Latest versions)
   firebase_core: ^3.6.0
   firebase_messaging: ^15.1.3
   

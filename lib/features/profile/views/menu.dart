@@ -38,26 +38,26 @@ class _MenuScreenState extends State<MenuScreen> {
     }
   }
 
-  /// Gets user's current location for display
+  /// Gets user's saved location for display (without requesting permission)
+  /// ⚠️ IMPORTANT: This method does NOT request location permission or trigger location dialogs.
+  /// It only reads saved location data if available.
   Future<String> _getUserLocation() async {
     try {
       final locationService = LocationService.instance;
       await locationService.initialize();
 
-      // Try to get saved location first
+      // Only try to get saved location - DO NOT request current location
+      // This prevents triggering location permission dialogs
       final savedLocation = await locationService.getSavedLocation();
       if (savedLocation != null) {
         return '${savedLocation.latitude.toStringAsFixed(4)}, ${savedLocation.longitude.toStringAsFixed(4)}';
       }
 
-      // If no saved location, try to get current location
-      final currentLocation = await locationService.getCurrentLocation();
-      if (currentLocation != null) {
-        return '${currentLocation.latitude.toStringAsFixed(4)}, ${currentLocation.longitude.toStringAsFixed(4)}';
-      }
-
+      // Return null/empty if no saved location - don't request current location
+      // This prevents the system location accuracy dialog from appearing
       return 'Location not provided';
     } catch (e) {
+      // Silently fail - don't trigger any location-related operations
       return 'Location not provided';
     }
   }

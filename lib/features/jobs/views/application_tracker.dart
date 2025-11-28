@@ -405,74 +405,67 @@ class _ApplicationTrackerScreenViewState
     List<Map<String, dynamic>> appliedJobs,
   ) {
     if (appliedJobs.isEmpty) {
-      return RefreshIndicator(
-        color: AppConstants.successColor,
-        onRefresh: () async {
-          context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
-          await Future.delayed(const Duration(milliseconds: 500));
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.6,
-            child: EmptyStateWidget(
-              icon: Icons.description_outlined,
-              title: 'No Applied Jobs',
-              subtitle:
-                  'You haven\'t applied to any jobs yet.\nBrowse jobs and apply to the ones you\'re interested in.',
-              actionButton: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      context.goNamed('home');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
-                        ),
-                      ),
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: EmptyStateWidget(
+            icon: Icons.description_outlined,
+            title: 'No Applied Jobs',
+            subtitle:
+                'You haven\'t applied to any jobs yet.\nBrowse jobs and apply to the ones you\'re interested in.',
+            actionButton: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    context.goNamed('home');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 14,
                     ),
-                    child: const Text(
-                      'Browse Jobs',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.read<JobsBloc>().add(
-                        const LoadApplicationTrackerEvent(),
-                      );
-                    },
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Reload'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.successColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
-                        ),
+                  child: const Text(
+                    'Browse Jobs',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.read<JobsBloc>().add(
+                      const LoadApplicationTrackerEvent(),
+                    );
+                  },
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Reload'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.successColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -760,74 +753,67 @@ class _ApplicationTrackerScreenViewState
     List<Map<String, dynamic>> interviewJobs,
   ) {
     if (interviewJobs.isEmpty) {
-      return RefreshIndicator(
-        color: AppConstants.successColor,
-        onRefresh: () async {
-          context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
-          await Future.delayed(const Duration(milliseconds: 500));
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.6,
-            child: EmptyStateWidget(
-              icon: Icons.star_outline,
-              title: 'No Shortlisted Jobs',
-              subtitle:
-                  'You haven\'t been shortlisted for any jobs yet.\nBrowse jobs and apply to the ones you\'re interested in.',
-              actionButton: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      context.goNamed('home');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
-                        ),
-                      ),
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: EmptyStateWidget(
+            icon: Icons.star_outline,
+            title: 'No Shortlisted Jobs',
+            subtitle:
+                'You haven\'t been shortlisted for any jobs yet.\nBrowse jobs and apply to the ones you\'re interested in.',
+            actionButton: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    context.goNamed('home');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 14,
                     ),
-                    child: const Text(
-                      'Browse Jobs',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      context.read<JobsBloc>().add(
-                        const LoadApplicationTrackerEvent(),
-                      );
-                    },
-                    icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Reload'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConstants.successColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
-                        ),
+                  child: const Text(
+                    'Browse Jobs',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.read<JobsBloc>().add(
+                      const LoadApplicationTrackerEvent(),
+                    );
+                  },
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Reload'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppConstants.successColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

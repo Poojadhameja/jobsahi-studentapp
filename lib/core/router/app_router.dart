@@ -58,6 +58,9 @@ import '../../features/settings/views/help_center.dart';
 import '../../features/settings/views/privacy_policy.dart';
 import '../../features/settings/views/terms_conditions.dart';
 import '../../features/settings/views/notification_permission.dart';
+import '../../features/settings/views/notification_preferences.dart';
+import '../../features/settings/views/notification_settings.dart';
+import '../../features/settings/views/notification_history.dart';
 
 // Course screens
 import '../../features/courses/views/courses_learning_center.dart';
@@ -708,10 +711,30 @@ class AppRouter {
         builder: (context, state) => const TermsConditionsPage(),
       ),
 
+      // Combined notification settings (permission + preferences)
+      GoRoute(
+        path: AppRoutes.notificationSettings,
+        name: 'notificationSettings',
+        builder: (context, state) => const NotificationSettingsPage(),
+      ),
+
+      // Legacy routes (kept for backward compatibility)
       GoRoute(
         path: AppRoutes.notificationPermission,
         name: 'notificationPermission',
         builder: (context, state) => const NotificationPermissionPage(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.notificationPreferences,
+        name: 'notificationPreferences',
+        builder: (context, state) => const NotificationPreferencesPage(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.notificationHistory,
+        name: 'notificationHistory',
+        builder: (context, state) => const NotificationHistoryPage(),
       ),
 
       // ==================== NOT FOUND ROUTE ====================

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -30,6 +31,15 @@ class FcmService {
     }
 
     try {
+      // Verify Firebase is initialized
+      try {
+        final app = Firebase.app();
+        debugPrint('✅ Firebase app verified: ${app.name}');
+      } catch (e) {
+        debugPrint('🔴 Firebase not initialized: $e');
+        throw Exception('Firebase must be initialized before FCM Service');
+      }
+
       // Request notification permissions
       await _requestPermissions();
 
@@ -283,12 +293,34 @@ class FcmService {
   /// Get FCM token
   Future<String?> getToken() async {
     try {
+      // Wait a bit for Firebase to fully initialize
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       final token = await _firebaseMessaging.getToken();
       _currentToken = token;
       debugPrint('🔑 FCM Token: $token');
       return token;
     } catch (e) {
       debugPrint('🔴 Error getting FCM token: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+      debugPrint('🔴 Error details: ${e.toString()}');
+      
+      // Retry after delay if it's a network/IO error
+      if (e.toString().contains('java.io') || 
+          e.toString().contains('network') ||
+          e.toString().contains('timeout')) {
+        debugPrint('🔄 Retrying FCM token fetch after delay...');
+        await Future.delayed(const Duration(seconds: 2));
+        try {
+          final retryToken = await _firebaseMessaging.getToken();
+          _currentToken = retryToken;
+          debugPrint('✅ FCM Token (retry): $retryToken');
+          return retryToken;
+        } catch (retryError) {
+          debugPrint('🔴 Retry also failed: $retryError');
+        }
+      }
+      
       return null;
     }
   }
@@ -296,12 +328,19 @@ class FcmService {
   /// Get and save token if user is logged in
   Future<void> _getAndSaveToken() async {
     try {
+      // Wait a bit more for Firebase to be ready
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
       final isLoggedIn = await _apiService.isLoggedIn();
       if (isLoggedIn) {
         final token = await getToken();
-        if (token != null) {
+        if (token != null && token.isNotEmpty) {
           await _saveTokenToBackend(token);
+        } else {
+          debugPrint('⚠️ FCM Token is null or empty, will retry later');
         }
+      } else {
+        debugPrint('🔵 User not logged in, skipping token save');
       }
     } catch (e) {
       debugPrint('🔴 Error getting and saving token: $e');

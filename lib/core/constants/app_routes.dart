@@ -149,8 +149,19 @@ class AppRoutes {
   /// Terms and conditions
   static const String termsConditions = '/settings/terms';
 
-  /// Notification permissions
-  static const String notificationPermission = '/settings/notifications';
+  /// Notification settings (combined permission + preferences)
+  static const String notificationSettings = '/settings/notifications';
+
+  /// Notification permission (legacy - kept for backward compatibility)
+  static const String notificationPermission =
+      '/settings/notifications/permission';
+
+  /// Notification preferences (legacy - kept for backward compatibility)
+  static const String notificationPreferences =
+      '/settings/notifications/preferences';
+
+  /// Notification history
+  static const String notificationHistory = '/settings/notifications/history';
 
   // ==================== FALLBACK/ERROR ROUTES ====================
   /// Not found route
@@ -195,6 +206,5 @@ class AppRoutes {
       '/application/details/$id';
 
   /// Generate interview detail route with ID
-  static String interviewDetailWithId(String id) =>
-      '/interviews/details/$id';
+  static String interviewDetailWithId(String id) => '/interviews/details/$id';
 }

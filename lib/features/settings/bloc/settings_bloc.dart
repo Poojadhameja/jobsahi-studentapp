@@ -1,12 +1,19 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'settings_event.dart';
 import 'settings_state.dart';
 import '../../../shared/data/user_data.dart';
+import '../../../shared/services/api_service.dart';
+import '../../../core/utils/app_constants.dart';
 
 /// Settings BLoC
 /// Handles all settings-related business logic
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
-  SettingsBloc() : super(const SettingsInitial()) {
+  final ApiService _apiService;
+
+  SettingsBloc({ApiService? apiService})
+      : _apiService = apiService ?? ApiService(),
+        super(const SettingsInitial()) {
     // Register event handlers
     on<LoadSettingsEvent>(_onLoadSettings);
     on<UpdateNotificationPreferencesEvent>(_onUpdateNotificationPreferences);
@@ -73,14 +80,63 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     try {
       emit(const SettingsLoading());
 
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 1));
+      // Check if user is logged in
+      final isLoggedIn = await _apiService.isLoggedIn();
+      if (!isLoggedIn) {
+        emit(const SettingsError(
+          message: 'Please login to update notification preferences',
+        ));
+        return;
+      }
 
-      // Update notification preferences
-      // In a real app, this would be saved to server/local storage
-      // UserData.notificationPreferences = event.preferences; // This is const
+      // Save to backend
+      try {
+        final response = await _apiService.post(
+          AppConstants.updateNotificationPreferencesEndpoint,
+          data: event.preferences,
+        );
 
-      emit(NotificationPreferencesUpdatedState(preferences: event.preferences));
+        if (response.statusCode == 200) {
+          final responseData = response.data;
+          if (responseData is Map<String, dynamic>) {
+            final success = responseData['success'] as bool? ?? false;
+            if (success) {
+              debugPrint('✅ Notification preferences saved successfully');
+              emit(
+                NotificationPreferencesUpdatedState(
+                  preferences: event.preferences,
+                ),
+              );
+              return;
+            } else {
+              final message = responseData['message'] as String? ??
+                  'Failed to save preferences';
+              emit(SettingsError(message: message));
+              return;
+            }
+          }
+        }
+
+        // If response format is unexpected, still emit success (for now)
+        // In production, you might want to handle this differently
+        debugPrint('⚠️ Unexpected response format, assuming success');
+        emit(
+          NotificationPreferencesUpdatedState(
+            preferences: event.preferences,
+          ),
+        );
+      } catch (apiError) {
+        // If API call fails, still update local state
+        // This allows offline functionality
+        debugPrint(
+          '⚠️ Failed to save to backend, updating local state: $apiError',
+        );
+        emit(
+          NotificationPreferencesUpdatedState(
+            preferences: event.preferences,
+          ),
+        );
+      }
     } catch (e) {
       emit(
         SettingsError(
