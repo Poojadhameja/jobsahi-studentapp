@@ -299,16 +299,22 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         updatedSavedCourseIds.add(event.courseId);
 
         // Update isSaved flag in allCourses and filteredCourses
+        // Handle both string and int course IDs
         final updatedAllCourses = currentState.allCourses.map((course) {
-          if (course['id'] == event.courseId) {
+          final courseId = course['id']?.toString();
+          if (courseId == event.courseId || courseId == event.courseId.toString()) {
             return {...course, 'isSaved': true};
           }
           return course;
         }).toList();
 
         // Find the course to add to saved courses from updated list
+        // Handle both string and int course IDs
         final courseToSave = updatedAllCourses.firstWhere(
-          (course) => course['id'] == event.courseId,
+          (course) {
+            final courseId = course['id']?.toString();
+            return courseId == event.courseId || courseId == event.courseId.toString();
+          },
           orElse: () => {},
         );
 
@@ -725,6 +731,30 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
       if (course != null) {
         // Convert Course object to UI format
         final courseMap = course.toUIMap();
+        
+        // Check if course is saved by checking savedCourseIds from current state
+        final courseIdString = event.courseId.toString();
+        bool isSaved = false;
+        
+        // Check savedCourseIds from current state if available
+        if (state is CoursesLoaded) {
+          final currentState = state as CoursesLoaded;
+          isSaved = currentState.savedCourseIds.contains(courseIdString);
+        } else {
+          // Also check saved courses from repository
+          try {
+            final saved = await _coursesRepository.getSavedCourses();
+            isSaved = saved.savedCourseIds.contains(courseIdString);
+          } catch (e) {
+            debugPrint('⚠️ [CoursesBloc] Failed to check saved courses: $e');
+          }
+        }
+        
+        // Update isSaved flag in course map
+        courseMap['isSaved'] = isSaved;
+        
+        debugPrint('🔵 [CoursesBloc] Loaded course details: ID=$courseIdString, isSaved=$isSaved');
+        
         emit(CourseDetailsLoaded(course: courseMap));
       } else {
         emit(const CoursesError(message: 'Course not found'));

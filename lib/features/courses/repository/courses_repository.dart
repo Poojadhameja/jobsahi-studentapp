@@ -114,30 +114,57 @@ class CoursesRepositoryImpl implements CoursesRepository {
   Future<void> saveCourse(String courseId) async {
     try {
       final id = int.tryParse(courseId);
-      if (id == null) throw Exception('Invalid course ID');
+      if (id == null) {
+        throw Exception('Invalid course ID: $courseId');
+      }
+
+      debugPrint('🔵 [CoursesRepository] Saving course with ID: $id');
 
       final response = await _apiService.saveCourse(courseId: id);
+      
+      debugPrint('🔵 [CoursesRepository] Save course response status: ${response.statusCode}');
+      debugPrint('🔵 [CoursesRepository] Save course response data: ${response.data}');
+      
       if (response.statusCode == 200) {
         final json = response.data as Map<String, dynamic>;
         final status = json['status'] == true;
+        final message = json['message']?.toString() ?? '';
+        
+        debugPrint('🔵 [CoursesRepository] Response status: $status, message: $message');
+        
         if (!status) {
-          // Treat already saved as non-fatal success for idempotency
+          // Check for various success scenarios
+          final messageLower = message.toLowerCase();
           final alreadySaved =
-              (json['already_saved'] == true) ||
-              (json['message']?.toString().toLowerCase().contains(
-                    'already saved',
-                  ) ??
-                  false);
+              json['already_saved'] == true ||
+              messageLower.contains('already saved') ||
+              messageLower.contains('course saved successfully');
+          
+          // Check if course not found or not available
+          final courseNotFound = 
+              messageLower.contains('not found') ||
+              messageLower.contains('not available') ||
+              messageLower.contains('course not found');
+          
+          if (courseNotFound) {
+            throw Exception('Course not found or not available for saving');
+          }
+          
           if (!alreadySaved) {
             throw Exception(
-              json['message']?.toString() ?? 'Failed to save course',
+              message.isNotEmpty ? message : 'Failed to save course',
             );
+          } else {
+            debugPrint('✅ [CoursesRepository] Course already saved (idempotent)');
           }
+        } else {
+          debugPrint('✅ [CoursesRepository] Course saved successfully');
         }
       } else {
-        throw Exception('Failed to save course: ${response.statusCode}');
+        throw Exception('Failed to save course: HTTP ${response.statusCode}');
       }
     } catch (e) {
+      debugPrint('🔴 [CoursesRepository] Error saving course: $e');
       rethrow;
     }
   }

@@ -5,14 +5,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/cards/course_card.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
-import '../../../shared/widgets/common/navigation_helper.dart';
 import '../../../shared/widgets/common/custom_tab_structure.dart';
 import '../../../shared/widgets/common/empty_state_widget.dart';
-import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
@@ -196,20 +195,7 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(color: AppConstants.successColor),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Loading courses...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppConstants.textSecondaryColor,
-                      ),
-                    ),
-                  ],
-                ),
+                child: CircularProgressIndicator(color: AppConstants.successColor),
               ),
             ),
           ],
@@ -318,8 +304,15 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
                       child: CourseCard(
                       course: course,
                       onTap: () {
-                        NavigationHelper.navigateTo(
-                          AppRoutes.courseDetailsWithId(course['id']),
+                        // Pass course data with saved status to details page
+                        final courseData = Map<String, dynamic>.from(course);
+                        courseData['isSaved'] = state.savedCourseIds.contains(
+                          course['id']?.toString() ?? '',
+                        );
+                        context.goNamed(
+                          'courseDetails',
+                          pathParameters: {'id': course['id']?.toString() ?? ''},
+                          extra: courseData,
                         );
                       },
                       onSaveToggle: () {
@@ -890,8 +883,17 @@ class _LearningCenterPageViewState extends State<_LearningCenterPageView> {
                   child: CourseCard(
                   course: course,
                   onTap: () {
-                    NavigationHelper.navigateTo(
-                      AppRoutes.courseDetailsWithId(course['id']),
+                    // Pass course data with saved status to details page
+                    final courseData = Map<String, dynamic>.from(course);
+                    if (state is CoursesLoaded) {
+                      courseData['isSaved'] = state.savedCourseIds.contains(
+                        course['id']?.toString() ?? '',
+                      );
+                    }
+                    context.goNamed(
+                      'courseDetails',
+                      pathParameters: {'id': course['id']?.toString() ?? ''},
+                      extra: courseData,
                     );
                   },
                   onSaveToggle: () {

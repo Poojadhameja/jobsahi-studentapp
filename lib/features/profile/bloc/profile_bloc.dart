@@ -610,11 +610,25 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final currentState = state as ProfileDetailsLoaded;
     final updatedProfile = Map<String, dynamic>.from(currentState.userProfile);
 
-    updatedProfile['name'] = event.name;
-    updatedProfile['email'] = event.email;
-    updatedProfile['phone'] = event.phone;
-    updatedProfile['location'] = event.location;
-    updatedProfile['bio'] = event.bio;
+    // Ensure correct field mapping - name goes to name, bio goes to bio
+    updatedProfile['name'] = event.name.trim();
+    updatedProfile['email'] = event.email.trim();
+    updatedProfile['phone'] = event.phone.trim();
+    updatedProfile['location'] = event.location.trim();
+    // Only update bio if it's provided (can be null to clear it)
+    if (event.bio != null) {
+      updatedProfile['bio'] = event.bio!.trim();
+    } else {
+      updatedProfile['bio'] = null;
+    }
+
+    // Debug: Verify values are correct
+    debugPrint('🔵 [ProfileBloc] Updating profile header:');
+    debugPrint('   name: ${updatedProfile['name']}');
+    debugPrint('   email: ${updatedProfile['email']}');
+    debugPrint('   phone: ${updatedProfile['phone']}');
+    debugPrint('   location: ${updatedProfile['location']}');
+    debugPrint('   bio: ${updatedProfile['bio']}');
 
     await _applyLocationCoordinates(updatedProfile);
 
@@ -1126,10 +1140,20 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     // Always send social_links (even if empty array) - backend handles empty arrays
     payload['social_links'] = socialLinksPayload;
     
-    // Add additional_info only if bio has value
+    // Add additional_info only if bio has value AND meets minimum 15 letters requirement
     final bioValue = (userProfile['bio']?.toString() ?? '').trim();
     if (bioValue.isNotEmpty) {
+      // Validate: bio must have at least 15 letters
+      final lettersOnly = bioValue.replaceAll(RegExp(r'[^a-zA-Z]'), '');
+      if (lettersOnly.length >= 15) {
       payload['additional_info'] = {'bio': bioValue};
+        debugPrint('✅ [ProfileBloc] Bio meets requirement (${lettersOnly.length} letters), including in payload');
+      } else {
+        debugPrint('⚠️ [ProfileBloc] Bio has less than 15 letters (${lettersOnly.length}), not including in payload');
+        // Don't include bio if it doesn't meet requirement
+      }
+    } else {
+      debugPrint('ℹ️ [ProfileBloc] Bio is empty, not including in payload');
     }
 
     // Add contact_info if either field has a value

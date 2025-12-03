@@ -12,8 +12,6 @@ import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
 import '../../../core/di/injection_container.dart';
-import '../../../shared/widgets/common/navigation_helper.dart';
-import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/common/top_snackbar.dart';
 
@@ -47,8 +45,19 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
   @override
   void initState() {
     super.initState();
+    
+    // Initialize bookmark state from passed course data
+    final courseIdString = widget.course['id']?.toString() ?? '';
+    final initialIsSaved = widget.course['isSaved'] == true;
+    _currentBookmarkState = initialIsSaved;
+    
+    // If course data already has isSaved, use it
+    if (widget.course['isSaved'] != null) {
+      _currentCourseData = Map<String, dynamic>.from(widget.course);
+    }
+    
     // Fetch course details by ID when screen loads
-    final courseId = int.tryParse(widget.course['id']?.toString() ?? '');
+    final courseId = int.tryParse(courseIdString);
     if (courseId != null) {
       context.read<CoursesBloc>().add(
         LoadCourseDetailsEvent(courseId: courseId),
@@ -89,10 +98,12 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
           } else {
             if (_currentCourseData != null) {
               displayCourse = _currentCourseData!;
-              isBookmarked = _currentBookmarkState ?? false;
+              isBookmarked = _currentBookmarkState ?? displayCourse['isSaved'] == true;
             } else {
               displayCourse = widget.course;
-              isBookmarked = false;
+              // Check saved status from passed course data
+              isBookmarked = widget.course['isSaved'] == true;
+              _currentBookmarkState = isBookmarked;
             }
           }
 
@@ -105,9 +116,10 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
             },
             child: Scaffold(
               backgroundColor: AppConstants.cardBackgroundColor,
-              appBar: const SimpleAppBar(
+              appBar: SimpleAppBar(
                 title: 'Course Details',
                 showBackButton: true,
+                onBack: () => _handleBackNavigation(context),
               ),
               bottomNavigationBar: isLoading
                   ? null
@@ -119,7 +131,7 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                       ),
                     )
                   : DefaultTabController(
-                      length: 3,
+                      length: 2,
                       child: Column(
                         children: [
                           // Course header section with card (fixed)
@@ -267,17 +279,33 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                         highlightColor: Colors.grey.shade200,
                         radius: 20,
                         child: Container(
-                          width: 40,
-                          height: 40,
+                          width: 50,
+                          height: 50,
                           alignment: Alignment.center,
-                          child: Icon(
-                            isBookmarked
-                                ? Icons.bookmark
-                                : Icons.bookmark_border,
-                            color: isBookmarked
-                                ? AppConstants.successColor
-                                : Colors.grey.shade600,
-                            size: 20,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isBookmarked
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: isBookmarked
+                                    ? AppConstants.successColor
+                                    : Colors.grey.shade600,
+                                size: 20,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                AppConstants.saveText,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isBookmarked
+                                      ? AppConstants.successColor
+                                      : Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -328,7 +356,6 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
         tabs: [
           Tab(text: 'About'),
           Tab(text: 'Institute'),
-          Tab(text: 'Reviews'),
         ],
       ),
     );
@@ -343,9 +370,6 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
 
         // Institute tab
         _buildInstituteTab(currentCourse),
-
-        // Review tab
-        _buildReviewsTab(currentCourse),
       ],
     );
   }
@@ -737,42 +761,6 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
     );
   }
 
-  /// Builds the Review tab
-  Widget _buildReviewsTab(Map<String, dynamic> currentCourse) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.construction_outlined,
-            size: 80,
-            color: AppConstants.textSecondaryColor.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Coming Soon',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'We are working on this feature. It will be available soon!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppConstants.textSecondaryColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// Builds the enroll button at the bottom
   Widget _buildEnrollButton(
@@ -820,16 +808,12 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
   }
 
   void _handleBackNavigation(BuildContext context) {
-    // Try using NavigationHelper first (for tab-based navigation)
-    final handled = NavigationHelper.goBack();
-    if (!handled) {
-      // If NavigationHelper doesn't handle it, try context.pop()
-      if (context.canPop()) {
-        context.pop();
-      } else {
-        // Fallback: Navigate to learning/courses section
-        context.go(AppRoutes.learning);
-      }
+    // Try to pop first (if came from courses list)
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      // If can't pop, navigate to courses section (learning)
+      context.goNamed('learning');
     }
   }
 }

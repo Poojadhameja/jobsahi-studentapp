@@ -118,7 +118,11 @@ class _StudentApplicationDetailScreenState
           future: _detailFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(
+                child: CircularProgressIndicator(
+                  color: AppConstants.successColor,
+                ),
+              );
             }
 
             if (snapshot.hasError) {

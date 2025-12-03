@@ -333,6 +333,15 @@ class _ForgotPasswordScreenViewState extends State<_ForgotPasswordScreenView> {
 
   /// Shows error snackbar
   void _showErrorSnackBar(BuildContext context, String message) {
-    TopSnackBar.showError(context, message: message);
+    // Use Future.delayed to ensure snackbar shows after state update
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        TopSnackBar.showError(
+          context,
+          message: message,
+          duration: const Duration(seconds: 5), // Increased duration for better visibility
+        );
+      }
+    });
   }
 }

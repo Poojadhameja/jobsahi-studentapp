@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/common/top_snackbar.dart';
 
 /// Job Application Success Screen
@@ -14,13 +13,19 @@ class JobApplicationSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: const SimpleAppBar(
-        title: 'Application Submitted',
-        showBackButton: true,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _navigateToJobDetails(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: _buildSuccessContent(context),
+        ),
       ),
-      body: _buildSuccessContent(context),
     );
   }
 
@@ -31,6 +36,11 @@ class JobApplicationSuccessScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Back button
+          _buildBackButton(context),
+          
+          const SizedBox(height: 16),
+          
           // Success icon
           _buildSuccessIcon(),
 
@@ -82,6 +92,55 @@ class JobApplicationSuccessScreen extends StatelessWidget {
           _buildActionButtons(context),
         ],
       ),
+    );
+  }
+
+  /// Builds the back button
+  Widget _buildBackButton(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _navigateToJobDetails(context),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              Icons.arrow_back,
+              color: AppConstants.textPrimaryColor,
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Navigates to job details
+  void _navigateToJobDetails(BuildContext context) {
+    final jobId = job['id']?.toString() ?? 
+                  job['job_id']?.toString() ?? 
+                  '';
+    
+    if (jobId.isEmpty) {
+      // If no job ID, just pop
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.goNamed('home');
+      }
+      return;
+    }
+
+    final jobPayload = Map<String, dynamic>.from(job);
+    jobPayload['id'] = jobId;
+    jobPayload['job_id'] = jobId;
+
+    context.goNamed(
+      'jobDetails',
+      pathParameters: {'id': jobId},
+      extra: jobPayload,
     );
   }
 

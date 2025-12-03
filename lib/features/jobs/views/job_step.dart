@@ -23,13 +23,28 @@ class _JobStepScreenState extends State<JobStepScreen> {
   final ApiService _apiService = ApiService();
   final TokenStorage _tokenStorage = TokenStorage.instance;
   bool _isSubmitting = false;
-  int _coverLetterCharCount = 0;
-  bool _isCoverLetterMinReached = false;
+  bool _hasCoverLetterText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _coverLetterController.addListener(_onCoverLetterChanged);
+  }
 
   @override
   void dispose() {
+    _coverLetterController.removeListener(_onCoverLetterChanged);
     _coverLetterController.dispose();
     super.dispose();
+  }
+
+  void _onCoverLetterChanged() {
+    final hasText = _coverLetterController.text.trim().isNotEmpty;
+    if (_hasCoverLetterText != hasText) {
+      setState(() {
+        _hasCoverLetterText = hasText;
+      });
+    }
   }
 
   @override
@@ -84,9 +99,11 @@ class _JobStepScreenState extends State<JobStepScreen> {
                               ),
                             ),
                           )
-                        : const Text(
-                            'Submit Application',
-                            style: TextStyle(
+                        : Text(
+                            _hasCoverLetterText
+                                ? 'Submit and apply'
+                                : 'Direct apply',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
@@ -177,7 +194,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Cover Letter / कवर लेटर',
+          'Cover Letter (Optional) / कवर लेटर (वैकल्पिक)',
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.bold,
@@ -190,24 +207,10 @@ class _JobStepScreenState extends State<JobStepScreen> {
           maxLines: 14,
           minLines: 10,
           style: const TextStyle(fontSize: 14),
-          onChanged: (value) {
-            setState(() {
-              _coverLetterCharCount = value.trim().length;
-              _isCoverLetterMinReached = _coverLetterCharCount >= 50;
-            });
-          },
           decoration: InputDecoration(
             hintText:
                 'Introduce yourself, highlight your strengths, and explain how you can add value.',
             hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
-            helperText:
-                'Minimum 50 characters required  •  Chars: $_coverLetterCharCount/50',
-            helperStyle: TextStyle(
-              color: _isCoverLetterMinReached
-                  ? AppConstants.successColor
-                  : Colors.grey[600],
-              fontSize: 12,
-            ),
             filled: true,
             fillColor: const Color(0xFFF1F5F9),
             border: OutlineInputBorder(
@@ -221,9 +224,7 @@ class _JobStepScreenState extends State<JobStepScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: _isCoverLetterMinReached
-                    ? AppConstants.successColor
-                    : AppConstants.secondaryColor,
+                color: AppConstants.secondaryColor,
                 width: 1.5,
               ),
             ),
@@ -232,15 +233,6 @@ class _JobStepScreenState extends State<JobStepScreen> {
               vertical: 18,
             ),
           ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Cover letter is required / कवर लेटर आवश्यक है';
-            }
-            if (value.trim().length < 50) {
-              return 'Please write at least 50 characters / कृपया कम से कम 50 वर्ण लिखें';
-            }
-            return null;
-          },
         ),
       ],
     );
@@ -248,102 +240,101 @@ class _JobStepScreenState extends State<JobStepScreen> {
 
   Future<void> _submitCoverLetter() async {
     _closeKeyboard();
-    if (_formKey.currentState!.validate()) {
-      final coverLetter = _coverLetterController.text.trim();
-      final jobIdValue = widget.job['id'];
-      final jobId = _parseId(jobIdValue);
+    // Cover letter is optional, so we can submit without validation
+    final coverLetter = _coverLetterController.text.trim();
+    final jobIdValue = widget.job['id'];
+    final jobId = _parseId(jobIdValue);
 
-      if (jobId == null) {
-        _showErrorSnackBar('Invalid job information. Please try again later.');
-        return;
+    if (jobId == null) {
+      _showErrorSnackBar('Invalid job information. Please try again later.');
+      return;
+    }
+
+    final studentIdString = await _tokenStorage.getUserId();
+    int? studentId = _parseId(studentIdString);
+
+    if (studentId == null) {
+      studentId = _parseId(widget.job['student_id']);
+    }
+
+    if (studentId == null) {
+      _showErrorSnackBar(
+        'Could not determine student profile. Please log in again.',
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final response = await _apiService.submitJobApplication(
+        jobId: jobId,
+        studentId: studentId,
+        coverLetter: coverLetter.isEmpty ? null : coverLetter,
+      );
+
+      if (!mounted) return;
+
+      final jobWithApplication = Map<String, dynamic>.from(widget.job);
+      jobWithApplication['id'] = jobId;
+      jobWithApplication['job_id'] = jobId.toString();
+      if (response.data != null) {
+        jobWithApplication['application'] = response.data;
+      }
+      jobWithApplication['application_status'] =
+          response.data?['status'] ?? 'pending';
+
+      Map<String, dynamic>? skillTestInfo;
+      final applicationIdValue =
+          response.data?['application_id'] ??
+          response.data?['id'] ??
+          response.data?['applicationId'];
+      final applicationId = int.tryParse(applicationIdValue?.toString() ?? '');
+
+      if (applicationId != null) {
+        try {
+          final result = await _apiService.startSkillTest(
+            applicationId: applicationId,
+          );
+          skillTestInfo = result;
+        } catch (e) {
+          debugPrint('🔴 [Jobs] Failed to start skill test: $e');
+        }
       }
 
-      final studentIdString = await _tokenStorage.getUserId();
-      int? studentId = _parseId(studentIdString);
-
-      if (studentId == null) {
-        studentId = _parseId(widget.job['student_id']);
+      if (skillTestInfo != null) {
+        jobWithApplication['skill_test_response'] = skillTestInfo;
       }
 
-      if (studentId == null) {
-        _showErrorSnackBar(
-          'Could not determine student profile. Please log in again.',
-        );
-        return;
+      context.pushNamed(
+        'jobApplicationSuccess',
+        pathParameters: {'id': jobId.toString()},
+        extra: jobWithApplication,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      String errorMessage = 'Failed to submit application. Please try again.';
+
+      final errorString = e.toString();
+      if (errorString.startsWith('Exception: ')) {
+        final extractedMessage = errorString
+            .substring('Exception: '.length)
+            .trim();
+        if (extractedMessage.isNotEmpty && extractedMessage != 'null') {
+          errorMessage = extractedMessage;
+        }
+      } else if (errorString.isNotEmpty && errorString != 'null') {
+        errorMessage = errorString;
       }
 
+      _showErrorSnackBar(errorMessage);
+    } finally {
+      if (!mounted) return;
       setState(() {
-        _isSubmitting = true;
+        _isSubmitting = false;
       });
-
-      try {
-        final response = await _apiService.submitJobApplication(
-          jobId: jobId,
-          studentId: studentId,
-          coverLetter: coverLetter,
-        );
-
-        if (!mounted) return;
-
-        TopSnackBar.showSuccess(
-          context,
-          message: response.message.isNotEmpty
-              ? response.message
-              : 'Application submitted successfully.',
-        );
-
-        final jobWithApplication = Map<String, dynamic>.from(widget.job);
-        jobWithApplication['id'] = jobId;
-        jobWithApplication['job_id'] = jobId.toString();
-        if (response.data != null) {
-          jobWithApplication['application'] = response.data;
-        }
-        jobWithApplication['application_status'] =
-            response.data?['status'] ?? 'pending';
-
-        Map<String, dynamic>? skillTestInfo;
-        final applicationIdValue =
-            response.data?['application_id'] ??
-            response.data?['id'] ??
-            response.data?['applicationId'];
-        final applicationId = int.tryParse(
-          applicationIdValue?.toString() ?? '',
-        );
-
-        if (applicationId != null) {
-          try {
-            final result = await _apiService.startSkillTest(
-              applicationId: applicationId,
-            );
-            skillTestInfo = result;
-          } catch (e) {
-            debugPrint('🔴 [Jobs] Failed to start skill test: $e');
-          }
-        }
-
-        if (skillTestInfo != null) {
-          jobWithApplication['skill_test_response'] = skillTestInfo;
-        }
-
-        context.pushNamed(
-          'jobApplicationSuccess',
-          pathParameters: {'id': jobId.toString()},
-          extra: jobWithApplication,
-        );
-      } catch (e) {
-        if (!mounted) return;
-        final errorMessage = e.toString().startsWith('Exception: ')
-            ? e.toString().substring('Exception: '.length)
-            : e.toString();
-        _showErrorSnackBar(errorMessage);
-      } finally {
-        if (!mounted) return;
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    } else {
-      _showErrorSnackBar('Please enter your cover letter.');
     }
   }
 

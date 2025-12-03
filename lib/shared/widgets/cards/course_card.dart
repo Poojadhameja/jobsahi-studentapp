@@ -11,13 +11,13 @@ class CourseCard extends StatelessWidget {
 
   final Map<String, dynamic> course;
   final VoidCallback onTap;
-  final VoidCallback onSaveToggle;
+  final VoidCallback? onSaveToggle;
 
   const CourseCard({
     super.key,
     required this.course,
     required this.onTap,
-    required this.onSaveToggle,
+    this.onSaveToggle,
   });
 
   @override
@@ -144,33 +144,51 @@ class CourseCard extends StatelessWidget {
             ),
           ),
         ),
-        // Save button on the right side (matching job card style)
-        const SizedBox(width: 8),
-        Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            onTap: onSaveToggle,
-            customBorder: const CircleBorder(),
-            splashColor: Colors.grey.shade300,
-            highlightColor: Colors.grey.shade200,
-            radius: 20,
-            child: Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              child: Icon(
-                course['isSaved'] == true
-                    ? Icons.bookmark
-                    : Icons.bookmark_border,
-                color: course['isSaved'] == true
-                    ? AppConstants.primaryColor
-                    : AppConstants.textSecondaryColor,
-                size: 24,
+        // Save button on the right side
+        if (onSaveToggle != null) ...[
+          const SizedBox(width: 8),
+          Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onSaveToggle,
+              customBorder: const CircleBorder(),
+              splashColor: Colors.grey.shade300,
+              highlightColor: Colors.grey.shade200,
+              radius: 20,
+              child: Container(
+                width: 50,
+                height: 50,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      course['isSaved'] == true
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      color: course['isSaved'] == true
+                          ? AppConstants.primaryColor
+                          : Colors.grey.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppConstants.saveText,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: course['isSaved'] == true
+                            ? AppConstants.primaryColor
+                            : Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -180,13 +198,13 @@ class CourseCard extends StatelessWidget {
 class CompactCourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
   final VoidCallback onTap;
-  final VoidCallback onSaveToggle;
+  final VoidCallback? onSaveToggle;
 
   const CompactCourseCard({
     super.key,
     required this.course,
     required this.onTap,
-    required this.onSaveToggle,
+    this.onSaveToggle,
   });
 
   @override
@@ -282,32 +300,51 @@ class CompactCourseCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
-                Material(
-                  color: Colors.transparent,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    onTap: onSaveToggle,
-                    customBorder: const CircleBorder(),
-                    splashColor: Colors.grey.shade300,
-                    highlightColor: Colors.grey.shade200,
-                    radius: 16,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      child: Icon(
-                        course['isSaved'] == true
-                            ? Icons.bookmark
-                            : Icons.bookmark_border,
-                        color: course['isSaved'] == true
-                            ? AppConstants.primaryColor
-                            : AppConstants.textSecondaryColor,
-                        size: 18,
+                // Save button on the right side
+                if (onSaveToggle != null) ...[
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: onSaveToggle,
+                      customBorder: const CircleBorder(),
+                      splashColor: Colors.grey.shade300,
+                      highlightColor: Colors.grey.shade200,
+                      radius: 20,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              course['isSaved'] == true
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_border,
+                              color: course['isSaved'] == true
+                                  ? AppConstants.primaryColor
+                                  : Colors.grey.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              AppConstants.saveText,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: course['isSaved'] == true
+                                    ? AppConstants.primaryColor
+                                    : Colors.grey.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ],

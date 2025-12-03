@@ -610,13 +610,30 @@ class _EnhancedProfileDetailsViewState
                   if (!formKey.currentState!.validate()) {
                     return;
                   }
+                  // Validate bio: must be empty OR have at least 15 letters
+                  String? finalBio;
+                  if (currentBio.isNotEmpty) {
+                    final lettersOnly = currentBio.replaceAll(
+                      RegExp(r'[^a-zA-Z]'),
+                      '',
+                    );
+                    if (lettersOnly.length >= 15) {
+                      finalBio = currentBio;
+                    } else {
+                      // If bio has less than 15 letters, treat as empty
+                      finalBio = null;
+                    }
+                  } else {
+                    finalBio = null;
+                  }
+
                   bloc.add(
                     UpdateProfileHeaderInlineEvent(
                       name: currentName,
                       email: currentEmail,
                       phone: currentPhone,
                       location: currentLocation,
-                      bio: currentBio.isNotEmpty ? currentBio : null,
+                      bio: finalBio,
                     ),
                   );
                 }
@@ -1101,16 +1118,37 @@ class _EnhancedProfileDetailsViewState
                                   if (!formKey.currentState!.validate()) {
                                     return;
                                   }
-                                  final updatedName = nameController.text
-                                      .trim();
-                                  final updatedEmail = emailController.text
-                                      .trim();
-                                  final updatedPhone = phoneController.text
-                                      .trim();
-                                  final updatedLocation = locationController
-                                      .text
-                                      .trim();
+                                  // Extract values from correct controllers
+                                  final updatedName = nameController.text.trim();
+                                  final updatedEmail = emailController.text.trim();
+                                  final updatedPhone = phoneController.text.trim();
+                                  final updatedLocation = locationController.text.trim();
                                   final updatedBio = bioController.text.trim();
+
+                                  // Validate bio: must be empty OR have at least 15 letters
+                                  String? finalBio;
+                                  if (updatedBio.isNotEmpty) {
+                                    final lettersOnly = updatedBio.replaceAll(
+                                      RegExp(r'[^a-zA-Z]'),
+                                      '',
+                                    );
+                                    if (lettersOnly.length >= 15) {
+                                      finalBio = updatedBio;
+                                    } else {
+                                      // If bio has less than 15 letters, treat as empty
+                                      finalBio = null;
+                                    }
+                                  } else {
+                                    finalBio = null;
+                                  }
+
+                                  // Debug: Verify controller values before sending
+                                  debugPrint('🔵 [ProfileForm] Saving profile header:');
+                                  debugPrint('   nameController.text: "${nameController.text}"');
+                                  debugPrint('   bioController.text: "${bioController.text}"');
+                                  debugPrint('   updatedName: "$updatedName"');
+                                  debugPrint('   updatedBio: "$updatedBio"');
+                                  debugPrint('   finalBio (after validation): "$finalBio"');
 
                                   bloc.add(
                                     UpdateProfileHeaderInlineEvent(
@@ -1118,9 +1156,7 @@ class _EnhancedProfileDetailsViewState
                                       email: updatedEmail,
                                       phone: updatedPhone,
                                       location: updatedLocation,
-                                      bio: updatedBio.isNotEmpty
-                                          ? updatedBio
-                                          : null,
+                                      bio: finalBio,
                                     ),
                                   );
                                   Navigator.of(sheetContext).pop();
@@ -1904,21 +1940,28 @@ class _EnhancedProfileDetailsViewState
             }
           },
           child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSheetHeader(
-                          context: context,
-                          title: 'Edit Skills',
-                          onClose: handleClose,
-                        ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxHeight = MediaQuery.of(context).size.height * 0.7;
+                return ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: maxHeight,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSheetHeader(
+                                context: context,
+                                title: 'Edit Skills',
+                                onClose: handleClose,
+                              ),
                         const SizedBox(height: AppConstants.defaultPadding),
                         _buildMainCard(
                           children: [
@@ -2086,6 +2129,9 @@ class _EnhancedProfileDetailsViewState
                   ),
                 ),
               ],
+            ),
+          );
+              },
             ),
           ),
         );

@@ -128,16 +128,13 @@ class _HomePageState extends State<HomePage>
 
   /// Load banner images from cache or use default
   Future<void> _loadBannerImages() async {
-    // Only load once - if already loaded, don't reload
-    if (_allImagesPreloaded) {
-      debugPrint('🔵 [Home] Banner images already loaded, skipping reload');
-      return;
-    }
-
     try {
       final cacheService = HomeCacheService.instance;
       await cacheService.initialize();
 
+      // Check if banners are already loaded from cache
+      final isBannerLoaded = await cacheService.isBannerLoaded();
+      
       // Try to load from cache
       final cachedBanners = await cacheService.getBannerImages();
       if (cachedBanners != null && cachedBanners.isNotEmpty) {
@@ -149,6 +146,22 @@ class _HomePageState extends State<HomePage>
         debugPrint(
           '🔵 [Home] Loaded ${_bannerImages.length} banner images from cache',
         );
+        
+        // If banners are already loaded, mark as preloaded to skip reload
+        if (isBannerLoaded) {
+          if (mounted) {
+            setState(() {
+              _allImagesPreloaded = true;
+              _isBannerLoading = false;
+            });
+          }
+          // Start timer if not already running
+          if (mounted && (_bannerTimer == null || !_bannerTimer!.isActive)) {
+            _startBannerTimer();
+          }
+          debugPrint('🔵 [Home] Banners already loaded from cache, skipping preload');
+          return; // Skip preloading if already loaded
+        }
       } else {
         // Store default banner images in cache for first time
         await cacheService.storeBannerImages(_bannerImages);
@@ -158,8 +171,10 @@ class _HomePageState extends State<HomePage>
       debugPrint('🔴 [Home] Error loading banner images from cache: $e');
     }
 
-    // Preload all banner images to prevent white gaps
-    _preloadAllBannerImages();
+    // Only preload if banners haven't been loaded before
+    if (!_allImagesPreloaded) {
+      _preloadAllBannerImages();
+    }
   }
 
   /// Preload all banner images to ensure smooth transitions

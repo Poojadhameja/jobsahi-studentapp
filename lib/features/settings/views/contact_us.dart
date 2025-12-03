@@ -70,6 +70,8 @@ class ContactUsPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                     _buildContactSection(context),
+                    const SizedBox(height: 20),
+                    _buildQuickLinksSection(context),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -115,7 +117,7 @@ class ContactUsPage extends StatelessWidget {
           _buildContactRow(
             Icons.language_outlined,
             'Website',
-            'www.google.com',
+            'Visit Website',
             isClickable: true,
             onTap: () => _openWebsite(context),
           ),
@@ -183,6 +185,161 @@ class ContactUsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildQuickLinksSection(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Links',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildContactRow(
+            Icons.chat,
+            'WhatsApp',
+            'Open WhatsApp',
+            isClickable: true,
+            onTap: () => _openWhatsApp(context),
+          ),
+          const SizedBox(height: 8),
+          _buildContactRow(
+            Icons.public,
+            'Facebook',
+            'Visit Facebook Page',
+            isClickable: true,
+            onTap: () => _openFacebook(context),
+          ),
+          const SizedBox(height: 8),
+          _buildContactRow(
+            Icons.photo_camera,
+            'Instagram',
+            'Visit Instagram Profile',
+            isClickable: true,
+            onTap: () => _openInstagram(context),
+          ),
+          const SizedBox(height: 8),
+          _buildContactRow(
+            Icons.work,
+            'LinkedIn',
+            'Visit LinkedIn Profile',
+            isClickable: true,
+            onTap: () => _openLinkedIn(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Future<void> _openWhatsApp(BuildContext context) async {
+    // Replace with your WhatsApp number (format: country code + number without +)
+    const whatsappNumber = '911234567890';
+    final whatsappUrl = 'https://wa.me/$whatsappNumber';
+
+    try {
+      final uri = Uri.parse(whatsappUrl);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        TopSnackBar.showError(
+          context,
+          message: 'Could not open WhatsApp. Please try again.',
+        );
+      }
+    }
+  }
+
+  Future<void> _openFacebook(BuildContext context) async {
+    // Replace with your Facebook page URL
+    const facebookUrl = 'https://www.facebook.com/jobsahi';
+
+    try {
+      final uri = Uri.parse(facebookUrl);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        TopSnackBar.showError(
+          context,
+          message: 'Could not open Facebook. Please try again.',
+        );
+      }
+    }
+  }
+
+  Future<void> _openInstagram(BuildContext context) async {
+    // Replace with your Instagram profile URL
+    const instagramUrl = 'https://www.instagram.com/jobsahi';
+
+    try {
+      final uri = Uri.parse(instagramUrl);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        TopSnackBar.showError(
+          context,
+          message: 'Could not open Instagram. Please try again.',
+        );
+      }
+    }
+  }
+
+  Future<void> _openLinkedIn(BuildContext context) async {
+    // Replace with your LinkedIn company/profile URL
+    const linkedInUrl = 'https://www.linkedin.com/company/jobsahi';
+
+    try {
+      final uri = Uri.parse(linkedInUrl);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        TopSnackBar.showError(
+          context,
+          message: 'Could not open LinkedIn. Please try again.',
+        );
+      }
+    }
   }
 
   Future<void> _openWebsite(BuildContext context) async {

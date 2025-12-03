@@ -227,7 +227,7 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Featured',
+                          'Featured by JobSahi',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -293,30 +293,33 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
             const SizedBox(width: AppConstants.defaultPadding),
             // Job title and company - matching applied cards style
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _capitalizeFirst(job['title']?.toString() ?? 'Job Title'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppConstants.textPrimaryColor,
+              child: Padding(
+                padding: EdgeInsets.only(right: widget.isFeatured ? 140 : 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _capitalizeFirst(job['title']?.toString() ?? 'Job Title'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppConstants.textPrimaryColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _getCompanyName(job),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppConstants.textSecondaryColor,
+                    const SizedBox(height: 4),
+                    Text(
+                      _getCompanyName(job),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppConstants.textSecondaryColor,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -481,15 +484,31 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
               highlightColor: Colors.grey.shade200,
               radius: 20,
               child: Container(
-                width: 40,
-                height: 40,
+                width: 50,
+                height: 50,
                 alignment: Alignment.center,
-                child: Icon(
-                  widget.isSaved ? Icons.bookmark : Icons.bookmark_border,
-                  color: widget.isSaved
-                      ? AppConstants.primaryColor
-                      : Colors.grey.shade700,
-                  size: 20,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: widget.isSaved
+                          ? AppConstants.primaryColor
+                          : Colors.grey.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppConstants.saveText,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: widget.isSaved
+                            ? AppConstants.primaryColor
+                            : Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

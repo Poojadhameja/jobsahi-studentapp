@@ -377,6 +377,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (response.success) {
+        // Email is registered, navigate to OTP screen
         emit(
           PasswordResetCodeSentState(
             email: event.email,
@@ -384,6 +385,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         );
       } else {
+        // Email is not registered or other error
         emit(AuthError(message: response.message));
       }
     } catch (e) {

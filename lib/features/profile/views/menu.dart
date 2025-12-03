@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import '../../../core/utils/app_constants.dart';
 import '../../../core/utils/network_error_helper.dart';
 import '../../../shared/data/user_data.dart';
@@ -11,6 +15,7 @@ import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../../shared/widgets/loaders/jobsahi_loader.dart';
 import '../../../shared/widgets/profile/profile_header_card.dart';
 import '../../../shared/services/location_service.dart';
+import '../../../shared/services/profile_cache_service.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -25,19 +30,123 @@ class MenuScreen extends StatefulWidget {
   State<MenuScreen> createState() => _MenuScreenState();
 }
 
-class _MenuScreenState extends State<MenuScreen> {
+class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
+  final ProfileCacheService _cacheService = ProfileCacheService.instance;
+  ProfileDetailsLoaded? _cachedProfileState;
+
   @override
   void initState() {
     super.initState();
-    // Always force refresh profile data when entering menu to ensure fresh data
-    // This prevents showing old user data from cache
+    WidgetsBinding.instance.addObserver(this);
+    // Initialize cache and load profile data when menu opens
+    // This ensures blue profile section shows cached data immediately and updates
+    _initializeCacheAndLoadProfile();
+  }
+
+  /// Initialize cache service and load profile data
+  Future<void> _initializeCacheAndLoadProfile() async {
+    try {
+      // Initialize cache service
+      await _cacheService.initialize();
+      
+      // Check if cache is available and valid
+      final isCacheValid = await _cacheService.isCacheValid(maxAgeHours: 24);
+      if (isCacheValid) {
+        final cachedData = await _cacheService.getProfileData();
+        if (cachedData != null && cachedData.isNotEmpty && mounted) {
+          // Create cached state from cache data
+          _cachedProfileState = ProfileDetailsLoaded(
+            userProfile: Map<String, dynamic>.from(
+              cachedData['userProfile'] ?? {},
+            ),
+            skills: List<String>.from(cachedData['skills'] ?? []),
+            education: List<Map<String, dynamic>>.from(
+              cachedData['education'] ?? [],
+            ),
+            experience: List<Map<String, dynamic>>.from(
+              cachedData['experience'] ?? [],
+            ),
+            jobPreferences: Map<String, dynamic>.from(
+              cachedData['jobPreferences'] ?? {},
+            ),
+            sectionExpansionStates: {
+              'profile': false,
+              'summary': false,
+              'education': false,
+              'skills': false,
+              'experience': false,
+              'resume': false,
+              'certificates': false,
+              'contact': false,
+              'general_info': false,
+              'social': false,
+            },
+            certificates: List<Map<String, dynamic>>.from(
+              cachedData['certificates'] ?? [],
+            ),
+            profileImagePath: cachedData['profileImagePath'],
+            profileImageName: cachedData['profileImageName'],
+            resumeFileName: cachedData['resumeFileName'],
+            lastResumeUpdatedDate: cachedData['lastResumeUpdatedDate'],
+            resumeFileSize: cachedData['resumeFileSize'] ?? 0,
+            resumeDownloadUrl: cachedData['resumeDownloadUrl'],
+            isSyncing: false,
+            statusMessage: null,
+            statusIsError: false,
+            statusMessageKey: 0,
+          );
+          
+          // Trigger rebuild to show cached data
+          if (mounted) {
+            setState(() {});
+          }
+        }
+      }
+      
+      // Load profile data from ProfileBloc (will use cache if available, then refresh)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
     final profileBloc = context.read<ProfileBloc>();
+        
+        // First load from cache for instant display
+        profileBloc.add(const LoadProfileDataEvent(forceRefresh: false));
+        
+        // Then immediately refresh to get latest data (rewrite blue section)
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
     profileBloc.add(const LoadProfileDataEvent(forceRefresh: true));
+          }
+        });
+      });
+    } catch (e) {
+      debugPrint('⚠️ [Menu] Error initializing cache: $e');
+      // Continue with normal load even if cache fails
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final profileBloc = context.read<ProfileBloc>();
+        profileBloc.add(const LoadProfileDataEvent(forceRefresh: false));
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh profile data when app comes to foreground
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<ProfileBloc>().add(const LoadProfileDataEvent(forceRefresh: true));
+    }
   }
 
   /// Gets user's saved location for display (without requesting permission)
   /// ⚠️ IMPORTANT: This method does NOT request location permission or trigger location dialogs.
-  /// It only reads saved location data if available.
+  /// It only reads saved location data if available and converts coordinates to address.
   Future<String> _getUserLocation() async {
     try {
       final locationService = LocationService.instance;
@@ -47,7 +156,22 @@ class _MenuScreenState extends State<MenuScreen> {
       // This prevents triggering location permission dialogs
       final savedLocation = await locationService.getSavedLocation();
       if (savedLocation != null) {
-        return '${savedLocation.latitude.toStringAsFixed(4)}, ${savedLocation.longitude.toStringAsFixed(4)}';
+        // Try to reverse geocode coordinates to get address
+        try {
+          final address = await _reverseGeocode(
+            savedLocation.latitude,
+            savedLocation.longitude,
+          );
+          if (address != null && address.isNotEmpty) {
+            return address;
+          }
+        } catch (e) {
+          debugPrint('⚠️ [Menu] Reverse geocoding failed: $e');
+        }
+        
+        // If reverse geocoding fails, don't show raw coordinates
+        // Return "Location not provided" instead
+        return 'Location not provided';
       }
 
       // Return null/empty if no saved location - don't request current location
@@ -56,6 +180,101 @@ class _MenuScreenState extends State<MenuScreen> {
     } catch (e) {
       // Silently fail - don't trigger any location-related operations
       return 'Location not provided';
+    }
+  }
+
+  /// Reverse geocode coordinates to get city and state
+  Future<String?> _reverseGeocode(double latitude, double longitude) async {
+    try {
+      debugPrint('🔵 [Menu] Starting reverse geocoding for: $latitude, $longitude');
+
+      // Using OpenStreetMap Nominatim API (free, no API key required)
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?format=json&lat=$latitude&lon=$longitude&addressdetails=1&zoom=18&accept-language=en',
+      );
+
+      final response = await http
+          .get(
+            url,
+            headers: {
+              'User-Agent': 'JobsahiApp/1.0', // Required by Nominatim
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              throw TimeoutException('Reverse geocoding timeout');
+            },
+          );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final address = data['address'] as Map<String, dynamic>?;
+
+        if (address != null) {
+          // Extract city - try multiple field names
+          String city = '';
+          final cityFields = [
+            'city',
+            'town',
+            'district',
+            'city_district',
+            'county',
+            'village',
+            'municipality',
+            'suburb',
+          ];
+
+          for (final field in cityFields) {
+            final value = address[field]?.toString().trim();
+            if (value != null && value.isNotEmpty) {
+              city = value;
+              break;
+            }
+          }
+
+          // Extract state
+          final state = (address['state'] ?? 
+                        address['region'] ?? 
+                        address['state_district'] ?? 
+                        '').toString().trim();
+
+          // Return city, state if both available
+          if (city.isNotEmpty && state.isNotEmpty) {
+            return '$city, $state';
+          }
+
+          // Return city only if available
+          if (city.isNotEmpty) {
+            return city;
+          }
+
+          // Return state only if available
+          if (state.isNotEmpty) {
+            return state;
+          }
+
+          // Fallback to display_name
+          final displayName = data['display_name']?.toString() ?? '';
+          if (displayName.isNotEmpty) {
+            // Extract city and state from display_name
+            final parts = displayName.split(',');
+            if (parts.length >= 2) {
+              return '${parts[parts.length - 2].trim()}, ${parts[parts.length - 1].trim()}';
+            }
+            return displayName;
+          }
+        }
+      }
+
+      return null;
+    } on TimeoutException {
+      debugPrint('⏱️ [Menu] Reverse geocoding timeout');
+      return null;
+    } catch (e) {
+      debugPrint('🔴 [Menu] Error in reverse geocoding: $e');
+      return null;
     }
   }
 
@@ -83,6 +302,25 @@ class _MenuScreenState extends State<MenuScreen> {
     }
 
     return bioString;
+  }
+
+  /// Check if location string is coordinates (lat, lng format)
+  bool _isCoordinates(String location) {
+    if (location.isEmpty) return false;
+    
+    // Check for patterns like "28.7041, 77.1025" or "28.7041,77.1025"
+    final coordPattern = RegExp(r'^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$');
+    if (coordPattern.hasMatch(location.trim())) {
+      return true;
+    }
+    
+    // Check for "Lat: X, Lng: Y" format
+    if (location.toLowerCase().contains('lat:') && 
+        location.toLowerCase().contains('lng:')) {
+      return true;
+    }
+    
+    return false;
   }
 
   /// Handle back navigation
@@ -152,6 +390,11 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget _buildProfileHeader(BuildContext context) {
     return BlocBuilder<ProfileBloc, ProfileState>(
       builder: (context, state) {
+        // Show cached data during loading (like profile details page)
+        if (state is ProfileLoading && _cachedProfileState != null) {
+          return _buildProfileHeaderContent(context, _cachedProfileState!);
+        }
+
         if (state is ProfileLoading) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: AppConstants.largePadding),
@@ -167,42 +410,9 @@ class _MenuScreenState extends State<MenuScreen> {
         }
 
         if (state is ProfileDetailsLoaded) {
-          final userProfile = state.userProfile;
-          final location = _extractLocation(userProfile['location']);
-
-          Widget headerCard(String? resolvedLocation) {
-            return ProfileHeaderCard(
-              name: userProfile['name']?.toString().isNotEmpty == true
-                  ? userProfile['name'] as String
-                  : (UserData.currentUser['name'] ?? 'User Name'),
-              email: userProfile['email']?.toString().isNotEmpty == true
-                  ? userProfile['email'] as String
-                  : (UserData.currentUser['email'] ?? 'user@email.com'),
-              location: resolvedLocation,
-              profileImagePath:
-                  state.profileImagePath ?? userProfile['profileImage'],
-              bio: _extractBio(userProfile['bio']),
-              onTap: () => context.push(AppRoutes.profileDetails),
-              margin: EdgeInsets.zero,
-            );
-          }
-
-          if (location != null && location.isNotEmpty) {
-            return headerCard(location);
-          }
-
-          return FutureBuilder<String>(
-            future: _getUserLocation(),
-            builder: (context, snapshot) {
-              final detectedLocation =
-                  snapshot.connectionState == ConnectionState.done &&
-                      snapshot.hasData &&
-                      snapshot.data!.isNotEmpty
-                  ? snapshot.data
-                  : null;
-              return headerCard(detectedLocation);
-            },
-          );
+          // Update cached state when new data is loaded
+          _cachedProfileState = state;
+          return _buildProfileHeaderContent(context, state);
         }
 
         if (state is ProfileError) {
@@ -277,6 +487,65 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  /// Builds the profile header content from ProfileDetailsLoaded state
+  Widget _buildProfileHeaderContent(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
+    final userProfile = state.userProfile;
+    final location = _extractLocation(userProfile['location']);
+
+    Widget headerCard(String? resolvedLocation) {
+      return ProfileHeaderCard(
+        name: userProfile['name']?.toString().isNotEmpty == true
+            ? userProfile['name'] as String
+            : (UserData.currentUser['name'] ?? 'User Name'),
+        email: userProfile['email']?.toString().isNotEmpty == true
+            ? userProfile['email'] as String
+            : (UserData.currentUser['email'] ?? 'user@email.com'),
+        location: resolvedLocation,
+        profileImagePath:
+            state.profileImagePath ?? userProfile['profileImage'],
+        bio: _extractBio(userProfile['bio']),
+        onTap: () => context.push(AppRoutes.profileDetails),
+        margin: EdgeInsets.zero,
+      );
+    }
+
+    // Check if location is coordinates (lat, lng format) - don't show raw coordinates
+    String? displayLocation;
+    if (location != null && location.isNotEmpty) {
+      // Check if it's coordinates format (e.g., "28.7041, 77.1025" or "Lat: 28.7041, Lng: 77.1025")
+      final locationLower = location.toLowerCase();
+      if (_isCoordinates(location) || locationLower.contains('lat:') || locationLower.contains('lng:')) {
+        // It's coordinates, try to get saved location or show "Location not provided"
+        displayLocation = null;
+      } else {
+        // It's a proper location string, use it
+        displayLocation = location;
+      }
+    }
+
+    if (displayLocation != null && displayLocation.isNotEmpty) {
+      return headerCard(displayLocation);
+    }
+
+    // If no proper location, try to get saved location or show default
+    return FutureBuilder<String>(
+      future: _getUserLocation(),
+      builder: (context, snapshot) {
+        final detectedLocation =
+            snapshot.connectionState == ConnectionState.done &&
+                snapshot.hasData &&
+                snapshot.data!.isNotEmpty &&
+                snapshot.data != 'Location not provided'
+            ? snapshot.data
+            : null;
+        return headerCard(detectedLocation ?? 'Location not provided');
+      },
+    );
+  }
+
   /// Builds the menu options section
   Widget _buildMenuOptions(BuildContext context) {
     return Column(
@@ -286,13 +555,6 @@ class _MenuScreenState extends State<MenuScreen> {
           title: 'Track Application / आवेदन ट्रैक करें',
           onTap: () {
             context.push('${AppRoutes.applicationTracker}?fromProfile=true');
-          },
-        ),
-        _buildOptionTile(
-          icon: Icons.favorite_outline,
-          title: 'Personalize Jobfeed / जॉबफ़ीड पर्सनलाइज़ करें',
-          onTap: () {
-            context.push(AppRoutes.personalizeJobfeed);
           },
         ),
         _buildOptionTile(

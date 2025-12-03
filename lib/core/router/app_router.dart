@@ -520,11 +520,17 @@ class AppRouter {
         builder: (context, state) {
           final id = state.pathParameters['id'];
           final extra = state.extra;
-          Map<String, dynamic> job = _findJobByIdOrDefault(id);
+          
+          // Prefer extra data if available (most reliable)
           if (extra is Map<String, dynamic>) {
-            job = Map<String, dynamic>.from(extra);
-            job['id'] = id ?? job['id'];
+            final job = Map<String, dynamic>.from(extra);
+            job['id'] = id ?? job['id']?.toString() ?? '0';
+            return JobStepScreen(job: job);
           }
+          
+          // Fallback to finding job by ID
+          final job = _findJobByIdOrDefault(id);
+          job['id'] = id ?? job['id']?.toString() ?? '0';
           return JobStepScreen(job: job);
         },
       ),
@@ -567,7 +573,18 @@ class AppRouter {
         name: 'courseDetails',
         builder: (context, state) {
           final id = state.pathParameters['id'];
+          final extra = state.extra;
+          
+          // Prefer extra data if available (includes saved status)
+          if (extra is Map<String, dynamic>) {
+            final course = Map<String, dynamic>.from(extra);
+            course['id'] = id ?? course['id']?.toString() ?? '0';
+            return CourseDetailsPage(course: course);
+          }
+          
+          // Fallback to generating course by ID
           final course = _generateCourseById(id);
+          course['id'] = id ?? course['id']?.toString() ?? '0';
           return CourseDetailsPage(course: course);
         },
       ),
@@ -804,8 +821,26 @@ class AppRouter {
 
 // ==================== ROUTER HELPERS ====================
 Map<String, dynamic> _findJobByIdOrDefault(String? id) {
+  // Create a default job object to prevent "Bad state: No element" error
+  Map<String, dynamic> getDefaultJob() {
+    return {
+      'id': id ?? '0',
+      'title': 'Job Application',
+      'company': 'Company',
+      'location': 'Location',
+      'description': 'Job description',
+      'salary': 'Not specified',
+      'job_type': 'Full-time',
+      'experience_required': '0-2 years',
+    };
+  }
+
   if (id == null || id.isEmpty) {
-    return JobData.recommendedJobs.first;
+    // Check if recommendedJobs is not empty before accessing first
+    if (JobData.recommendedJobs.isNotEmpty) {
+      return JobData.recommendedJobs.first;
+    }
+    return getDefaultJob();
   }
 
   final allJobs = <Map<String, dynamic>>[
@@ -814,11 +849,27 @@ Map<String, dynamic> _findJobByIdOrDefault(String? id) {
     ...JobData.appliedJobs,
   ];
 
+  // If no jobs available, return default
+  if (allJobs.isEmpty) {
+    return getDefaultJob();
+  }
+
   final match = allJobs.cast<Map<String, dynamic>?>().firstWhere(
     (job) => job?['id']?.toString() == id,
     orElse: () => null,
   );
-  return match ?? JobData.recommendedJobs.first;
+  
+  // Return match if found, otherwise return default job
+  if (match != null) {
+    return match;
+  }
+  
+  // If no match found, check if recommendedJobs has items, otherwise return default
+  if (JobData.recommendedJobs.isNotEmpty) {
+    return JobData.recommendedJobs.first;
+  }
+  
+  return getDefaultJob();
 }
 
 Map<String, dynamic> _findCompanyByIdOrDefault(String? id) {

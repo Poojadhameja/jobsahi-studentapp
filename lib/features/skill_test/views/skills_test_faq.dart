@@ -249,9 +249,7 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
 
           if (state is TestStartedState) {
             questions = state.questions;
-            // TODO: For testing, fixed to 10 seconds. Change back to: state.timeLimit * 60
-            const testTimeLimitSeconds = 10; // Testing: 10 seconds
-            final timeLimitSeconds = testTimeLimitSeconds;
+            final timeLimitSeconds = state.timeLimit * 60;
             remainingTime = timeLimitSeconds;
             // Start timer when test starts
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -263,9 +261,8 @@ class _SkillsTestFAQScreenViewState extends State<_SkillsTestFAQScreenView> {
             questions = state.questions;
             selectedAnswers = state.answers;
 
-            // TODO: For testing, fixed to 10 seconds. Change back to: (questions.length / 2).ceil() * 60
-            const testTimeLimitSeconds = 10; // Testing: 10 seconds
-            final timeLimitSeconds = testTimeLimitSeconds;
+            // Time limit is half of total questions (e.g., 6 questions = 3 minutes)
+            final timeLimitSeconds = (questions.length / 2).ceil() * 60;
 
             // Calculate remaining time based on elapsed time
             final elapsed = DateTime.now()

@@ -161,7 +161,11 @@ class AuthRepositoryImpl implements AuthRepository {
             debugPrint(
               "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
             );
-            throw Exception(AppConstants.userDoesNotExist);
+            return LoginResponse(
+              success: false,
+              message: AppConstants.userDoesNotExist,
+              errorCode: 'ACCESS_DENIED',
+            );
           }
 
           // If role is null, we'll allow access but log a warning
@@ -198,15 +202,26 @@ class AuthRepositoryImpl implements AuthRepository {
         }
         return loginResponse;
       } else {
-        // अगर success false है तो generic error message दो
-        debugPrint("🔴 Login failed: ${loginResponse.message}");
-        throw Exception(AppConstants.userDoesNotExist);
+        // Preserve the error message and error code from API response
+        debugPrint("🔴 Login failed: ${loginResponse.message} (Error Code: ${loginResponse.errorCode})");
+        return loginResponse;
       }
     } catch (e) {
       debugPrint("🔴 Login error: $e");
+      // Check if it's a network error
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Network') ||
+          e.toString().contains('timeout')) {
+        return LoginResponse(
+          success: false,
+          message: 'Network error. Please check your internet connection and try again.',
+          errorCode: 'NETWORK_ERROR',
+        );
+      }
       return LoginResponse(
         success: false,
-        message: AppConstants.userDoesNotExist,
+        message: 'Login failed. Please try again.',
+        errorCode: 'UNKNOWN_ERROR',
       );
     }
   }

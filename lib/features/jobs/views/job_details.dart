@@ -65,6 +65,21 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh application status when page becomes visible again (e.g., after navigation back)
+    final jobId = widget.job['id']?.toString() ?? '';
+    if (jobId.isNotEmpty && !_isCheckingApplication) {
+      // Small delay to ensure we're back on the page
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _checkIfApplied(jobId);
+        }
+      });
+    }
+  }
+
   /// Check if user has already applied for this job
   Future<void> _checkIfApplied(String jobId) async {
     if (_isCheckingApplication || jobId.isEmpty) return;
@@ -133,7 +148,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       },
       builder: (context, state) {
         // Initialize with widget data or stored data
-        Map<String, dynamic> currentJob = _currentJobData ?? widget.job;
+        // Prioritize widget.job if it has application data (e.g., after applying)
+        Map<String, dynamic> currentJob;
+        if (widget.job['application'] != null || 
+            widget.job['application_id'] != null ||
+            widget.job['application_status'] != null) {
+          // Use widget.job if it has application data (fresh from navigation)
+          currentJob = Map<String, dynamic>.from(widget.job);
+          // Merge with stored data to keep other info
+          if (_currentJobData != null) {
+            currentJob = {
+              ..._currentJobData!,
+              ...currentJob, // widget.job takes precedence for application data
+            };
+          }
+        } else {
+          currentJob = _currentJobData ?? widget.job;
+        }
+        
         bool isBookmarked = false;
         Map<String, dynamic>? companyInfo = _currentCompanyInfo;
         Map<String, dynamic>? statistics = _currentStatistics;
@@ -141,6 +173,51 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
         // Get job ID for bookmark check
         final jobId = currentJob['id']?.toString() ?? '';
+        
+        // Check if widget.job has application data and update _applicationId immediately
+        if (widget.job['application'] is Map<String, dynamic>) {
+          final appData = widget.job['application'] as Map<String, dynamic>;
+          final appId = appData['application_id']?.toString() ?? 
+                       appData['id']?.toString() ?? 
+                       widget.job['application_id']?.toString();
+          if (appId != null && appId.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _applicationId = appId;
+                  // Update _currentJobData with application info
+                  if (_currentJobData != null) {
+                    _currentJobData = {
+                      ..._currentJobData!,
+                      'application': appData,
+                      'application_id': appId,
+                      'application_status': widget.job['application_status'] ?? 'pending',
+                    };
+                  }
+                });
+              }
+            });
+          }
+        } else if (widget.job['application_id'] != null) {
+          final appId = widget.job['application_id']?.toString();
+          if (appId != null && appId.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _applicationId = appId;
+                  // Update _currentJobData with application info
+                  if (_currentJobData != null) {
+                    _currentJobData = {
+                      ..._currentJobData!,
+                      'application_id': appId,
+                      'application_status': widget.job['application_status'] ?? 'pending',
+                    };
+                  }
+                });
+              }
+            });
+          }
+        }
 
         if (state is JobsLoading) {
           isLoading = true;
@@ -217,7 +294,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     ),
                   )
                 : DefaultTabController(
-                        length: 3,
+                        length: 2,
                         child: Column(
                           children: [
                         // Job header section with card (fixed)
@@ -376,17 +453,33 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                         highlightColor: Colors.grey.shade200,
                         radius: 20,
                         child: Container(
-                          width: 40,
-                          height: 40,
+                          width: 50,
+                          height: 50,
                           alignment: Alignment.center,
-                          child: Icon(
-                            isBookmarked
-                                ? Icons.bookmark
-                                : Icons.bookmark_border,
-                            color: isBookmarked
-                                ? AppConstants.successColor
-                                : Colors.grey.shade600,
-                            size: 20,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isBookmarked
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: isBookmarked
+                                    ? AppConstants.successColor
+                                    : Colors.grey.shade600,
+                                size: 20,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                AppConstants.saveText,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isBookmarked
+                                      ? AppConstants.successColor
+                                      : Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -431,7 +524,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         tabs: [
           Tab(text: 'About'),
           Tab(text: 'Company'),
-          Tab(text: 'Reviews'),
         ],
       ),
     );
@@ -450,9 +542,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
         // Requirements tab
         _buildCompanyTab(currentJob, companyInfo),
-
-        // Benefits tab
-        _buildReviewsTab(currentJob),
       ],
     );
   }
@@ -986,42 +1075,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     );
   }
 
-  /// Builds the Review tab
-  Widget _buildReviewsTab(Map<String, dynamic> currentJob) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.construction_outlined,
-            size: 80,
-            color: AppConstants.textSecondaryColor.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Coming Soon',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'We are working on this feature. It will be available soon!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppConstants.textSecondaryColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// Key responsibilities list with icons (similar to skill test instructions)
   Widget _buildKeyResponsibilities(Map<String, dynamic> currentJob) {
@@ -1184,7 +1237,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ? 'Closed'
                   : (hasApplied
                         ? 'Track Application'
-                        : AppConstants.applyJobText),
+                        : 'Continue to apply'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

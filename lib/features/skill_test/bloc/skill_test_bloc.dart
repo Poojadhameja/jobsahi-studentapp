@@ -89,12 +89,8 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
       }
 
       // Time limit is half of total questions (e.g., 6 questions = 3 minutes)
-      // TODO: For testing, fixed to 10 seconds. Change back to: (questions.length / 2).ceil()
-      final timeLimit = 1; // Keep as 1 minute for state compatibility
+      final timeLimit = (questions.length / 2).ceil();
       final startTime = DateTime.now();
-      
-      // For testing: Set to 10 seconds
-      const testTimeLimitSeconds = 10;
 
       emit(
         TestStartedState(
@@ -112,7 +108,7 @@ class SkillTestBloc extends Bloc<SkillTestEvent, SkillTestState> {
           questions: questions,
           currentQuestionIndex: 0,
           answers: <String, String>{},
-          timeRemaining: testTimeLimitSeconds, // 10 seconds for testing
+          timeRemaining: timeLimit * 60,
           startTime: startTime,
         ),
       );

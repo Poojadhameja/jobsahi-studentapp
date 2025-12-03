@@ -23,7 +23,7 @@ class LoginOtpEmailScreen extends StatefulWidget {
 }
 
 class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
-  bool isOTPSelected = false; // false = Email selected, true = Phone selected
+  bool isOTPSelected = true; // false = Email selected, true = Phone selected
   bool _isPasswordVisible = false;
   bool _isSubmitting = false; // Track submission state locally
 
@@ -44,6 +44,23 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Reset submitting state when screen is initialized/resumed
+    // This handles the case when user comes back from OTP screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentState = context.read<AuthBloc>().state;
+        if (currentState is! AuthLoading && _isSubmitting) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
+      }
+    });
   }
 
   @override
@@ -70,6 +87,10 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           );
         } else if (state is OtpSentState) {
           debugPrint("🔵 LoginScreen navigating to OTP code screen");
+          // Reset submitting state before navigation
+          setState(() {
+            _isSubmitting = false;
+          });
           TopSnackBar.showSuccess(
             context,
             message: 'OTP sent successfully',
@@ -88,11 +109,29 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           debugPrint("🔵 LoginScreen showing success and navigating to popup");
           debugPrint("🔵 AuthSuccess message: ${state.message}");
           debugPrint("🔵 AuthSuccess user: ${state.user}");
+          // Reset submitting state before navigation
+          setState(() {
+            _isSubmitting = false;
+          });
           // Use go instead of push to replace the route and prevent back navigation
           context.go(AppRoutes.loginVerifiedPopup);
         }
       },
-      child: PopScope(
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          // Reset submitting state if not in loading and submitting is true
+          // This handles the case when user comes back from OTP screen
+          if (_isSubmitting && state is! AuthLoading) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _isSubmitting = false;
+                });
+              }
+            });
+          }
+          
+          return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
@@ -161,15 +200,15 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            /// Email / Phone toggle
+                            /// Phone / Email toggle
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                _buildToggleButton("Email", !isOTPSelected, () {
-                                  setState(() => isOTPSelected = false);
-                                }),
                                 _buildToggleButton("Phone", isOTPSelected, () {
                                   setState(() => isOTPSelected = true);
+                                }),
+                                _buildToggleButton("Email", !isOTPSelected, () {
+                                  setState(() => isOTPSelected = false);
                                 }),
                               ],
                             ),
@@ -252,6 +291,8 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
             ),
           ),
         ),
+      );
+        },
       ),
     );
   }
@@ -396,26 +437,52 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
 
   /// Email / Phone toggle button
   Widget _buildToggleButton(String text, bool active, VoidCallback onPressed) {
+    final isPhone = text == "Phone";
     return Container(
       decoration: BoxDecoration(
         color: active ? AppConstants.textPrimaryColor : Colors.white,
-        borderRadius: text == "Email"
+        borderRadius: isPhone
             ? const BorderRadius.only(
-                topLeft: Radius.circular(6),
-                bottomLeft: Radius.circular(6),
+                topLeft: Radius.circular(8),
+                bottomLeft: Radius.circular(8),
               )
             : const BorderRadius.only(
-                topRight: Radius.circular(6),
-                bottomRight: Radius.circular(6),
+                topRight: Radius.circular(8),
+                bottomRight: Radius.circular(8),
               ),
-        border: Border.all(color: AppConstants.textPrimaryColor),
+        border: Border(
+          top: BorderSide(color: AppConstants.textPrimaryColor, width: 1.5),
+          bottom: BorderSide(color: AppConstants.textPrimaryColor, width: 1.5),
+          left: isPhone
+              ? BorderSide(color: AppConstants.textPrimaryColor, width: 1.5)
+              : BorderSide.none,
+          right: isPhone
+              ? BorderSide.none
+              : BorderSide(color: AppConstants.textPrimaryColor, width: 1.5),
+        ),
       ),
       child: TextButton(
         onPressed: onPressed,
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: isPhone
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    bottomLeft: Radius.circular(8),
+                  )
+                : const BorderRadius.only(
+                    topRight: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+          ),
+        ),
         child: Text(
           text,
           style: TextStyle(
             color: active ? Colors.white : AppConstants.textPrimaryColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

@@ -237,7 +237,8 @@ class ApiService {
         return Exception('Certificate error. Please try again.');
 
       case DioExceptionType.unknown:
-        return Exception('An unexpected error occurred: ${error.message}');
+        final errorMsg = error.message ?? 'Unknown error';
+        return Exception('An unexpected error occurred: $errorMsg');
     }
   }
 }
@@ -346,12 +347,14 @@ class LoginResponse {
   final String message;
   final String? token;
   final User? user;
+  final String? errorCode;
 
   LoginResponse({
     required this.success,
     required this.message,
     this.token,
     this.user,
+    this.errorCode,
   });
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     // Handle different possible success indicators
@@ -394,11 +397,18 @@ class LoginResponse {
       }
     }
 
+    // Extract error code if present
+    String? errorCode;
+    if (json.containsKey('error_code')) {
+      errorCode = json['error_code'];
+    }
+
     return LoginResponse(
       success: success,
       message: message,
       token: token,
       user: user,
+      errorCode: errorCode,
     );
   }
 }
@@ -730,12 +740,8 @@ extension JobsApi on ApiService {
       final payload = <String, dynamic>{
         'job_id': jobId,
         'student_id': studentId,
+        'cover_letter': coverLetter?.trim() ?? '',
       };
-
-      final trimmedCoverLetter = coverLetter?.trim() ?? '';
-      if (trimmedCoverLetter.isNotEmpty) {
-        payload['cover_letter'] = trimmedCoverLetter;
-      }
 
       final response = await post('/jobs/job_apply.php', data: payload);
 

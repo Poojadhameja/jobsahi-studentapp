@@ -8,7 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/cards/course_card.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
 import '../bloc/courses_bloc.dart';
 import '../bloc/courses_event.dart';
 import '../bloc/courses_state.dart';
@@ -140,7 +139,14 @@ class _SavedCoursesPageView extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> course,
   ) {
-    context.go(AppRoutes.courseDetailsWithId(course['id']));
+    // Pass course data with saved status to details page
+    final courseData = Map<String, dynamic>.from(course);
+    courseData['isSaved'] = true; // All courses in saved list are saved
+    context.goNamed(
+      'courseDetails',
+      pathParameters: {'id': course['id']?.toString() ?? ''},
+      extra: courseData,
+    );
   }
 
   void _toggleCourseSaved(BuildContext context, String courseId) {
@@ -296,7 +302,14 @@ class _SavedCoursesScreenView extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> course,
   ) {
-    context.go(AppRoutes.courseDetailsWithId(course['id']));
+    // Pass course data with saved status to details page
+    final courseData = Map<String, dynamic>.from(course);
+    courseData['isSaved'] = true; // All courses in saved list are saved
+    context.goNamed(
+      'courseDetails',
+      pathParameters: {'id': course['id']?.toString() ?? ''},
+      extra: courseData,
+    );
   }
 
   void _toggleCourseSaved(BuildContext context, String courseId) {
