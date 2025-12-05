@@ -95,9 +95,8 @@ class AppConstants {
   static const String searchPlaceholder = 'नौकरी खोजें';
   static const String savedJobsText = 'सेव की गई नौकरियाँ';
   static const String appliedJobsText = 'आवेदन की गई नौकरियाँ';
-  static const String recommendedJobsText =
-      'Recommended jobs (अनुशंसित नौकरियाँ)';
-  static const String applyJobText = 'Apply This Job';
+  static const String recommendedJobsText = 'Jobs (नौकरियाँ)';
+  static const String applyJobText = 'Apply';
   static const String saveText = 'Save';
   static const String savedText = 'Saved';
 
@@ -222,7 +221,8 @@ class AppConstants {
   static const String baseUrl = 'http://localhost/jobsahi-API/api/';
 
   /// Production server base URL
-  // static const String baseUrl = 'https://beige-jaguar-560051.hostingersite.com/api';
+  // static const String baseUrl =
+      // 'https://beige-jaguar-560051.hostingersite.com/api';
 
   /// Use device-to-PC LAN IP if testing on a real device
   // static const String lanBaseUrl = 'http://10.167.188.31:8000/api';
@@ -230,6 +230,7 @@ class AppConstants {
   // Auth
   static const String createUserEndpoint = '/user/create_user.php';
   static const String loginEndpoint = '/auth/login.php';
+  static const String changePasswordEndpoint = '/auth/change_password.php';
 
   // Location
   static const String updateLocationEndpoint =
@@ -237,6 +238,31 @@ class AppConstants {
 
   // Student Profile
   static const String studentProfileEndpoint = '/student/profile.php';
+  static const String updateStudentProfileEndpoint =
+      '/student/profile_updated.php';
+
+  // Jobs
+  static const String saveJobEndpoint = '/jobs/save_job.php';
+  static const String unsaveJobEndpoint = '/jobs/unsave_job.php';
+  static const String getSavedJobsEndpoint = '/student/get_saved_jobs.php';
+
+  // Feedback
+  static const String feedbackEndpoint = '/student/feedback.php';
+
+  // Interviews
+  static const String scheduleInterviewEndpoint = '/interviews/schedule.php';
+
+  // FCM Token
+  static const String saveFcmTokenEndpoint = '/fcm/save_token.php';
+
+  // Notifications
+  static const String getNotificationsEndpoint =
+      '/notifications/get-notifications.php';
+  static const String markNotificationReadEndpoint =
+      '/notifications/update-notification.php';
+  // Note: Notification preferences endpoint not in backend yet
+  static const String updateNotificationPreferencesEndpoint =
+      '/notifications/preferences.php';
 
   // Other (placeholders)
   static const String signupEndpoint = '/auth/signup';
@@ -264,26 +290,82 @@ class AppConstants {
     'Advanced',
   ];
 
-  /// Job Categories
-  static const List<String> jobCategories = [
-    'All Jobs',
-    'Electrician',
-    'Fitter',
-    'Welder',
-    'Mechanic',
-    'Plumber',
-    'Carpenter',
+  /// Course Durations
+  static const List<String> courseDurations = [
+    'All',
+    '1 Month',
+    '2 Months',
+    '3 Months',
+    '4 Months',
+    '5 Months',
+    '6 Months',
+    '8 Months',
+    '10 Months',
+    '12 Months',
   ];
 
-  /// Job Filter Options
-  static const List<String> jobFilterOptions = [
-    'Filter',
-    'Sort',
-    'Job Title',
-    'Experience',
-    'Location',
-    'Salary',
-    'Company',
+  /// Course Institutes
+  static const List<String> courseInstitutes = [
+    'All',
+    'Bharat Heavy Electricals Ltd.',
+    'Maruti Suzuki Training Institute',
+    'Tata Motors Training Center',
+    'Mahindra Training Institute',
+    'Hero MotoCorp Training Center',
+    'Hindustan Unilever Training Institute',
+    'L&T Construction Training Center',
+    'Bharat Forge Training Institute',
+  ];
+
+  /// Job Categories
+  static const List<String> jobCategories = [
+    'All',
+    'Engineering',
+    'Mechanical Engineering',
+    'Electrical Engineering',
+    'Civil Engineering',
+    'Computer Science',
+    'Electronics Engineering',
+    'Chemical Engineering',
+    'Aerospace Engineering',
+    'Automobile Engineering',
+    'IT/Software',
+    'Software Development',
+    'Web Development',
+    'Mobile Development',
+    'Data Science',
+    'AI/ML',
+    'Cybersecurity',
+    'Cloud Computing',
+    'DevOps',
+    'Manufacturing',
+    'Production',
+    'Quality Control',
+    'Quality Assurance',
+    'Maintenance',
+    'Welding',
+    'Machining',
+    'CNC',
+    'Tool Making',
+    'Fabrication',
+    'Assembly',
+    'Design',
+    'CAD/CAM',
+    'Project Management',
+    'Supply Chain',
+    'Logistics',
+    'Healthcare',
+    'Education',
+    'Finance',
+    'Banking',
+    'Insurance',
+    'Marketing',
+    'Digital Marketing',
+    'Sales',
+    'Business Development',
+    'HR',
+    'Administration',
+    'General',
   ];
 
   /// Experience Levels

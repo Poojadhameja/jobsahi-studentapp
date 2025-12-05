@@ -7,6 +7,7 @@ export 'custom_app_bar.dart' show CustomAppBar;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
+import 'navigation_helper.dart';
 
 /// Simple app bar with title and optional back button
 class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -31,6 +32,9 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Whether to center the title
   final bool centerTitle;
 
+  /// Optional callback when back button pressed
+  final VoidCallback? onBack;
+
   const SimpleAppBar({
     super.key,
     required this.title,
@@ -40,6 +44,7 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.backgroundColor,
     this.titleColor,
     this.centerTitle = true,
+    this.onBack,
   });
 
   @override
@@ -74,15 +79,45 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (showBackButton) {
       return IconButton(
         icon: const Icon(Icons.arrow_back),
-        onPressed: () => context.go('/home'),
+        onPressed: () {
+          if (onBack != null) {
+            onBack!();
+          } else {
+            _handleBackAction(context);
+          }
+        },
       );
     } else if (showCloseButton) {
       return IconButton(
         icon: const Icon(Icons.close),
-        onPressed: () => context.go('/home'),
+        onPressed: () {
+          if (onBack != null) {
+            onBack!();
+          } else {
+            _handleBackAction(context);
+          }
+        },
       );
     }
     return null;
+  }
+
+  /// Handles navigation when back/close is pressed
+  void _handleBackAction(BuildContext context) {
+    var handled = false;
+
+    if (NavigationHelper.hasHistory()) {
+      handled = NavigationHelper.goBack();
+    }
+
+    if (handled) return;
+
+    // Use go_router's pop method for proper navigation
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/home');
+    }
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:file_picker/file_picker.dart';
+import '../models/job_details_api_models.dart';
 
 /// Jobs states
 abstract class JobsState extends Equatable {
@@ -29,9 +30,14 @@ class JobsLoaded extends JobsState {
   final List<Map<String, dynamic>> savedJobs;
   final List<Map<String, dynamic>> appliedJobs;
   final String searchQuery;
-  final int selectedCategoryIndex;
-  final int selectedFilterIndex;
+  final String selectedCategory;
+  final bool showFilters;
   final Set<String> savedJobIds;
+  final List<Map<String, dynamic>> featuredJobs;
+  
+  // Application Tracker cached data (to persist across navigation)
+  final List<Map<String, dynamic>>? trackerAppliedJobs;
+  final List<Map<String, dynamic>>? trackerInterviewJobs;
 
   const JobsLoaded({
     required this.allJobs,
@@ -39,9 +45,12 @@ class JobsLoaded extends JobsState {
     required this.savedJobs,
     required this.appliedJobs,
     this.searchQuery = '',
-    this.selectedCategoryIndex = 0,
-    this.selectedFilterIndex = 0,
+    this.selectedCategory = 'All',
+    this.showFilters = false,
     required this.savedJobIds,
+    required this.featuredJobs,
+    this.trackerAppliedJobs,
+    this.trackerInterviewJobs,
   });
 
   @override
@@ -51,9 +60,12 @@ class JobsLoaded extends JobsState {
     savedJobs,
     appliedJobs,
     searchQuery,
-    selectedCategoryIndex,
-    selectedFilterIndex,
+    selectedCategory,
+    showFilters,
     savedJobIds,
+    featuredJobs,
+    trackerAppliedJobs,
+    trackerInterviewJobs,
   ];
 
   /// Copy with method for immutable state updates
@@ -63,9 +75,12 @@ class JobsLoaded extends JobsState {
     List<Map<String, dynamic>>? savedJobs,
     List<Map<String, dynamic>>? appliedJobs,
     String? searchQuery,
-    int? selectedCategoryIndex,
-    int? selectedFilterIndex,
+    String? selectedCategory,
+    bool? showFilters,
     Set<String>? savedJobIds,
+    List<Map<String, dynamic>>? featuredJobs,
+    List<Map<String, dynamic>>? trackerAppliedJobs,
+    List<Map<String, dynamic>>? trackerInterviewJobs,
   }) {
     return JobsLoaded(
       allJobs: allJobs ?? this.allJobs,
@@ -73,10 +88,12 @@ class JobsLoaded extends JobsState {
       savedJobs: savedJobs ?? this.savedJobs,
       appliedJobs: appliedJobs ?? this.appliedJobs,
       searchQuery: searchQuery ?? this.searchQuery,
-      selectedCategoryIndex:
-          selectedCategoryIndex ?? this.selectedCategoryIndex,
-      selectedFilterIndex: selectedFilterIndex ?? this.selectedFilterIndex,
+      selectedCategory: selectedCategory ?? this.selectedCategory,
+      showFilters: showFilters ?? this.showFilters,
       savedJobIds: savedJobIds ?? this.savedJobIds,
+      featuredJobs: featuredJobs ?? this.featuredJobs,
+      trackerAppliedJobs: trackerAppliedJobs ?? this.trackerAppliedJobs,
+      trackerInterviewJobs: trackerInterviewJobs ?? this.trackerInterviewJobs,
     );
   }
 }
@@ -125,16 +142,30 @@ class JobApplicationSuccessState extends JobsState {
 class JobDetailsLoaded extends JobsState {
   final Map<String, dynamic> job;
   final bool isBookmarked;
+  final Map<String, dynamic>? companyInfo;
+  final Map<String, dynamic>? statistics;
 
-  const JobDetailsLoaded({required this.job, required this.isBookmarked});
+  const JobDetailsLoaded({
+    required this.job,
+    required this.isBookmarked,
+    this.companyInfo,
+    this.statistics,
+  });
 
   @override
-  List<Object?> get props => [job, isBookmarked];
+  List<Object?> get props => [job, isBookmarked, companyInfo, statistics];
 
-  JobDetailsLoaded copyWith({Map<String, dynamic>? job, bool? isBookmarked}) {
+  JobDetailsLoaded copyWith({
+    Map<String, dynamic>? job,
+    bool? isBookmarked,
+    Map<String, dynamic>? companyInfo,
+    Map<String, dynamic>? statistics,
+  }) {
     return JobDetailsLoaded(
       job: job ?? this.job,
       isBookmarked: isBookmarked ?? this.isBookmarked,
+      companyInfo: companyInfo ?? this.companyInfo,
+      statistics: statistics ?? this.statistics,
     );
   }
 }
@@ -154,26 +185,22 @@ class JobBookmarkToggled extends JobsState {
 class SearchResultsLoaded extends JobsState {
   final String searchQuery;
   final List<Map<String, dynamic>> filteredJobs;
-  final int selectedFilterIndex;
 
   const SearchResultsLoaded({
     required this.searchQuery,
     required this.filteredJobs,
-    required this.selectedFilterIndex,
   });
 
   @override
-  List<Object?> get props => [searchQuery, filteredJobs, selectedFilterIndex];
+  List<Object?> get props => [searchQuery, filteredJobs];
 
   SearchResultsLoaded copyWith({
     String? searchQuery,
     List<Map<String, dynamic>>? filteredJobs,
-    int? selectedFilterIndex,
   }) {
     return SearchResultsLoaded(
       searchQuery: searchQuery ?? this.searchQuery,
       filteredJobs: filteredJobs ?? this.filteredJobs,
-      selectedFilterIndex: selectedFilterIndex ?? this.selectedFilterIndex,
     );
   }
 }
@@ -215,14 +242,24 @@ class ApplyForMoreJobsState extends JobsState {
 /// Saved jobs loaded state
 class SavedJobsLoaded extends JobsState {
   final List<Map<String, dynamic>> savedJobs;
+  final PaginationInfo? pagination;
 
-  const SavedJobsLoaded({required this.savedJobs});
+  const SavedJobsLoaded({
+    required this.savedJobs,
+    this.pagination,
+  });
 
   @override
-  List<Object?> get props => [savedJobs];
+  List<Object?> get props => [savedJobs, pagination];
 
-  SavedJobsLoaded copyWith({List<Map<String, dynamic>>? savedJobs}) {
-    return SavedJobsLoaded(savedJobs: savedJobs ?? this.savedJobs);
+  SavedJobsLoaded copyWith({
+    List<Map<String, dynamic>>? savedJobs,
+    PaginationInfo? pagination,
+  }) {
+    return SavedJobsLoaded(
+      savedJobs: savedJobs ?? this.savedJobs,
+      pagination: pagination ?? this.pagination,
+    );
   }
 }
 

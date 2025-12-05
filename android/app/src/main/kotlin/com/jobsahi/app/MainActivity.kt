@@ -1,5 +1,7 @@
-package com.example.jobsahi_studen
+package com.jobsahi.app
 
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity : FlutterActivity()
+
+

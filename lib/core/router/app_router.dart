@@ -27,16 +27,18 @@ import '../../features/home/views/home.dart';
 
 // Import MainScaffold for ShellRoute
 import '../../shared/widgets/common/main_scaffold.dart';
-import '../../features/jobs/views/search_job.dart';
-import '../../features/jobs/views/search_result.dart';
 import '../../features/jobs/views/job_details.dart';
 import '../../features/jobs/views/saved_jobs.dart';
 import '../../features/jobs/views/application_tracker.dart';
+import '../../features/jobs/views/student_application_detail.dart';
 import '../../features/jobs/views/calendar_view.dart';
 import '../../features/jobs/views/write_review.dart';
 import '../../features/jobs/views/about_company.dart';
 import '../../features/jobs/views/job_application_success.dart';
 import '../../features/jobs/views/job_step.dart';
+
+// Interview screens
+import '../../features/interviews/views/interview_detail.dart';
 
 // Profile screens
 import '../../features/profile/views/your_location.dart';
@@ -44,26 +46,24 @@ import '../../features/profile/views/location_permission.dart';
 import '../../features/profile/views/profile_builder_steps.dart';
 import '../../features/profile/views/menu.dart';
 import '../../features/profile/views/profile_details.dart';
-import '../../features/profile/views/job_status.dart';
 import '../../features/profile/views/personalize_jobfeed.dart';
-import '../../features/profile/views/profile_details/profile_edit.dart';
-import '../../features/profile/views/profile_details/experience_edit.dart';
-import '../../features/profile/views/profile_details/education_edit.dart';
-import '../../features/profile/views/profile_details/skills_edit.dart';
-import '../../features/profile/views/profile_details/certificates_edit.dart';
-import '../../features/profile/views/profile_details/resume_edit.dart';
-import '../../features/profile/views/profile_details/profile_summary_edit.dart';
 
 // Settings screens
 import '../../features/settings/views/settings.dart';
 import '../../features/settings/views/about_page.dart';
+import '../../features/settings/views/contact_us.dart';
+import '../../features/settings/views/feedback_page.dart';
+import '../../features/settings/views/faqs_page.dart';
 import '../../features/settings/views/help_center.dart';
 import '../../features/settings/views/privacy_policy.dart';
 import '../../features/settings/views/terms_conditions.dart';
 import '../../features/settings/views/notification_permission.dart';
+import '../../features/settings/views/notification_preferences.dart';
+import '../../features/settings/views/notification_settings.dart';
+import '../../features/settings/views/notification_history.dart';
 
 // Course screens
-import '../../features/courses/views/learning_center.dart';
+import '../../features/courses/views/courses_learning_center.dart';
 import '../../features/courses/views/course_details.dart';
 import '../../features/courses/views/saved_courses.dart';
 
@@ -112,7 +112,6 @@ class AppRouter {
         AppRoutes.forgotPassword,
         AppRoutes.setPasswordCode,
         AppRoutes.setNewPassword,
-        AppRoutes.changePassword,
       };
 
       // Check if current path is a public route
@@ -166,7 +165,6 @@ class AppRouter {
           AppRoutes.forgotPassword,
           AppRoutes.setPasswordCode,
           AppRoutes.setNewPassword,
-          AppRoutes.changePassword,
         };
 
         if (authRoutes.contains(path)) {
@@ -346,8 +344,11 @@ class AppRouter {
           GoRoute(
             path: '/application-tracker',
             name: 'application-tracker',
-            builder: (context, state) =>
-                const ApplicationTrackerScreen(isFromProfile: false),
+            builder: (context, state) {
+              final fromProfile =
+                  state.uri.queryParameters['fromProfile'] == 'true';
+              return ApplicationTrackerScreen(isFromProfile: fromProfile);
+            },
           ),
           GoRoute(
             path: '/messages',
@@ -379,57 +380,9 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: AppRoutes.profileEdit,
-        name: 'profileEdit',
-        builder: (context, state) => const ProfileEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileExperienceEdit,
-        name: 'profileExperienceEdit',
-        builder: (context, state) => const ExperienceEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileEducationEdit,
-        name: 'profileEducationEdit',
-        builder: (context, state) => const EducationEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileSkillsEdit,
-        name: 'profileSkillsEdit',
-        builder: (context, state) => const SkillsEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileCertificatesEdit,
-        name: 'profileCertificatesEdit',
-        builder: (context, state) => const CertificatesEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileResumeEdit,
-        name: 'profileResumeEdit',
-        builder: (context, state) => const ResumeEditScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.profileSummaryEdit,
-        name: 'profileSummaryEdit',
-        builder: (context, state) => const ProfileSummaryEditScreen(),
-      ),
-
-      GoRoute(
         path: AppRoutes.personalizeJobfeed,
         name: 'personalizeJobfeed',
         builder: (context, state) => const PersonalizeJobfeedScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.jobStatus,
-        name: 'jobStatus',
-        builder: (context, state) => const JobStatusScreen(),
       ),
 
       GoRoute(
@@ -483,34 +436,29 @@ class AppRouter {
 
       // ==================== JOBS ROUTES ====================
       GoRoute(
-        path: AppRoutes.searchJob,
-        name: 'searchJob',
-        builder: (context, state) => const SearchJobScreen(),
-      ),
-
-      GoRoute(
-        path: AppRoutes.searchResult,
-        name: 'searchResult',
-        builder: (context, state) => const SearchResultScreen(),
-      ),
-
-      GoRoute(
         path: AppRoutes.jobDetails,
         name: 'jobDetails',
         builder: (context, state) {
-          final id = state.pathParameters['id'];
+          // Safely extract ID from path parameters
+          final id = state.pathParameters['id'] ?? '';
           debugPrint('🔵 [Router] Job details route - ID from URL: $id');
           debugPrint('🔵 [Router] Full path: ${state.uri}');
           debugPrint('🔵 [Router] Path parameters: ${state.pathParameters}');
-          // Create a job object with the correct ID from URL
-          final job = {
-            'id': id,
-            'title': 'Loading...',
-            'company': 'Loading...',
-            'location': 'Loading...',
-            'salary': 'Loading...',
-            'description': 'Loading job details...',
-          };
+          Map<String, dynamic> job;
+          if (state.extra is Map<String, dynamic>) {
+            job = Map<String, dynamic>.from(state.extra as Map<String, dynamic>);
+            job['id'] = id;
+          } else {
+            // Create a job object with the correct ID from URL
+            job = {
+              'id': id,
+              'title': 'Loading...',
+              'company': 'Loading...',
+              'location': 'Loading...',
+              'salary': 'Loading...',
+              'description': 'Loading job details...',
+            };
+          }
           debugPrint('🔵 [Router] Created job object: $job');
           return JobDetailsScreen(job: job);
         },
@@ -552,7 +500,16 @@ class AppRouter {
         path: AppRoutes.jobApplicationSuccess,
         name: 'jobApplicationSuccess',
         builder: (context, state) {
-          final job = JobData.recommendedJobs.first;
+          final id = state.pathParameters['id'] ?? '';
+          final extra = state.extra;
+          Map<String, dynamic> job;
+          if (extra is Map<String, dynamic>) {
+            job = Map<String, dynamic>.from(extra);
+            job['id'] = id;
+          } else {
+            job = Map<String, dynamic>.from(JobData.recommendedJobs.first);
+            job['id'] = id.isNotEmpty ? id : job['id']?.toString() ?? '';
+          }
           return JobApplicationSuccessScreen(job: job);
         },
       ),
@@ -562,8 +519,51 @@ class AppRouter {
         name: 'jobStep',
         builder: (context, state) {
           final id = state.pathParameters['id'];
+          final extra = state.extra;
+          
+          // Prefer extra data if available (most reliable)
+          if (extra is Map<String, dynamic>) {
+            final job = Map<String, dynamic>.from(extra);
+            job['id'] = id ?? job['id']?.toString() ?? '0';
+            return JobStepScreen(job: job);
+          }
+          
+          // Fallback to finding job by ID
           final job = _findJobByIdOrDefault(id);
+          job['id'] = id ?? job['id']?.toString() ?? '0';
           return JobStepScreen(job: job);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.studentApplicationDetail,
+        name: 'studentApplicationDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          Map<String, dynamic>? initialData;
+          if (state.extra is Map<String, dynamic>) {
+            initialData =
+                Map<String, dynamic>.from(state.extra as Map<String, dynamic>);
+          }
+          return StudentApplicationDetailScreen(
+            applicationId: id,
+            initialData: initialData,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.interviewDetail,
+        name: 'interviewDetail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final interviewId = int.tryParse(id) ?? 0;
+          if (interviewId == 0) {
+            return const Scaffold(
+              body: Center(child: Text('Invalid interview ID')),
+            );
+          }
+          return InterviewDetailScreen(interviewId: interviewId);
         },
       ),
 
@@ -573,7 +573,18 @@ class AppRouter {
         name: 'courseDetails',
         builder: (context, state) {
           final id = state.pathParameters['id'];
+          final extra = state.extra;
+          
+          // Prefer extra data if available (includes saved status)
+          if (extra is Map<String, dynamic>) {
+            final course = Map<String, dynamic>.from(extra);
+            course['id'] = id ?? course['id']?.toString() ?? '0';
+            return CourseDetailsPage(course: course);
+          }
+          
+          // Fallback to generating course by ID
           final course = _generateCourseById(id);
+          course['id'] = id ?? course['id']?.toString() ?? '0';
           return CourseDetailsPage(course: course);
         },
       ),
@@ -601,7 +612,16 @@ class AppRouter {
         name: 'skillTestDetails',
         builder: (context, state) {
           final id = state.pathParameters['id'];
-          final job = _findJobByIdOrDefault(id);
+          final extra = state.extra;
+          Map<String, dynamic> job;
+          if (extra is Map<String, dynamic>) {
+            job = Map<String, dynamic>.from(extra);
+            if (id != null) {
+              job['id'] = id;
+            }
+          } else {
+            job = _findJobByIdOrDefault(id);
+          }
           return SkillTestDetailsScreen(job: job);
         },
       ),
@@ -611,8 +631,25 @@ class AppRouter {
         name: 'skillTestInstructions',
         builder: (context, state) {
           final id = state.pathParameters['id'];
-          final job = _findJobByIdOrDefault(id);
-          final test = <String, dynamic>{};
+          final extra = state.extra;
+          Map<String, dynamic> job = _findJobByIdOrDefault(id);
+          Map<String, dynamic> test = <String, dynamic>{};
+          if (extra is Map<String, dynamic>) {
+            final extraJob = extra['job'];
+            final extraTest = extra['test'];
+            if (extraJob is Map<String, dynamic>) {
+              job = Map<String, dynamic>.from(extraJob);
+              if (id != null) {
+                job['id'] = id;
+              }
+            }
+            if (extraTest is Map<String, dynamic>) {
+              test = Map<String, dynamic>.from(extraTest);
+              if (id != null) {
+                test['id'] = id;
+              }
+            }
+          }
           return SkillTestInstructionsScreen(job: job, test: test);
         },
       ),
@@ -622,8 +659,25 @@ class AppRouter {
         name: 'skillsTestFAQ',
         builder: (context, state) {
           final id = state.pathParameters['id'];
-          final job = _findJobByIdOrDefault(id);
-          final test = <String, dynamic>{};
+          final extra = state.extra;
+          Map<String, dynamic> job = _findJobByIdOrDefault(id);
+          Map<String, dynamic> test = <String, dynamic>{};
+          if (extra is Map<String, dynamic>) {
+            final extraJob = extra['job'];
+            final extraTest = extra['test'];
+            if (extraJob is Map<String, dynamic>) {
+              job = Map<String, dynamic>.from(extraJob);
+              if (id != null) {
+                job['id'] = id;
+              }
+            }
+            if (extraTest is Map<String, dynamic>) {
+              test = Map<String, dynamic>.from(extraTest);
+              if (id != null) {
+                test['id'] = id;
+              }
+            }
+          }
           return SkillsTestFAQScreen(job: job, test: test);
         },
       ),
@@ -640,11 +694,26 @@ class AppRouter {
         name: 'about',
         builder: (context, state) => const AboutPage(),
       ),
+      GoRoute(
+        path: AppRoutes.contactUs,
+        name: 'contactUs',
+        builder: (context, state) => const ContactUsPage(),
+      ),
 
       GoRoute(
         path: AppRoutes.helpCenter,
         name: 'helpCenter',
         builder: (context, state) => const HelpCenterPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.feedback,
+        name: 'feedback',
+        builder: (context, state) => const FeedbackPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.faqs,
+        name: 'faqs',
+        builder: (context, state) => const FaqsPage(),
       ),
 
       GoRoute(
@@ -659,10 +728,30 @@ class AppRouter {
         builder: (context, state) => const TermsConditionsPage(),
       ),
 
+      // Combined notification settings (permission + preferences)
+      GoRoute(
+        path: AppRoutes.notificationSettings,
+        name: 'notificationSettings',
+        builder: (context, state) => const NotificationSettingsPage(),
+      ),
+
+      // Legacy routes (kept for backward compatibility)
       GoRoute(
         path: AppRoutes.notificationPermission,
         name: 'notificationPermission',
         builder: (context, state) => const NotificationPermissionPage(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.notificationPreferences,
+        name: 'notificationPreferences',
+        builder: (context, state) => const NotificationPreferencesPage(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.notificationHistory,
+        name: 'notificationHistory',
+        builder: (context, state) => const NotificationHistoryPage(),
       ),
 
       // ==================== NOT FOUND ROUTE ====================
@@ -732,8 +821,26 @@ class AppRouter {
 
 // ==================== ROUTER HELPERS ====================
 Map<String, dynamic> _findJobByIdOrDefault(String? id) {
+  // Create a default job object to prevent "Bad state: No element" error
+  Map<String, dynamic> getDefaultJob() {
+    return {
+      'id': id ?? '0',
+      'title': 'Job Application',
+      'company': 'Company',
+      'location': 'Location',
+      'description': 'Job description',
+      'salary': 'Not specified',
+      'job_type': 'Full-time',
+      'experience_required': '0-2 years',
+    };
+  }
+
   if (id == null || id.isEmpty) {
-    return JobData.recommendedJobs.first;
+    // Check if recommendedJobs is not empty before accessing first
+    if (JobData.recommendedJobs.isNotEmpty) {
+      return JobData.recommendedJobs.first;
+    }
+    return getDefaultJob();
   }
 
   final allJobs = <Map<String, dynamic>>[
@@ -742,11 +849,27 @@ Map<String, dynamic> _findJobByIdOrDefault(String? id) {
     ...JobData.appliedJobs,
   ];
 
+  // If no jobs available, return default
+  if (allJobs.isEmpty) {
+    return getDefaultJob();
+  }
+
   final match = allJobs.cast<Map<String, dynamic>?>().firstWhere(
     (job) => job?['id']?.toString() == id,
     orElse: () => null,
   );
-  return match ?? JobData.recommendedJobs.first;
+  
+  // Return match if found, otherwise return default job
+  if (match != null) {
+    return match;
+  }
+  
+  // If no match found, check if recommendedJobs has items, otherwise return default
+  if (JobData.recommendedJobs.isNotEmpty) {
+    return JobData.recommendedJobs.first;
+  }
+  
+  return getDefaultJob();
 }
 
 Map<String, dynamic> _findCompanyByIdOrDefault(String? id) {

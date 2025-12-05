@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "943709278646",
+    "project_id": "jobsahi-app-notifications",
+    "storage_bucket": "jobsahi-app-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:943709278646:android:1203d09c09fb8f912b3117",
+        "android_client_info": {
+          "package_name": "com.jobsahi.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhiSChnoLMe5xSN7UoHUz7btHSnqJ29QQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

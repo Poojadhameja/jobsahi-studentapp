@@ -46,11 +46,17 @@ class AuthError extends AuthState {
 /// OTP sent state
 class OtpSentState extends AuthState {
   final String phoneNumber;
+  final int? userId;
+  final int? expiresIn;
 
-  const OtpSentState({required this.phoneNumber});
+  const OtpSentState({
+    required this.phoneNumber,
+    this.userId,
+    this.expiresIn,
+  });
 
   @override
-  List<Object?> get props => [phoneNumber];
+  List<Object?> get props => [phoneNumber, userId, expiresIn];
 }
 
 /// OTP verification loading state

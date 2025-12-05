@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -22,14 +23,11 @@ class LoginOtpEmailScreen extends StatefulWidget {
 }
 
 class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
-  bool isOTPSelected = false; // false = Email selected, true = Phone selected
+  bool isOTPSelected = true; // false = Email selected, true = Phone selected
   bool _isPasswordVisible = false;
   bool _isSubmitting = false; // Track submission state locally
 
   /// 👁 for password toggle
-
-  /// Double back press handling
-  DateTime? _lastBackPressed;
 
   // Add controllers for text fields
   final TextEditingController _mobileController = TextEditingController();
@@ -49,6 +47,23 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Reset submitting state when screen is initialized/resumed
+    // This handles the case when user comes back from OTP screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final currentState = context.read<AuthBloc>().state;
+        if (currentState is! AuthLoading && _isSubmitting) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -65,35 +80,58 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
           setState(() {
             _isSubmitting = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              duration: const Duration(seconds: 3),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
+          TopSnackBar.showError(
+            context,
+            message: state.message,
+            duration: const Duration(seconds: 3),
           );
         } else if (state is OtpSentState) {
           debugPrint("🔵 LoginScreen navigating to OTP code screen");
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('OTP sent successfully'),
-              duration: Duration(seconds: 2),
-              backgroundColor: AppConstants.textPrimaryColor,
-              behavior: SnackBarBehavior.floating,
-            ),
+          // Reset submitting state before navigation
+          setState(() {
+            _isSubmitting = false;
+          });
+          TopSnackBar.showSuccess(
+            context,
+            message: 'OTP sent successfully',
+            duration: const Duration(seconds: 2),
           );
-          // Keep submitting state true until navigation completes
-          context.push(AppRoutes.loginOtpCode);
+          // Navigate to set password code screen (reused for phone login)
+          context.push(
+            AppRoutes.setPasswordCode,
+            extra: {
+              'purpose': 'phone_login',
+              'phoneNumber': state.phoneNumber,
+              'userId': state.userId,
+            },
+          );
         } else if (state is AuthSuccess) {
           debugPrint("🔵 LoginScreen showing success and navigating to popup");
           debugPrint("🔵 AuthSuccess message: ${state.message}");
           debugPrint("🔵 AuthSuccess user: ${state.user}");
+          // Reset submitting state before navigation
+          setState(() {
+            _isSubmitting = false;
+          });
           // Use go instead of push to replace the route and prevent back navigation
           context.go(AppRoutes.loginVerifiedPopup);
         }
       },
-      child: PopScope(
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          // Reset submitting state if not in loading and submitting is true
+          // This handles the case when user comes back from OTP screen
+          if (_isSubmitting && state is! AuthLoading) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _isSubmitting = false;
+                });
+              }
+            });
+          }
+          
+          return PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
@@ -162,15 +200,15 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            /// Email / Phone toggle
+                            /// Phone / Email toggle
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                _buildToggleButton("Email", !isOTPSelected, () {
-                                  setState(() => isOTPSelected = false);
-                                }),
                                 _buildToggleButton("Phone", isOTPSelected, () {
                                   setState(() => isOTPSelected = true);
+                                }),
+                                _buildToggleButton("Email", !isOTPSelected, () {
+                                  setState(() => isOTPSelected = false);
                                 }),
                               ],
                             ),
@@ -253,76 +291,198 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  /// Handle back press with double tap to exit
-  void _handleBackPress() {
-    final now = DateTime.now();
-
-    if (_lastBackPressed == null ||
-        now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
-      // First back press - show exit message
-      _lastBackPressed = now;
-      _showExitMessage();
-    } else {
-      // Second back press within 2 seconds - exit app
-      _exitApp();
-    }
-  }
-
-  /// Show exit confirmation message
-  void _showExitMessage() {
-    // Create custom overlay with fade animations
-    final overlay = Overlay.of(context);
-    late OverlayEntry overlayEntry;
-
-    overlayEntry = OverlayEntry(
-      builder: (context) => _CustomExitSnackbar(
-        onDismiss: () {
-          overlayEntry.remove();
+      );
         },
       ),
     );
-
-    overlay.insert(overlayEntry);
-
-    // Auto dismiss after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (overlayEntry.mounted) {
-        overlayEntry.remove();
-      }
-    });
   }
 
-  /// Exit the app
-  void _exitApp() {
-    SystemNavigator.pop();
+  /// Handle back press - show exit confirmation dialog
+  void _handleBackPress() {
+    _showExitConfirmation(context);
+  }
+
+  /// Show exit confirmation dialog
+  void _showExitConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon and Title
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppConstants.errorColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.exit_to_app_rounded,
+                          color: AppConstants.errorColor,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Exit App',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                          height: 1.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Are you sure you want to exit Jobsahi?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppConstants.textSecondaryColor,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Action buttons
+                Container(height: 1, color: Colors.grey.shade200),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: Colors.grey.shade200,
+                    ),
+                    Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(16),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            SystemNavigator.pop();
+                          },
+                          borderRadius: const BorderRadius.only(
+                            bottomRight: Radius.circular(16),
+                          ),
+                          splashColor: AppConstants.errorColor.withValues(
+                            alpha: 0.2,
+                          ),
+                          highlightColor: AppConstants.errorColor.withValues(
+                            alpha: 0.1,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Exit',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppConstants.errorColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// Email / Phone toggle button
   Widget _buildToggleButton(String text, bool active, VoidCallback onPressed) {
+    final isPhone = text == "Phone";
     return Container(
       decoration: BoxDecoration(
         color: active ? AppConstants.textPrimaryColor : Colors.white,
-        borderRadius: text == "Email"
+        borderRadius: isPhone
             ? const BorderRadius.only(
-                topLeft: Radius.circular(6),
-                bottomLeft: Radius.circular(6),
+                topLeft: Radius.circular(8),
+                bottomLeft: Radius.circular(8),
               )
             : const BorderRadius.only(
-                topRight: Radius.circular(6),
-                bottomRight: Radius.circular(6),
+                topRight: Radius.circular(8),
+                bottomRight: Radius.circular(8),
               ),
-        border: Border.all(color: AppConstants.textPrimaryColor),
+        border: Border(
+          top: BorderSide(color: AppConstants.textPrimaryColor, width: 1.5),
+          bottom: BorderSide(color: AppConstants.textPrimaryColor, width: 1.5),
+          left: isPhone
+              ? BorderSide(color: AppConstants.textPrimaryColor, width: 1.5)
+              : BorderSide.none,
+          right: isPhone
+              ? BorderSide.none
+              : BorderSide(color: AppConstants.textPrimaryColor, width: 1.5),
+        ),
       ),
       child: TextButton(
         onPressed: onPressed,
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: isPhone
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    bottomLeft: Radius.circular(8),
+                  )
+                : const BorderRadius.only(
+                    topRight: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+          ),
+        ),
         child: Text(
           text,
           style: TextStyle(
             color: active ? Colors.white : AppConstants.textPrimaryColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -743,94 +903,6 @@ class SignInButton extends StatelessWidget {
         side: const BorderSide(color: Color(0xFFE0E7EF)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         textStyle: const TextStyle(fontSize: 16),
-      ),
-    );
-  }
-}
-
-/// Custom exit snackbar with fade animations
-class _CustomExitSnackbar extends StatefulWidget {
-  final VoidCallback onDismiss;
-
-  const _CustomExitSnackbar({required this.onDismiss});
-
-  @override
-  State<_CustomExitSnackbar> createState() => _CustomExitSnackbarState();
-}
-
-class _CustomExitSnackbarState extends State<_CustomExitSnackbar>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
-    // Start animation
-    _animationController.forward();
-
-    // Start fade out after 1.2 seconds
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) {
-        _animationController.reverse().then((_) {
-          widget.onDismiss();
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 167,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return Opacity(
-              opacity: _fadeAnimation.value,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: const Text(
-                    'Press back again to exit the app',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
       ),
     );
   }

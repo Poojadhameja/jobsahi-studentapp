@@ -18,11 +18,17 @@ class LoginWithOtpEvent extends AuthEvent {
 /// Verify OTP event
 class VerifyOtpEvent extends AuthEvent {
   final String otp;
+  final String? phoneNumber; // Optional: pass phone number if state doesn't have it
+  final int? userId; // Optional: pass user ID if state doesn't have it
 
-  const VerifyOtpEvent({required this.otp});
+  const VerifyOtpEvent({
+    required this.otp,
+    this.phoneNumber,
+    this.userId,
+  });
 
   @override
-  List<Object?> get props => [otp];
+  List<Object?> get props => [otp, phoneNumber, userId];
 }
 
 /// Login with email and password event

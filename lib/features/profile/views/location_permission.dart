@@ -13,6 +13,7 @@ import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
 import '../../../shared/services/location_service.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 
 class LocationPermissionScreen extends StatelessWidget {
   final bool isFromCurrentLocation;
@@ -118,43 +119,53 @@ class _LocationPermissionViewState extends State<_LocationPermissionView>
                   ),
                 ),
                 child: SafeArea(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.largePadding,
-                        vertical: AppConstants.largePadding,
-                      ),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 40),
-
-                          // Location icon image
-                          _buildLocationIcon(),
-                          const SizedBox(height: 40),
-
-                          // Main question
-                          _buildMainQuestion(hasPermission),
-                          const SizedBox(height: 16),
-
-                          // Description text
-                          _buildDescription(hasPermission),
-                          const SizedBox(height: 50),
-
-                          // Allow location access button
-                          _buildAllowLocationButton(
-                            context,
-                            isProcessing,
-                            hasPermission,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
                           ),
-                          const SizedBox(height: 20),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppConstants.largePadding,
+                              vertical: AppConstants.largePadding,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 40),
 
-                          // Skip button for users who don't want to grant location permission
-                          _buildSkipButton(context, isProcessing),
+                                // Location icon image
+                                _buildLocationIcon(),
+                                const SizedBox(height: 40),
 
-                          const SizedBox(height: 40),
-                        ],
-                      ),
-                    ),
+                                // Main question
+                                _buildMainQuestion(hasPermission),
+                                const SizedBox(height: 16),
+
+                                // Description text
+                                _buildDescription(hasPermission),
+                                const SizedBox(height: 50),
+
+                                // Allow location access button
+                                _buildAllowLocationButton(
+                                  context,
+                                  isProcessing,
+                                  hasPermission,
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Skip button for users who don't want to grant location permission
+                                _buildSkipButton(context, isProcessing),
+
+                                const SizedBox(height: 40),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -461,14 +472,16 @@ class _LocationPermissionViewState extends State<_LocationPermissionView>
       debugPrint('🔵 Permission granted: $permissionGranted');
 
       if (!permissionGranted) {
-        debugPrint('🔵 Requesting system permission...');
-        // Step 2: Request system permission (shows system dialog)
-        final systemPermission = await Permission.location.request();
-        debugPrint('🔵 System permission result: $systemPermission');
+        debugPrint('🔵 Requesting location permission with proper flow...');
+        // Step 2: Request permission using LocationService (handles denied/permanently denied cases)
+        final permissionResult = await locationService
+            .requestLocationPermission(context: context);
+        debugPrint('🔵 Permission request result: $permissionResult');
 
-        if (systemPermission != PermissionStatus.granted) {
-          debugPrint('❌ User denied system permission');
-          // User denied system permission
+        if (!permissionResult) {
+          debugPrint('❌ User denied or permission not granted');
+          // User denied system permission or it was permanently denied
+          // LocationService already showed the "Open Settings" dialog if needed
           if (context.mounted) {
             context.read<ProfileBloc>().add(
               const LocationPermissionDeniedEvent(),
@@ -484,15 +497,19 @@ class _LocationPermissionViewState extends State<_LocationPermissionView>
       debugPrint('🔵 GPS enabled: $gpsEnabled');
 
       if (!gpsEnabled) {
-        debugPrint('⚠️ GPS is disabled, will trigger system dialog');
-        // GPS is disabled - system will show dialog when we try to get location
-        // Stop the loading state first
+        debugPrint('⚠️ GPS is disabled, showing warning snackbar');
+        // GPS is disabled - show warning snackbar (like in profile)
         if (context.mounted) {
           context.read<ProfileBloc>().add(
             const LocationPermissionDeniedEvent(),
           );
+          // Show GPS warning snackbar
+          TopSnackBar.showGPSWarning(
+            context,
+            message: 'Please enable GPS to get your location',
+            duration: const Duration(seconds: 5),
+          );
         }
-
         // Try to get location - this will trigger system GPS dialog
         try {
           debugPrint(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
+import '../../../shared/widgets/common/top_snackbar.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -37,8 +38,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
   bool _isLocallySubmitting = false;
 
   /// Text editing controllers
-  final _nameController = TextEditingController();
-  final _middleNameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -46,8 +46,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _middleNameController.dispose();
+    _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
@@ -298,32 +297,28 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
   ) {
     return Column(
       children: [
-        // First Name
+        // Full Name
         _buildFormField(
-          controller: _nameController,
-          label: "First Name*",
-          hint: "पहला नाम",
+          controller: _fullNameController,
+          label: "Full Name*",
+          hint: "पूरा नाम",
           prefixIcon: Icons.person,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'First name is required';
+              return 'Full name is required';
             }
-            if (value.trim().length < 2) {
-              return 'First name must be at least 2 letters long';
+            final trimmedValue = value.trim();
+            // Check if name contains at least 2 words
+            final nameParts = trimmedValue.split(RegExp(r'\s+'));
+            if (nameParts.length < 2) {
+              return 'Please enter your full name with at least 2 words';
             }
-            return null;
-          },
-        ),
-        const SizedBox(height: 20),
-
-        // Middle Name (Optional)
-        _buildFormField(
-          controller: _middleNameController,
-          label: "Middle Name",
-          hint: "मध्य नाम (वैकल्पिक)",
-          prefixIcon: Icons.person_outline,
-          validator: (value) {
-            // Middle name is optional, so no validation required
+            // Check if each word has at least 3 letters
+            for (String part in nameParts) {
+              if (part.length < 3) {
+                return 'Each word must be at least 3 letters long';
+              }
+            }
             return null;
           },
         ),
@@ -396,6 +391,14 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
             }
             if (value.length < 6) {
               return AppConstants.passwordTooShort;
+            }
+            // Enforce complexity: uppercase, lowercase, digit, special char
+            final hasUppercase = RegExp(r'[A-Z]').hasMatch(value);
+            final hasLowercase = RegExp(r'[a-z]').hasMatch(value);
+            final hasDigit = RegExp(r'[0-9]').hasMatch(value);
+            final hasSpecial = RegExp(r'[^A-Za-z0-9]').hasMatch(value);
+            if (!hasUppercase || !hasLowercase || !hasDigit || !hasSpecial) {
+              return 'Password must include uppercase, lowercase, number, and special character';
             }
             return null;
           },
@@ -637,25 +640,17 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
 
       // Check if terms are accepted
       if (!isTermsAccepted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('कृपया नियम, प्राइवेसी और शुल्क से सहमत हों'),
-            backgroundColor: Colors.red,
-          ),
+        TopSnackBar.showError(
+          context,
+          message: 'कृपया नियम, प्राइवेसी और शुल्क से सहमत हों',
         );
         return;
       }
 
       // Create account using existing CreateAccountEvent
-      // Combine first name and middle name (if provided)
-      String fullName = _nameController.text.trim();
-      if (_middleNameController.text.trim().isNotEmpty) {
-        fullName += ' ${_middleNameController.text.trim()}';
-      }
-
       context.read<AuthBloc>().add(
         CreateAccountEvent(
-          name: fullName,
+          name: _fullNameController.text.trim(),
           email: _emailController.text,
           phone: _phoneController.text,
           password: _passwordController.text,
@@ -666,9 +661,7 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
 
   /// Shows error snackbar
   void _showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
+    TopSnackBar.showError(context, message: message);
   }
 }
 

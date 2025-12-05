@@ -7,10 +7,12 @@ abstract class ProfileEvent extends Equatable {
 
 /// Load profile data event
 class LoadProfileDataEvent extends ProfileEvent {
-  const LoadProfileDataEvent();
+  final bool forceRefresh;
+  
+  const LoadProfileDataEvent({this.forceRefresh = false});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [forceRefresh];
 }
 
 /// Update profile event
@@ -133,6 +135,145 @@ class DeleteExperienceEvent extends ProfileEvent {
 
   @override
   List<Object?> get props => [index];
+}
+
+/// Inline profile header update event
+class UpdateProfileHeaderInlineEvent extends ProfileEvent {
+  final String name;
+  final String email;
+  final String phone;
+  final String location;
+  final String? bio;
+
+  const UpdateProfileHeaderInlineEvent({
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.location,
+    this.bio,
+  });
+
+  @override
+  List<Object?> get props => [name, email, phone, location, bio];
+}
+
+/// Inline resume update event
+class UpdateProfileResumeInlineEvent extends ProfileEvent {
+  final String fileName;
+  final String? lastUpdated;
+  final String? downloadUrl;
+
+  const UpdateProfileResumeInlineEvent({
+    required this.fileName,
+    this.lastUpdated,
+    this.downloadUrl,
+  });
+
+  @override
+  List<Object?> get props => [fileName, lastUpdated, downloadUrl];
+}
+
+/// Inline contact details update event
+class UpdateProfileContactInlineEvent extends ProfileEvent {
+  final String email;
+  final String phone;
+  final String location;
+  final String? gender;
+  final String? dateOfBirth;
+  final String? contactEmail;
+  final String? contactPhone;
+
+  const UpdateProfileContactInlineEvent({
+    required this.email,
+    required this.phone,
+    required this.location,
+    this.gender,
+    this.dateOfBirth,
+    this.contactEmail,
+    this.contactPhone,
+  });
+
+  @override
+  List<Object?> get props => [
+        email,
+        phone,
+        location,
+        gender,
+        dateOfBirth,
+        contactEmail,
+        contactPhone,
+      ];
+}
+
+/// Inline general information update event
+class UpdateProfileGeneralInfoInlineEvent extends ProfileEvent {
+  final String? gender;
+  final String? dateOfBirth;
+  final List<String> languages;
+  final String? aadharNumber;
+
+  const UpdateProfileGeneralInfoInlineEvent({
+    this.gender,
+    this.dateOfBirth,
+    required this.languages,
+    this.aadharNumber,
+  });
+
+  @override
+  List<Object?> get props => [gender, dateOfBirth, languages, aadharNumber];
+}
+
+/// Inline social links update event
+/// Supports array of social links with title and profile_url
+class UpdateProfileSocialLinksInlineEvent extends ProfileEvent {
+  final List<Map<String, dynamic>> socialLinks;
+
+  const UpdateProfileSocialLinksInlineEvent({
+    required this.socialLinks,
+  });
+
+  @override
+  List<Object?> get props => [socialLinks];
+}
+
+/// Inline certificates update event
+class UpdateProfileCertificatesInlineEvent extends ProfileEvent {
+  final List<Map<String, dynamic>> certificates;
+
+  const UpdateProfileCertificatesInlineEvent({required this.certificates});
+
+  @override
+  List<Object?> get props => [certificates];
+}
+
+/// Inline skills update event
+class UpdateProfileSkillsInlineEvent extends ProfileEvent {
+  final List<String> skills;
+
+  const UpdateProfileSkillsInlineEvent({required this.skills});
+
+  @override
+  List<Object?> get props => [skills];
+}
+
+/// Inline experience list update event
+class UpdateProfileExperienceListEvent extends ProfileEvent {
+  final List<Map<String, dynamic>> experience;
+
+  const UpdateProfileExperienceListEvent({required this.experience});
+
+  @override
+  List<Object?> get props => [experience];
+}
+
+/// Inline education list update event
+class UpdateProfileEducationListEvent extends ProfileEvent {
+  final List<Map<String, dynamic>> education;
+
+  const UpdateProfileEducationListEvent({required this.education});
+
+  @override
+  List<Object?> get props => [education];
 }
 
 /// Refresh profile data event

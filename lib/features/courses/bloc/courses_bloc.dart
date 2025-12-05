@@ -2,7 +2,9 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'courses_event.dart';
 import 'courses_state.dart';
+import '../../../core/utils/network_error_helper.dart';
 import '../repository/courses_repository.dart';
+import '../../../shared/services/courses_cache_service.dart';
 
 /// Courses BLoC
 /// Handles all course-related business logic
@@ -16,6 +18,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<LoadCoursesEvent>(_onLoadCourses);
     on<SearchCoursesEvent>(_onSearchCourses);
     on<FilterCoursesEvent>(_onFilterCourses);
+    on<ClearAllFiltersEvent>(_onClearAllFilters);
     on<SaveCourseEvent>(_onSaveCourse);
     on<UnsaveCourseEvent>(_onUnsaveCourse);
     on<EnrollInCourseEvent>(_onEnrollInCourse);
@@ -24,6 +27,7 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     on<RefreshCoursesEvent>(_onRefreshCourses);
     on<ClearSearchEvent>(_onClearSearch);
     on<LoadCourseDetailsEvent>(_onLoadCourseDetails);
+    on<ToggleFiltersEvent>(_onToggleFilters);
   }
 
   /// Handle load courses
@@ -31,23 +35,106 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     LoadCoursesEvent event,
     Emitter<CoursesState> emit,
   ) async {
+    // Declare variables outside try block for catch block access
+    bool loadedFromCache = false;
+    List<Map<String, dynamic>> allCourses = [];
+    List<Map<String, dynamic>> savedCourses = [];
+    Set<String> savedCourseIds = <String>{};
+
     try {
-      // Only show loading if we don't have any data
-      if (state is! CoursesLoaded) {
-        emit(const CoursesLoading());
+      // Try to load from cache first for offline support (like jobs section)
+      final cacheService = CoursesCacheService.instance;
+      await cacheService.initialize();
+
+      // Always try to load from cache first (even on force refresh)
+      // This shows cached data immediately while fresh data loads in background
+      final cachedData = await cacheService.getCoursesData();
+      if (cachedData != null && await cacheService.isCacheValid()) {
+        try {
+          allCourses = List<Map<String, dynamic>>.from(
+            cachedData['allCourses'] ?? [],
+          );
+          savedCourses = List<Map<String, dynamic>>.from(
+            cachedData['savedCourses'] ?? [],
+          );
+          savedCourseIds = Set<String>.from(cachedData['savedCourseIds'] ?? []);
+          loadedFromCache = true;
+          debugPrint('🔵 [Courses] Loaded data from cache');
+
+          // Emit cached data immediately for offline support (no loading state)
+          // This prevents reload on first time - shows cached data while fresh data loads
+          emit(
+            CoursesLoaded(
+              allCourses: allCourses,
+              filteredCourses: allCourses,
+              savedCourses: savedCourses,
+              enrolledCourses: [],
+              savedCourseIds: savedCourseIds,
+              enrolledCourseIds: <String>{},
+              selectedCategory: 'All',
+              selectedLevel: 'All',
+              selectedDuration: 'All',
+              selectedInstitute: 'All',
+            ),
+          );
+        } catch (e) {
+          debugPrint('🔴 [Courses] Error loading from cache: $e');
+        }
       }
 
-      // Fetch courses from API (will use cache if available)
-      final courses = await _coursesRepository.getCourses();
+      // Only show loading if we don't have cached data
+      if (!loadedFromCache) {
+        if (state is CoursesInitial) {
+          emit(const CoursesLoading());
+        } else if (state is! CoursesLoaded && !event.forceRefresh) {
+          emit(const CoursesLoading());
+        }
+      }
 
-      // Convert API courses to UI format
-      final allCourses = courses.map((course) => course.toUIMap()).toList();
+      // Fetch courses from API (force refresh if requested)
+      final courses = await _coursesRepository.getCourses(
+        forceRefresh: event.forceRefresh,
+      );
 
-      // Initialize empty saved and enrolled courses (will be managed by API when endpoints are available)
-      final savedCourses = <Map<String, dynamic>>[];
+      // Convert API courses to UI format (update existing variables)
+      allCourses = courses.map((course) => course.toUIMap()).toList();
+
+      // Fetch saved courses and hydrate saved flags (update existing variables)
+      try {
+        final saved = await _coursesRepository.getSavedCourses();
+        savedCourseIds = saved.savedCourseIds;
+        savedCourses = saved.courses;
+      } catch (e) {
+        debugPrint('⚠️ Failed to load saved courses: $e');
+      }
+
+      // Mark isSaved on allCourses using savedCourseIds
+      allCourses = allCourses.map((c) {
+        final id = c['id']?.toString();
+        if (id != null && savedCourseIds.contains(id)) {
+          return {...c, 'isSaved': true};
+        }
+        return {...c, 'isSaved': c['isSaved'] == true};
+      }).toList();
+
+      // Sort courses by created_at (most recent first)
+      allCourses = _sortCoursesByRecent(allCourses);
+
+      // Initialize enrolled placeholders (no API yet)
       final enrolledCourses = <Map<String, dynamic>>[];
-      final savedCourseIds = <String>{};
       final enrolledCourseIds = <String>{};
+
+      // Store in cache for offline use
+      try {
+        await cacheService.storeCoursesData(
+          allCourses: allCourses,
+          savedCourses: savedCourses,
+          savedCourseIds: savedCourseIds,
+        );
+        debugPrint('🔵 [Courses] Stored data in cache');
+      } catch (e) {
+        debugPrint('🔴 [Courses] Failed to store in cache: $e');
+      }
 
       emit(
         CoursesLoaded(
@@ -57,11 +144,57 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           enrolledCourses: enrolledCourses,
           savedCourseIds: savedCourseIds,
           enrolledCourseIds: enrolledCourseIds,
+          selectedCategory: 'All',
+          selectedLevel: 'All',
+          selectedDuration: 'All',
+          selectedInstitute: 'All',
         ),
       );
     } catch (e) {
-      // Emit error if API fails - no fallback to mock data
-      emit(CoursesError(message: 'Failed to load courses: ${e.toString()}'));
+      // If API fails but we have cached data, use it
+      if (loadedFromCache) {
+        debugPrint('🔵 [Courses] API failed but using cached data');
+        return;
+      }
+
+      // Try to load from cache as fallback
+      try {
+        final cacheService = CoursesCacheService.instance;
+        await cacheService.initialize();
+        final cachedData = await cacheService.getCoursesData();
+        if (cachedData != null) {
+          final fallbackAllCourses = List<Map<String, dynamic>>.from(
+            cachedData['allCourses'] ?? [],
+          );
+          final fallbackSavedCourses = List<Map<String, dynamic>>.from(
+            cachedData['savedCourses'] ?? [],
+          );
+          final fallbackSavedCourseIds = Set<String>.from(
+            cachedData['savedCourseIds'] ?? [],
+          );
+
+          emit(
+            CoursesLoaded(
+              allCourses: fallbackAllCourses,
+              filteredCourses: fallbackAllCourses,
+              savedCourses: fallbackSavedCourses,
+              enrolledCourses: [],
+              savedCourseIds: fallbackSavedCourseIds,
+              enrolledCourseIds: <String>{},
+              selectedCategory: 'All',
+              selectedLevel: 'All',
+              selectedDuration: 'All',
+              selectedInstitute: 'All',
+            ),
+          );
+          return;
+        }
+      } catch (cacheError) {
+        debugPrint('🔴 [Courses] Cache fallback also failed: $cacheError');
+      }
+
+      // Emit error if API fails and no cache available
+      _handleCoursesError(e, emit, defaultMessage: 'Failed to load courses');
     }
   }
 
@@ -73,6 +206,9 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         currentState.allCourses,
         event.query,
         currentState.selectedCategory,
+        currentState.selectedLevel,
+        currentState.selectedDuration,
+        currentState.selectedInstitute,
       );
 
       emit(
@@ -88,15 +224,57 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
   void _onFilterCourses(FilterCoursesEvent event, Emitter<CoursesState> emit) {
     if (state is CoursesLoaded) {
       final currentState = state as CoursesLoaded;
+
+      // Update selected filters (keep existing if new one is not provided)
+      final updatedCategory = event.category ?? currentState.selectedCategory;
+      final updatedLevel = event.level ?? currentState.selectedLevel;
+      final updatedDuration = event.duration ?? currentState.selectedDuration;
+      final updatedInstitute =
+          event.institute ?? currentState.selectedInstitute;
+
       final filteredCourses = _filterCourses(
         currentState.allCourses,
         currentState.searchQuery,
-        event.category,
+        updatedCategory,
+        updatedLevel,
+        updatedDuration,
+        updatedInstitute,
       );
 
       emit(
         currentState.copyWith(
-          selectedCategory: event.category,
+          selectedCategory: updatedCategory,
+          selectedLevel: updatedLevel,
+          selectedDuration: updatedDuration,
+          selectedInstitute: updatedInstitute,
+          filteredCourses: filteredCourses,
+        ),
+      );
+    }
+  }
+
+  /// Handle clear all filters
+  void _onClearAllFilters(
+    ClearAllFiltersEvent event,
+    Emitter<CoursesState> emit,
+  ) {
+    if (state is CoursesLoaded) {
+      final currentState = state as CoursesLoaded;
+      final filteredCourses = _filterCourses(
+        currentState.allCourses,
+        currentState.searchQuery,
+        'All',
+        'All',
+        'All',
+        'All',
+      );
+
+      emit(
+        currentState.copyWith(
+          selectedCategory: 'All',
+          selectedLevel: 'All',
+          selectedDuration: 'All',
+          selectedInstitute: 'All',
           filteredCourses: filteredCourses,
         ),
       );
@@ -120,9 +298,23 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         );
         updatedSavedCourseIds.add(event.courseId);
 
-        // Find the course to add to saved courses
-        final courseToSave = currentState.allCourses.firstWhere(
-          (course) => course['id'] == event.courseId,
+        // Update isSaved flag in allCourses and filteredCourses
+        // Handle both string and int course IDs
+        final updatedAllCourses = currentState.allCourses.map((course) {
+          final courseId = course['id']?.toString();
+          if (courseId == event.courseId || courseId == event.courseId.toString()) {
+            return {...course, 'isSaved': true};
+          }
+          return course;
+        }).toList();
+
+        // Find the course to add to saved courses from updated list
+        // Handle both string and int course IDs
+        final courseToSave = updatedAllCourses.firstWhere(
+          (course) {
+            final courseId = course['id']?.toString();
+            return courseId == event.courseId || courseId == event.courseId.toString();
+          },
           orElse: () => {},
         );
 
@@ -132,16 +324,35 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           );
           updatedSavedCourses.add(courseToSave);
 
+          // Rebuild filteredCourses with updated isSaved flag
+          final updatedFilteredCourses = _filterCourses(
+            updatedAllCourses,
+            currentState.searchQuery,
+            currentState.selectedCategory,
+            currentState.selectedLevel,
+            currentState.selectedDuration,
+            currentState.selectedInstitute,
+          );
+
           emit(
             currentState.copyWith(
+              allCourses: updatedAllCourses,
+              filteredCourses: updatedFilteredCourses,
               savedCourses: updatedSavedCourses,
               savedCourseIds: updatedSavedCourseIds,
             ),
           );
 
-          // Emit success state
-          emit(CourseSavedState(courseId: event.courseId));
+          // Don't emit CourseSavedState here - it causes white page in courses list
+          // CourseSavedState is only needed for course details page
         }
+      } else if (state is CourseDetailsLoaded) {
+        // Handle save from course details page
+        final detailsState = state as CourseDetailsLoaded;
+        await _coursesRepository.saveCourse(event.courseId);
+        final updatedCourse = {...detailsState.course, 'isSaved': true};
+        emit(CourseDetailsLoaded(course: updatedCourse));
+        emit(CourseSavedState(courseId: event.courseId));
       }
     } catch (e) {
       emit(CoursesError(message: 'Failed to save course: ${e.toString()}'));
@@ -169,14 +380,41 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
             .where((course) => course['id'] != event.courseId)
             .toList();
 
+        // Update isSaved flag in allCourses and filteredCourses
+        final updatedAllCourses = currentState.allCourses.map((course) {
+          if (course['id'] == event.courseId) {
+            return {...course, 'isSaved': false};
+          }
+          return course;
+        }).toList();
+
+        // Rebuild filteredCourses with updated isSaved flag
+        final updatedFilteredCourses = _filterCourses(
+          updatedAllCourses,
+          currentState.searchQuery,
+          currentState.selectedCategory,
+          currentState.selectedLevel,
+          currentState.selectedDuration,
+          currentState.selectedInstitute,
+        );
+
         emit(
           currentState.copyWith(
+            allCourses: updatedAllCourses,
+            filteredCourses: updatedFilteredCourses,
             savedCourses: updatedSavedCourses,
             savedCourseIds: updatedSavedCourseIds,
           ),
         );
 
-        // Emit success state
+        // Don't emit CourseUnsavedState here - it causes white page in courses list
+        // CourseUnsavedState is only needed for course details page
+      } else if (state is CourseDetailsLoaded) {
+        // Handle unsave from course details page
+        final detailsState = state as CourseDetailsLoaded;
+        await _coursesRepository.unsaveCourse(event.courseId);
+        final updatedCourse = {...detailsState.course, 'isSaved': false};
+        emit(CourseDetailsLoaded(course: updatedCourse));
         emit(CourseUnsavedState(courseId: event.courseId));
       }
     } catch (e) {
@@ -245,12 +483,12 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     try {
       emit(const CoursesLoading());
 
-      // TODO: Implement saved courses API call when endpoint is available
-      await Future.delayed(const Duration(milliseconds: 300));
+      final saved = await _coursesRepository.getSavedCourses();
+      var savedCourses = saved.courses;
+      final savedCourseIds = saved.savedCourseIds;
 
-      // For now, return empty saved courses
-      final savedCourses = <Map<String, dynamic>>[];
-      final savedCourseIds = <String>{};
+      // Sort saved courses by created_at (most recent first)
+      savedCourses = _sortCoursesByRecent(savedCourses);
 
       emit(
         CoursesLoaded(
@@ -260,6 +498,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           enrolledCourses: [],
           savedCourseIds: savedCourseIds,
           enrolledCourseIds: <String>{},
+          selectedCategory: 'All',
+          selectedLevel: 'All',
+          selectedDuration: 'All',
+          selectedInstitute: 'All',
         ),
       );
     } catch (e) {
@@ -291,6 +533,10 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
           enrolledCourses: enrolledCourses,
           savedCourseIds: <String>{},
           enrolledCourseIds: <String>{},
+          selectedCategory: 'All',
+          selectedLevel: 'All',
+          selectedDuration: 'All',
+          selectedInstitute: 'All',
         ),
       );
     } catch (e) {
@@ -307,8 +553,8 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     RefreshCoursesEvent event,
     Emitter<CoursesState> emit,
   ) async {
-    // Reload courses
-    add(const LoadCoursesEvent());
+    // Reload courses with force refresh
+    add(const LoadCoursesEvent(forceRefresh: true));
   }
 
   /// Handle clear search
@@ -319,6 +565,9 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         currentState.allCourses,
         '',
         currentState.selectedCategory,
+        currentState.selectedLevel,
+        currentState.selectedDuration,
+        currentState.selectedInstitute,
       );
 
       emit(
@@ -330,30 +579,62 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
     }
   }
 
-  /// Filter courses based on search query and category
+  /// Filter courses based on search query and all filters
+  /// All filters work together in combination with search
   List<Map<String, dynamic>> _filterCourses(
     List<Map<String, dynamic>> courses,
     String query,
     String category,
+    String level,
+    String duration,
+    String institute,
   ) {
     List<Map<String, dynamic>> filteredCourses = List.from(courses);
 
-    // Apply search filter
+    // Apply search filter - searches across multiple fields including filter-related fields
     if (query.isNotEmpty) {
+      final searchQuery = query.toLowerCase().trim();
       filteredCourses = filteredCourses.where((course) {
+        // Search in title fields
         final title = course['title']?.toString().toLowerCase() ?? '';
-        final instructor = course['instructor']?.toString().toLowerCase() ?? '';
+        final titleEnglish =
+            course['titleEnglish']?.toString().toLowerCase() ?? '';
+
+        // Search in description
         final description =
             course['description']?.toString().toLowerCase() ?? '';
-        final searchQuery = query.toLowerCase();
 
+        // Search in instructor
+        final instructor = course['instructor']?.toString().toLowerCase() ?? '';
+
+        // Search in category (filter field)
+        final courseCategory =
+            course['category']?.toString().toLowerCase() ?? '';
+
+        // Search in level (filter field)
+        final courseLevel = course['level']?.toString().toLowerCase() ?? '';
+
+        // Search in duration (filter field)
+        final courseDuration =
+            course['duration']?.toString().toLowerCase() ?? '';
+
+        // Search in institute (filter field)
+        final courseInstitute =
+            course['institute']?.toString().toLowerCase() ?? '';
+
+        // Return true if search query matches any field
         return title.contains(searchQuery) ||
+            titleEnglish.contains(searchQuery) ||
+            description.contains(searchQuery) ||
             instructor.contains(searchQuery) ||
-            description.contains(searchQuery);
+            courseCategory.contains(searchQuery) ||
+            courseLevel.contains(searchQuery) ||
+            courseDuration.contains(searchQuery) ||
+            courseInstitute.contains(searchQuery);
       }).toList();
     }
 
-    // Apply category filter
+    // Apply category filter (works with search)
     if (category != 'All') {
       filteredCourses = filteredCourses.where((course) {
         final courseCategory = course['category']?.toString() ?? '';
@@ -361,7 +642,79 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
       }).toList();
     }
 
-    return filteredCourses;
+    // Apply level filter (works with search and category)
+    if (level != 'All') {
+      filteredCourses = filteredCourses.where((course) {
+        final courseLevel = course['level']?.toString() ?? '';
+        return courseLevel == level;
+      }).toList();
+    }
+
+    // Apply duration filter (works with search, category, and level)
+    if (duration != 'All') {
+      filteredCourses = filteredCourses.where((course) {
+        final courseDuration = course['duration']?.toString() ?? '';
+        return courseDuration == duration;
+      }).toList();
+    }
+
+    // Apply institute filter (works with all previous filters and search)
+    if (institute != 'All') {
+      filteredCourses = filteredCourses.where((course) {
+        final courseInstitute = course['institute']?.toString() ?? '';
+        return courseInstitute == institute;
+      }).toList();
+    }
+
+    // All filters and search work together in combination
+    // Result: courses that match search query AND category AND level AND duration AND institute
+
+    // Sort filtered courses by created_at (most recent first)
+    return _sortCoursesByRecent(filteredCourses);
+  }
+
+  /// Sort courses by created_at date (most recent first)
+  /// If created_at is not available, sort by ID in descending order (higher ID = newer)
+  List<Map<String, dynamic>> _sortCoursesByRecent(
+    List<Map<String, dynamic>> courses,
+  ) {
+    return List<Map<String, dynamic>>.from(courses)..sort((a, b) {
+      final dateA = _parseDate(a['created_at']);
+      final dateB = _parseDate(b['created_at']);
+
+      // If both have valid dates, sort by date (most recent first)
+      if (dateA != null && dateB != null) {
+        return dateB.compareTo(dateA);
+      }
+
+      // If only one has a date, prioritize it
+      if (dateA != null) return -1;
+      if (dateB != null) return 1;
+
+      // If neither has a date, sort by ID (higher ID = newer, assuming auto-increment)
+      final idA = int.tryParse(a['id']?.toString() ?? '0') ?? 0;
+      final idB = int.tryParse(b['id']?.toString() ?? '0') ?? 0;
+      return idB.compareTo(idA);
+    });
+  }
+
+  /// Parse date string to DateTime
+  DateTime? _parseDate(dynamic dateValue) {
+    if (dateValue == null || dateValue.toString().isEmpty) {
+      return null;
+    }
+
+    try {
+      if (dateValue is String) {
+        return DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        return dateValue;
+      }
+    } catch (e) {
+      debugPrint('🔴 [Courses] Error parsing date: $dateValue, error: $e');
+    }
+
+    return null;
   }
 
   /// Handle load course details
@@ -378,6 +731,30 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
       if (course != null) {
         // Convert Course object to UI format
         final courseMap = course.toUIMap();
+        
+        // Check if course is saved by checking savedCourseIds from current state
+        final courseIdString = event.courseId.toString();
+        bool isSaved = false;
+        
+        // Check savedCourseIds from current state if available
+        if (state is CoursesLoaded) {
+          final currentState = state as CoursesLoaded;
+          isSaved = currentState.savedCourseIds.contains(courseIdString);
+        } else {
+          // Also check saved courses from repository
+          try {
+            final saved = await _coursesRepository.getSavedCourses();
+            isSaved = saved.savedCourseIds.contains(courseIdString);
+          } catch (e) {
+            debugPrint('⚠️ [CoursesBloc] Failed to check saved courses: $e');
+          }
+        }
+        
+        // Update isSaved flag in course map
+        courseMap['isSaved'] = isSaved;
+        
+        debugPrint('🔵 [CoursesBloc] Loaded course details: ID=$courseIdString, isSaved=$isSaved');
+        
         emit(CourseDetailsLoaded(course: courseMap));
       } else {
         emit(const CoursesError(message: 'Course not found'));
@@ -423,5 +800,56 @@ class CoursesBloc extends Bloc<CoursesEvent, CoursesState> {
         );
       }
     }
+  }
+
+  /// Handle toggle filters event
+  void _onToggleFilters(ToggleFiltersEvent event, Emitter<CoursesState> emit) {
+    if (state is CoursesLoaded) {
+      final currentState = state as CoursesLoaded;
+      final newShowFilters = !currentState.showFilters;
+
+      // If closing filters, clear all active filters
+      if (!newShowFilters && currentState.hasActiveFilters()) {
+        final filteredCourses = _filterCourses(
+          currentState.allCourses,
+          currentState.searchQuery,
+          'All',
+          'All',
+          'All',
+          'All',
+        );
+
+        emit(
+          currentState.copyWith(
+            showFilters: newShowFilters,
+            selectedCategory: 'All',
+            selectedLevel: 'All',
+            selectedDuration: 'All',
+            selectedInstitute: 'All',
+            filteredCourses: filteredCourses,
+          ),
+        );
+      } else {
+        // Just toggle visibility if opening or if no active filters
+        emit(currentState.copyWith(showFilters: newShowFilters));
+      }
+    }
+  }
+
+  /// Helper method to handle errors and emit appropriate error state
+  /// Detects network errors and formats messages accordingly
+  void _handleCoursesError(
+    dynamic error,
+    Emitter<CoursesState> emit, {
+    String? defaultMessage,
+  }) {
+    final errorMessage = NetworkErrorHelper.isNetworkError(error)
+        ? NetworkErrorHelper.getNetworkErrorMessage(error)
+        : NetworkErrorHelper.extractErrorMessage(
+            error,
+            defaultMessage: defaultMessage,
+          );
+
+    emit(CoursesError(message: errorMessage));
   }
 }

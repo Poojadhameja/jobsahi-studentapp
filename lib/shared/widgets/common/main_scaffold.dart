@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
-import '../../../core/router/app_router.dart';
 import 'bottom_navigation.dart';
 import 'tab_navigation_manager.dart';
 import 'custom_app_bar.dart';
 import 'tab_app_bar.dart';
+import 'search_filter_bar.dart';
+import '../../../features/courses/bloc/courses_bloc.dart';
+import '../../../features/courses/bloc/courses_event.dart';
+import '../../../features/courses/bloc/courses_state.dart';
 
 class MainScaffold extends StatefulWidget {
   final Widget child;
@@ -42,7 +46,10 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     // Get current location to determine active tab
-    final String location = GoRouterState.of(context).uri.path;
+    final state = GoRouterState.of(context);
+    final String location = state.uri.path;
+    final bool fromProfileParam =
+        state.uri.queryParameters['fromProfile'] == 'true';
     final int currentIndex = _getCurrentIndex(location);
 
     // Update navigation manager's current tab only if different
@@ -59,7 +66,11 @@ class _MainScaffoldState extends State<MainScaffold> {
       },
       child: Scaffold(
         backgroundColor: AppConstants.cardBackgroundColor,
-        appBar: _buildAppBar(_navigationManager.currentTabIndex),
+        appBar: _buildAppBar(
+          _navigationManager.currentTabIndex,
+          hideForFromProfile:
+              fromProfileParam && location.startsWith('/application-tracker'),
+        ),
         body: widget.child,
         bottomNavigationBar: CustomBottomNavigation(
           currentIndex: _navigationManager.currentTabIndex,
@@ -70,23 +81,21 @@ class _MainScaffoldState extends State<MainScaffold> {
   }
 
   /// Build appropriate app bar based on current tab
-  PreferredSizeWidget? _buildAppBar(int currentIndex) {
+  PreferredSizeWidget? _buildAppBar(
+    int currentIndex, {
+    bool hideForFromProfile = false,
+  }) {
+    if (hideForFromProfile) return null;
     switch (currentIndex) {
       case 0:
-        // Home tab - show hamburger menu, search, and notification
+        // Home tab - show hamburger menu, search, and filter icon
         return CustomAppBar(
-          showSearchBar: true,
           showMenuButton: true,
-          showNotificationIcon: true,
-          onSearch: _onSearch,
-          onNotificationPressed: _onNotificationPressed,
+          customTitle: _buildHomeAppBarTitle(context),
         );
       case 1:
-        // Learning tab - show title with back button
-        return TabAppBar(
-          title: 'Learning Center',
-          onBackPressed: () => _handleBackPress(context, currentIndex),
-        );
+        // Learning tab - show search bar with back and filter buttons
+        return _buildLearningCenterAppBar(context, currentIndex);
       case 2:
         // Application Tracker tab - show title with back button
         return TabAppBar(
@@ -126,7 +135,6 @@ class _MainScaffoldState extends State<MainScaffold> {
     else
       index = 0; // Default to home
 
-    print('📍 Path: $path -> Tab Index: $index');
     return index;
   }
 
@@ -137,6 +145,17 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   /// Handle back press with stack navigation logic
   void _handleBackPress(BuildContext context, int currentIndex) {
+    // Check if we're on application tracker with fromProfile parameter
+    final state = GoRouterState.of(context);
+    final fromProfileParam = state.uri.queryParameters['fromProfile'] == 'true';
+    final location = state.uri.path;
+
+    // If coming from profile menu, navigate back to menu
+    if (fromProfileParam && location.startsWith('/application-tracker')) {
+      context.go('/profile/menu');
+      return;
+    }
+
     final handled = _navigationManager.handleBackNavigation();
 
     if (!handled && currentIndex == 0) {
@@ -149,36 +168,342 @@ class _MainScaffoldState extends State<MainScaffold> {
   void _showExitConfirmation(BuildContext context) {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Exit App'),
-          content: const Text('Are you sure you want to exit the app?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon and Title
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppConstants.errorColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.exit_to_app_rounded,
+                          color: AppConstants.errorColor,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Exit App',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                          height: 1.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Are you sure you want to exit Jobsahi?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: AppConstants.textSecondaryColor,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Action buttons
+                Container(height: 1, color: Colors.grey.shade200),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(16),
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: Colors.grey.shade200,
+                    ),
+                    Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: const BorderRadius.only(
+                          bottomRight: Radius.circular(16),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            SystemNavigator.pop();
+                          },
+                          borderRadius: const BorderRadius.only(
+                            bottomRight: Radius.circular(16),
+                          ),
+                          splashColor: AppConstants.errorColor.withValues(
+                            alpha: 0.2,
+                          ),
+                          highlightColor: AppConstants.errorColor.withValues(
+                            alpha: 0.1,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Exit',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppConstants.errorColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                SystemNavigator.pop();
-              },
-              child: const Text('Exit'),
-            ),
-          ],
+          ),
         );
       },
     );
   }
 
-  /// Handle search functionality
-  static void _onSearch(String query) {
-    // Navigate to search results screen
-    AppRouter.push('/jobs/search?query=${Uri.encodeComponent(query)}');
+  /// Build home app bar title with search and filter
+  Widget _buildHomeAppBarTitle(BuildContext context) {
+    return SearchFilterBarWithBloc();
   }
 
-  /// Handle notification icon tap
-  void _onNotificationPressed() {
-    context.push('/settings/notifications');
+  /// Build Learning Center app bar with search box and filter button
+  PreferredSizeWidget _buildLearningCenterAppBar(
+    BuildContext context,
+    int currentIndex,
+  ) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(
+        kToolbarHeight + 16,
+      ), // Same as jobs section
+      child: AppBar(
+        backgroundColor:
+            AppConstants.cardBackgroundColor, // Same as jobs section
+        elevation: 0,
+        toolbarHeight:
+            kToolbarHeight + 16, // Same as jobs section (56 + 16 = 72)
+        titleSpacing: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5)),
+          ),
+        ),
+        leading: IconButton(
+          onPressed: () => _handleBackPress(context, currentIndex),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppConstants.primaryColor,
+            size: 24,
+          ),
+        ),
+        title: _buildSearchAndFilterRow(context),
+        centerTitle: false,
+      ),
+    );
+  }
+
+  /// Build search box and filter button row
+  Widget _buildSearchAndFilterRow(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 8), // Same as jobs section
+      child: Row(
+        children: [
+          Expanded(child: _LearningCenterSearchBox()),
+          const SizedBox(width: 8), // Same spacing as jobs section
+          // Filter Button with clicking effect and animation
+          BlocBuilder<CoursesBloc, CoursesState>(
+            builder: (context, state) {
+              final isFilterVisible =
+                  state is CoursesLoaded && state.showFilters;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    context.read<CoursesBloc>().add(const ToggleFiltersEvent());
+                  },
+                  borderRadius: BorderRadius.circular(
+                    22.5,
+                  ), // Same as jobs section
+                  child: Container(
+                    width: 45, // Same as jobs section
+                    height: 45, // Same as jobs section
+                    decoration: BoxDecoration(
+                      color: isFilterVisible
+                          ? AppConstants.primaryColor
+                          : AppConstants
+                                .backgroundColor, // Same as jobs section
+                      borderRadius: BorderRadius.circular(
+                        22.5,
+                      ), // Same as jobs section
+                      border: Border.all(
+                        color: AppConstants.borderColor, // Same as jobs section
+                        width: 1,
+                      ),
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, animation) {
+                        return ScaleTransition(
+                          scale: animation,
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Icon(
+                        isFilterVisible ? Icons.close : Icons.tune,
+                        key: ValueKey(isFilterVisible),
+                        color: isFilterVisible
+                            ? Colors.white
+                            : AppConstants.textSecondaryColor,
+                        size: 24, // Same as jobs section
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Search box widget for Learning Center app bar
+class _LearningCenterSearchBox extends StatefulWidget {
+  @override
+  State<_LearningCenterSearchBox> createState() =>
+      _LearningCenterSearchBoxState();
+}
+
+class _LearningCenterSearchBoxState extends State<_LearningCenterSearchBox> {
+  late TextEditingController _controller;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CoursesBloc, CoursesState>(
+      builder: (context, state) {
+        // Get bloc from context
+        final bloc = context.read<CoursesBloc>();
+
+        // Initialize controller text from state if not already initialized
+        if (!_isInitialized && state is CoursesLoaded) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _controller.text != state.searchQuery) {
+              _controller.text = state.searchQuery;
+            }
+          });
+          _isInitialized = true;
+        }
+
+        // Sync controller when search query changes from outside
+        if (state is CoursesLoaded && _isInitialized) {
+          final currentQuery = state.searchQuery;
+          if (_controller.text != currentQuery) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _controller.text = currentQuery;
+              }
+            });
+          }
+        }
+
+        return Container(
+          height: 45, // Same as jobs section
+          decoration: BoxDecoration(
+            color: AppConstants.backgroundColor, // Same as jobs section
+            borderRadius: BorderRadius.circular(22.5), // Same as jobs section
+            border: Border.all(
+              color: AppConstants.borderColor, // Same as jobs section
+              width: 1,
+            ),
+          ),
+          child: TextField(
+            controller: _controller,
+            style: const TextStyle(
+              color: AppConstants.textPrimaryColor,
+              fontSize: 14, // Same as jobs section
+            ),
+            decoration: const InputDecoration(
+              hintText: 'कोर्स खोजें',
+              hintStyle: TextStyle(
+                color: AppConstants.textSecondaryColor,
+                fontSize: 14, // Same as jobs section
+              ),
+              prefixIcon: Icon(
+                Icons.search,
+                color: AppConstants.textSecondaryColor,
+                size: 20,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12, // Same as jobs section
+              ),
+            ),
+            onChanged: (value) {
+              // Dispatch search event to bloc
+              if (value.isEmpty) {
+                bloc.add(ClearSearchEvent());
+              } else {
+                bloc.add(SearchCoursesEvent(query: value));
+              }
+            },
+          ),
+        );
+      },
+    );
   }
 }

@@ -1,265 +1,452 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../core/constants/app_routes.dart';
+import '../../../shared/services/fcm_service.dart';
 
-class NotificationPermissionPage extends StatelessWidget {
+class NotificationPermissionPage extends StatefulWidget {
   const NotificationPermissionPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Main content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.largePadding),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Illustration
-                  _buildIllustration(),
+  State<NotificationPermissionPage> createState() =>
+      _NotificationPermissionPageState();
+}
 
-                  const SizedBox(height: AppConstants.largePadding * 2),
+class _NotificationPermissionPageState
+    extends State<NotificationPermissionPage> {
+  final FcmService _fcmService = FcmService();
+  bool _isLoading = false;
+  AuthorizationStatus? _permissionStatus;
 
-                  // Main Question
-                  Text(
-                    'Do you want to turn on notification?',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppConstants.primaryColor,
-                      height: 1.3,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: AppConstants.defaultPadding),
-
-                  // Descriptive Text in Hindi
-                  Text(
-                    'नोटिफिकेशन चालू करें ताकि आपको अपनी नौकरी की खोज से जुड़ी ज़रूरी जानकारी सीधे अपने फ़ोन पर मिल सके',
-                    style: AppConstants.bodyStyle.copyWith(
-                      color: const Color(0xFF666666),
-                      height: 1.6,
-                      fontSize: 16,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: AppConstants.largePadding * 2),
-
-                  // Allow Notifications Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Handle notification permission
-                        _requestNotificationPermission(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppConstants.secondaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
-                          ),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: Text(
-                        'Allow Notifications',
-                        style: AppConstants.buttonTextStyle.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AppConstants.defaultPadding),
-
-                  // SKIP Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        // Navigate back to settings page
-                        Navigator.of(context).pop();
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppConstants.secondaryColor,
-                        side: BorderSide(
-                          color: AppConstants.secondaryColor,
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        'SKIP',
-                        style: AppConstants.buttonTextStyle.copyWith(
-                          color: AppConstants.secondaryColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _checkPermissionStatus();
   }
 
-  Widget _buildIllustration() {
-    return SizedBox(
-      width: 200,
-      height: 200,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Megaphone base
-          Container(
-            width: 120,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(60),
-              border: Border.all(color: AppConstants.secondaryColor, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-          ),
-
-          // Megaphone handle
-          Positioned(
-            right: 40,
-            bottom: 20,
-            child: Container(
-              width: 8,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppConstants.secondaryColor,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-
-          // Sound waves
-          Positioned(
-            left: 20,
-            top: 30,
-            child: Row(
-              children: [
-                _buildSoundWave(20, 0.3),
-                const SizedBox(width: 8),
-                _buildSoundWave(25, 0.5),
-                const SizedBox(width: 8),
-                _buildSoundWave(30, 0.7),
-              ],
-            ),
-          ),
-
-          // Speech bubble with dots
-          Positioned(
-            top: 10,
-            right: 30,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppConstants.secondaryColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildDot(),
-                  const SizedBox(width: 4),
-                  _buildDot(),
-                  const SizedBox(width: 4),
-                  _buildDot(),
-                ],
-              ),
-            ),
-          ),
-
-          // Bell icon
-          Positioned(
-            right: 20,
-            top: 60,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amber[600],
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.amber.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.notifications, color: Colors.white, size: 24),
-            ),
-          ),
-        ],
-      ),
-    );
+  Future<void> _checkPermissionStatus() async {
+    try {
+      final settings = await _fcmService.getPermissionStatus();
+      setState(() {
+        _permissionStatus = settings.authorizationStatus;
+      });
+    } catch (e) {
+      debugPrint('🔴 Error checking permission status: $e');
+    }
   }
 
-  Widget _buildSoundWave(double height, double opacity) {
-    return Container(
-      width: 4,
-      height: height,
-      decoration: BoxDecoration(
-        color: AppConstants.secondaryColor.withValues(alpha: opacity),
-        borderRadius: BorderRadius.circular(2),
-      ),
-    );
-  }
-
-  Widget _buildDot() {
-    return Container(
-      width: 6,
-      height: 6,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-
-  void _requestNotificationPermission(BuildContext context) {
-    // Show success message and navigate back
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Notifications enabled successfully!'),
-        backgroundColor: AppConstants.secondaryColor,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    // Navigate back after a short delay
-    Future.delayed(const Duration(seconds: 2), () {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
+  Future<void> _requestPermission() async {
+    setState(() {
+      _isLoading = true;
     });
+
+    try {
+      final settings = await _fcmService.requestPermissions();
+      setState(() {
+        _permissionStatus = settings.authorizationStatus;
+        _isLoading = false;
+      });
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Notification permission granted!'),
+              backgroundColor: AppConstants.successColor,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Notification permission denied'),
+              backgroundColor: AppConstants.errorColor,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppConstants.errorColor,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openSettings() async {
+    try {
+      // Use permission_handler's openAppSettings which opens app-specific settings
+      // This will open the app's permission settings page where user can enable notifications
+      final opened = await openAppSettings();
+
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Unable to open settings. Please manually enable notifications in app settings.',
+            ),
+            backgroundColor: AppConstants.errorColor,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('🔴 Error opening settings: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppConstants.errorColor,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  String _getStatusText() {
+    switch (_permissionStatus) {
+      case AuthorizationStatus.authorized:
+        return 'Enabled';
+      case AuthorizationStatus.denied:
+        return 'Denied';
+      case AuthorizationStatus.notDetermined:
+        return 'Not Determined';
+      case AuthorizationStatus.provisional:
+        return 'Provisional';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  Color _getStatusColor() {
+    switch (_permissionStatus) {
+      case AuthorizationStatus.authorized:
+      case AuthorizationStatus.provisional:
+        return AppConstants.successColor;
+      case AuthorizationStatus.denied:
+        return AppConstants.errorColor;
+      default:
+        return AppConstants.warningColor;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop) {
+          return;
+        }
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(AppRoutes.settings);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: Text('Notifications', style: AppConstants.headingStyle),
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back,
+              color: AppConstants.textPrimaryColor,
+            ),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRoutes.settings);
+              }
+            },
+          ),
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.largePadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Notification Icon
+                Center(
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: AppConstants.primaryColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      size: 60,
+                      color: AppConstants.primaryColor,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: AppConstants.largePadding * 2),
+
+                // Title
+                Text(
+                  'Stay Updated',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.primaryColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                // Description
+                Text(
+                  'Get notified about new job opportunities, application updates, and important messages.',
+                  style: AppConstants.bodyStyle.copyWith(
+                    color: const Color(0xFF666666),
+                    height: 1.6,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: AppConstants.largePadding * 2),
+
+                // Permission Status Card
+                if (_permissionStatus != null)
+                  Container(
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor().withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.borderRadius,
+                      ),
+                      border: Border.all(
+                        color: _getStatusColor().withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Permission Status',
+                              style: AppConstants.captionStyle.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _getStatusText(),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: _getStatusColor(),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Icon(
+                          _permissionStatus == AuthorizationStatus.authorized ||
+                                  _permissionStatus ==
+                                      AuthorizationStatus.provisional
+                              ? Icons.check_circle
+                              : Icons.cancel,
+                          color: _getStatusColor(),
+                          size: 32,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: AppConstants.largePadding * 2),
+
+                // Benefits List
+                _buildBenefitItem(
+                  Icons.work_outline,
+                  'Job Alerts',
+                  'Get notified when new jobs match your profile',
+                ),
+                const SizedBox(height: AppConstants.defaultPadding),
+                _buildBenefitItem(
+                  Icons.update_outlined,
+                  'Application Updates',
+                  'Stay informed about your application status',
+                ),
+                const SizedBox(height: AppConstants.defaultPadding),
+                _buildBenefitItem(
+                  Icons.message_outlined,
+                  'Messages',
+                  'Receive important messages from employers',
+                ),
+
+                const SizedBox(height: AppConstants.largePadding * 2),
+
+                // Action Button
+                if (_permissionStatus == AuthorizationStatus.authorized ||
+                    _permissionStatus == AuthorizationStatus.provisional)
+                  ElevatedButton(
+                    onPressed: () {
+                      // Already granted, show info
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Notifications are already enabled'),
+                          backgroundColor: AppConstants.successColor,
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.successColor,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppConstants.defaultPadding,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                    ),
+                    child: const Text(
+                      'Notifications Enabled',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                else if (_permissionStatus == AuthorizationStatus.denied)
+                  Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _openSettings,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppConstants.primaryColor,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppConstants.defaultPadding,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.borderRadius,
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'Open Settings',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppConstants.defaultPadding),
+                      TextButton(
+                        onPressed: _isLoading ? null : _requestPermission,
+                        child: const Text(
+                          'Try Again',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppConstants.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _requestPermission,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppConstants.primaryColor,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppConstants.defaultPadding,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadius,
+                        ),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            'Enable Notifications',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
+
+                const SizedBox(height: AppConstants.largePadding),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBenefitItem(IconData icon, String title, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppConstants.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppConstants.primaryColor, size: 24),
+        ),
+        const SizedBox(width: AppConstants.defaultPadding),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppConstants.subheadingStyle.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: 4),
+              Text(description, style: AppConstants.captionStyle),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

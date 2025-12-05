@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import '../../core/utils/app_constants.dart';
 import '../widgets/location_permission_dialog.dart';
@@ -579,28 +578,19 @@ class LocationService {
     }
   }
 
-  /// Open location settings directly
+  /// Open location settings directly - opens app settings page
   Future<void> openLocationSettings() async {
     try {
-      // For Android, try to open location settings directly
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        const locationSettingsUri = 'android.settings.LOCATION_SOURCE_SETTINGS';
-        final uri = Uri.parse('android-app://$locationSettingsUri');
-
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri);
-          debugPrint('✅ Opened location settings directly');
-          return;
-        }
-      }
-
-      // Fallback to app settings
+      // Use permission_handler's openAppSettings which opens app-specific settings
+      // This will open the app's permission settings page where user can enable location
       await openAppSettings();
-      debugPrint('✅ Opened app settings as fallback');
+      debugPrint('✅ Opened app settings');
     } catch (e) {
-      debugPrint('🔴 Error opening location settings: $e');
-      // Final fallback to general app settings
-      await openAppSettings();
+      debugPrint('🔴 Error opening app settings: $e');
+      // If openAppSettings fails, show error to user
+      debugPrint(
+        '⚠️ Could not open app settings. Please manually enable location permission in app settings.',
+      );
     }
   }
 

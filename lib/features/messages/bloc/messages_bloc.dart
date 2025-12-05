@@ -217,40 +217,15 @@ class MessagesBloc extends Bloc<MessagesEvent, MessagesState> {
       // Simulate API call delay
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // Load chat messages (mock data)
-      final chatMessages = [
-        {
-          'id': 'chat_1',
-          'sender': 'VoltX Energy',
-          'message':
-              'Your application has been shortlisted for the next round.',
-          'timestamp': '2024-01-20T10:30:00Z',
-          'isRead': true,
-          'isSent': false,
-        },
-        {
-          'id': 'chat_2',
-          'sender': 'You',
-          'message': 'Thank you for the update. When is the next round?',
-          'timestamp': '2024-01-20T10:35:00Z',
-          'isRead': true,
-          'isSent': true,
-        },
-        {
-          'id': 'chat_3',
-          'sender': 'VoltX Energy',
-          'message': 'The next round will be on 25th January at 2 PM.',
-          'timestamp': '2024-01-20T10:40:00Z',
-          'isRead': false,
-          'isSent': false,
-        },
-      ];
+      // Load chat messages from API
+      // TODO: Replace with actual API call
+      final chatMessages = <Map<String, dynamic>>[];
 
       emit(
         ChatMessagesLoaded(
           chatId: event.chatId,
           chatMessages: chatMessages,
-          recipientName: 'VoltX Energy',
+          recipientName: '',
         ),
       );
     } catch (e) {

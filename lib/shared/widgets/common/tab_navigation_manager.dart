@@ -35,19 +35,21 @@ class TabNavigationManager extends ChangeNotifier {
   /// Navigate to a route within current tab
   void navigateToRoute(String route) {
     final currentStack = _tabStacks[_currentTabIndex] ?? [];
-    print('🧭 Navigating to route: $route in tab $_currentTabIndex');
-    print('📚 Current stack: $currentStack');
 
-    // Prevent duplicate entries
+    // Check if this route is already in the stack (not just the last one)
+    // If it's the last route, allow navigation to refresh the page
+    // Only skip if we're already on this exact route AND it's the last route
     if (currentStack.isNotEmpty && currentStack.last == route) {
-      print('⚠️ Duplicate route, skipping navigation');
+      // Allow navigation to same route to refresh/reload
+      // Still navigate to refresh the page
+      AppRouter.go(route);
+      notifyListeners();
       return;
     }
 
     // Add to current tab's stack
     currentStack.add(route);
     _tabStacks[_currentTabIndex] = currentStack;
-    print('✅ Added to stack. New stack: $currentStack');
 
     // Navigate using GoRouter
     AppRouter.go(route);
@@ -56,11 +58,8 @@ class TabNavigationManager extends ChangeNotifier {
 
   /// Switch to a tab (used when bottom nav is tapped)
   void switchToTab(int tabIndex) {
-    print('🔄 Switching from tab $_currentTabIndex to tab $tabIndex');
-
     if (tabIndex == _currentTabIndex) {
       // Same tab - no action needed
-      print('✅ Same tab, no action needed');
       return;
     }
 
@@ -78,8 +77,6 @@ class TabNavigationManager extends ChangeNotifier {
 
     // Get the default route for this tab
     final defaultRoute = _getDefaultRouteForTab(tabIndex);
-    print('🎯 Navigating to default route: $defaultRoute');
-    print('📚 Tab history: $_tabHistory');
 
     // Navigate to the default route
     AppRouter.go(defaultRoute);
@@ -88,17 +85,12 @@ class TabNavigationManager extends ChangeNotifier {
   /// Handle back navigation
   bool handleBackNavigation() {
     final currentStack = _tabStacks[_currentTabIndex] ?? [];
-    print('🔙 Handling back navigation for tab $_currentTabIndex');
-    print('📚 Current stack: $currentStack');
-    print('📚 Tab history: $_tabHistory');
 
     if (currentStack.length > 1) {
       // Remove current route and go to previous route in stack
       currentStack.removeLast();
       final previousRoute = currentStack.last;
       _tabStacks[_currentTabIndex] = currentStack;
-      print('⬅️ Going back to: $previousRoute');
-      print('📚 New stack: $currentStack');
 
       AppRouter.go(previousRoute);
       return true; // Handled the back navigation
@@ -111,7 +103,6 @@ class TabNavigationManager extends ChangeNotifier {
         // Remove it from history so next back goes to tab before that
         _tabHistory.removeLast();
 
-        print('🔄 Switching to previous tab from history: $previousTab');
         _currentTabIndex = previousTab;
         final defaultRoute = _getDefaultRouteForTab(previousTab);
         AppRouter.go(defaultRoute);
@@ -119,7 +110,6 @@ class TabNavigationManager extends ChangeNotifier {
         return true;
       } else if (_currentTabIndex != 0) {
         // If no history or already on home, go to home
-        print('🏠 Going to home tab');
         _currentTabIndex = 0;
         AppRouter.go('/home');
         notifyListeners();
@@ -127,7 +117,6 @@ class TabNavigationManager extends ChangeNotifier {
       }
     }
 
-    print('❌ Let system handle back (close app)');
     return false; // Let system handle back (close app)
   }
 
@@ -176,7 +165,6 @@ class TabNavigationManager extends ChangeNotifier {
   void clearTabHistory() {
     _tabHistory.clear();
     _tabHistory.add(0); // Always start with home
-    print('🧹 Cleared tab history');
   }
 
   /// Get tab history for debugging

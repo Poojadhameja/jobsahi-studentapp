@@ -11,13 +11,13 @@ class CourseCard extends StatelessWidget {
 
   final Map<String, dynamic> course;
   final VoidCallback onTap;
-  final VoidCallback onSaveToggle;
+  final VoidCallback? onSaveToggle;
 
   const CourseCard({
     super.key,
     required this.course,
     required this.onTap,
-    required this.onSaveToggle,
+    this.onSaveToggle,
   });
 
   @override
@@ -28,23 +28,19 @@ class CourseCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: AppConstants.smallPadding),
-              _buildCourseInfo(),
-              const SizedBox(height: AppConstants.smallPadding),
-              _buildRatingAndDuration(),
-              const SizedBox(height: AppConstants.smallPadding),
-              _buildActionButton(),
-            ],
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: AppConstants.smallPadding),
+            _buildCourseInfo(),
+            const SizedBox(height: AppConstants.smallPadding),
+            _buildRatingAndDuration(),
+            const SizedBox(height: AppConstants.smallPadding),
+            _buildActionButton(),
+          ],
         ),
       ),
     );
@@ -55,15 +51,15 @@ class CourseCard extends StatelessWidget {
       children: [
         // Course logo/icon
         Container(
-          width: 60,
-          height: 60,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: AppConstants.successColor,
             borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
           ),
-          child: const Icon(Icons.school, color: Colors.white, size: 30),
+          child: const Icon(Icons.school, color: Colors.white, size: 24),
         ),
-        const SizedBox(width: AppConstants.smallPadding),
+        const SizedBox(width: AppConstants.defaultPadding),
         // Course title and category
         Expanded(
           child: Column(
@@ -76,7 +72,7 @@ class CourseCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: AppConstants.textPrimaryColor,
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
@@ -86,18 +82,10 @@ class CourseCard extends StatelessWidget {
                   fontSize: 14,
                   color: AppConstants.textSecondaryColor,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
-          ),
-        ),
-        // Save/bookmark button
-        IconButton(
-          onPressed: onSaveToggle,
-          icon: Icon(
-            course['isSaved'] == true ? Icons.bookmark : Icons.bookmark_border,
-            color: course['isSaved'] == true
-                ? AppConstants.primaryColor
-                : AppConstants.textSecondaryColor,
           ),
         ),
       ],
@@ -129,56 +117,79 @@ class CourseCard extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const Spacer(),
-        // Rating
-        _buildRating(),
-      ],
-    );
-  }
-
-  Widget _buildRating() {
-    final rating = course['rating'] ?? 0.0;
-    final totalRatings = course['totalRatings'] ?? 0;
-
-    return Row(
-      children: [
-        ...List.generate(5, (index) {
-          return Icon(
-            index < rating.floor() ? Icons.star : Icons.star_border,
-            color: Colors.orange,
-            size: 16,
-          );
-        }),
-        const SizedBox(width: 4),
-        Text(
-          '($totalRatings)',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppConstants.textSecondaryColor,
-          ),
-        ),
       ],
     );
   }
 
   Widget _buildActionButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppConstants.successColor,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+    return Row(
+      children: [
+        // Course View button
+        Expanded(
+          child: ElevatedButton(
+            onPressed: onTap,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.successColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  AppConstants.smallBorderRadius,
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Text(
+              'Course View',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        child: const Text(
-          'Course View',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-      ),
+        // Save button on the right side
+        if (onSaveToggle != null) ...[
+          const SizedBox(width: 8),
+          Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onSaveToggle,
+              customBorder: const CircleBorder(),
+              splashColor: Colors.grey.shade300,
+              highlightColor: Colors.grey.shade200,
+              radius: 20,
+              child: Container(
+                width: 50,
+                height: 50,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      course['isSaved'] == true
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      color: course['isSaved'] == true
+                          ? AppConstants.primaryColor
+                          : Colors.grey.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppConstants.saveText,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: course['isSaved'] == true
+                            ? AppConstants.primaryColor
+                            : Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -187,13 +198,13 @@ class CourseCard extends StatelessWidget {
 class CompactCourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
   final VoidCallback onTap;
-  final VoidCallback onSaveToggle;
+  final VoidCallback? onSaveToggle;
 
   const CompactCourseCard({
     super.key,
     required this.course,
     required this.onTap,
-    required this.onSaveToggle,
+    this.onSaveToggle,
   });
 
   @override
@@ -204,89 +215,68 @@ class CompactCourseCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        child: Container(
-          width: 288.8,
-          padding: const EdgeInsets.all(AppConstants.defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppConstants.successColor,
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.smallBorderRadius,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.school,
-                      color: Colors.white,
-                      size: 20,
+      child: Container(
+        width: 288.8,
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppConstants.successColor,
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.smallBorderRadius,
                     ),
                   ),
-                  const SizedBox(width: AppConstants.smallPadding),
-                  Expanded(
-                    child: Text(
-                      course['title'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.textPrimaryColor,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  child: const Icon(
+                    Icons.school,
+                    color: Colors.white,
+                    size: 20,
                   ),
-                  IconButton(
-                    onPressed: onSaveToggle,
-                    icon: Icon(
-                      course['isSaved'] == true
-                          ? Icons.bookmark
-                          : Icons.bookmark_border,
-                      color: course['isSaved'] == true
-                          ? AppConstants.primaryColor
-                          : AppConstants.textSecondaryColor,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppConstants.smallPadding),
-              Text(
-                'Category: ${course['category'] ?? ''}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppConstants.textSecondaryColor,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Duration: ${course['duration'] ?? ''}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppConstants.textPrimaryColor,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(width: AppConstants.smallPadding),
+                Expanded(
+                  child: Text(
+                    course['title'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppConstants.textPrimaryColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.smallPadding),
+            Text(
+              'Category: ${course['category'] ?? ''}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppConstants.textSecondaryColor,
               ),
-              const Spacer(),
-              Row(
-                children: [
-                  ...List.generate(5, (index) {
-                    final rating = course['rating'] ?? 0.0;
-                    return Icon(
-                      index < rating.floor() ? Icons.star : Icons.star_border,
-                      color: Colors.orange,
-                      size: 14,
-                    );
-                  }),
-                  const Spacer(),
-                  ElevatedButton(
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Duration: ${course['duration'] ?? ''}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppConstants.textPrimaryColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
                     onPressed: onTap,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppConstants.successColor,
@@ -298,19 +288,66 @@ class CompactCourseCard extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 6,
+                        vertical: 8,
                       ),
-                      minimumSize: Size.zero,
                     ),
                     child: const Text(
                       'Course View',
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                // Save button on the right side
+                if (onSaveToggle != null) ...[
+                  const SizedBox(width: 8),
+                  Material(
+                    color: Colors.transparent,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: onSaveToggle,
+                      customBorder: const CircleBorder(),
+                      splashColor: Colors.grey.shade300,
+                      highlightColor: Colors.grey.shade200,
+                      radius: 20,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              course['isSaved'] == true
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_border,
+                              color: course['isSaved'] == true
+                                  ? AppConstants.primaryColor
+                                  : Colors.grey.shade700,
+                              size: 20,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              AppConstants.saveText,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: course['isSaved'] == true
+                                    ? AppConstants.primaryColor
+                                    : Colors.grey.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );

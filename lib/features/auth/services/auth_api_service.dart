@@ -27,14 +27,48 @@ class AuthApiService {
 
       final response = await _apiService.post(
         '/auth/generate-otp.php',
-        data: jsonEncode(requestData),
+        data: requestData, // Pass Map directly, Dio will JSON encode it
       );
 
       debugPrint('🔵 Generate OTP API Status: ${response.statusCode}');
       debugPrint('🔵 Generate OTP API Response: ${response.data}');
+      debugPrint(
+        '🔵 Generate OTP API Response Type: ${response.data.runtimeType}',
+      );
 
       final responseData = response.data;
-      final generateOtpResponse = ForgotPasswordResponse.fromJson(responseData);
+
+      // Handle different response formats
+      Map<String, dynamic> parsedData;
+      if (responseData is Map<String, dynamic>) {
+        parsedData = responseData;
+      } else if (responseData is String) {
+        try {
+          parsedData = jsonDecode(responseData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 Failed to parse JSON string: $e');
+          return ForgotPasswordResponse(
+            success: false,
+            message: 'Invalid response format',
+          );
+        }
+      } else {
+        debugPrint('🔴 Unexpected response type: ${responseData.runtimeType}');
+        return ForgotPasswordResponse(
+          success: false,
+          message: 'Unexpected response format',
+        );
+      }
+
+      // Debug: Print raw parsed data to verify API response structure
+      debugPrint('🔵 Parsed Data: $parsedData');
+      debugPrint('🔵 Parsed Data status: ${parsedData['status']}');
+      debugPrint('🔵 Parsed Data user_id: ${parsedData['user_id']}');
+      debugPrint('🔵 Parsed Data message: ${parsedData['message']}');
+      debugPrint('🔵 Parsed Data purpose: ${parsedData['purpose']}');
+      debugPrint('🔵 Parsed Data expires_in: ${parsedData['expires_in']}');
+
+      final generateOtpResponse = ForgotPasswordResponse.fromJson(parsedData);
 
       debugPrint(
         '🔵 Generate OTP Response success: ${generateOtpResponse.success}',
@@ -52,12 +86,114 @@ class AuthApiService {
         '🔵 Generate OTP Response expiresIn: ${generateOtpResponse.expiresIn}',
       );
 
+      // Double-check: If API returned 200 but status is false, treat as error
+      if (response.statusCode == 200 && parsedData['status'] == false) {
+        debugPrint(
+          '🔴 API returned 200 but status is false - treating as error',
+        );
+        return ForgotPasswordResponse(
+          success: false,
+          message: parsedData['message'] ?? 'Failed to generate OTP',
+        );
+      }
+
       return generateOtpResponse;
     } catch (e) {
       debugPrint('🔴 Error in generate OTP API: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      // Handle DioException specifically
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        debugPrint('🔴 DioException Status: $statusCode');
+        debugPrint('🔴 DioException Response Data: $responseData');
+
+        if (statusCode == 401) {
+          // User not exist (401) - Email not registered
+          String errorMessage = 'User not exist';
+          if (responseData is Map<String, dynamic>) {
+            errorMessage = responseData['message'] ?? errorMessage;
+          } else if (responseData is String) {
+            try {
+              final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+              errorMessage = parsed['message'] ?? errorMessage;
+            } catch (parseError) {
+              errorMessage = responseData;
+            }
+          }
+
+          return ForgotPasswordResponse(success: false, message: errorMessage);
+        } else if (statusCode == 400) {
+          String errorMessage = 'Invalid email or request';
+          if (responseData is Map<String, dynamic>) {
+            errorMessage = responseData['message'] ?? errorMessage;
+          } else if (responseData is String) {
+            try {
+              final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+              errorMessage = parsed['message'] ?? errorMessage;
+            } catch (parseError) {
+              errorMessage = responseData;
+            }
+          }
+          return ForgotPasswordResponse(success: false, message: errorMessage);
+        }
+      }
+
+      // Handle Exception thrown by ApiService (which converts DioException to Exception)
+      final errorString = e.toString();
+      debugPrint('🔴 Exception string: $errorString');
+
+      // Extract status code and message from exception string
+      if (errorString.contains('Unauthorized:') ||
+          errorString.contains('401')) {
+        // User not exist (401) - Email not registered
+        String errorMessage = _extractErrorMessage(
+          errorString,
+          'Unauthorized:',
+        );
+        if (errorMessage.isEmpty ||
+            errorMessage.toLowerCase().contains('user not exist') ||
+            errorMessage.toLowerCase().contains('user does not exist')) {
+          errorMessage = 'User not exist';
+        }
+
+        return ForgotPasswordResponse(success: false, message: errorMessage);
+      } else if (errorString.contains('Bad request:') ||
+          errorString.contains('400')) {
+        String errorMessage = _extractErrorMessage(errorString, 'Bad request:');
+        if (errorMessage.isEmpty || errorMessage == 'Bad request') {
+          errorMessage = 'Invalid email or request';
+        }
+        return ForgotPasswordResponse(success: false, message: errorMessage);
+      } else if (errorString.contains('Connection timeout') ||
+          errorString.contains('timeout')) {
+        return ForgotPasswordResponse(
+          success: false,
+          message:
+              'Connection timeout. Please check your internet connection and try again.',
+        );
+      } else if (errorString.contains('No internet connection') ||
+          errorString.contains('network')) {
+        return ForgotPasswordResponse(
+          success: false,
+          message:
+              'Network error. Please check your internet connection and try again.',
+        );
+      }
+
+      // Generic error handling
+      String cleanMessage = errorString;
+      if (cleanMessage.startsWith('Exception: ')) {
+        cleanMessage = cleanMessage.substring(11);
+      }
+
       return ForgotPasswordResponse(
         success: false,
-        message: 'Failed to generate OTP: ${e.toString()}',
+        message: cleanMessage.isNotEmpty
+            ? cleanMessage
+            : 'Failed to generate OTP. Please try again.',
       );
     }
   }
@@ -88,6 +224,308 @@ class AuthApiService {
       return LoginResponse(
         success: false,
         message: 'Failed to send OTP: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Phone login - Send OTP to phone number
+  Future<PhoneLoginResponse> phoneLogin({required String phoneNumber}) async {
+    try {
+      debugPrint('🔵 Sending phone login OTP to: $phoneNumber');
+
+      final requestData = {'phone_number': phoneNumber};
+
+      debugPrint('🔵 Request data: $requestData');
+
+      final response = await _apiService.post(
+        '/auth/phone_login.php',
+        data: requestData, // Pass Map directly, Dio will JSON encode it
+      );
+
+      debugPrint('🔵 Phone Login API Status: ${response.statusCode}');
+      debugPrint('🔵 Phone Login API Response: ${response.data}');
+
+      final responseData = response.data;
+      final phoneLoginResponse = PhoneLoginResponse.fromJson(responseData);
+
+      debugPrint(
+        '🔵 Phone Login Response success: ${phoneLoginResponse.success}',
+      );
+      debugPrint(
+        '🔵 Phone Login Response message: ${phoneLoginResponse.message}',
+      );
+      debugPrint(
+        '🔵 Phone Login Response userId: ${phoneLoginResponse.userId}',
+      );
+      debugPrint(
+        '🔵 Phone Login Response expiresIn: ${phoneLoginResponse.expiresIn}',
+      );
+
+      return phoneLoginResponse;
+    } catch (e) {
+      debugPrint('🔴 Error in phone login API: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      // Handle DioException directly (if ApiService hasn't converted it yet)
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        debugPrint('🔴 DioException Status Code: $statusCode');
+        debugPrint('🔴 DioException Response Data: $responseData');
+
+        if (statusCode == 400) {
+          // Invalid format or missing field
+          String errorMessage =
+              'Invalid phone number format or phone number is required';
+          if (responseData is Map<String, dynamic>) {
+            errorMessage = responseData['message'] ?? errorMessage;
+          } else if (responseData is String) {
+            try {
+              final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+              errorMessage = parsed['message'] ?? errorMessage;
+            } catch (parseError) {
+              // Keep default error message
+            }
+          }
+          return PhoneLoginResponse(success: false, message: errorMessage);
+        } else if (statusCode == 200 && responseData != null) {
+          // Phone number not found (200 but status: false)
+          return PhoneLoginResponse.fromJson(responseData);
+        } else if (statusCode == 404 || statusCode == 401) {
+          // User not found
+          String errorMessage = 'User does not exist';
+          if (responseData is Map<String, dynamic>) {
+            errorMessage = responseData['message'] ?? errorMessage;
+          } else if (responseData is String) {
+            try {
+              final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+              errorMessage = parsed['message'] ?? errorMessage;
+            } catch (parseError) {
+              // Keep default error message
+            }
+          }
+          return PhoneLoginResponse(success: false, message: errorMessage);
+        }
+      }
+
+      // Handle Exception thrown by ApiService (which converts DioException to Exception)
+      // Format: "Exception: Unauthorized: User not exist" or "Unauthorized: User does not exist"
+      final errorString = e.toString();
+      debugPrint('🔴 Exception string: $errorString');
+
+      // Extract status code and message from exception string
+      if (errorString.contains('Unauthorized:') ||
+          errorString.contains('401')) {
+        // User not found (401) - phone number doesn't exist
+        String errorMessage = _extractErrorMessage(
+          errorString,
+          'Unauthorized:',
+        );
+        if (errorMessage.isEmpty ||
+            errorMessage.toLowerCase().contains('user not exist') ||
+            errorMessage.toLowerCase().contains('user does not exist')) {
+          errorMessage = 'User does not exist';
+        }
+        return PhoneLoginResponse(success: false, message: errorMessage);
+      } else if (errorString.contains('Not found:') ||
+          errorString.contains('404')) {
+        // User not found (404)
+        String errorMessage = _extractErrorMessage(errorString, 'Not found:');
+        if (errorMessage.isEmpty || errorMessage == 'Not found') {
+          errorMessage = 'User does not exist';
+        }
+        return PhoneLoginResponse(success: false, message: errorMessage);
+      } else if (errorString.contains('Bad request:') ||
+          errorString.contains('400')) {
+        // Invalid format or missing field (400)
+        String errorMessage = _extractErrorMessage(errorString, 'Bad request:');
+        if (errorMessage.isEmpty || errorMessage == 'Bad request') {
+          errorMessage =
+              'Invalid phone number format or phone number is required';
+        }
+        return PhoneLoginResponse(success: false, message: errorMessage);
+      } else if (errorString.contains('Connection timeout') ||
+          errorString.contains('timeout')) {
+        // Network timeout
+        return PhoneLoginResponse(
+          success: false,
+          message:
+              'Connection timeout. Please check your internet connection and try again.',
+        );
+      } else if (errorString.contains('No internet connection') ||
+          errorString.contains('network')) {
+        // Network error
+        return PhoneLoginResponse(
+          success: false,
+          message:
+              'Network error. Please check your internet connection and try again.',
+        );
+      }
+
+      // Generic error handling
+      // Try to clean up the error message
+      String cleanMessage = errorString;
+      if (cleanMessage.startsWith('Exception: ')) {
+        cleanMessage = cleanMessage.substring(11);
+      }
+      // Remove "Failed to send OTP: " prefix if present
+      if (cleanMessage.startsWith('Failed to send OTP: ')) {
+        cleanMessage = cleanMessage.substring(21);
+      }
+
+      return PhoneLoginResponse(
+        success: false,
+        message: cleanMessage.isNotEmpty
+            ? cleanMessage
+            : 'Failed to send OTP. Please try again.',
+      );
+    }
+  }
+
+  /// Verify OTP for phone login
+  Future<LoginResponse> verifyPhoneLoginOtp({
+    required int userId,
+    required String otp,
+  }) async {
+    try {
+      debugPrint(
+        '🔵 Verifying phone login OTP for user: $userId with OTP: $otp',
+      );
+
+      // Validate inputs
+      if (userId <= 0) {
+        debugPrint('🔴 Invalid userId: $userId');
+        return LoginResponse(
+          success: false,
+          message: 'Invalid user ID. Please request a new OTP',
+        );
+      }
+
+      if (otp.isEmpty || otp.length != 4) {
+        debugPrint('🔴 Invalid OTP length: ${otp.length}');
+        return LoginResponse(
+          success: false,
+          message: 'Please enter a valid 4-digit OTP',
+        );
+      }
+
+      final requestData = {'user_id': userId, 'otp': otp};
+
+      debugPrint('🔵 Request data: $requestData');
+      debugPrint('🔵 Request data type: ${requestData.runtimeType}');
+
+      final response = await _apiService.post(
+        '/auth/verify-otp.php',
+        data: requestData, // Pass Map directly, Dio will JSON encode it
+      );
+
+      debugPrint(
+        '🔵 Verify Phone Login OTP API Status: ${response.statusCode}',
+      );
+      debugPrint('🔵 Verify Phone Login OTP API Response: ${response.data}');
+      debugPrint(
+        '🔵 Verify Phone Login OTP API Response Type: ${response.data.runtimeType}',
+      );
+
+      final responseData = response.data;
+
+      // Handle error responses
+      if (response.statusCode == 400 || response.statusCode == 403) {
+        String errorMessage = 'OTP verification failed';
+        bool isExpired = false;
+
+        if (responseData is Map<String, dynamic>) {
+          errorMessage = responseData['message'] ?? errorMessage;
+          isExpired = responseData['expired'] == true;
+        } else if (responseData is String) {
+          try {
+            final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+            errorMessage = parsed['message'] ?? errorMessage;
+            isExpired = parsed['expired'] == true;
+          } catch (e) {
+            errorMessage = responseData;
+          }
+        }
+
+        debugPrint(
+          '🔴 OTP verification failed: $errorMessage (expired: $isExpired)',
+        );
+
+        return LoginResponse(
+          success: false,
+          message: isExpired
+              ? 'OTP has expired. Please request a new one'
+              : errorMessage,
+        );
+      }
+
+      // Parse response data
+      Map<String, dynamic> parsedData;
+      if (responseData is Map<String, dynamic>) {
+        parsedData = responseData;
+      } else if (responseData is String) {
+        try {
+          parsedData = jsonDecode(responseData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 Failed to parse response: $e');
+          return LoginResponse(
+            success: false,
+            message: 'Invalid response format',
+          );
+        }
+      } else {
+        debugPrint('🔴 Unexpected response type: ${responseData.runtimeType}');
+        return LoginResponse(
+          success: false,
+          message: 'Unexpected response format',
+        );
+      }
+
+      return LoginResponse.fromJson(parsedData);
+    } catch (e) {
+      debugPrint('🔴 Error verifying phone login OTP: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      // Handle DioException
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        debugPrint('🔴 DioException Status: $statusCode');
+        debugPrint('🔴 DioException Response Data: $responseData');
+
+        if (statusCode == 400) {
+          String errorMessage = 'Invalid OTP';
+          bool isExpired = false;
+
+          if (responseData is Map<String, dynamic>) {
+            errorMessage = responseData['message'] ?? errorMessage;
+            isExpired = responseData['expired'] == true;
+          } else if (responseData is String) {
+            try {
+              final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+              errorMessage = parsed['message'] ?? errorMessage;
+              isExpired = parsed['expired'] == true;
+            } catch (parseError) {
+              errorMessage = responseData;
+            }
+          }
+
+          return LoginResponse(
+            success: false,
+            message: isExpired
+                ? 'OTP has expired. Please request a new one'
+                : errorMessage,
+          );
+        } else if (statusCode == 403) {
+          return LoginResponse(success: false, message: 'Account not verified');
+        }
+      }
+
+      return LoginResponse(
+        success: false,
+        message: 'Failed to verify OTP: ${e.toString()}',
       );
     }
   }
@@ -225,7 +663,7 @@ class AuthApiService {
         } catch (e) {
           debugPrint('🔴 Failed to parse JSON string: $e');
           responseData = {
-            "success": false,
+            "status": false,
             "message": "Invalid response format",
           };
         }
@@ -234,7 +672,7 @@ class AuthApiService {
           '🔴 Unexpected response data type: ${response.data.runtimeType}',
         );
         responseData = {
-          "success": false,
+          "status": false,
           "message": "Unexpected response format",
         };
       }
@@ -246,7 +684,7 @@ class AuthApiService {
           debugPrint(
             '🔵 API returned 200 but no success/status field, assuming success',
           );
-          responseData['success'] = true;
+          responseData['status'] = true;
           responseData['message'] =
               responseData['message'] ?? 'Login successful';
         }
@@ -255,10 +693,225 @@ class AuthApiService {
       return LoginResponse.fromJson(responseData);
     } catch (e) {
       debugPrint('🔴 Error in login API: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      // Handle DioException directly (if ApiService hasn't converted it yet)
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        debugPrint('🔴 DioException Status Code: $statusCode');
+        debugPrint('🔴 DioException Response Data: $responseData');
+
+        return _parseDioExceptionError(e, statusCode, responseData);
+      }
+
+      // Handle Exception thrown by ApiService (which converts DioException to Exception)
+      // Format: "Exception: Unauthorized: Invalid credentials" or "Unauthorized: Password is wrong"
+      final errorString = e.toString();
+      debugPrint('🔴 Exception string: $errorString');
+
+      // Extract status code and message from exception string
+      if (errorString.contains('Unauthorized:') ||
+          errorString.contains('401')) {
+        // Wrong password (401)
+        String errorMessage = _extractErrorMessage(
+          errorString,
+          'Unauthorized:',
+        );
+
+        // Normalize common error messages to user-friendly format
+        final lowerMessage = errorMessage.toLowerCase();
+        if (lowerMessage.contains('invalid credentials') ||
+            lowerMessage.contains('wrong password') ||
+            lowerMessage.contains('incorrect password') ||
+            lowerMessage.contains('password is wrong')) {
+          errorMessage = 'Password is wrong';
+        } else if (errorMessage.isEmpty) {
+          errorMessage = 'Password is wrong';
+        }
+        // Otherwise use the extracted message as-is (it might already be user-friendly)
+
+        return LoginResponse(
+          success: false,
+          message: errorMessage,
+          errorCode: 'WRONG_PASSWORD',
+        );
+      } else if (errorString.contains('Not found:') ||
+          errorString.contains('404')) {
+        // User not found (404)
+        String errorMessage = _extractErrorMessage(errorString, 'Not found:');
+        if (errorMessage.isEmpty || errorMessage == 'Not found') {
+          errorMessage = 'User does not exist';
+        }
+
+        return LoginResponse(
+          success: false,
+          message: errorMessage,
+          errorCode: 'USER_NOT_FOUND',
+        );
+      } else if (errorString.contains('Forbidden:') ||
+          errorString.contains('403')) {
+        // Account not verified (403)
+        String errorMessage = _extractErrorMessage(errorString, 'Forbidden:');
+        if (errorMessage.isEmpty || errorMessage == 'Forbidden') {
+          errorMessage = 'Account not verified';
+        }
+
+        return LoginResponse(
+          success: false,
+          message: errorMessage,
+          errorCode: 'ACCOUNT_NOT_VERIFIED',
+        );
+      } else if (errorString.contains('Bad request:') ||
+          errorString.contains('400')) {
+        // Missing or empty fields (400)
+        String errorMessage = _extractErrorMessage(errorString, 'Bad request:');
+        if (errorMessage.isEmpty || errorMessage == 'Bad request') {
+          errorMessage = 'Email/Phone and password are required';
+        }
+
+        return LoginResponse(
+          success: false,
+          message: errorMessage,
+          errorCode: 'MISSING_FIELDS',
+        );
+      } else if (errorString.contains('Connection timeout') ||
+          errorString.contains('timeout')) {
+        // Network timeout
+        return LoginResponse(
+          success: false,
+          message:
+              'Connection timeout. Please check your internet connection and try again.',
+          errorCode: 'NETWORK_TIMEOUT',
+        );
+      } else if (errorString.contains('No internet connection') ||
+          errorString.contains('network')) {
+        // Network error
+        return LoginResponse(
+          success: false,
+          message:
+              'Network error. Please check your internet connection and try again.',
+          errorCode: 'NETWORK_ERROR',
+        );
+      }
+
+      // Generic error handling
+      // Try to clean up the error message
+      String cleanMessage = errorString;
+      if (cleanMessage.startsWith('Exception: ')) {
+        cleanMessage = cleanMessage.substring(11);
+      }
+
       return LoginResponse(
         success: false,
-        message: 'Login failed: ${e.toString()}',
+        message: cleanMessage.isNotEmpty
+            ? cleanMessage
+            : 'Login failed. Please try again.',
+        errorCode: 'UNKNOWN_ERROR',
       );
+    }
+  }
+
+  /// Helper method to parse DioException errors
+  LoginResponse _parseDioExceptionError(
+    DioException e,
+    int? statusCode,
+    dynamic responseData,
+  ) {
+    String errorMessage = '';
+    String? errorCode;
+
+    // Try to extract error from response data
+    if (responseData is Map<String, dynamic>) {
+      errorMessage = responseData['message'] ?? '';
+      errorCode = responseData['error_code'];
+    } else if (responseData is String) {
+      try {
+        final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+        errorMessage = parsed['message'] ?? '';
+        errorCode = parsed['error_code'];
+      } catch (parseError) {
+        errorMessage = responseData;
+      }
+    }
+
+    // Set defaults based on status code if message is empty
+    if (errorMessage.isEmpty) {
+      switch (statusCode) {
+        case 404:
+          errorMessage = 'User does not exist';
+          errorCode ??= 'USER_NOT_FOUND';
+          break;
+        case 401:
+          errorMessage = 'Password is wrong';
+          errorCode ??= 'WRONG_PASSWORD';
+          break;
+        case 403:
+          errorMessage = 'Account not verified';
+          errorCode ??= 'ACCOUNT_NOT_VERIFIED';
+          break;
+        case 400:
+          errorMessage = 'Email/Phone and password are required';
+          errorCode ??= 'MISSING_FIELDS';
+          break;
+        default:
+          errorMessage = 'Login failed. Please try again.';
+          errorCode ??= 'UNKNOWN_ERROR';
+      }
+    }
+
+    // Handle network errors
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return LoginResponse(
+        success: false,
+        message:
+            'Connection timeout. Please check your internet connection and try again.',
+        errorCode: 'NETWORK_TIMEOUT',
+      );
+    } else if (e.type == DioExceptionType.connectionError) {
+      return LoginResponse(
+        success: false,
+        message:
+            'Network error. Please check your internet connection and try again.',
+        errorCode: 'NETWORK_ERROR',
+      );
+    }
+
+    return LoginResponse(
+      success: false,
+      message: errorMessage,
+      errorCode: errorCode ?? 'UNKNOWN_ERROR',
+    );
+  }
+
+  /// Helper method to extract error message from exception string
+  String _extractErrorMessage(String errorString, String prefix) {
+    try {
+      // Remove "Exception: " prefix if present
+      String cleaned = errorString.replaceFirst('Exception: ', '');
+
+      // Extract message after the prefix
+      final index = cleaned.indexOf(prefix);
+      if (index != -1) {
+        final message = cleaned.substring(index + prefix.length).trim();
+        return message.isNotEmpty ? message : '';
+      }
+
+      // If prefix not found, try to extract from common patterns
+      if (cleaned.contains(':')) {
+        final parts = cleaned.split(':');
+        if (parts.length > 1) {
+          return parts.sublist(1).join(':').trim();
+        }
+      }
+
+      return cleaned;
+    } catch (e) {
+      debugPrint('🔴 Error extracting message: $e');
+      return '';
     }
   }
 
@@ -571,6 +1224,34 @@ class LogoutResponse {
     return LogoutResponse(
       success: json['status'] ?? false,
       message: json['message'] ?? '',
+    );
+  }
+}
+
+/// Phone login response model (OTP send)
+class PhoneLoginResponse {
+  final bool success;
+  final String message;
+  final int? userId;
+  final int? expiresIn; // in seconds
+
+  PhoneLoginResponse({
+    required this.success,
+    required this.message,
+    this.userId,
+    this.expiresIn,
+  });
+
+  factory PhoneLoginResponse.fromJson(Map<String, dynamic> json) {
+    return PhoneLoginResponse(
+      success: json['status'] ?? false,
+      message: json['message'] ?? '',
+      userId: json['user_id'] != null
+          ? int.tryParse(json['user_id'].toString())
+          : null,
+      expiresIn: json['expires_in'] != null
+          ? int.tryParse(json['expires_in'].toString())
+          : null,
     );
   }
 }

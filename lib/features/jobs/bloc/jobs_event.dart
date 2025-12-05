@@ -26,16 +26,20 @@ class SearchJobsEvent extends JobsEvent {
 
 /// Filter jobs event
 class FilterJobsEvent extends JobsEvent {
-  final int categoryIndex;
-  final int filterIndex;
+  final String category;
 
-  const FilterJobsEvent({
-    required this.categoryIndex,
-    required this.filterIndex,
-  });
+  const FilterJobsEvent({required this.category});
 
   @override
-  List<Object?> get props => [categoryIndex, filterIndex];
+  List<Object?> get props => [category];
+}
+
+/// Toggle filters event
+class ToggleFiltersEvent extends JobsEvent {
+  const ToggleFiltersEvent();
+
+  @override
+  List<Object?> get props => [];
 }
 
 /// Save job event
@@ -70,10 +74,13 @@ class ApplyForJobEvent extends JobsEvent {
 
 /// Load saved jobs event
 class LoadSavedJobsEvent extends JobsEvent {
-  const LoadSavedJobsEvent();
+  final int? limit;
+  final int? offset;
+
+  const LoadSavedJobsEvent({this.limit, this.offset});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [limit, offset];
 }
 
 /// Load applied jobs event
@@ -118,16 +125,6 @@ class ToggleJobBookmarkEvent extends JobsEvent {
 
   @override
   List<Object?> get props => [jobId];
-}
-
-/// Update search results filter event
-class UpdateSearchResultsFilterEvent extends JobsEvent {
-  final int filterIndex;
-
-  const UpdateSearchResultsFilterEvent({required this.filterIndex});
-
-  @override
-  List<Object?> get props => [filterIndex];
 }
 
 /// Load search results event

@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
+import '../../../shared/services/fcm_service.dart';
+import '../../../shared/services/profile_cache_service.dart';
 import '../../../core/utils/app_constants.dart';
 import '../services/auth_api_service.dart';
 
@@ -24,6 +26,13 @@ abstract class AuthRepository {
 
   Future<LoginResponse> verifyOtp({
     required String phoneNumber,
+    required String otp,
+  });
+
+  Future<PhoneLoginResponse> phoneLogin({required String phoneNumber});
+
+  Future<LoginResponse> verifyPhoneLoginOtp({
+    required int userId,
     required String otp,
   });
 
@@ -152,7 +161,11 @@ class AuthRepositoryImpl implements AuthRepository {
             debugPrint(
               "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
             );
-            throw Exception(AppConstants.userDoesNotExist);
+            return LoginResponse(
+              success: false,
+              message: AppConstants.userDoesNotExist,
+              errorCode: 'ACCESS_DENIED',
+            );
           }
 
           // If role is null, we'll allow access but log a warning
@@ -174,20 +187,41 @@ class AuthRepositoryImpl implements AuthRepository {
           debugPrint(
             "🔵 User data stored successfully with role: ${user.role}",
           );
+
+          // Save FCM token after successful login
+          try {
+            final fcmService = FcmService();
+            await fcmService.saveTokenToBackend();
+            debugPrint('✅ FCM token saved after login');
+          } catch (e) {
+            debugPrint('🔴 Error saving FCM token after login: $e');
+            // Don't fail login if FCM token save fails
+          }
         } else {
           debugPrint("🔴 User or token is null in successful response");
         }
         return loginResponse;
       } else {
-        // अगर success false है तो generic error message दो
-        debugPrint("🔴 Login failed: ${loginResponse.message}");
-        throw Exception(AppConstants.userDoesNotExist);
+        // Preserve the error message and error code from API response
+        debugPrint("🔴 Login failed: ${loginResponse.message} (Error Code: ${loginResponse.errorCode})");
+        return loginResponse;
       }
     } catch (e) {
       debugPrint("🔴 Login error: $e");
+      // Check if it's a network error
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Network') ||
+          e.toString().contains('timeout')) {
+        return LoginResponse(
+          success: false,
+          message: 'Network error. Please check your internet connection and try again.',
+          errorCode: 'NETWORK_ERROR',
+        );
+      }
       return LoginResponse(
         success: false,
-        message: AppConstants.userDoesNotExist,
+        message: 'Login failed. Please try again.',
+        errorCode: 'UNKNOWN_ERROR',
       );
     }
   }
@@ -255,6 +289,16 @@ class AuthRepositoryImpl implements AuthRepository {
         );
 
         _apiService.setAuthToken(loginResponse.token!);
+
+        // Save FCM token after successful login
+        try {
+          final fcmService = FcmService();
+          await fcmService.saveTokenToBackend();
+          debugPrint('✅ FCM token saved after OTP verification');
+        } catch (e) {
+          debugPrint('🔴 Error saving FCM token after OTP verification: $e');
+          // Don't fail login if FCM token save fails
+        }
       }
 
       return loginResponse;
@@ -263,6 +307,102 @@ class AuthRepositoryImpl implements AuthRepository {
       return LoginResponse(
         success: false,
         message: AppConstants.userDoesNotExist,
+      );
+    }
+  }
+
+  @override
+  Future<PhoneLoginResponse> phoneLogin({required String phoneNumber}) async {
+    try {
+      debugPrint('🔵 Sending phone login OTP to: $phoneNumber');
+
+      final response = await _authApiService.phoneLogin(phoneNumber: phoneNumber);
+
+      debugPrint('🔵 Phone Login Repository Response success: ${response.success}');
+      debugPrint('🔵 Phone Login Repository Response message: ${response.message}');
+      debugPrint('🔵 Phone Login Repository Response userId: ${response.userId}');
+      debugPrint('🔵 Phone Login Repository Response expiresIn: ${response.expiresIn}');
+
+      return response;
+    } catch (e) {
+      debugPrint('🔴 Error in phone login repository: $e');
+      return PhoneLoginResponse(
+        success: false,
+        message: 'Failed to send OTP: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<LoginResponse> verifyPhoneLoginOtp({
+    required int userId,
+    required String otp,
+  }) async {
+    try {
+      debugPrint('🔵 Verifying phone login OTP for user: $userId');
+
+      final loginResponse = await _authApiService.verifyPhoneLoginOtp(
+        userId: userId,
+        otp: otp,
+      );
+
+      debugPrint('🔵 Verify Phone Login OTP Repository Response success: ${loginResponse.success}');
+      debugPrint('🔵 Verify Phone Login OTP Repository Response message: ${loginResponse.message}');
+
+      if (loginResponse.success &&
+          loginResponse.user != null &&
+          loginResponse.token != null) {
+        final user = loginResponse.user!;
+
+        // ✅ Role validation - only students can access the app
+        if (user.role != null && user.role != AppConstants.studentRole) {
+          debugPrint(
+            "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
+          );
+          return LoginResponse(
+            success: false,
+            message: AppConstants.userDoesNotExist,
+          );
+        }
+
+        // If role is null, we'll allow access but log a warning
+        if (user.role == null) {
+          debugPrint(
+            "⚠️ Warning: User role is null. Allowing access but this should be investigated.",
+          );
+        }
+
+        await _tokenStorage.storeLoginSession(
+          token: loginResponse.token!,
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          phone: user.phone,
+          role: user.role,
+        );
+
+        _apiService.setAuthToken(loginResponse.token!);
+        debugPrint(
+          "🔵 User data stored successfully with role: ${user.role}",
+        );
+
+        // Save FCM token after successful login
+        try {
+          final fcmService = FcmService();
+          await fcmService.saveTokenToBackend();
+          debugPrint('✅ FCM token saved after phone login OTP verification');
+        } catch (e) {
+          debugPrint('🔴 Error saving FCM token after phone login OTP verification: $e');
+          // Don't fail login if FCM token save fails
+        }
+      }
+
+      return loginResponse;
+    } catch (e) {
+      debugPrint('🔴 Error verifying phone login OTP: $e');
+      return LoginResponse(
+        success: false,
+        message: 'Failed to verify OTP: ${e.toString()}',
       );
     }
   }
@@ -470,19 +610,41 @@ class AuthRepositoryImpl implements AuthRepository {
         debugPrint('🔴 No user ID found for logout');
       }
 
-      // Clear local data regardless of API result
-      await _tokenStorage.clearAll();
+      // Clear auth data
+      await _tokenStorage.clearAuthData();
       _apiService.clearAuthToken();
-      debugPrint('🔵 User logged out successfully (local data cleared)');
+      
+      // Clear profile cache on logout (to prevent old user data showing)
+      try {
+        final profileCacheService = ProfileCacheService.instance;
+        await profileCacheService.clearCache();
+        await profileCacheService.clearProfileImageCache();
+        debugPrint('🔵 Profile cache cleared on logout');
+      } catch (e) {
+        debugPrint('⚠️ Error clearing profile cache: $e');
+      }
+      
+      debugPrint('🔵 User logged out successfully (auth data cleared, profile cache cleared)');
       return true;
     } catch (e) {
       debugPrint('🔴 Error during logout: $e');
 
-      // Clear local data even if there's an error
+      // Clear auth data even if there's an error
       try {
-        await _tokenStorage.clearAll();
+        await _tokenStorage.clearAuthData();
         _apiService.clearAuthToken();
-        debugPrint('🔵 Local data cleared despite error');
+        
+        // Clear profile cache on logout (to prevent old user data showing)
+        try {
+          final profileCacheService = ProfileCacheService.instance;
+          await profileCacheService.clearCache();
+          await profileCacheService.clearProfileImageCache();
+          debugPrint('🔵 Profile cache cleared on logout (despite error)');
+        } catch (cacheError) {
+          debugPrint('⚠️ Error clearing profile cache: $cacheError');
+        }
+        
+        debugPrint('🔵 Auth data cleared despite error (profile cache cleared)');
         return true;
       } catch (clearError) {
         debugPrint('🔴 Error clearing local data: $clearError');

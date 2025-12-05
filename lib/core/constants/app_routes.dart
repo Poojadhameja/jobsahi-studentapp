@@ -58,27 +58,6 @@ class AppRoutes {
   /// Profile details screen
   static const String profileDetails = '/profile/details';
 
-  /// Profile edit screen
-  static const String profileEdit = '/profile/edit';
-
-  /// Profile experience edit
-  static const String profileExperienceEdit = '/profile/edit/experience';
-
-  /// Profile education edit
-  static const String profileEducationEdit = '/profile/edit/education';
-
-  /// Profile skills edit
-  static const String profileSkillsEdit = '/profile/edit/skills';
-
-  /// Profile certificates edit
-  static const String profileCertificatesEdit = '/profile/edit/certificates';
-
-  /// Profile resume edit
-  static const String profileResumeEdit = '/profile/edit/resume';
-
-  /// Profile summary edit
-  static const String profileSummaryEdit = '/profile/edit/summary';
-
   /// Personalize job feed
   static const String personalizeJobfeed = '/profile/personalize';
 
@@ -101,12 +80,6 @@ class AppRoutes {
   static const String profileBuilderStep3 = '/profile/builder/step3';
 
   // ==================== JOBS ROUTES ====================
-  /// Job search screen
-  static const String searchJob = '/jobs/search';
-
-  /// Job search results
-  static const String searchResult = '/jobs/search/results';
-
   /// Job details screen with dynamic ID
   static const String jobDetails = '/jobs/details/:id';
 
@@ -123,10 +96,16 @@ class AppRoutes {
   static const String aboutCompany = '/jobs/company/:id';
 
   /// Job application success
-  static const String jobApplicationSuccess = '/jobs/application/success';
+  static const String jobApplicationSuccess = '/jobs/application/success/:id';
 
   /// Job application step
   static const String jobStep = '/jobs/application/step/:id';
+
+  /// Student application detail
+  static const String studentApplicationDetail = '/application/details/:id';
+
+  /// Interview detail
+  static const String interviewDetail = '/interviews/details/:id';
 
   // ==================== COURSES ROUTES ====================
 
@@ -143,7 +122,7 @@ class AppRoutes {
 
   // ==================== SKILL TEST ROUTES ====================
   /// Skill test details with dynamic ID
-  static const String skillTestDetails = '/skill-test/:id';
+  static const String skillTestDetails = '/skill-test/:id/details';
 
   /// Skill test instructions
   static const String skillTestInstructions = '/skill-test/:id/instructions';
@@ -157,9 +136,12 @@ class AppRoutes {
 
   /// About page
   static const String about = '/settings/about';
+  static const String contactUs = '/settings/contact-us';
 
   /// Help center
   static const String helpCenter = '/settings/help';
+  static const String feedback = '/settings/feedback';
+  static const String faqs = '/settings/faqs';
 
   /// Privacy policy
   static const String privacyPolicy = '/settings/privacy';
@@ -167,8 +149,19 @@ class AppRoutes {
   /// Terms and conditions
   static const String termsConditions = '/settings/terms';
 
-  /// Notification permissions
-  static const String notificationPermission = '/settings/notifications';
+  /// Notification settings (combined permission + preferences)
+  static const String notificationSettings = '/settings/notifications';
+
+  /// Notification permission (legacy - kept for backward compatibility)
+  static const String notificationPermission =
+      '/settings/notifications/permission';
+
+  /// Notification preferences (legacy - kept for backward compatibility)
+  static const String notificationPreferences =
+      '/settings/notifications/preferences';
+
+  /// Notification history
+  static const String notificationHistory = '/settings/notifications/history';
 
   // ==================== FALLBACK/ERROR ROUTES ====================
   /// Not found route
@@ -186,7 +179,7 @@ class AppRoutes {
   static String chatWithId(String id) => '/messages/chat/$id';
 
   /// Generate skill test details route with ID
-  static String skillTestDetailsWithId(String id) => '/skill-test/$id';
+  static String skillTestDetailsWithId(String id) => '/skill-test/$id/details';
 
   /// Generate skill test instructions route with ID
   static String skillTestInstructionsWithId(String id) =>
@@ -203,4 +196,15 @@ class AppRoutes {
 
   /// Generate job step route with ID
   static String jobStepWithId(String id) => '/jobs/application/step/$id';
+
+  /// Generate job application success route with ID
+  static String jobApplicationSuccessWithId(String id) =>
+      '/jobs/application/success/$id';
+
+  /// Generate student application detail route with ID
+  static String studentApplicationDetailWithId(String id) =>
+      '/application/details/$id';
+
+  /// Generate interview detail route with ID
+  static String interviewDetailWithId(String id) => '/interviews/details/$id';
 }

@@ -83,6 +83,8 @@ class JobInfo {
   final String status;
   final String adminAction;
   final String createdAt;
+  final bool isSaved;
+  final bool isApplied;
 
   const JobInfo({
     required this.id,
@@ -100,6 +102,8 @@ class JobInfo {
     required this.status,
     required this.adminAction,
     required this.createdAt,
+    this.isSaved = false,
+    this.isApplied = false,
   });
 
   /// Helper method to parse skills from different formats

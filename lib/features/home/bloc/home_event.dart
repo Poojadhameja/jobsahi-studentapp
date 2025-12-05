@@ -35,12 +35,20 @@ class SearchJobsEvent extends HomeEvent {
 
 /// Filter jobs event
 class FilterJobsEvent extends HomeEvent {
-  final int filterIndex;
+  final String category;
 
-  const FilterJobsEvent({required this.filterIndex});
+  const FilterJobsEvent({required this.category});
 
   @override
-  List<Object?> get props => [filterIndex];
+  List<Object?> get props => [category];
+}
+
+/// Toggle filters event
+class ToggleFiltersEvent extends HomeEvent {
+  const ToggleFiltersEvent();
+
+  @override
+  List<Object?> get props => [];
 }
 
 /// Refresh home data event
@@ -57,4 +65,53 @@ class ClearSearchEvent extends HomeEvent {
 
   @override
   List<Object?> get props => [];
+}
+
+/// Save job event
+class SaveJobEvent extends HomeEvent {
+  final String jobId;
+
+  const SaveJobEvent({required this.jobId});
+
+  @override
+  List<Object?> get props => [jobId];
+}
+
+/// Unsave job event
+class UnsaveJobEvent extends HomeEvent {
+  final String jobId;
+
+  const UnsaveJobEvent({required this.jobId});
+
+  @override
+  List<Object?> get props => [jobId];
+}
+
+/// Apply filter event
+class ApplyFilterEvent extends HomeEvent {
+  final String filterType; // 'fields', 'salary', 'location'
+  final String? filterValue;
+
+  const ApplyFilterEvent({required this.filterType, this.filterValue});
+
+  @override
+  List<Object?> get props => [filterType, filterValue];
+}
+
+/// Clear all filters event
+class ClearAllFiltersEvent extends HomeEvent {
+  const ClearAllFiltersEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// Clear specific filter event
+class ClearFilterEvent extends HomeEvent {
+  final String filterType;
+
+  const ClearFilterEvent({required this.filterType});
+
+  @override
+  List<Object?> get props => [filterType];
 }
