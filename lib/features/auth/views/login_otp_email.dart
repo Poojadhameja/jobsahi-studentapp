@@ -825,20 +825,34 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
       children: [
         SignInButton(
           logoPath: AppConstants.googleLogoAsset,
-          text: 'Sign in with Google',
-          onPressed: () {
-            // Social login integration pending
-            debugPrint("Google login - Integration pending");
-          },
+          text: 'Continue with Google',
+          onPressed: _isSubmitting
+              ? () {} // Empty function when submitting
+              : () {
+                  debugPrint("🔵 Google login button pressed");
+                  context.read<AuthBloc>().add(
+                        const SocialLoginEvent(
+                          provider: 'google',
+                          context: null, // Google doesn't need context
+                        ),
+                      );
+                },
         ),
         const SizedBox(height: 16),
         SignInButton(
           logoPath: AppConstants.linkedinLogoAsset,
-          text: 'Sign in with Linkedin',
-          onPressed: () {
-            // Social login integration pending
-            debugPrint("LinkedIn login - Integration pending");
-          },
+          text: 'Continue with LinkedIn',
+          onPressed: _isSubmitting
+              ? () {} // Empty function when submitting
+              : () {
+                  debugPrint("🔵 LinkedIn login button pressed");
+                  context.read<AuthBloc>().add(
+                        SocialLoginEvent(
+                          provider: 'linkedin',
+                          context: context, // LinkedIn needs context for WebView
+                        ),
+                      );
+                },
         ),
       ],
     );

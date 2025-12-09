@@ -1,8 +1,10 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../repository/auth_repository.dart';
+import '../services/oauth_service.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../shared/services/inactivity_service.dart';
@@ -228,21 +230,68 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       emit(const AuthLoading());
 
-      await Future.delayed(const Duration(milliseconds: 200));
+      final oauthService = OAuthService();
+      LoginResponse? loginResponse;
 
-      emit(
-        AuthSuccess(
+      if (event.provider.toLowerCase() == 'google') {
+        // Google OAuth flow
+        debugPrint('🔵 Starting Google OAuth flow');
+        final accessToken = await oauthService.signInWithGoogle();
+
+        if (accessToken == null) {
+          // User cancelled
+          emit(const AuthError(message: 'Google sign-in was cancelled'));
+          return;
+        }
+
+        // Send access token to backend
+        loginResponse = await _authRepository.signInWithGoogle(accessToken: accessToken);
+      } else if (event.provider.toLowerCase() == 'linkedin') {
+        // LinkedIn OAuth flow
+        debugPrint('🔵 Starting LinkedIn OAuth flow');
+
+        // Get BuildContext from the event if available
+        BuildContext? context = event.context;
+        if (context == null) {
+          emit(const AuthError(
+            message: 'Unable to show LinkedIn login. Please try again.',
+          ));
+          return;
+        }
+
+        final code = await oauthService.signInWithLinkedIn(context);
+
+        if (code == null) {
+          // User cancelled
+          emit(const AuthError(message: 'LinkedIn sign-in was cancelled'));
+          return;
+        }
+
+        // Send authorization code to backend
+        loginResponse = await _authRepository.signInWithLinkedIn(code: code);
+      } else {
+        emit(AuthError(message: 'Unsupported OAuth provider: ${event.provider}'));
+        return;
+      }
+
+      if (loginResponse != null && loginResponse.success) {
+        emit(AuthSuccess(
           message: '${event.provider.capitalize()} login successful',
-          user: {}, // social login के बाद भी user खाली Map रख दो
-        ),
-      );
+          user: loginResponse.user?.toJson() ?? {},
+        ));
 
-      // Initialize inactivity tracking for the logged-in user
-      await InactivityService.instance.updateLastActive();
+        // Initialize inactivity tracking for the logged-in user
+        await InactivityService.instance.updateLastActive();
 
-      // Notify router about auth state change
-      AuthStateNotifier.instance.notify();
+        // Notify router about auth state change
+        AuthStateNotifier.instance.notify();
+      } else {
+        final errorMessage = loginResponse?.message ??
+            '${event.provider.capitalize()} login failed';
+        emit(AuthError(message: errorMessage));
+      }
     } catch (e) {
+      debugPrint('🔴 Error in social login: $e');
       emit(
         AuthError(
           message:

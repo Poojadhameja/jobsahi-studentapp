@@ -579,20 +579,34 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
       children: [
         SignInButton(
           logoPath: AppConstants.googleLogoAsset,
-          text: 'Sign up with Google',
-          onPressed: () {
-            // Social signup integration pending
-            debugPrint("Google signup - Integration pending");
-          },
+          text: 'Continue with Google',
+          onPressed: _isLocallySubmitting
+              ? () {} // Empty function when submitting
+              : () {
+                  debugPrint("🔵 Google signup button pressed");
+                  context.read<AuthBloc>().add(
+                        const SocialLoginEvent(
+                          provider: 'google',
+                          context: null, // Google doesn't need context
+                        ),
+                      );
+                },
         ),
         const SizedBox(height: 16),
         SignInButton(
           logoPath: AppConstants.linkedinLogoAsset,
-          text: 'Sign up with Linkedin',
-          onPressed: () {
-            // Social signup integration pending
-            debugPrint("LinkedIn signup - Integration pending");
-          },
+          text: 'Continue with LinkedIn',
+          onPressed: _isLocallySubmitting
+              ? () {} // Empty function when submitting
+              : () {
+                  debugPrint("🔵 LinkedIn signup button pressed");
+                  context.read<AuthBloc>().add(
+                        SocialLoginEvent(
+                          provider: 'linkedin',
+                          context: context, // LinkedIn needs context for WebView
+                        ),
+                      );
+                },
         ),
       ],
     );

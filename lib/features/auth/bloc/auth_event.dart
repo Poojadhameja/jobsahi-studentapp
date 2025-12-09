@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 /// Authentication events
 abstract class AuthEvent extends Equatable {
@@ -45,11 +46,15 @@ class LoginWithEmailEvent extends AuthEvent {
 /// Social login event
 class SocialLoginEvent extends AuthEvent {
   final String provider; // 'google' or 'linkedin'
+  final BuildContext? context; // Required for LinkedIn WebView
 
-  const SocialLoginEvent({required this.provider});
+  const SocialLoginEvent({
+    required this.provider,
+    this.context,
+  });
 
   @override
-  List<Object?> get props => [provider];
+  List<Object?> get props => [provider, context];
 }
 
 /// Create account event
