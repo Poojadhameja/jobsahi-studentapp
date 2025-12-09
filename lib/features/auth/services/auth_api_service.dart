@@ -1059,6 +1059,168 @@ class AuthApiService {
     }
   }
 
+  /// Sign in with Google OAuth
+  Future<LoginResponse> signInWithGoogle({required String idToken}) async {
+    try {
+      debugPrint('🔵 Sending Google OAuth request with ID token');
+
+      final requestData = {'id_token': idToken};
+
+      debugPrint('🔵 Request data: $requestData');
+
+      final response = await _apiService.post(
+        '/auth/oauth/google/callback.php',
+        data: requestData,
+      );
+
+      debugPrint('🔵 Google OAuth API Status: ${response.statusCode}');
+      debugPrint('🔵 Google OAuth API Response: ${response.data}');
+
+      final responseData = response.data;
+      Map<String, dynamic> parsedData;
+      if (responseData is Map<String, dynamic>) {
+        parsedData = responseData;
+      } else if (responseData is String) {
+        try {
+          parsedData = jsonDecode(responseData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 Failed to parse JSON string: $e');
+          return LoginResponse(
+            success: false,
+            message: 'Invalid response format',
+          );
+        }
+      } else {
+        debugPrint('🔴 Unexpected response type: ${responseData.runtimeType}');
+        return LoginResponse(
+          success: false,
+          message: 'Unexpected response format',
+        );
+      }
+
+      return LoginResponse.fromJson(parsedData);
+    } catch (e) {
+      debugPrint('🔴 Error in Google OAuth API: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        debugPrint('🔴 DioException Status: $statusCode');
+        debugPrint('🔴 DioException Response Data: $responseData');
+
+        String errorMessage = 'Google login failed';
+        if (responseData is Map<String, dynamic>) {
+          errorMessage = responseData['message'] ?? errorMessage;
+        } else if (responseData is String) {
+          try {
+            final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+            errorMessage = parsed['message'] ?? errorMessage;
+          } catch (parseError) {
+            errorMessage = responseData;
+          }
+        }
+
+        return LoginResponse(success: false, message: errorMessage);
+      }
+
+      final errorString = e.toString();
+      String cleanMessage = errorString;
+      if (cleanMessage.startsWith('Exception: ')) {
+        cleanMessage = cleanMessage.substring(11);
+      }
+
+      return LoginResponse(
+        success: false,
+        message: cleanMessage.isNotEmpty
+            ? cleanMessage
+            : 'Google login failed. Please try again.',
+      );
+    }
+  }
+
+  /// Sign in with LinkedIn OAuth
+  Future<LoginResponse> signInWithLinkedIn({required String code}) async {
+    try {
+      debugPrint('🔵 Sending LinkedIn OAuth request with authorization code');
+
+      final requestData = {'code': code};
+
+      debugPrint('🔵 Request data: $requestData');
+
+      final response = await _apiService.post(
+        '/auth/oauth/linkedin/callback.php',
+        data: requestData,
+      );
+
+      debugPrint('🔵 LinkedIn OAuth API Status: ${response.statusCode}');
+      debugPrint('🔵 LinkedIn OAuth API Response: ${response.data}');
+
+      final responseData = response.data;
+      Map<String, dynamic> parsedData;
+      if (responseData is Map<String, dynamic>) {
+        parsedData = responseData;
+      } else if (responseData is String) {
+        try {
+          parsedData = jsonDecode(responseData) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('🔴 Failed to parse JSON string: $e');
+          return LoginResponse(
+            success: false,
+            message: 'Invalid response format',
+          );
+        }
+      } else {
+        debugPrint('🔴 Unexpected response type: ${responseData.runtimeType}');
+        return LoginResponse(
+          success: false,
+          message: 'Unexpected response format',
+        );
+      }
+
+      return LoginResponse.fromJson(parsedData);
+    } catch (e) {
+      debugPrint('🔴 Error in LinkedIn OAuth API: $e');
+      debugPrint('🔴 Error type: ${e.runtimeType}');
+
+      if (e is DioException) {
+        final statusCode = e.response?.statusCode;
+        final responseData = e.response?.data;
+
+        debugPrint('🔴 DioException Status: $statusCode');
+        debugPrint('🔴 DioException Response Data: $responseData');
+
+        String errorMessage = 'LinkedIn login failed';
+        if (responseData is Map<String, dynamic>) {
+          errorMessage = responseData['message'] ?? errorMessage;
+        } else if (responseData is String) {
+          try {
+            final parsed = jsonDecode(responseData) as Map<String, dynamic>;
+            errorMessage = parsed['message'] ?? errorMessage;
+          } catch (parseError) {
+            errorMessage = responseData;
+          }
+        }
+
+        return LoginResponse(success: false, message: errorMessage);
+      }
+
+      final errorString = e.toString();
+      String cleanMessage = errorString;
+      if (cleanMessage.startsWith('Exception: ')) {
+        cleanMessage = cleanMessage.substring(11);
+      }
+
+      return LoginResponse(
+        success: false,
+        message: cleanMessage.isNotEmpty
+            ? cleanMessage
+            : 'LinkedIn login failed. Please try again.',
+      );
+    }
+  }
+
   /// Logout user and revoke JWT token
   Future<LogoutResponse> logout({required int userId}) async {
     try {

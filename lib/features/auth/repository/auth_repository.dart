@@ -61,6 +61,9 @@ abstract class AuthRepository {
   Future<bool> isLoggedIn();
   Future<bool> hasToken();
   Future<User?> getCurrentUser();
+  
+  Future<LoginResponse> signInWithGoogle({required String idToken});
+  Future<LoginResponse> signInWithLinkedIn({required String code});
 }
 
 /// Implementation of AuthRepository
@@ -700,6 +703,138 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       debugPrint('Error getting current user: $e');
       return null;
+    }
+  }
+
+  @override
+  Future<LoginResponse> signInWithGoogle({required String idToken}) async {
+    try {
+      debugPrint('🔵 Sending Google OAuth request for login');
+
+      final loginResponse = await _authApiService.signInWithGoogle(
+        idToken: idToken,
+      );
+
+      debugPrint('🔵 Google OAuth Response success: ${loginResponse.success}');
+      debugPrint('🔵 Google OAuth Response message: ${loginResponse.message}');
+
+      if (loginResponse.success) {
+        if (loginResponse.user != null && loginResponse.token != null) {
+          final user = loginResponse.user!;
+
+          // ✅ Role validation - only students can access the app
+          if (user.role != null && user.role != AppConstants.studentRole) {
+            debugPrint(
+              "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
+            );
+            return LoginResponse(
+              success: false,
+              message: AppConstants.userDoesNotExist,
+              errorCode: 'ACCESS_DENIED',
+            );
+          }
+
+          await _tokenStorage.storeLoginSession(
+            token: loginResponse.token!,
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            phone: user.phone,
+            role: user.role,
+          );
+          _apiService.setAuthToken(loginResponse.token!);
+          debugPrint(
+            "🔵 User data stored successfully with role: ${user.role}",
+          );
+
+          // Save FCM token after successful login
+          try {
+            final fcmService = FcmService();
+            await fcmService.saveTokenToBackend();
+            debugPrint('✅ FCM token saved after Google OAuth login');
+          } catch (e) {
+            debugPrint('🔴 Error saving FCM token after Google OAuth login: $e');
+            // Don't fail login if FCM token save fails
+          }
+        } else {
+          debugPrint("🔴 User or token is null in successful response");
+        }
+      }
+
+      return loginResponse;
+    } catch (e) {
+      debugPrint('🔴 Error in Google OAuth login: $e');
+      return LoginResponse(
+        success: false,
+        message: 'Google login failed. Please try again.',
+        errorCode: 'OAUTH_ERROR',
+      );
+    }
+  }
+
+  @override
+  Future<LoginResponse> signInWithLinkedIn({required String code}) async {
+    try {
+      debugPrint('🔵 Sending LinkedIn OAuth request for login');
+
+      final loginResponse = await _authApiService.signInWithLinkedIn(
+        code: code,
+      );
+
+      debugPrint('🔵 LinkedIn OAuth Response success: ${loginResponse.success}');
+      debugPrint('🔵 LinkedIn OAuth Response message: ${loginResponse.message}');
+
+      if (loginResponse.success) {
+        if (loginResponse.user != null && loginResponse.token != null) {
+          final user = loginResponse.user!;
+
+          // ✅ Role validation - only students can access the app
+          if (user.role != null && user.role != AppConstants.studentRole) {
+            debugPrint(
+              "🔴 Access denied: User role '${user.role}' is not allowed. Only students can access this app.",
+            );
+            return LoginResponse(
+              success: false,
+              message: AppConstants.userDoesNotExist,
+              errorCode: 'ACCESS_DENIED',
+            );
+          }
+
+          await _tokenStorage.storeLoginSession(
+            token: loginResponse.token!,
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            phone: user.phone,
+            role: user.role,
+          );
+          _apiService.setAuthToken(loginResponse.token!);
+          debugPrint(
+            "🔵 User data stored successfully with role: ${user.role}",
+          );
+
+          // Save FCM token after successful login
+          try {
+            final fcmService = FcmService();
+            await fcmService.saveTokenToBackend();
+            debugPrint('✅ FCM token saved after LinkedIn OAuth login');
+          } catch (e) {
+            debugPrint('🔴 Error saving FCM token after LinkedIn OAuth login: $e');
+            // Don't fail login if FCM token save fails
+          }
+        } else {
+          debugPrint("🔴 User or token is null in successful response");
+        }
+      }
+
+      return loginResponse;
+    } catch (e) {
+      debugPrint('🔴 Error in LinkedIn OAuth login: $e');
+      return LoginResponse(
+        success: false,
+        message: 'LinkedIn login failed. Please try again.',
+        errorCode: 'OAUTH_ERROR',
+      );
     }
   }
 

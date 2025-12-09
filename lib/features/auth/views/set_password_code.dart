@@ -44,6 +44,9 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
   /// Whether the code is being verified
   bool _isVerifying = false;
 
+  /// Whether OTP is being resent
+  bool _isResending = false;
+
   /// Purpose for OTP verification
   late String _purpose;
 
@@ -144,11 +147,21 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthLoading) {
-          setState(() {
-            _isVerifying = true;
-          });
+          // Check if we're resending or verifying
+          if (_isResending) {
+            setState(() {
+              _isResending = true;
+            });
+          } else {
+            setState(() {
+              _isVerifying = true;
+            });
+          }
         } else if (state is ForgotPasswordOtpVerificationSuccess) {
           // Navigate immediately without any delay or snackbar
+          setState(() {
+            _isVerifying = false;
+          });
           context.push(
             AppRoutes.setNewPassword,
             extra: {'userId': state.userId},
@@ -168,18 +181,30 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
             setState(() {
               _phoneNumber = state.phoneNumber;
               _userId = state.userId ?? _userId;
-              _isVerifying = false;
+              _isResending = false;
             });
             _showSuccessSnackBar('OTP sent successfully');
           }
         } else if (state is ResendOtpSuccess) {
           setState(() {
+            _isResending = false;
             _isVerifying = false;
           });
-          _showSuccessSnackBar(state.message);
+          // Clean the message to remove "forgot_password" text
+          String cleanMessage = state.message;
+          if (cleanMessage.toLowerCase().contains('otp generated successfully')) {
+            cleanMessage = 'OTP sent successfully';
+          } else if (cleanMessage.toLowerCase().contains('forgot_password')) {
+            cleanMessage = cleanMessage.replaceAll(RegExp(r'forgot_password', caseSensitive: false), '').trim();
+            if (cleanMessage.isEmpty) {
+              cleanMessage = 'OTP sent successfully';
+            }
+          }
+          _showSuccessSnackBar(cleanMessage);
         } else if (state is AuthError) {
           setState(() {
             _isVerifying = false;
+            _isResending = false;
           });
           _showErrorSnackBar(state.message);
         }
@@ -516,20 +541,35 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
-          "Didn’t get the verification code? ",
+          "Didn't get the verification code? ",
           style: TextStyle(
             color: AppConstants.textSecondaryColor,
             fontSize: 14,
           ),
         ),
         GestureDetector(
-          onTap: _resendCode,
-          child: const Text(
-            "Resend",
-            style: TextStyle(
-              color: Color(0xFF58B248),
-              fontWeight: FontWeight.w600,
-            ),
+          onTap: _isResending ? null : _resendCode,
+          child: SizedBox(
+            width: 60, // Fixed width to match "Resend" text width
+            child: _isResending
+                ? const Center(
+                    child: SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF58B248)),
+                      ),
+                    ),
+                  )
+                : const Text(
+                    "Resend",
+                    style: TextStyle(
+                      color: Color(0xFF58B248),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
           ),
         ),
       ],
@@ -574,6 +614,15 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
 
   /// Resends the verification code
   void _resendCode() {
+    // Prevent multiple clicks while resending
+    if (_isResending) {
+      return;
+    }
+
+    setState(() {
+      _isResending = true;
+    });
+
     if (_purpose == 'phone_login') {
       // Resend OTP for phone login
       if (_phoneNumber.isNotEmpty) {
@@ -595,6 +644,9 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
             LoginWithOtpEvent(phoneNumber: _phoneNumber),
           );
         } else {
+          setState(() {
+            _isResending = false;
+          });
           _showErrorSnackBar('Phone number not available for resending OTP');
         }
       }
@@ -609,6 +661,9 @@ class _SetPasswordCodeScreenState extends State<SetPasswordCodeScreen> {
           ResendOtpEvent(email: _email, purpose: _purpose),
         );
       } else {
+        setState(() {
+          _isResending = false;
+        });
         _showErrorSnackBar('Email not available for resending OTP');
       }
     }
