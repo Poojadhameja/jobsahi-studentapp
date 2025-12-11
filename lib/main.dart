@@ -12,7 +12,6 @@ import 'features/jobs/bloc/jobs_bloc.dart';
 import 'features/profile/bloc/profile_bloc.dart';
 import 'features/courses/bloc/courses_bloc.dart';
 import 'features/interviews/bloc/interviews_bloc.dart';
-import 'features/messages/bloc/messages_bloc.dart';
 import 'features/settings/bloc/settings_bloc.dart';
 import 'features/skill_test/bloc/skill_test_bloc.dart';
 import 'shared/services/api_service.dart';
@@ -153,8 +152,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         BlocProvider<CoursesBloc>(create: (context) => sl<CoursesBloc>()),
         // Interviews BLoC
         BlocProvider<InterviewsBloc>(create: (context) => sl<InterviewsBloc>()),
-        // Messages BLoC
-        BlocProvider<MessagesBloc>(create: (context) => sl<MessagesBloc>()),
         // Settings BLoC
         BlocProvider<SettingsBloc>(create: (context) => sl<SettingsBloc>()),
         // Skill Test BLoC

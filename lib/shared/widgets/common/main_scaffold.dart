@@ -103,12 +103,6 @@ class _MainScaffoldState extends State<MainScaffold> {
           onBackPressed: () => _handleBackPress(context, currentIndex),
         );
       case 3:
-        // Messages tab - show title with back button
-        return TabAppBar(
-          title: 'Messages',
-          onBackPressed: () => _handleBackPress(context, currentIndex),
-        );
-      case 4:
         // Profile tab - show title with back button
         return TabAppBar(
           title: 'Profile Details',
@@ -128,10 +122,8 @@ class _MainScaffoldState extends State<MainScaffold> {
       index = 1;
     else if (path.startsWith('/application-tracker'))
       index = 2;
-    else if (path.startsWith('/messages'))
-      index = 3;
     else if (path.startsWith('/profile'))
-      index = 4;
+      index = 3;
     else
       index = 0; // Default to home
 

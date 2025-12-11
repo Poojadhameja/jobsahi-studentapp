@@ -9,7 +9,6 @@ import '../../features/courses/repository/courses_repository.dart';
 import '../../features/jobs/repositories/jobs_repository.dart';
 import '../../features/interviews/bloc/interviews_bloc.dart';
 import '../../features/interviews/repositories/interviews_repository.dart';
-import '../../features/messages/bloc/messages_bloc.dart';
 import '../../features/settings/bloc/settings_bloc.dart';
 import '../../features/skill_test/bloc/skill_test_bloc.dart';
 import '../../features/feedback/bloc/feedback_bloc.dart';
@@ -64,9 +63,6 @@ void _registerBlocs() {
   sl.registerFactory<InterviewsBloc>(
     () => InterviewsBloc(interviewsRepository: sl<InterviewsRepository>()),
   );
-
-  // Messages BLoCs
-  sl.registerLazySingleton<MessagesBloc>(() => MessagesBloc());
 
   // Settings BLoCs
   sl.registerLazySingleton<SettingsBloc>(

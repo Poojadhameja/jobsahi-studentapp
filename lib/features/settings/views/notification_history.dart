@@ -143,7 +143,8 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
         context.push(AppRoutes.applicationTracker);
         break;
       case 'message':
-        context.push(AppRoutes.messages);
+        // Messages feature removed - redirect to home
+        context.push(AppRoutes.home);
         break;
       default:
         context.push(AppRoutes.home);

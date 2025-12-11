@@ -67,9 +67,6 @@ import '../../features/courses/views/courses_learning_center.dart';
 import '../../features/courses/views/course_details.dart';
 import '../../features/courses/views/saved_courses.dart';
 
-// Messages screens
-import '../../features/messages/views/inbox_screen.dart';
-import '../../features/messages/views/chat_screen.dart';
 
 // Skill test screens
 import '../../features/skill_test/views/skill_test_details.dart';
@@ -351,12 +348,6 @@ class AppRouter {
             },
           ),
           GoRoute(
-            path: '/messages',
-            name: 'messages',
-            builder: (context, state) =>
-                const InboxScreen(isFromProfile: false),
-          ),
-          GoRoute(
             path: '/profile',
             name: 'profile',
             builder: (context, state) =>
@@ -593,17 +584,6 @@ class AppRouter {
         path: AppRoutes.savedCourses,
         name: 'savedCourses',
         builder: (context, state) => const SavedCoursesPage(),
-      ),
-
-      // ==================== MESSAGES ROUTES ====================
-      GoRoute(
-        path: AppRoutes.chat,
-        name: 'chat',
-        builder: (context, state) {
-          final id = state.pathParameters['id'];
-          final company = _findCompanyByIdOrDefault(id);
-          return ChatScreen(company: company);
-        },
       ),
 
       // ==================== SKILL TEST ROUTES ====================

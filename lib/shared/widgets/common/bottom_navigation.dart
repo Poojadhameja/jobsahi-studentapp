@@ -50,11 +50,7 @@ class CustomBottomNavigation extends StatelessWidget {
         label: AppConstants.applicationsLabel,
       ),
       BottomNavigationBarItem(
-        icon: Icon(currentIndex == 3 ? Icons.message : Icons.message_outlined),
-        label: AppConstants.messagesLabel,
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(currentIndex == 4 ? Icons.person : Icons.person_outline),
+        icon: Icon(currentIndex == 3 ? Icons.person : Icons.person_outline),
         label: AppConstants.profileLabel,
       ),
     ];

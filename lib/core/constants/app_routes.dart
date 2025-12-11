@@ -49,9 +49,6 @@ class AppRoutes {
   /// Application tracker
   static const String applicationTracker = '/application-tracker';
 
-  /// Messages inbox
-  static const String messages = '/messages';
-
   /// Profile menu screen
   static const String profile = '/profile/menu';
 
@@ -115,11 +112,6 @@ class AppRoutes {
   /// Saved courses
   static const String savedCourses = '/courses/saved';
 
-  // ==================== MESSAGES ROUTES ====================
-
-  /// Chat screen with dynamic ID
-  static const String chat = '/messages/chat/:id';
-
   // ==================== SKILL TEST ROUTES ====================
   /// Skill test details with dynamic ID
   static const String skillTestDetails = '/skill-test/:id/details';
@@ -174,9 +166,6 @@ class AppRoutes {
 
   /// Generate course details route with ID
   static String courseDetailsWithId(String id) => '/courses/$id';
-
-  /// Generate chat route with ID
-  static String chatWithId(String id) => '/messages/chat/$id';
 
   /// Generate skill test details route with ID
   static String skillTestDetailsWithId(String id) => '/skill-test/$id/details';

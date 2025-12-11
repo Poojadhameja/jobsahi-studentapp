@@ -15,8 +15,7 @@ class TabNavigationManager extends ChangeNotifier {
     0: ['/home'], // Home tab
     1: ['/learning'], // Learning tab
     2: ['/application-tracker'], // Application Tracker tab
-    3: ['/messages'], // Messages tab
-    4: ['/profile'], // Profile tab
+    3: ['/profile'], // Profile tab
   };
 
   /// Tab visit history for back navigation
@@ -136,8 +135,6 @@ class TabNavigationManager extends ChangeNotifier {
       case 2:
         return '/application-tracker';
       case 3:
-        return '/messages';
-      case 4:
         return '/profile';
       default:
         return '/home';
