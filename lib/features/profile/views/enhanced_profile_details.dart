@@ -12,6 +12,8 @@ import '../../../shared/services/location_service.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
+import '../services/profile_completion_service.dart';
+import '../widgets/profile_completion_widget.dart';
 
 /// Enhanced Profile Details Screen with Modern UI/UX
 class EnhancedProfileDetailsScreen extends StatelessWidget {
@@ -197,6 +199,9 @@ class _EnhancedProfileDetailsViewState
                       ),
                       child: Column(
                         children: [
+                          // Profile Completion Widget
+                          _buildProfileCompletionWidget(context, state),
+                          const SizedBox(height: AppConstants.defaultPadding),
                           // Profile Sections
                           _buildProfileSections(context, state),
                         ],
@@ -5005,6 +5010,39 @@ class _EnhancedProfileDetailsViewState
           },
         );
       },
+    );
+  }
+
+  /// Profile Completion Widget
+  Widget _buildProfileCompletionWidget(
+    BuildContext context,
+    ProfileDetailsLoaded state,
+  ) {
+    // Calculate completion percentage
+    final completionPercentage = ProfileCompletionService.calculateCompletionPercentage(
+      userProfile: state.userProfile,
+      skills: state.skills,
+      education: state.education,
+      experience: state.experience,
+      certificates: state.certificates,
+      resumeFileName: state.resumeFileName,
+      profileImagePath: state.profileImagePath,
+    );
+
+    // Get completion details
+    final completionDetails = ProfileCompletionService.getCompletionDetails(
+      userProfile: state.userProfile,
+      skills: state.skills,
+      education: state.education,
+      experience: state.experience,
+      certificates: state.certificates,
+      resumeFileName: state.resumeFileName,
+      profileImagePath: state.profileImagePath,
+    );
+
+    return ExpandableProfileCompletionWidget(
+      completionPercentage: completionPercentage,
+      completionDetails: completionDetails,
     );
   }
 

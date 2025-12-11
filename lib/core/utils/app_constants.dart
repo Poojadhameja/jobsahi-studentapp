@@ -104,6 +104,7 @@ class AppConstants {
   static const String homeLabel = 'Home';
   static const String coursesLabel = 'Courses';
   static const String applicationsLabel = 'Application Tracker';
+  static const String messagesLabel = 'Messages';
   static const String profileLabel = 'Profile';
 
   /// Form Labels
