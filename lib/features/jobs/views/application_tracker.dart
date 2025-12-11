@@ -59,10 +59,11 @@ class _ApplicationTrackerScreenViewState
     extends State<_ApplicationTrackerScreenView>
     with TickerProviderStateMixin {
   TabController? _tabController;
-  
+
   // Cache the last loaded data to prevent showing empty state during reload
   List<Map<String, dynamic>> _cachedAppliedJobs = [];
   List<Map<String, dynamic>> _cachedInterviewJobs = [];
+  List<Map<String, dynamic>> _cachedHiredJobs = [];
   bool _cacheInitialized = false;
   bool _hasLoadedOnce = false;
 
@@ -70,7 +71,7 @@ class _ApplicationTrackerScreenViewState
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       animationDuration: const Duration(milliseconds: 400),
     );
@@ -79,7 +80,7 @@ class _ApplicationTrackerScreenViewState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Initialize cache from BLoC state if available (only once, before first build)
     if (!_cacheInitialized) {
       _initializeCacheFromBloC();
@@ -91,20 +92,24 @@ class _ApplicationTrackerScreenViewState
   void _initializeCacheFromBloC() {
     try {
       final currentState = context.read<JobsBloc>().state;
-      
+
       if (currentState is ApplicationTrackerLoaded) {
         _cachedAppliedJobs = List.from(currentState.appliedJobs);
         _cachedInterviewJobs = List.from(currentState.interviewJobs);
+        _cachedHiredJobs = List.from(currentState.hiredJobs);
         _hasLoadedOnce = true; // Mark as loaded if cache exists
-      } 
+      }
       // Check JobsLoaded state for cached tracker data
       else if (currentState is JobsLoaded) {
-        if (currentState.trackerAppliedJobs != null && 
+        if (currentState.trackerAppliedJobs != null &&
             currentState.trackerInterviewJobs != null &&
-            (currentState.trackerAppliedJobs!.isNotEmpty || 
-             currentState.trackerInterviewJobs!.isNotEmpty)) {
+            (currentState.trackerAppliedJobs!.isNotEmpty ||
+                currentState.trackerInterviewJobs!.isNotEmpty ||
+                (currentState.trackerHiredJobs != null &&
+                    currentState.trackerHiredJobs!.isNotEmpty))) {
           _cachedAppliedJobs = List.from(currentState.trackerAppliedJobs!);
           _cachedInterviewJobs = List.from(currentState.trackerInterviewJobs!);
+          _cachedHiredJobs = List.from(currentState.trackerHiredJobs ?? []);
           _hasLoadedOnce = true; // Mark as loaded if cache exists
         }
       }
@@ -223,11 +228,11 @@ class _ApplicationTrackerScreenViewState
                 if (current is JobsError) return true;
                 if (current is JobsLoading && previous is! JobsLoading)
                   return true;
-                
+
                 // Rebuild when JobsLoaded has tracker data
                 if (current is JobsLoaded) {
                   // If we're on the tracker screen and JobsLoaded has tracker data, rebuild
-                  if (current.trackerAppliedJobs != null || 
+                  if (current.trackerAppliedJobs != null ||
                       current.trackerInterviewJobs != null) {
                     // Check if tracker data actually changed
                     if (previous is JobsLoaded) {
@@ -240,7 +245,7 @@ class _ApplicationTrackerScreenViewState
                     return true;
                   }
                 }
-                
+
                 // Don't rebuild for other state changes
                 return false;
               },
@@ -248,50 +253,60 @@ class _ApplicationTrackerScreenViewState
                 // Get data from state and update cache when data is available
                 List<Map<String, dynamic>> appliedJobs = _cachedAppliedJobs;
                 List<Map<String, dynamic>> interviewJobs = _cachedInterviewJobs;
+                List<Map<String, dynamic>> hiredJobs = _cachedHiredJobs;
 
                 if (state is ApplicationTrackerLoaded) {
                   // Mark as loaded at least once
                   _hasLoadedOnce = true;
                   // Update cache with latest data only if different
-                  if (_cachedAppliedJobs != state.appliedJobs || 
-                      _cachedInterviewJobs != state.interviewJobs) {
+                  if (_cachedAppliedJobs != state.appliedJobs ||
+                      _cachedInterviewJobs != state.interviewJobs ||
+                      _cachedHiredJobs != state.hiredJobs) {
                     _cachedAppliedJobs = List.from(state.appliedJobs);
                     _cachedInterviewJobs = List.from(state.interviewJobs);
+                    _cachedHiredJobs = List.from(state.hiredJobs);
                   }
                   appliedJobs = state.appliedJobs;
                   interviewJobs = state.interviewJobs;
+                  hiredJobs = state.hiredJobs;
                 }
                 // Also check JobsLoaded for tracker data
-                else if (state is JobsLoaded && 
-                         state.trackerAppliedJobs != null && 
-                         state.trackerInterviewJobs != null) {
+                else if (state is JobsLoaded &&
+                    state.trackerAppliedJobs != null &&
+                    state.trackerInterviewJobs != null) {
                   // Mark as loaded since we have data from JobsLoaded
-                  if (!_hasLoadedOnce && 
-                      (state.trackerAppliedJobs!.isNotEmpty || 
-                       state.trackerInterviewJobs!.isNotEmpty)) {
+                  if (!_hasLoadedOnce &&
+                      (state.trackerAppliedJobs!.isNotEmpty ||
+                          state.trackerInterviewJobs!.isNotEmpty ||
+                          (state.trackerHiredJobs != null &&
+                              state.trackerHiredJobs!.isNotEmpty))) {
                     _hasLoadedOnce = true;
                   }
-                  
+
                   // Update cache with tracker data from JobsLoaded only if different
-                  if (_cachedAppliedJobs != state.trackerAppliedJobs! || 
-                      _cachedInterviewJobs != state.trackerInterviewJobs!) {
+                  if (_cachedAppliedJobs != state.trackerAppliedJobs! ||
+                      _cachedInterviewJobs != state.trackerInterviewJobs! ||
+                      _cachedHiredJobs != (state.trackerHiredJobs ?? [])) {
                     _cachedAppliedJobs = List.from(state.trackerAppliedJobs!);
                     _cachedInterviewJobs = List.from(
                       state.trackerInterviewJobs!,
                     );
+                    _cachedHiredJobs = List.from(state.trackerHiredJobs ?? []);
                   }
                   appliedJobs = state.trackerAppliedJobs!;
                   interviewJobs = state.trackerInterviewJobs!;
+                  hiredJobs = state.trackerHiredJobs ?? [];
                 }
 
                 // Determine if we should show loading state inside tabs
                 // (instead of replacing entire widget with loading spinner)
                 final hasAnyCachedData =
                     _cachedAppliedJobs.isNotEmpty ||
-                                        _cachedInterviewJobs.isNotEmpty;
+                    _cachedInterviewJobs.isNotEmpty ||
+                    _cachedHiredJobs.isNotEmpty;
                 final isCurrentlyLoading =
                     state is JobsLoading || state is JobsInitial;
-                
+
                 // Check if this is first load with no cache
                 final isFirstLoad =
                     isCurrentlyLoading && !_hasLoadedOnce && !hasAnyCachedData;
@@ -312,6 +327,7 @@ class _ApplicationTrackerScreenViewState
                               children: [
                                 _buildAppliedTab(context, appliedJobs),
                                 _buildInterviewTab(context, interviewJobs),
+                                _buildHiredTab(context, hiredJobs),
                               ],
                             ),
                     ),
@@ -338,6 +354,7 @@ class _ApplicationTrackerScreenViewState
         tabs: const [
           Tab(text: 'Applied'),
           Tab(text: 'Shortlisted'),
+          Tab(text: 'Hired'),
         ],
       ),
     );
@@ -399,6 +416,34 @@ class _ApplicationTrackerScreenViewState
     );
   }
 
+  /// Builds the hired tab content
+  Widget _buildHiredTab(
+    BuildContext context,
+    List<Map<String, dynamic>> hiredJobs,
+  ) {
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        // Get latest data from state
+        List<Map<String, dynamic>> currentHiredJobs = hiredJobs;
+        if (state is ApplicationTrackerLoaded) {
+          currentHiredJobs = state.hiredJobs;
+        }
+
+        return RefreshIndicator(
+          color: AppConstants.successColor,
+          onRefresh: () async {
+            context.read<JobsBloc>().add(const LoadApplicationTrackerEvent());
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.defaultPadding),
+            child: _buildHiredCards(context, currentHiredJobs),
+          ),
+        );
+      },
+    );
+  }
+
   /// Builds the applied job cards
   Widget _buildAppliedCard(
     BuildContext context,
@@ -433,10 +478,7 @@ class _ApplicationTrackerScreenViewState
               ),
               child: const Text(
                 'Browse Jobs',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -574,12 +616,13 @@ class _ApplicationTrackerScreenViewState
             ],
           ),
         ),
-        // Status badge (only show for Shortlisted, hide for Applied)
-        if (status.toLowerCase() == 'shortlisted')
+        // Status badge (show for Shortlisted and Hired)
+        if (status.toLowerCase() == 'shortlisted' ||
+            status.toLowerCase() == 'hired')
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: AppConstants.successColor, // Green for shortlisted
+              color: AppConstants.successColor, // Green for shortlisted/hired
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -602,13 +645,13 @@ class _ApplicationTrackerScreenViewState
         Flexible(
           child: Text(
             location,
-      style: const TextStyle(
-        fontSize: 14,
-        color: AppConstants.textSecondaryColor,
-        height: 1.4,
-      ),
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppConstants.textSecondaryColor,
+              height: 1.4,
+            ),
             maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         const Text(
@@ -753,10 +796,7 @@ class _ApplicationTrackerScreenViewState
               ),
               child: const Text(
                 'Browse Jobs',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -847,6 +887,291 @@ class _ApplicationTrackerScreenViewState
           },
         );
       },
+    );
+  }
+
+  /// Builds the hired job cards
+  Widget _buildHiredCards(
+    BuildContext context,
+    List<Map<String, dynamic>> hiredJobs,
+  ) {
+    if (hiredJobs.isEmpty) {
+      return SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: EmptyStateWidget(
+            icon: Icons.celebration_outlined,
+            title: 'No Hired Jobs',
+            subtitle:
+                'You haven\'t been hired for any jobs yet.\nKeep applying and improving your profile!',
+            actionButton: ElevatedButton(
+              onPressed: () {
+                context.goNamed('home');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
+                ),
+              ),
+              child: const Text(
+                'Browse Jobs',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return BlocBuilder<JobsBloc, JobsState>(
+      builder: (context, state) {
+        // Get latest data from state
+        List<Map<String, dynamic>> currentHiredJobs = hiredJobs;
+        if (state is ApplicationTrackerLoaded) {
+          currentHiredJobs = state.hiredJobs;
+        }
+
+        return ListView.builder(
+          itemCount: currentHiredJobs.length,
+          itemBuilder: (context, index) {
+            final job = currentHiredJobs[index];
+            final applicationId =
+                job['application_id']?.toString() ??
+                job['id']?.toString() ??
+                '$index';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildHiredJobCard(
+                context: context,
+                jobTitle: _capitalizeFirst(
+                  job['title']?.toString() ?? 'Job Title',
+                ),
+                companyName: _getCompanyName(job, 'Company Name'),
+                location: job['location']?.toString() ?? 'Location',
+                experience: job['experience']?.toString() ?? 'Fresher',
+                applicationDate:
+                    job['appliedDate']?.toString() ?? 'Applied Date',
+                shortlistedDate: job['shortlisted_date']?.toString(),
+                hiredDate: job['hiredDate']?.toString() ?? 'Hired Date',
+                salary: job['salary']?.toString() ?? '',
+                applicationId: applicationId,
+                jobData: job,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Builds an individual hired job card
+  Widget _buildHiredJobCard({
+    required BuildContext context,
+    required String jobTitle,
+    required String companyName,
+    required String location,
+    required String experience,
+    required String applicationDate,
+    String? shortlistedDate,
+    required String hiredDate,
+    required String salary,
+    required String applicationId,
+    required Map<String, dynamic> jobData,
+  }) {
+    return Card(
+      elevation: 2,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with icon, title, company, and status badge
+            Row(
+              children: [
+                // Job icon - using celebration icon for hired
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppConstants.successColor,
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.smallBorderRadius,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.celebration,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: AppConstants.defaultPadding),
+                // Job title and company
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        jobTitle,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.textPrimaryColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        companyName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppConstants.textSecondaryColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                // Status badge - "Hired"
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppConstants.successColor,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    'Hired',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.smallPadding),
+            // Job info (location and experience)
+            _buildJobInfo(location, experience),
+            const SizedBox(height: AppConstants.smallPadding),
+            // Salary info
+            if (salary.isNotEmpty) ...[
+              _buildSalaryInfo(salary),
+              const SizedBox(height: AppConstants.smallPadding),
+            ],
+            // Dates info
+            _buildHiredDateInfo(applicationDate, shortlistedDate, hiredDate),
+            const SizedBox(height: AppConstants.smallPadding),
+            // View Details button
+            _buildHiredActionButton(context, applicationId, jobData),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Builds date info section for hired jobs
+  Widget _buildHiredDateInfo(
+    String applicationDate,
+    String? shortlistedDate,
+    String hiredDate,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Application date
+        Text(
+          'Applied: $applicationDate',
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppConstants.textPrimaryColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        // Shortlisted date (optional)
+        if (shortlistedDate != null && shortlistedDate.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Shortlisted: $shortlistedDate',
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppConstants.textPrimaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+        // Hired date
+        const SizedBox(height: 4),
+        Text(
+          'Hired: $hiredDate',
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppConstants.successColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the action button for hired jobs
+  Widget _buildHiredActionButton(
+    BuildContext context,
+    String applicationId,
+    Map<String, dynamic> jobData,
+  ) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          if (applicationId.isEmpty) {
+            TopSnackBar.showError(
+              context,
+              message: 'Application ID not available.',
+            );
+            return;
+          }
+
+          final navigationData = Map<String, dynamic>.from(jobData);
+          navigationData['_navigation_source'] = 'hired_jobs';
+
+          // Navigate to hired job detail (can reuse student application detail or create new)
+          context.pushNamed(
+            'studentApplicationDetail',
+            pathParameters: {'id': applicationId},
+            extra: navigationData,
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppConstants.successColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+        child: const Text(
+          'View Details',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
     );
   }
 

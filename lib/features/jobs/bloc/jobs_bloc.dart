@@ -91,19 +91,26 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       // Preserve tracker data from current state if it exists
       List<Map<String, dynamic>>? preservedTrackerApplied;
       List<Map<String, dynamic>>? preservedTrackerInterviews;
-      
+      List<Map<String, dynamic>>? preservedTrackerHired;
+
       if (state is JobsLoaded) {
         final currentState = state as JobsLoaded;
         preservedTrackerApplied = currentState.trackerAppliedJobs;
         preservedTrackerInterviews = currentState.trackerInterviewJobs;
-        debugPrint('🔵 [Jobs] Preserving tracker data: ${preservedTrackerApplied?.length ?? 0} applied, ${preservedTrackerInterviews?.length ?? 0} interviews');
+        preservedTrackerHired = currentState.trackerHiredJobs;
+        debugPrint(
+          '🔵 [Jobs] Preserving tracker data: ${preservedTrackerApplied?.length ?? 0} applied, ${preservedTrackerInterviews?.length ?? 0} interviews, ${preservedTrackerHired?.length ?? 0} hired',
+        );
       } else if (state is ApplicationTrackerLoaded) {
         final currentState = state as ApplicationTrackerLoaded;
         preservedTrackerApplied = currentState.appliedJobs;
         preservedTrackerInterviews = currentState.interviewJobs;
-        debugPrint('🔵 [Jobs] Preserving tracker data from ApplicationTrackerLoaded: ${preservedTrackerApplied.length} applied, ${preservedTrackerInterviews.length} interviews');
+        preservedTrackerHired = currentState.hiredJobs;
+        debugPrint(
+          '🔵 [Jobs] Preserving tracker data from ApplicationTrackerLoaded: ${preservedTrackerApplied.length} applied, ${preservedTrackerInterviews.length} interviews, ${preservedTrackerHired.length} hired',
+        );
       }
-      
+
       emit(const JobsLoading());
 
       // Load featured jobs from API
@@ -213,11 +220,11 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         }
 
         final appliedJobs = JobData.appliedJobs;
-        
+
         // Preserve tracker data from current state if it exists
         List<Map<String, dynamic>>? preservedTrackerApplied;
         List<Map<String, dynamic>>? preservedTrackerInterviews;
-        
+
         if (state is JobsLoaded) {
           final currentState = state as JobsLoaded;
           preservedTrackerApplied = currentState.trackerAppliedJobs;
@@ -1205,38 +1212,47 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       // Check if we have cached tracker data in current state
       List<Map<String, dynamic>>? cachedApplied;
       List<Map<String, dynamic>>? cachedInterviews;
+      List<Map<String, dynamic>>? cachedHired;
       bool hasCachedData = false;
-      
+
       if (state is JobsLoaded) {
         final currentState = state as JobsLoaded;
-        if (currentState.trackerAppliedJobs != null && 
+        if (currentState.trackerAppliedJobs != null &&
             currentState.trackerInterviewJobs != null &&
-            (currentState.trackerAppliedJobs!.isNotEmpty || 
-             currentState.trackerInterviewJobs!.isNotEmpty)) {
+            (currentState.trackerAppliedJobs!.isNotEmpty ||
+                currentState.trackerInterviewJobs!.isNotEmpty ||
+                (currentState.trackerHiredJobs != null &&
+                    currentState.trackerHiredJobs!.isNotEmpty))) {
           cachedApplied = currentState.trackerAppliedJobs;
           cachedInterviews = currentState.trackerInterviewJobs;
+          cachedHired = currentState.trackerHiredJobs;
           hasCachedData = true;
         }
       } else if (state is ApplicationTrackerLoaded) {
         final currentState = state as ApplicationTrackerLoaded;
-        if (currentState.appliedJobs.isNotEmpty || 
-            currentState.interviewJobs.isNotEmpty) {
+        if (currentState.appliedJobs.isNotEmpty ||
+            currentState.interviewJobs.isNotEmpty ||
+            currentState.hiredJobs.isNotEmpty) {
           cachedApplied = currentState.appliedJobs;
           cachedInterviews = currentState.interviewJobs;
+          cachedHired = currentState.hiredJobs;
           hasCachedData = true;
         }
       }
-      
+
       // If we have cached data with actual items, emit it immediately (no loading state)
-      if (hasCachedData && 
-          cachedApplied != null && 
+      if (hasCachedData &&
+          cachedApplied != null &&
           cachedInterviews != null &&
-          (cachedApplied.isNotEmpty || cachedInterviews.isNotEmpty)) {
+          cachedHired != null &&
+          (cachedApplied.isNotEmpty ||
+              cachedInterviews.isNotEmpty ||
+              cachedHired.isNotEmpty)) {
         emit(
           ApplicationTrackerLoaded(
             appliedJobs: List.from(cachedApplied),
             interviewJobs: List.from(cachedInterviews),
-            offerJobs: const [],
+            hiredJobs: List.from(cachedHired),
           ),
         );
       } else {
@@ -1251,27 +1267,37 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       if (currentStateBeforeApi is JobsLoaded) {
         jobsLoadedStateSnapshot = currentStateBeforeApi;
       }
-      
+
       final applications = await _apiService.getStudentAppliedJobs();
 
       final appliedJobs = <Map<String, dynamic>>[];
-      final interviewJobs = <Map<String, dynamic>>[];
-      final offerJobs = <Map<String, dynamic>>[];
 
       // Process applied jobs (for Applied tab)
+      // Include all applications including hired ones (status = 'selected')
+      // Status will automatically show "Hired" for selected status via _mapApplicationStatusLabel
       for (final application in applications) {
         final normalized = _normalizeApplicationForTracker(application);
-        final statusKey =
-            normalized.remove('raw_status')?.toString().toLowerCase() ?? '';
+        // Keep all jobs including hired ones - status will show "Hired" for selected status
+        appliedJobs.add(normalized);
+      }
 
-        if (_isOfferStatus(statusKey)) {
-          offerJobs.add(normalized);
-        } else {
-          appliedJobs.add(normalized);
+      // Fetch hired jobs separately (status = 'selected')
+      final hiredJobs = <Map<String, dynamic>>[];
+      try {
+        debugPrint('🔵 [Jobs] Fetching hired jobs...');
+        final hiredJobsResponse = await _apiService.getStudentHiredJobs();
+        for (final hiredJob in hiredJobsResponse) {
+          final normalized = _normalizeHiredJobForTracker(hiredJob);
+          hiredJobs.add(normalized);
         }
+        debugPrint('🔵 [Jobs] Loaded ${hiredJobs.length} hired jobs');
+      } catch (e) {
+        debugPrint('🔴 [Jobs] Failed to fetch hired jobs: $e');
+        // Continue without hired jobs data
       }
 
       // Fetch interviews separately for Shortlisted tab (ONLY from interview API)
+      final interviewJobs = <Map<String, dynamic>>[];
       final interviewsRepo = _interviewsRepository;
       if (interviewsRepo != null) {
         try {
@@ -1282,8 +1308,23 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
               // Convert interview to map format for UI
               final interviewMap = interview.toMap();
 
-              // Add status as "Shortlisted" for all interviews
-              interviewMap['status'] = 'Shortlisted';
+              // Check if this job is hired by looking at hired jobs
+              final applicationId =
+                  interviewMap['application_id']?.toString() ?? '';
+              final isHired = hiredJobs.any(
+                (hired) => hired['application_id']?.toString() == applicationId,
+              );
+
+              // Set status based on whether job is hired
+              // Also set raw_status so status mapping works correctly
+              if (isHired) {
+                interviewMap['status'] = 'Hired';
+                interviewMap['raw_status'] =
+                    'selected'; // Important for status mapping
+              } else {
+                interviewMap['status'] = 'Shortlisted';
+                interviewMap['raw_status'] = 'shortlisted';
+              }
 
               // Ensure all required fields are present
               interviewMap['title'] = interview.jobTitle;
@@ -1291,7 +1332,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
               interviewMap['company'] = interview.companyName;
 
               debugPrint(
-                '🔵 [Jobs] ✅ Added interview to Shortlisted tab - interview_id: ${interview.interviewId}, job_title: ${interview.jobTitle}',
+                '🔵 [Jobs] ✅ Added interview to Shortlisted tab - interview_id: ${interview.interviewId}, job_title: ${interview.jobTitle}, application_id: $applicationId, isHired: $isHired, status: ${interviewMap['status']}, raw_status: ${interviewMap['raw_status']}',
               );
 
               interviewJobs.add(interviewMap);
@@ -1312,15 +1353,53 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         );
       }
 
+      // Also add hired jobs to shortlisted tab if they have shortlisted_date
+      for (final hiredJob in hiredJobs) {
+        final shortlistedDate = hiredJob['shortlisted_date']?.toString();
+        if (shortlistedDate != null && shortlistedDate.isNotEmpty) {
+          // Check if not already in interviewJobs (from interview API)
+          final applicationId = hiredJob['application_id']?.toString() ?? '';
+          final alreadyExists = interviewJobs.any(
+            (interview) =>
+                interview['application_id']?.toString() == applicationId,
+          );
+
+          if (!alreadyExists) {
+            // Add to shortlisted tab with hired status
+            final shortlistedMap = Map<String, dynamic>.from(hiredJob);
+            shortlistedMap['status'] = 'Hired';
+            shortlistedMap['raw_status'] =
+                'selected'; // Important for status mapping
+            debugPrint(
+              '🔵 [Jobs] ✅ Added hired job to Shortlisted tab - application_id: $applicationId, status: ${shortlistedMap['status']}',
+            );
+            interviewJobs.add(shortlistedMap);
+          } else {
+            // Update existing interview job to show Hired status if it's not already
+            final existingIndex = interviewJobs.indexWhere(
+              (interview) =>
+                  interview['application_id']?.toString() == applicationId,
+            );
+            if (existingIndex >= 0) {
+              interviewJobs[existingIndex]['status'] = 'Hired';
+              interviewJobs[existingIndex]['raw_status'] = 'selected';
+              debugPrint(
+                '🔵 [Jobs] ✅ Updated existing interview to Hired status - application_id: $applicationId',
+              );
+            }
+          }
+        }
+      }
+
       // First emit ApplicationTrackerLoaded for immediate UI update
       emit(
         ApplicationTrackerLoaded(
           appliedJobs: appliedJobs,
           interviewJobs: interviewJobs,
-          offerJobs: offerJobs,
+          hiredJobs: hiredJobs,
         ),
       );
-      
+
       // CRITICAL: Store tracker data back in JobsLoaded state for persistence
       // This ensures cache is available on next visit
       if (jobsLoadedStateSnapshot != null) {
@@ -1332,6 +1411,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             jobsLoadedStateSnapshot.copyWith(
               trackerAppliedJobs: appliedJobs,
               trackerInterviewJobs: interviewJobs,
+              trackerHiredJobs: hiredJobs,
             ),
           );
         }
@@ -1493,6 +1573,81 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
     };
   }
 
+  /// Normalize hired job data for tracker display
+  Map<String, dynamic> _normalizeHiredJobForTracker(
+    Map<String, dynamic> hiredJob,
+  ) {
+    final jobType = hiredJob['job_type']?.toString() ?? '';
+    final salaryText = _formatSalaryRange(
+      hiredJob['salary_min'],
+      hiredJob['salary_max'],
+    );
+    final applicationDate = _formatApplicationDate(
+      hiredJob['application_date']?.toString(),
+    );
+    final shortlistedDate = hiredJob['shortlisted_date'] != null
+        ? _formatApplicationDate(hiredJob['shortlisted_date']?.toString())
+        : null;
+    final hiredDate = _formatApplicationDate(
+      hiredJob['hired_date']?.toString(),
+    );
+    final applicationId = hiredJob['application_id']?.toString() ?? '';
+    final jobId = hiredJob['job_id']?.toString() ?? '';
+
+    // Extract company name
+    String companyName = 'Company';
+    final companyNameValue = hiredJob['company_name'];
+    if (companyNameValue != null) {
+      final companyNameStr = companyNameValue.toString().trim();
+      if (companyNameStr.isNotEmpty) {
+        companyName = companyNameStr;
+      }
+    }
+
+    // Extract location
+    final locationValue = hiredJob['location'];
+    final location =
+        (locationValue != null && locationValue.toString().trim().isNotEmpty)
+        ? locationValue.toString().trim()
+        : 'Location';
+
+    // Extract experience
+    final experienceRequired =
+        hiredJob['experience_required']?.toString() ?? '';
+    String experienceDisplay = 'Fresher';
+    if (experienceRequired.isNotEmpty) {
+      experienceDisplay = experienceRequired;
+    } else if (jobType.isNotEmpty) {
+      experienceDisplay = _formatJobType(jobType) ?? 'Fresher';
+    }
+
+    return <String, dynamic>{
+      'id': applicationId,
+      'application_id': applicationId,
+      'job_id': jobId,
+      'title': (hiredJob['job_title']?.toString() ?? 'Job Title').trim(),
+      'company_name': companyName,
+      'company': companyName,
+      'location': location,
+      'experience': experienceDisplay,
+      'type': _formatJobType(jobType) ?? 'Full-time',
+      'appliedDate': applicationDate,
+      'application_date': hiredJob['application_date']?.toString() ?? '',
+      'shortlisted_date': shortlistedDate,
+      'hiredDate': hiredDate,
+      'hired_date': hiredJob['hired_date']?.toString() ?? '',
+      'status': 'Hired',
+      'salary': salaryText,
+      'salary_min': hiredJob['salary_min']?.toString() ?? '',
+      'salary_max': hiredJob['salary_max']?.toString() ?? '',
+      'job_type': jobType,
+      'raw_status': 'selected',
+      'job_selected': hiredJob['job_selected'] ?? false,
+      'application_deadline':
+          hiredJob['application_deadline']?.toString() ?? '',
+    };
+  }
+
   String _mapApplicationStatusLabel(String status) {
     switch (status) {
       case 'applied':
@@ -1502,24 +1657,17 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       case 'interview_scheduled':
       case 'interview scheduled':
         return 'Shortlisted';
+      case 'selected':
+      case 'hired':
+        return 'Hired'; // Show "Hired" status for selected/hired jobs
       case 'offer':
       case 'offer_received':
       case 'offer accepted':
-      case 'hired':
-      case 'selected':
         return 'Offer Received';
       default:
         if (status.isEmpty) return 'Applied';
         return status[0].toUpperCase() + status.substring(1);
     }
-  }
-
-  bool _isOfferStatus(String status) {
-    return status == 'offer' ||
-        status == 'offer_received' ||
-        status == 'offer accepted' ||
-        status == 'hired' ||
-        status == 'selected';
   }
 
   String _formatApplicationDate(String? dateString) {

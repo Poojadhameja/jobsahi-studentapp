@@ -131,22 +131,25 @@ class ShortlistedJobCard extends StatelessWidget {
           ),
         ),
         // Status badge - matching applied cards style
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            // Shortlisted: green color (no gradient)
-            color: AppConstants.successColor,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(
-            status,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+        // Show for both Shortlisted and Hired status
+        if (status.toLowerCase() == 'shortlisted' ||
+            status.toLowerCase() == 'hired')
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              // Shortlisted/Hired: green color (no gradient)
+              color: AppConstants.successColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              status,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-        ),
       ],
     );
   }

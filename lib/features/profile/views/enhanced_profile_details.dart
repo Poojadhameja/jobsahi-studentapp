@@ -5568,44 +5568,64 @@ class _EnhancedProfileDetailsViewState
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         border: Border.all(color: AppConstants.borderColor),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            exp['company'] ?? 'Company',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.textPrimaryColor,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppConstants.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.business,
+              color: AppConstants.primaryColor,
+              size: 20,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            exp['position'] ?? 'Position',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppConstants.textSecondaryColor,
+          const SizedBox(width: AppConstants.smallPadding),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  exp['company'] ?? 'Company',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  exp['position'] ?? 'Position',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppConstants.textSecondaryColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${exp['startDate']} - ${exp['endDate'] ?? 'Present'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppConstants.textSecondaryColor,
+                  ),
+                ),
+                if (exp['description'] != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    exp['description'],
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppConstants.textPrimaryColor,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '${exp['startDate']} - ${exp['endDate'] ?? 'Present'}',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppConstants.textSecondaryColor,
-            ),
-          ),
-          if (exp['description'] != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              exp['description'],
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppConstants.textPrimaryColor,
-                height: 1.4,
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -5676,63 +5696,83 @@ class _EnhancedProfileDetailsViewState
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         border: Border.all(color: AppConstants.borderColor),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Qualification
-          if (qualification.isNotEmpty)
-            Text(
-              qualification,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppConstants.textPrimaryColor,
-              ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppConstants.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-          // Institute
-          if (institute.isNotEmpty) ...[
-            if (qualification.isNotEmpty) const SizedBox(height: 4),
-            Text(
-              institute,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppConstants.textSecondaryColor,
-              ),
+            child: const Icon(
+              Icons.school,
+              color: AppConstants.primaryColor,
+              size: 20,
             ),
-          ],
-          // Year and CGPA
-          if (yearDisplay.isNotEmpty || cgpa.isNotEmpty) ...[
-            if (qualification.isNotEmpty || institute.isNotEmpty)
-              const SizedBox(height: 4),
-            Row(
+          ),
+          const SizedBox(width: AppConstants.smallPadding),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (yearDisplay.isNotEmpty)
+                // Qualification
+                if (qualification.isNotEmpty)
                   Text(
-                    yearDisplay,
+                    qualification,
                     style: const TextStyle(
-                      fontSize: 12,
-                      color: AppConstants.textSecondaryColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppConstants.textPrimaryColor,
                     ),
                   ),
-                if (yearDisplay.isNotEmpty && cgpa.isNotEmpty)
-                  const Text(
-                    ' • ',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppConstants.textSecondaryColor,
-                    ),
-                  ),
-                if (cgpa.isNotEmpty)
+                // Institute
+                if (institute.isNotEmpty) ...[
+                  if (qualification.isNotEmpty) const SizedBox(height: 4),
                   Text(
-                    'CGPA: $cgpa',
+                    institute,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
                       color: AppConstants.textSecondaryColor,
                     ),
                   ),
+                ],
+                // Year and CGPA
+                if (yearDisplay.isNotEmpty || cgpa.isNotEmpty) ...[
+                  if (qualification.isNotEmpty || institute.isNotEmpty)
+                    const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (yearDisplay.isNotEmpty)
+                        Text(
+                          yearDisplay,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      if (yearDisplay.isNotEmpty && cgpa.isNotEmpty)
+                        const Text(
+                          ' • ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                      if (cgpa.isNotEmpty)
+                        Text(
+                          'CGPA: $cgpa',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppConstants.textSecondaryColor,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
-          ],
+          ),
         ],
       ),
     );

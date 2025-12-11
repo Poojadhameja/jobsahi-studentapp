@@ -38,6 +38,7 @@ class JobsLoaded extends JobsState {
   // Application Tracker cached data (to persist across navigation)
   final List<Map<String, dynamic>>? trackerAppliedJobs;
   final List<Map<String, dynamic>>? trackerInterviewJobs;
+  final List<Map<String, dynamic>>? trackerHiredJobs;
 
   const JobsLoaded({
     required this.allJobs,
@@ -51,6 +52,7 @@ class JobsLoaded extends JobsState {
     required this.featuredJobs,
     this.trackerAppliedJobs,
     this.trackerInterviewJobs,
+    this.trackerHiredJobs,
   });
 
   @override
@@ -66,6 +68,7 @@ class JobsLoaded extends JobsState {
     featuredJobs,
     trackerAppliedJobs,
     trackerInterviewJobs,
+    trackerHiredJobs,
   ];
 
   /// Copy with method for immutable state updates
@@ -81,6 +84,7 @@ class JobsLoaded extends JobsState {
     List<Map<String, dynamic>>? featuredJobs,
     List<Map<String, dynamic>>? trackerAppliedJobs,
     List<Map<String, dynamic>>? trackerInterviewJobs,
+    List<Map<String, dynamic>>? trackerHiredJobs,
   }) {
     return JobsLoaded(
       allJobs: allJobs ?? this.allJobs,
@@ -94,6 +98,7 @@ class JobsLoaded extends JobsState {
       featuredJobs: featuredJobs ?? this.featuredJobs,
       trackerAppliedJobs: trackerAppliedJobs ?? this.trackerAppliedJobs,
       trackerInterviewJobs: trackerInterviewJobs ?? this.trackerInterviewJobs,
+      trackerHiredJobs: trackerHiredJobs ?? this.trackerHiredJobs,
     );
   }
 }
@@ -209,16 +214,16 @@ class SearchResultsLoaded extends JobsState {
 class ApplicationTrackerLoaded extends JobsState {
   final List<Map<String, dynamic>> appliedJobs;
   final List<Map<String, dynamic>> interviewJobs;
-  final List<Map<String, dynamic>> offerJobs;
+  final List<Map<String, dynamic>> hiredJobs;
 
   const ApplicationTrackerLoaded({
     required this.appliedJobs,
     required this.interviewJobs,
-    required this.offerJobs,
+    required this.hiredJobs,
   });
 
   @override
-  List<Object?> get props => [appliedJobs, interviewJobs, offerJobs];
+  List<Object?> get props => [appliedJobs, interviewJobs, hiredJobs];
 }
 
 /// Application viewed state

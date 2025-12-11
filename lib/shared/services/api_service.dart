@@ -1172,6 +1172,107 @@ extension StudentApplicationsApi on ApiService {
     }
   }
 
+  /// Get student's hired jobs (status = 'selected')
+  Future<List<Map<String, dynamic>>> getStudentHiredJobs({
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (limit != null) queryParams['limit'] = limit;
+      if (offset != null) queryParams['offset'] = offset;
+
+      final response = await get(
+        '/student/get_hired_jobs.php',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+      } else {
+        throw Exception('Unexpected response format from hired jobs API');
+      }
+
+      final statusFlag = jsonData['status'];
+      final isSuccess =
+          statusFlag == true ||
+          statusFlag == 1 ||
+          statusFlag == '1' ||
+          (statusFlag is String && statusFlag.toLowerCase() == 'true');
+
+      if (!isSuccess) {
+        final message =
+            jsonData['message']?.toString() ?? 'Failed to load hired jobs';
+        throw Exception(message);
+      }
+
+      final data = jsonData['data'];
+      if (data is List) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
+
+      return const <Map<String, dynamic>>[];
+    } catch (e) {
+      debugPrint('🔴 [StudentApplications] Error fetching hired jobs: $e');
+      rethrow;
+    }
+  }
+
+  /// Get detailed information for a hired job
+  Future<Map<String, dynamic>> getHiredJobDetail(int applicationId) async {
+    try {
+      final response = await get(
+        '/student/get_hired_job_detail.php',
+        queryParameters: {'application_id': applicationId},
+      );
+
+      final rawData = response.data;
+      late final Map<String, dynamic> jsonData;
+
+      if (rawData is Map<String, dynamic>) {
+        jsonData = rawData;
+      } else if (rawData is String) {
+        jsonData = jsonDecode(rawData) as Map<String, dynamic>;
+      } else {
+        throw Exception('Unexpected response format from hired job detail API');
+      }
+
+      final statusFlag = jsonData['status'];
+      final isSuccess =
+          statusFlag == true ||
+          statusFlag == 1 ||
+          statusFlag == '1' ||
+          (statusFlag is String && statusFlag.toLowerCase() == 'true');
+
+      if (!isSuccess) {
+        final message =
+            jsonData['message']?.toString() ??
+            'Failed to load hired job detail';
+        throw Exception(message);
+      }
+
+      final data = jsonData['data'];
+      if (data is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(data);
+      }
+
+      throw Exception('Invalid hired job detail payload');
+    } catch (e) {
+      debugPrint(
+        '🔴 [StudentApplications] Error fetching hired job detail: $e',
+      );
+      rethrow;
+    }
+  }
+
   /// Submit student skill test attempts (batch preferred)
   Future<Map<String, dynamic>> submitSkillTestAttempts({
     required List<Map<String, dynamic>> attempts,
