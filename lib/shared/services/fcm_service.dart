@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/app_constants.dart';
 import '../../core/router/app_router.dart';
 import '../../core/constants/app_routes.dart';
@@ -67,20 +69,48 @@ class FcmService {
   }
 
   /// Request notification permissions
+  /// Shows popup on first app launch if permission not granted
   Future<void> _requestPermissions() async {
     try {
-      NotificationSettings settings =
-          await _firebaseMessaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
+      // Check if this is first launch (permission not requested before)
+      final prefs = await SharedPreferences.getInstance();
+      final permissionRequested = prefs.getBool('notification_permission_requested') ?? false;
+      
+      // Get current permission status
+      final currentSettings = await _firebaseMessaging.getNotificationSettings();
+      
+      // Only request permission if:
+      // 1. Not requested before (first launch), OR
+      // 2. Permission is not determined (iOS) or not granted
+      if (!permissionRequested || 
+          currentSettings.authorizationStatus == AuthorizationStatus.notDetermined) {
+        
+        debugPrint('🔔 Requesting notification permission (first time or not determined)...');
+        
+        NotificationSettings settings =
+            await _firebaseMessaging.requestPermission(
+          alert: true,
+          announcement: false,
+          badge: true,
+          carPlay: false,
+          criticalAlert: false,
+          provisional: false,
+          sound: true,
+        );
 
-      debugPrint('🔔 Notification permission status: ${settings.authorizationStatus}');
+        debugPrint('🔔 Notification permission status: ${settings.authorizationStatus}');
+        
+        // Mark that permission has been requested
+        await prefs.setBool('notification_permission_requested', true);
+        
+        // If permission granted, save token
+        if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+            settings.authorizationStatus == AuthorizationStatus.provisional) {
+          await _getAndSaveToken();
+        }
+      } else {
+        debugPrint('🔔 Notification permission already requested. Current status: ${currentSettings.authorizationStatus}');
+      }
     } catch (e) {
       debugPrint('🔴 Error requesting notification permissions: $e');
     }
@@ -221,12 +251,14 @@ class FcmService {
       iOS: iosDetails,
     );
 
+    // ✅ Store notification data as JSON string for proper parsing
+    final payloadJson = jsonEncode(message.data);
     await _localNotifications.show(
       message.hashCode,
       notification.title,
       notification.body,
       details,
-      payload: message.data.toString(),
+      payload: payloadJson,
     );
   }
 
@@ -259,6 +291,15 @@ class FcmService {
         }
         break;
 
+      case 'selected':
+        // Navigate to application success page or application tracker
+        if (jobId != null) {
+          AppRouter.push(AppRoutes.jobApplicationSuccessWithId(jobId));
+        } else {
+          AppRouter.push(AppRoutes.applicationTracker);
+        }
+        break;
+
       default:
         AppRouter.push(AppRoutes.home);
         break;
@@ -276,17 +317,105 @@ class FcmService {
     }
 
     try {
-      // Parse payload - it's stored as data.toString() in _showLocalNotification
-      // We need to extract the data from the notification
-      // Since payload is stored as data.toString(), we'll need to handle navigation
-      // based on the notification type if available
+      // ✅ Parse payload - it's stored as JSON string
+      final payloadJson = response.payload!;
+      final Map<String, dynamic> data = jsonDecode(payloadJson);
       
-      // For now, navigate to home as default
-      // In a real scenario, you might want to store notification data differently
-      AppRouter.push(AppRoutes.home);
+      final type = data['type'] as String?;
+      final jobId = data['job_id'] as String?;
+      
+      // Navigate based on notification type
+      if (type != null) {
+        switch (type) {
+          case 'new_job':
+            if (jobId != null) {
+              AppRouter.push(AppRoutes.jobDetailsWithId(jobId));
+            } else {
+              AppRouter.push(AppRoutes.home);
+            }
+            break;
+            
+          case 'shortlisted':
+            if (jobId != null) {
+              AppRouter.push(AppRoutes.studentApplicationDetailWithId(jobId));
+            } else {
+              AppRouter.push(AppRoutes.applicationTracker);
+            }
+            break;
+            
+          case 'selected':
+            if (jobId != null) {
+              AppRouter.push(AppRoutes.jobApplicationSuccessWithId(jobId));
+            } else {
+              AppRouter.push(AppRoutes.applicationTracker);
+            }
+            break;
+            
+          default:
+            AppRouter.push(AppRoutes.home);
+            break;
+        }
+      } else {
+        // If type not found, navigate to home
+        AppRouter.push(AppRoutes.home);
+      }
     } catch (e) {
-      debugPrint('🔴 Error handling local notification tap: $e');
-      AppRouter.push(AppRoutes.home);
+      debugPrint('🔴 Error parsing notification payload: $e');
+      debugPrint('🔴 Payload: ${response.payload}');
+      // Fallback: try to extract from string format if JSON parsing fails
+      try {
+        final payload = response.payload!;
+        String? type;
+        String? jobId;
+        
+        // Try to extract type and job_id using simple string matching
+        if (payload.contains('type')) {
+          final typeIndex = payload.indexOf('type');
+          final afterType = payload.substring(typeIndex);
+          final colonIndex = afterType.indexOf(':');
+          if (colonIndex != -1) {
+            final valuePart = afterType.substring(colonIndex + 1).trim();
+            // Extract value (remove quotes if present)
+            final cleanValue = valuePart
+                .replaceAll('"', '')
+                .replaceAll("'", '')
+                .split(',')[0]
+                .split('}')[0]
+                .trim();
+            type = cleanValue;
+          }
+        }
+        
+        if (payload.contains('job_id')) {
+          final jobIdIndex = payload.indexOf('job_id');
+          final afterJobId = payload.substring(jobIdIndex);
+          final colonIndex = afterJobId.indexOf(':');
+          if (colonIndex != -1) {
+            final valuePart = afterJobId.substring(colonIndex + 1).trim();
+            // Extract numeric value
+            final cleanValue = valuePart
+                .replaceAll('"', '')
+                .replaceAll("'", '')
+                .split(',')[0]
+                .split('}')[0]
+                .trim();
+            jobId = cleanValue;
+          }
+        }
+        
+        if (type == 'selected' && jobId != null) {
+          AppRouter.push(AppRoutes.jobApplicationSuccessWithId(jobId));
+        } else if (type == 'shortlisted' && jobId != null) {
+          AppRouter.push(AppRoutes.studentApplicationDetailWithId(jobId));
+        } else if (type == 'new_job' && jobId != null) {
+          AppRouter.push(AppRoutes.jobDetailsWithId(jobId));
+        } else {
+          AppRouter.push(AppRoutes.home);
+        }
+      } catch (e2) {
+        debugPrint('🔴 Error in fallback parsing: $e2');
+        AppRouter.push(AppRoutes.home);
+      }
     }
   }
 

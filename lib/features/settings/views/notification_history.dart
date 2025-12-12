@@ -142,6 +142,9 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
       case 'shortlisted':
         context.push(AppRoutes.applicationTracker);
         break;
+      case 'selected':
+        context.push(AppRoutes.applicationTracker);
+        break;
       case 'message':
         // Messages feature removed - redirect to home
         context.push(AppRoutes.home);
@@ -368,6 +371,8 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
         return 'New Job Posted';
       case 'shortlisted':
         return 'Application Update';
+      case 'selected':
+        return 'Congratulations! You\'re Hired!';
       case 'general':
         return 'Notification';
       case 'system':
@@ -387,6 +392,8 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
         return Icons.work_outline;
       case 'shortlisted':
         return Icons.check_circle_outline;
+      case 'selected':
+        return Icons.celebration_outlined;
       case 'message':
         return Icons.message_outlined;
       case 'system':
@@ -406,6 +413,8 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
         return AppConstants.primaryColor;
       case 'shortlisted':
         return AppConstants.successColor;
+      case 'selected':
+        return Colors.amber;
       case 'message':
         return Colors.blue;
       case 'system':
