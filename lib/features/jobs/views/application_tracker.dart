@@ -573,11 +573,24 @@ class _ApplicationTrackerScreenViewState
     );
   }
 
+  /// Returns icon based on job application status
+  IconData _getStatusIcon(String status) {
+    final statusLower = status.toLowerCase();
+    if (statusLower == 'hired' || statusLower == 'selected') {
+      return Icons.celebration; // Celebration icon for hired
+    } else if (statusLower == 'shortlisted') {
+      return Icons.check_circle; // Check circle for shortlisted
+    } else {
+      return Icons.work; // Work/bag icon for applied
+    }
+  }
+
   /// Builds the header with icon, title, company, and status badge
   Widget _buildJobHeader(String jobTitle, String companyName, String status) {
+    final statusLower = status.toLowerCase();
     return Row(
       children: [
-        // Job icon
+        // Job icon - based on status
         Container(
           width: 48,
           height: 48,
@@ -585,7 +598,7 @@ class _ApplicationTrackerScreenViewState
             color: AppConstants.successColor,
             borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
           ),
-          child: const Icon(Icons.work, color: Colors.white, size: 24),
+          child: Icon(_getStatusIcon(status), color: Colors.white, size: 24),
         ),
         const SizedBox(width: AppConstants.defaultPadding),
         // Job title and company
@@ -616,17 +629,25 @@ class _ApplicationTrackerScreenViewState
             ],
           ),
         ),
-        // Status badge (show for Shortlisted and Hired)
-        if (status.toLowerCase() == 'shortlisted' ||
-            status.toLowerCase() == 'hired')
+        // Status badge (show for Applied, Shortlisted, and Hired)
+        if (statusLower == 'applied' ||
+            statusLower == 'shortlisted' ||
+            statusLower == 'hired' ||
+            statusLower == 'selected')
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: AppConstants.successColor, // Green for shortlisted/hired
+              color: statusLower == 'applied'
+                  ? AppConstants
+                        .primaryColor // Blue for applied
+                  : statusLower == 'shortlisted'
+                  ? AppConstants
+                        .warningColor // Orange for shortlisted
+                  : AppConstants.successColor, // Green for hired
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              status,
+              statusLower == 'selected' ? 'Hired' : status,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,
@@ -901,7 +922,7 @@ class _ApplicationTrackerScreenViewState
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.6,
           child: EmptyStateWidget(
-            icon: Icons.celebration_outlined,
+            icon: Icons.work_outlined,
             title: 'No Hired Jobs',
             subtitle:
                 'You haven\'t been hired for any jobs yet.\nKeep applying and improving your profile!',
@@ -965,6 +986,7 @@ class _ApplicationTrackerScreenViewState
                 salary: job['salary']?.toString() ?? '',
                 applicationId: applicationId,
                 jobData: job,
+                status: job['status']?.toString() ?? 'Hired',
               ),
             );
           },
@@ -986,6 +1008,7 @@ class _ApplicationTrackerScreenViewState
     required String salary,
     required String applicationId,
     required Map<String, dynamic> jobData,
+    required String status,
   }) {
     return Card(
       elevation: 2,
@@ -1001,7 +1024,7 @@ class _ApplicationTrackerScreenViewState
             // Header with icon, title, company, and status badge
             Row(
               children: [
-                // Job icon - using celebration icon for hired
+                // Job icon - based on status
                 Container(
                   width: 48,
                   height: 48,
@@ -1011,8 +1034,8 @@ class _ApplicationTrackerScreenViewState
                       AppConstants.smallBorderRadius,
                     ),
                   ),
-                  child: const Icon(
-                    Icons.celebration,
+                  child: Icon(
+                    _getStatusIcon(status),
                     color: Colors.white,
                     size: 24,
                   ),

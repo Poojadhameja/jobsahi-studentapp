@@ -59,7 +59,7 @@ abstract class AuthRepository {
 
   Future<LoginResponse> signInWithGoogle({required String accessToken});
   Future<LoginResponse> signInWithLinkedIn({required String code});
-  
+
   Future<bool> logout();
   Future<bool> isLoggedIn();
   Future<bool> hasToken();
@@ -206,7 +206,9 @@ class AuthRepositoryImpl implements AuthRepository {
         return loginResponse;
       } else {
         // Preserve the error message and error code from API response
-        debugPrint("🔴 Login failed: ${loginResponse.message} (Error Code: ${loginResponse.errorCode})");
+        debugPrint(
+          "🔴 Login failed: ${loginResponse.message} (Error Code: ${loginResponse.errorCode})",
+        );
         return loginResponse;
       }
     } catch (e) {
@@ -217,7 +219,8 @@ class AuthRepositoryImpl implements AuthRepository {
           e.toString().contains('timeout')) {
         return LoginResponse(
           success: false,
-          message: 'Network error. Please check your internet connection and try again.',
+          message:
+              'Network error. Please check your internet connection and try again.',
           errorCode: 'NETWORK_ERROR',
         );
       }
@@ -319,12 +322,22 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       debugPrint('🔵 Sending phone login OTP to: $phoneNumber');
 
-      final response = await _authApiService.phoneLogin(phoneNumber: phoneNumber);
+      final response = await _authApiService.phoneLogin(
+        phoneNumber: phoneNumber,
+      );
 
-      debugPrint('🔵 Phone Login Repository Response success: ${response.success}');
-      debugPrint('🔵 Phone Login Repository Response message: ${response.message}');
-      debugPrint('🔵 Phone Login Repository Response userId: ${response.userId}');
-      debugPrint('🔵 Phone Login Repository Response expiresIn: ${response.expiresIn}');
+      debugPrint(
+        '🔵 Phone Login Repository Response success: ${response.success}',
+      );
+      debugPrint(
+        '🔵 Phone Login Repository Response message: ${response.message}',
+      );
+      debugPrint(
+        '🔵 Phone Login Repository Response userId: ${response.userId}',
+      );
+      debugPrint(
+        '🔵 Phone Login Repository Response expiresIn: ${response.expiresIn}',
+      );
 
       return response;
     } catch (e) {
@@ -349,8 +362,12 @@ class AuthRepositoryImpl implements AuthRepository {
         otp: otp,
       );
 
-      debugPrint('🔵 Verify Phone Login OTP Repository Response success: ${loginResponse.success}');
-      debugPrint('🔵 Verify Phone Login OTP Repository Response message: ${loginResponse.message}');
+      debugPrint(
+        '🔵 Verify Phone Login OTP Repository Response success: ${loginResponse.success}',
+      );
+      debugPrint(
+        '🔵 Verify Phone Login OTP Repository Response message: ${loginResponse.message}',
+      );
 
       if (loginResponse.success &&
           loginResponse.user != null &&
@@ -385,9 +402,7 @@ class AuthRepositoryImpl implements AuthRepository {
         );
 
         _apiService.setAuthToken(loginResponse.token!);
-        debugPrint(
-          "🔵 User data stored successfully with role: ${user.role}",
-        );
+        debugPrint("🔵 User data stored successfully with role: ${user.role}");
 
         // Save FCM token after successful login
         try {
@@ -395,7 +410,9 @@ class AuthRepositoryImpl implements AuthRepository {
           await fcmService.saveTokenToBackend();
           debugPrint('✅ FCM token saved after phone login OTP verification');
         } catch (e) {
-          debugPrint('🔴 Error saving FCM token after phone login OTP verification: $e');
+          debugPrint(
+            '🔴 Error saving FCM token after phone login OTP verification: $e',
+          );
           // Don't fail login if FCM token save fails
         }
       }
@@ -616,7 +633,7 @@ class AuthRepositoryImpl implements AuthRepository {
       // Clear auth data
       await _tokenStorage.clearAuthData();
       _apiService.clearAuthToken();
-      
+
       // Clear profile cache on logout (to prevent old user data showing)
       try {
         final profileCacheService = ProfileCacheService.instance;
@@ -626,8 +643,10 @@ class AuthRepositoryImpl implements AuthRepository {
       } catch (e) {
         debugPrint('⚠️ Error clearing profile cache: $e');
       }
-      
-      debugPrint('🔵 User logged out successfully (auth data cleared, profile cache cleared)');
+
+      debugPrint(
+        '🔵 User logged out successfully (auth data cleared, profile cache cleared)',
+      );
       return true;
     } catch (e) {
       debugPrint('🔴 Error during logout: $e');
@@ -636,7 +655,7 @@ class AuthRepositoryImpl implements AuthRepository {
       try {
         await _tokenStorage.clearAuthData();
         _apiService.clearAuthToken();
-        
+
         // Clear profile cache on logout (to prevent old user data showing)
         try {
           final profileCacheService = ProfileCacheService.instance;
@@ -646,8 +665,10 @@ class AuthRepositoryImpl implements AuthRepository {
         } catch (cacheError) {
           debugPrint('⚠️ Error clearing profile cache: $cacheError');
         }
-        
-        debugPrint('🔵 Auth data cleared despite error (profile cache cleared)');
+
+        debugPrint(
+          '🔵 Auth data cleared despite error (profile cache cleared)',
+        );
         return true;
       } catch (clearError) {
         debugPrint('🔴 Error clearing local data: $clearError');
@@ -753,7 +774,9 @@ class AuthRepositoryImpl implements AuthRepository {
             await fcmService.saveTokenToBackend();
             debugPrint('✅ FCM token saved after Google OAuth login');
           } catch (e) {
-            debugPrint('🔴 Error saving FCM token after Google OAuth login: $e');
+            debugPrint(
+              '🔴 Error saving FCM token after Google OAuth login: $e',
+            );
             // Don't fail login if FCM token save fails
           }
         } else {
@@ -781,8 +804,12 @@ class AuthRepositoryImpl implements AuthRepository {
         code: code,
       );
 
-      debugPrint('🔵 LinkedIn OAuth Response success: ${loginResponse.success}');
-      debugPrint('🔵 LinkedIn OAuth Response message: ${loginResponse.message}');
+      debugPrint(
+        '🔵 LinkedIn OAuth Response success: ${loginResponse.success}',
+      );
+      debugPrint(
+        '🔵 LinkedIn OAuth Response message: ${loginResponse.message}',
+      );
 
       if (loginResponse.success) {
         if (loginResponse.user != null && loginResponse.token != null) {
@@ -819,7 +846,9 @@ class AuthRepositoryImpl implements AuthRepository {
             await fcmService.saveTokenToBackend();
             debugPrint('✅ FCM token saved after LinkedIn OAuth login');
           } catch (e) {
-            debugPrint('🔴 Error saving FCM token after LinkedIn OAuth login: $e');
+            debugPrint(
+              '🔴 Error saving FCM token after LinkedIn OAuth login: $e',
+            );
             // Don't fail login if FCM token save fails
           }
         } else {

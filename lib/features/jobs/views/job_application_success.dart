@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../../shared/widgets/common/top_snackbar.dart';
+import '../../../shared/widgets/common/simple_app_bar.dart';
 
 /// Job Application Success Screen
 /// Shows confirmation after successful job application submission
@@ -22,9 +23,12 @@ class JobApplicationSuccessScreen extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: SafeArea(
-          child: _buildSuccessContent(context),
+        appBar: SimpleAppBar(
+          title: '',
+          showBackButton: true,
+          onBack: () => _navigateToJobDetails(context),
         ),
+        body: SafeArea(child: _buildSuccessContent(context)),
       ),
     );
   }
@@ -36,11 +40,6 @@ class JobApplicationSuccessScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Back button
-          _buildBackButton(context),
-          
-          const SizedBox(height: 16),
-          
           // Success icon
           _buildSuccessIcon(),
 
@@ -73,20 +72,18 @@ class JobApplicationSuccessScreen extends StatelessWidget {
           const SizedBox(height: 48),
 
           // Skill test status info
-          if (job['skill_test_response'] is Map<String, dynamic>)
-            ...[
-              _buildSkillTestInfoCard(
-                job['skill_test_response'] as Map<String, dynamic>,
-              ),
-              const SizedBox(height: 32),
-            ],
+          if (job['skill_test_response'] is Map<String, dynamic>) ...[
+            _buildSkillTestInfoCard(
+              job['skill_test_response'] as Map<String, dynamic>,
+            ),
+            const SizedBox(height: 32),
+          ],
 
           // Skill test not available message
-          if (!_hasSkillTest())
-            ...[
-              _buildSkillTestNotAvailableMessage(),
-              const SizedBox(height: 32),
-            ],
+          if (!_hasSkillTest()) ...[
+            _buildSkillTestNotAvailableMessage(),
+            const SizedBox(height: 32),
+          ],
 
           // Action buttons
           _buildActionButtons(context),
@@ -95,34 +92,10 @@ class JobApplicationSuccessScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the back button
-  Widget _buildBackButton(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _navigateToJobDetails(context),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            child: Icon(
-              Icons.arrow_back,
-              color: AppConstants.textPrimaryColor,
-              size: 24,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   /// Navigates to job details
   void _navigateToJobDetails(BuildContext context) {
-    final jobId = job['id']?.toString() ?? 
-                  job['job_id']?.toString() ?? 
-                  '';
-    
+    final jobId = job['id']?.toString() ?? job['job_id']?.toString() ?? '';
+
     if (jobId.isEmpty) {
       // If no job ID, just pop
       if (context.canPop()) {
@@ -223,7 +196,9 @@ class JobApplicationSuccessScreen extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
                 ),
                 elevation: 2,
               ),
@@ -239,11 +214,10 @@ class JobApplicationSuccessScreen extends StatelessWidget {
 
   /// Check if skill test exists for this job
   bool _hasSkillTest() {
-    final skillTestInfo =
-        job['skill_test_response'] is Map<String, dynamic>
-            ? job['skill_test_response'] as Map<String, dynamic>
-            : null;
-    
+    final skillTestInfo = job['skill_test_response'] is Map<String, dynamic>
+        ? job['skill_test_response'] as Map<String, dynamic>
+        : null;
+
     // Check if skill test response exists and has valid test_id
     if (skillTestInfo != null) {
       final testId = skillTestInfo['test_id']?.toString();
@@ -251,11 +225,11 @@ class JobApplicationSuccessScreen extends StatelessWidget {
         return true;
       }
     }
-    
+
     // Also check if job has skill_test_available flag
-    final hasSkillTestAvailable = job['skill_test_available'] == true ||
-        job['has_skill_test'] == true;
-    
+    final hasSkillTestAvailable =
+        job['skill_test_available'] == true || job['has_skill_test'] == true;
+
     return hasSkillTestAvailable;
   }
 
@@ -265,23 +239,22 @@ class JobApplicationSuccessScreen extends StatelessWidget {
     final applicationData = job['application'] is Map<String, dynamic>
         ? job['application'] as Map<String, dynamic>
         : null;
-  
-    final applicationId = job['application_id']?.toString() ??
+
+    final applicationId =
+        job['application_id']?.toString() ??
         applicationData?['application_id']?.toString() ??
         applicationData?['id']?.toString() ??
         job['applicationId']?.toString();
 
     if (applicationId == null || applicationId.isEmpty) {
-      TopSnackBar.showError(
-        context,
-        message: 'Application ID not available.',
-      );
+      TopSnackBar.showError(context, message: 'Application ID not available.');
       return;
     }
 
     // Navigate to application detail page
     final navigationData = Map<String, dynamic>.from(job);
-    navigationData['_navigation_source'] = 'job_application_success'; // Track navigation source
+    navigationData['_navigation_source'] =
+        'job_application_success'; // Track navigation source
 
     context.pushNamed(
       'studentApplicationDetail',
@@ -295,34 +268,30 @@ class JobApplicationSuccessScreen extends StatelessWidget {
     final jobId = job['job_id']?.toString().trim().isNotEmpty == true
         ? job['job_id'].toString().trim()
         : job['id']?.toString().trim();
-    final skillTestInfo =
-        job['skill_test_response'] is Map<String, dynamic>
-            ? job['skill_test_response'] as Map<String, dynamic>
-            : null;
+    final skillTestInfo = job['skill_test_response'] is Map<String, dynamic>
+        ? job['skill_test_response'] as Map<String, dynamic>
+        : null;
     final skillTestId = skillTestInfo?['test_id']?.toString();
     final fallbackJobId = (jobId != null && jobId.isNotEmpty)
         ? jobId
         : (skillTestId != null && skillTestId.isNotEmpty
-            ? skillTestId
-            : 'job_skill_test');
+              ? skillTestId
+              : 'job_skill_test');
 
     final jobPayload = Map<String, dynamic>.from(job);
     jobPayload['id'] = fallbackJobId;
     jobPayload['job_id'] = fallbackJobId;
-    jobPayload.putIfAbsent(
-      'category',
-      () {
-        if (job['category'] != null) return job['category'];
-        if (job['job_type_display'] != null) {
-          return job['job_type_display'];
-        }
-        final tags = job['tags'];
-        if (tags is List && tags.isNotEmpty) {
-          return tags.first.toString();
-        }
-        return 'general';
-      },
-    );
+    jobPayload.putIfAbsent('category', () {
+      if (job['category'] != null) return job['category'];
+      if (job['job_type_display'] != null) {
+        return job['job_type_display'];
+      }
+      final tags = job['tags'];
+      if (tags is List && tags.isNotEmpty) {
+        return tags.first.toString();
+      }
+      return 'general';
+    });
     if (skillTestInfo != null) {
       jobPayload['skill_test_response'] = skillTestInfo;
     }
@@ -342,15 +311,13 @@ class JobApplicationSuccessScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppConstants.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppConstants.primaryColor.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppConstants.primaryColor.withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            size: 20,
-            color: AppConstants.primaryColor,
-          ),
+          Icon(Icons.info_outline, size: 20, color: AppConstants.primaryColor),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -373,7 +340,9 @@ class JobApplicationSuccessScreen extends StatelessWidget {
     final alreadyExists = info['already_exists'] == true;
     final testId = info['test_id']?.toString();
     final created = info['status'] == true;
-    final color = created ? AppConstants.successColor : AppConstants.primaryColor;
+    final color = created
+        ? AppConstants.successColor
+        : AppConstants.primaryColor;
 
     return Container(
       width: double.infinity,
@@ -407,9 +376,7 @@ class JobApplicationSuccessScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      alreadyExists
-                          ? 'Skill Test Ready'
-                          : 'Skill Test Created',
+                      alreadyExists ? 'Skill Test Ready' : 'Skill Test Created',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

@@ -585,11 +585,11 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
               : () {
                   debugPrint("🔵 Google signup button pressed");
                   context.read<AuthBloc>().add(
-                        const SocialLoginEvent(
-                          provider: 'google',
-                          context: null, // Google doesn't need context
-                        ),
-                      );
+                    const SocialLoginEvent(
+                      provider: 'google',
+                      context: null, // Google doesn't need context
+                    ),
+                  );
                 },
         ),
         const SizedBox(height: 16),
@@ -601,11 +601,11 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
               : () {
                   debugPrint("🔵 LinkedIn signup button pressed");
                   context.read<AuthBloc>().add(
-                        SocialLoginEvent(
-                          provider: 'linkedin',
-                          context: context, // LinkedIn needs context for WebView
-                        ),
-                      );
+                    SocialLoginEvent(
+                      provider: 'linkedin',
+                      context: context, // LinkedIn needs context for WebView
+                    ),
+                  );
                 },
         ),
       ],

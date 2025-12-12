@@ -294,7 +294,14 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
             // Job title and company - matching applied cards style
             Expanded(
               child: Padding(
-                padding: EdgeInsets.only(right: widget.isFeatured ? 140 : 0),
+                padding: EdgeInsets.only(
+                  right: widget.isFeatured
+                      ? 150
+                      : (job['application_deadline'] != null &&
+                            job['application_deadline'].toString().isNotEmpty)
+                      ? 100
+                      : 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -307,6 +314,7 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      softWrap: false,
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -317,6 +325,7 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      softWrap: false,
                     ),
                   ],
                 ),

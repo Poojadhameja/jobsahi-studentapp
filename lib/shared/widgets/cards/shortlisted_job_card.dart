@@ -88,10 +88,22 @@ class ShortlistedJobCard extends StatelessWidget {
     );
   }
 
+  /// Returns icon based on job application status
+  IconData _getStatusIcon(String status) {
+    final statusLower = status.toLowerCase();
+    if (statusLower == 'hired' || statusLower == 'selected') {
+      return Icons.celebration; // Celebration icon for hired
+    } else if (statusLower == 'shortlisted') {
+      return Icons.check_circle; // Check circle for shortlisted
+    } else {
+      return Icons.work; // Work/bag icon for applied
+    }
+  }
+
   Widget _buildHeader() {
     return Row(
       children: [
-        // Job icon - matching applied cards style
+        // Job icon - based on status
         Container(
           width: 48,
           height: 48,
@@ -99,7 +111,7 @@ class ShortlistedJobCard extends StatelessWidget {
             color: AppConstants.successColor,
             borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
           ),
-          child: const Icon(Icons.work, color: Colors.white, size: 24),
+          child: Icon(_getStatusIcon(status), color: Colors.white, size: 24),
         ),
         const SizedBox(width: AppConstants.defaultPadding),
         // Job title and company - matching applied cards style
@@ -133,16 +145,20 @@ class ShortlistedJobCard extends StatelessWidget {
         // Status badge - matching applied cards style
         // Show for both Shortlisted and Hired status
         if (status.toLowerCase() == 'shortlisted' ||
-            status.toLowerCase() == 'hired')
+            status.toLowerCase() == 'hired' ||
+            status.toLowerCase() == 'selected')
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              // Shortlisted/Hired: green color (no gradient)
-              color: AppConstants.successColor,
+              // Shortlisted: orange, Hired: green
+              color: status.toLowerCase() == 'shortlisted'
+                  ? AppConstants
+                        .warningColor // Orange for shortlisted
+                  : AppConstants.successColor, // Green for hired
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              status,
+              status.toLowerCase() == 'selected' ? 'Hired' : status,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,

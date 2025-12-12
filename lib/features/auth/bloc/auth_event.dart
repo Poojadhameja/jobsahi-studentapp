@@ -19,14 +19,11 @@ class LoginWithOtpEvent extends AuthEvent {
 /// Verify OTP event
 class VerifyOtpEvent extends AuthEvent {
   final String otp;
-  final String? phoneNumber; // Optional: pass phone number if state doesn't have it
+  final String?
+  phoneNumber; // Optional: pass phone number if state doesn't have it
   final int? userId; // Optional: pass user ID if state doesn't have it
 
-  const VerifyOtpEvent({
-    required this.otp,
-    this.phoneNumber,
-    this.userId,
-  });
+  const VerifyOtpEvent({required this.otp, this.phoneNumber, this.userId});
 
   @override
   List<Object?> get props => [otp, phoneNumber, userId];
@@ -48,10 +45,7 @@ class SocialLoginEvent extends AuthEvent {
   final String provider; // 'google' or 'linkedin'
   final BuildContext? context; // Required for LinkedIn WebView
 
-  const SocialLoginEvent({
-    required this.provider,
-    this.context,
-  });
+  const SocialLoginEvent({required this.provider, this.context});
 
   @override
   List<Object?> get props => [provider, context];

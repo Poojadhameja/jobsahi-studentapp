@@ -49,11 +49,7 @@ class OtpSentState extends AuthState {
   final int? userId;
   final int? expiresIn;
 
-  const OtpSentState({
-    required this.phoneNumber,
-    this.userId,
-    this.expiresIn,
-  });
+  const OtpSentState({required this.phoneNumber, this.userId, this.expiresIn});
 
   @override
   List<Object?> get props => [phoneNumber, userId, expiresIn];

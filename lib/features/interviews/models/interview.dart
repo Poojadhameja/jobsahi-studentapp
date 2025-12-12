@@ -2,6 +2,7 @@
 class Interview {
   final int interviewId;
   final int jobId;
+  final int? applicationId; // application_id from the interview
   final String jobTitle;
   final String companyName;
   final String scheduledAt;
@@ -18,6 +19,7 @@ class Interview {
   const Interview({
     required this.interviewId,
     required this.jobId,
+    this.applicationId,
     required this.jobTitle,
     required this.companyName,
     required this.scheduledAt,
@@ -74,12 +76,20 @@ class Interview {
         : null;
     final String? appliedAt = jobData['applied_at'] as String?;
 
+    // Extract application_id from interview data or nested application data
+    final applicationIdFromInterview = interviewData['application_id'] as int?;
+    final applicationData = json['application'] as Map<String, dynamic>?;
+    final applicationIdFromApplication = applicationData?['id'] as int?;
+    final finalApplicationId =
+        applicationIdFromInterview ?? applicationIdFromApplication;
+
     return Interview(
       interviewId:
           interviewData['id'] as int? ??
           interviewData['interview_id'] as int? ??
           0,
       jobId: finalJobId,
+      applicationId: finalApplicationId,
       jobTitle:
           jobData['title'] as String? ??
           interviewData['job_title'] as String? ??
@@ -102,6 +112,7 @@ class Interview {
     return {
       'interview_id': interviewId,
       'job_id': jobId,
+      'application_id': applicationId,
       'job_title': jobTitle,
       'company_name': companyName,
       'scheduled_at': scheduledAt,
@@ -157,6 +168,11 @@ class Interview {
       'id': interviewId.toString(),
       'job_id': jobId, // Include as int
       'jobId': jobId.toString(), // Also include as string for compatibility
+      'application_id':
+          applicationId, // Include application_id for matching with hired jobs
+      'applicationId':
+          applicationId?.toString() ??
+          '', // Also include as string for compatibility
       'job_title': jobTitle,
       'title': jobTitle,
       'company_name': companyName,

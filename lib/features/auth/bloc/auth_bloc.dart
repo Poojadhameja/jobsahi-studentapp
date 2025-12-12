@@ -77,11 +77,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
 
       if (response.success) {
-        emit(OtpSentState(
-          phoneNumber: event.phoneNumber,
-          userId: response.userId,
-          expiresIn: response.expiresIn,
-        ));
+        emit(
+          OtpSentState(
+            phoneNumber: event.phoneNumber,
+            userId: response.userId,
+            expiresIn: response.expiresIn,
+          ),
+        );
       } else {
         emit(AuthError(message: response.message));
       }
@@ -106,43 +108,55 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Check if we have userId and phoneNumber from event or state
       int? userId = event.userId;
       String phoneNumber = event.phoneNumber ?? '';
-      
+
       // If not provided in event, try to get from state
       if (userId == null || phoneNumber.isEmpty) {
-      if (state is OtpSentState) {
+        if (state is OtpSentState) {
           final otpSentState = state as OtpSentState;
           userId ??= otpSentState.userId;
-          phoneNumber = phoneNumber.isEmpty ? otpSentState.phoneNumber : phoneNumber;
-          debugPrint('🔵 Got from OtpSentState - userId: $userId, phoneNumber: $phoneNumber');
+          phoneNumber = phoneNumber.isEmpty
+              ? otpSentState.phoneNumber
+              : phoneNumber;
+          debugPrint(
+            '🔵 Got from OtpSentState - userId: $userId, phoneNumber: $phoneNumber',
+          );
         } else {
           debugPrint('🔴 State is not OtpSentState: ${state.runtimeType}');
         }
       } else {
-        debugPrint('🔵 Got from VerifyOtpEvent - userId: $userId, phoneNumber: $phoneNumber');
+        debugPrint(
+          '🔵 Got from VerifyOtpEvent - userId: $userId, phoneNumber: $phoneNumber',
+        );
       }
 
       LoginResponse response;
 
       // Use phone login verification if userId is available (new API)
       if (userId != null && userId > 0) {
-        debugPrint('🔵 Using phone login verification API with userId: $userId');
+        debugPrint(
+          '🔵 Using phone login verification API with userId: $userId',
+        );
         response = await _authRepository.verifyPhoneLoginOtp(
           userId: userId,
           otp: event.otp,
         );
       } else {
-        debugPrint('🔵 Using fallback OTP verification API with phoneNumber: $phoneNumber');
+        debugPrint(
+          '🔵 Using fallback OTP verification API with phoneNumber: $phoneNumber',
+        );
         // Fallback to old API if userId is not available
         if (phoneNumber.isEmpty) {
-          emit(const AuthError(
-            message: 'Phone number not found. Please request a new OTP',
-          ));
+          emit(
+            const AuthError(
+              message: 'Phone number not found. Please request a new OTP',
+            ),
+          );
           return;
         }
         response = await _authRepository.verifyOtp(
-        phoneNumber: phoneNumber,
-        otp: event.otp,
-      );
+          phoneNumber: phoneNumber,
+          otp: event.otp,
+        );
       }
 
       if (response.success) {
@@ -245,7 +259,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
 
         // Send access token to backend
-        loginResponse = await _authRepository.signInWithGoogle(accessToken: accessToken);
+        loginResponse = await _authRepository.signInWithGoogle(
+          accessToken: accessToken,
+        );
       } else if (event.provider.toLowerCase() == 'linkedin') {
         // LinkedIn OAuth flow
         debugPrint('🔵 Starting LinkedIn OAuth flow');
@@ -253,9 +269,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Get BuildContext from the event if available
         BuildContext? context = event.context;
         if (context == null) {
-          emit(const AuthError(
-            message: 'Unable to show LinkedIn login. Please try again.',
-          ));
+          emit(
+            const AuthError(
+              message: 'Unable to show LinkedIn login. Please try again.',
+            ),
+          );
           return;
         }
 
@@ -270,15 +288,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Send authorization code to backend
         loginResponse = await _authRepository.signInWithLinkedIn(code: code);
       } else {
-        emit(AuthError(message: 'Unsupported OAuth provider: ${event.provider}'));
+        emit(
+          AuthError(message: 'Unsupported OAuth provider: ${event.provider}'),
+        );
         return;
       }
 
       if (loginResponse != null && loginResponse.success) {
-        emit(AuthSuccess(
-          message: '${event.provider.capitalize()} login successful',
-          user: loginResponse.user?.toJson() ?? {},
-        ));
+        emit(
+          AuthSuccess(
+            message: '${event.provider.capitalize()} login successful',
+            user: loginResponse.user?.toJson() ?? {},
+          ),
+        );
 
         // Initialize inactivity tracking for the logged-in user
         await InactivityService.instance.updateLastActive();
@@ -286,7 +308,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Notify router about auth state change
         AuthStateNotifier.instance.notify();
       } else {
-        final errorMessage = loginResponse?.message ??
+        final errorMessage =
+            loginResponse?.message ??
             '${event.provider.capitalize()} login failed';
         emit(AuthError(message: errorMessage));
       }
@@ -747,18 +770,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(AuthError(message: response.message));
       }
-      } catch (e) {
-      _handleAuthError(e, emit, defaultMessage: 'Failed to resend OTP. Please try again.');
+    } catch (e) {
+      _handleAuthError(
+        e,
+        emit,
+        defaultMessage: 'Failed to resend OTP. Please try again.',
+      );
     }
   }
 
   /// Helper method to handle errors and emit appropriate error state
   /// Detects network errors and formats messages accordingly
-  void _handleAuthError(dynamic error, Emitter<AuthState> emit, {String? defaultMessage}) {
+  void _handleAuthError(
+    dynamic error,
+    Emitter<AuthState> emit, {
+    String? defaultMessage,
+  }) {
     final errorMessage = NetworkErrorHelper.isNetworkError(error)
         ? NetworkErrorHelper.getNetworkErrorMessage(error)
-        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
-    
+        : NetworkErrorHelper.extractErrorMessage(
+            error,
+            defaultMessage: defaultMessage,
+          );
+
     emit(AuthError(message: errorMessage));
   }
 }

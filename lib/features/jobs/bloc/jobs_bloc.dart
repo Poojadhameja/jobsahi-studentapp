@@ -1309,11 +1309,37 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
               final interviewMap = interview.toMap();
 
               // Check if this job is hired by looking at hired jobs
+              // First try matching by application_id (most accurate)
               final applicationId =
-                  interviewMap['application_id']?.toString() ?? '';
-              final isHired = hiredJobs.any(
-                (hired) => hired['application_id']?.toString() == applicationId,
-              );
+                  interview.applicationId?.toString() ??
+                  interviewMap['application_id']?.toString() ??
+                  interviewMap['applicationId']?.toString() ??
+                  '';
+              final jobId = interview.jobId.toString();
+
+              bool isHired = false;
+              if (applicationId.isNotEmpty) {
+                // Match by application_id (preferred method)
+                isHired = hiredJobs.any(
+                  (hired) =>
+                      hired['application_id']?.toString() == applicationId,
+                );
+                debugPrint(
+                  '🔵 [Jobs] Checking hired status by application_id: $applicationId, isHired: $isHired',
+                );
+              } else {
+                // Fallback: match by job_id if application_id is not available
+                // This is less accurate but better than nothing
+                debugPrint(
+                  '⚠️ [Jobs] application_id not available for interview ${interview.interviewId}, trying job_id fallback: $jobId',
+                );
+                isHired = hiredJobs.any(
+                  (hired) => hired['job_id']?.toString() == jobId,
+                );
+                debugPrint(
+                  '🔵 [Jobs] Checking hired status by job_id: $jobId, isHired: $isHired',
+                );
+              }
 
               // Set status based on whether job is hired
               // Also set raw_status so status mapping works correctly
@@ -1332,7 +1358,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
               interviewMap['company'] = interview.companyName;
 
               debugPrint(
-                '🔵 [Jobs] ✅ Added interview to Shortlisted tab - interview_id: ${interview.interviewId}, job_title: ${interview.jobTitle}, application_id: $applicationId, isHired: $isHired, status: ${interviewMap['status']}, raw_status: ${interviewMap['raw_status']}',
+                '🔵 [Jobs] ✅ Added interview to Shortlisted tab - interview_id: ${interview.interviewId}, job_title: ${interview.jobTitle}, application_id: $applicationId, job_id: $jobId, isHired: $isHired, status: ${interviewMap['status']}, raw_status: ${interviewMap['raw_status']}',
               );
 
               interviewJobs.add(interviewMap);
@@ -1359,10 +1385,35 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
         if (shortlistedDate != null && shortlistedDate.isNotEmpty) {
           // Check if not already in interviewJobs (from interview API)
           final applicationId = hiredJob['application_id']?.toString() ?? '';
-          final alreadyExists = interviewJobs.any(
-            (interview) =>
-                interview['application_id']?.toString() == applicationId,
-          );
+          final jobId = hiredJob['job_id']?.toString() ?? '';
+
+          // Try to find existing interview by application_id first, then by job_id
+          bool alreadyExists = false;
+          int existingIndex = -1;
+
+          if (applicationId.isNotEmpty) {
+            existingIndex = interviewJobs.indexWhere(
+              (interview) =>
+                  interview['application_id']?.toString() == applicationId ||
+                  interview['applicationId']?.toString() == applicationId,
+            );
+            alreadyExists = existingIndex >= 0;
+          }
+
+          // Fallback: match by job_id if application_id matching didn't work
+          if (!alreadyExists && jobId.isNotEmpty) {
+            existingIndex = interviewJobs.indexWhere(
+              (interview) =>
+                  interview['job_id']?.toString() == jobId ||
+                  interview['jobId']?.toString() == jobId,
+            );
+            alreadyExists = existingIndex >= 0;
+            if (alreadyExists) {
+              debugPrint(
+                '⚠️ [Jobs] Matched hired job to interview by job_id (fallback): $jobId',
+              );
+            }
+          }
 
           if (!alreadyExists) {
             // Add to shortlisted tab with hired status
@@ -1371,25 +1422,124 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
             shortlistedMap['raw_status'] =
                 'selected'; // Important for status mapping
             debugPrint(
-              '🔵 [Jobs] ✅ Added hired job to Shortlisted tab - application_id: $applicationId, status: ${shortlistedMap['status']}',
+              '🔵 [Jobs] ✅ Added hired job to Shortlisted tab - application_id: $applicationId, job_id: $jobId, status: ${shortlistedMap['status']}',
             );
             interviewJobs.add(shortlistedMap);
           } else {
             // Update existing interview job to show Hired status if it's not already
-            final existingIndex = interviewJobs.indexWhere(
-              (interview) =>
-                  interview['application_id']?.toString() == applicationId,
-            );
             if (existingIndex >= 0) {
-              interviewJobs[existingIndex]['status'] = 'Hired';
-              interviewJobs[existingIndex]['raw_status'] = 'selected';
-              debugPrint(
-                '🔵 [Jobs] ✅ Updated existing interview to Hired status - application_id: $applicationId',
-              );
+              final currentStatus =
+                  interviewJobs[existingIndex]['status']?.toString() ?? '';
+              if (currentStatus.toLowerCase() != 'hired') {
+                interviewJobs[existingIndex]['status'] = 'Hired';
+                interviewJobs[existingIndex]['raw_status'] = 'selected';
+                debugPrint(
+                  '🔵 [Jobs] ✅ Updated existing interview to Hired status - application_id: $applicationId, job_id: $jobId, previous_status: $currentStatus',
+                );
+              } else {
+                debugPrint(
+                  '🔵 [Jobs] Interview already marked as Hired - application_id: $applicationId, job_id: $jobId',
+                );
+              }
             }
           }
         }
       }
+
+      // Sort jobs by most recent update (newest first)
+      // Sort applied jobs by application_date (most recent first)
+      appliedJobs.sort((a, b) {
+        final dateA =
+            a['application_date']?.toString() ??
+            a['appliedDate']?.toString() ??
+            '';
+        final dateB =
+            b['application_date']?.toString() ??
+            b['appliedDate']?.toString() ??
+            '';
+        if (dateA.isEmpty && dateB.isEmpty) return 0;
+        if (dateA.isEmpty) return 1;
+        if (dateB.isEmpty) return -1;
+        try {
+          final parsedA = DateTime.parse(dateA);
+          final parsedB = DateTime.parse(dateB);
+          return parsedB.compareTo(parsedA); // Descending order (newest first)
+        } catch (e) {
+          return 0;
+        }
+      });
+
+      // Sort interview jobs by most recent status update (most recent first)
+      // Priority: hired_date > shortlisted_date > scheduled_at > interviewDate > application_date
+      interviewJobs.sort((a, b) {
+        // Get the most recent date for each job (prioritize status update dates)
+        String? getMostRecentDate(Map<String, dynamic> job) {
+          // For hired jobs, use hired_date (most recent status update)
+          final status = job['status']?.toString().toLowerCase() ?? '';
+          if (status == 'hired' || status == 'selected') {
+            final hiredDate =
+                job['hired_date']?.toString() ?? job['hiredDate']?.toString();
+            if (hiredDate != null && hiredDate.isNotEmpty) {
+              return hiredDate;
+            }
+          }
+
+          // For shortlisted jobs, use shortlisted_date
+          final shortlistedDate = job['shortlisted_date']?.toString();
+          if (shortlistedDate != null && shortlistedDate.isNotEmpty) {
+            return shortlistedDate;
+          }
+
+          // Fallback to interview date
+          final scheduledAt = job['scheduled_at']?.toString();
+          if (scheduledAt != null && scheduledAt.isNotEmpty) {
+            return scheduledAt;
+          }
+
+          final interviewDate = job['interviewDate']?.toString();
+          if (interviewDate != null && interviewDate.isNotEmpty) {
+            return interviewDate;
+          }
+
+          // Last fallback: application date
+          return job['application_date']?.toString() ??
+              job['appliedDate']?.toString();
+        }
+
+        final dateA = getMostRecentDate(a);
+        final dateB = getMostRecentDate(b);
+
+        if (dateA == null && dateB == null) return 0;
+        if (dateA == null || dateA.isEmpty) return 1;
+        if (dateB == null || dateB.isEmpty) return -1;
+
+        try {
+          final parsedA = DateTime.parse(dateA);
+          final parsedB = DateTime.parse(dateB);
+          return parsedB.compareTo(parsedA); // Descending order (newest first)
+        } catch (e) {
+          debugPrint('⚠️ [Jobs] Error parsing dates for sorting: $e');
+          return 0;
+        }
+      });
+
+      // Sort hired jobs by hired_date (most recent first)
+      hiredJobs.sort((a, b) {
+        final dateA =
+            a['hired_date']?.toString() ?? a['hiredDate']?.toString() ?? '';
+        final dateB =
+            b['hired_date']?.toString() ?? b['hiredDate']?.toString() ?? '';
+        if (dateA.isEmpty && dateB.isEmpty) return 0;
+        if (dateA.isEmpty) return 1;
+        if (dateB.isEmpty) return -1;
+        try {
+          final parsedA = DateTime.parse(dateA);
+          final parsedB = DateTime.parse(dateB);
+          return parsedB.compareTo(parsedA); // Descending order (newest first)
+        } catch (e) {
+          return 0;
+        }
+      });
 
       // First emit ApplicationTrackerLoaded for immediate UI update
       emit(
