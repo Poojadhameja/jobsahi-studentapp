@@ -148,10 +148,17 @@ class _MainScaffoldState extends State<MainScaffold> {
       return;
     }
 
+    // If on home tab and at root (only home route in stack), show exit dialog directly
+    if (currentIndex == 0 && _navigationManager.getCurrentStackDepth() <= 1) {
+      _showExitConfirmation(context);
+      return;
+    }
+
+    // Otherwise, let navigation manager handle back navigation
     final handled = _navigationManager.handleBackNavigation();
 
+    // If not handled and on home tab, show exit confirmation
     if (!handled && currentIndex == 0) {
-      // On home tab and no navigation history - show exit confirmation
       _showExitConfirmation(context);
     }
   }

@@ -91,8 +91,16 @@ class ProfileCompletionService {
     // 6. Contact (Weight: 10%)
     int contactCompleted = 0;
     int contactTotal = 2;
-    if (_isNotEmpty(userProfile['contactEmail'])) contactCompleted++;
-    if (_isNotEmpty(userProfile['contactPhone'])) contactCompleted++;
+    // Check contactEmail first, fallback to email from account info
+    final contactEmail = _isNotEmpty(userProfile['contactEmail'])
+        ? userProfile['contactEmail']
+        : (_isNotEmpty(userProfile['email']) ? userProfile['email'] : null);
+    if (_isNotEmpty(contactEmail)) contactCompleted++;
+    // Check contactPhone first, fallback to phone from account info
+    final contactPhone = _isNotEmpty(userProfile['contactPhone'])
+        ? userProfile['contactPhone']
+        : (_isNotEmpty(userProfile['phone']) ? userProfile['phone'] : null);
+    if (_isNotEmpty(contactPhone)) contactCompleted++;
     final contactPercentage = contactTotal > 0 
         ? (contactCompleted / contactTotal) * 100.0 
         : 0.0;
@@ -250,8 +258,16 @@ class ProfileCompletionService {
     // 6. Contact
     int contactCompleted = 0;
     int contactTotal = 2;
-    if (_isNotEmpty(userProfile['contactEmail'])) contactCompleted++;
-    if (_isNotEmpty(userProfile['contactPhone'])) contactCompleted++;
+    // Check contactEmail first, fallback to email from account info
+    final contactEmail = _isNotEmpty(userProfile['contactEmail'])
+        ? userProfile['contactEmail']
+        : (_isNotEmpty(userProfile['email']) ? userProfile['email'] : null);
+    if (_isNotEmpty(contactEmail)) contactCompleted++;
+    // Check contactPhone first, fallback to phone from account info
+    final contactPhone = _isNotEmpty(userProfile['contactPhone'])
+        ? userProfile['contactPhone']
+        : (_isNotEmpty(userProfile['phone']) ? userProfile['phone'] : null);
+    if (_isNotEmpty(contactPhone)) contactCompleted++;
 
     sections.add(CompletionSection(
       name: 'Contact',

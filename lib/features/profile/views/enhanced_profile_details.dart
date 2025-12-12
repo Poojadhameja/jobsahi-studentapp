@@ -2960,26 +2960,44 @@ class _EnhancedProfileDetailsViewState
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: TextFormField(
-                                            key: ValueKey(
-                                              'education_startYear_${index}_${educationRebuildCounter.value}',
-                                            ),
-                                            initialValue:
-                                                education['startYear'] != null
-                                                ? education['startYear']
-                                                      .toString()
-                                                : '',
-                                            decoration: const InputDecoration(
-                                              labelText: 'Start Year',
-                                              border: OutlineInputBorder(),
-                                              hintText: 'e.g., 2020',
-                                            ),
-                                            keyboardType: TextInputType.number,
-                                            maxLength: 4,
-                                            onChanged: (value) {
-                                              setModalState(() {
-                                                education['startYear'] = value;
-                                              });
+                                          child: Builder(
+                                            builder: (context) {
+                                              final startYearStr =
+                                                  education['startYear'] != null
+                                                  ? education['startYear']
+                                                        .toString()
+                                                  : '';
+                                              final startYear =
+                                                  startYearStr.isNotEmpty
+                                                  ? int.tryParse(startYearStr)
+                                                  : null;
+                                              final displayStartYear =
+                                                  startYear != null
+                                                  ? startYear.toString()
+                                                  : '';
+
+                                              return TextFormField(
+                                                key: ValueKey(
+                                                  'education_startYear_${index}_${educationRebuildCounter.value}',
+                                                ),
+                                                initialValue: displayStartYear,
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: 'Start Year',
+                                                      border:
+                                                          OutlineInputBorder(),
+                                                      hintText: 'e.g., 2020',
+                                                    ),
+                                                keyboardType:
+                                                    TextInputType.number,
+                                                maxLength: 4,
+                                                onChanged: (value) {
+                                                  setModalState(() {
+                                                    education['startYear'] =
+                                                        value;
+                                                  });
+                                                },
+                                              );
                                             },
                                           ),
                                         ),
@@ -2987,29 +3005,47 @@ class _EnhancedProfileDetailsViewState
                                           width: AppConstants.smallPadding,
                                         ),
                                         Expanded(
-                                          child: TextFormField(
-                                            key: ValueKey(
-                                              'education_endYear_${index}_${educationRebuildCounter.value}',
-                                            ),
-                                            initialValue:
-                                                education['endYear'] != null
-                                                ? education['endYear']
-                                                      .toString()
-                                                : '',
-                                            decoration: const InputDecoration(
-                                              labelText: 'End Year',
-                                              border: OutlineInputBorder(),
-                                              hintText: 'e.g., 2024',
-                                            ),
-                                            keyboardType: TextInputType.number,
-                                            maxLength: 4,
-                                            enabled:
-                                                !(education['isPursuing'] ==
-                                                    true),
-                                            onChanged: (value) {
-                                              setModalState(() {
-                                                education['endYear'] = value;
-                                              });
+                                          child: Builder(
+                                            builder: (context) {
+                                              final endYearStr =
+                                                  education['endYear'] != null
+                                                  ? education['endYear']
+                                                        .toString()
+                                                  : '';
+                                              final endYear =
+                                                  endYearStr.isNotEmpty
+                                                  ? int.tryParse(endYearStr)
+                                                  : null;
+                                              final displayEndYear =
+                                                  endYear != null
+                                                  ? endYear.toString()
+                                                  : '';
+
+                                              return TextFormField(
+                                                key: ValueKey(
+                                                  'education_endYear_${index}_${educationRebuildCounter.value}',
+                                                ),
+                                                initialValue: displayEndYear,
+                                                enabled:
+                                                    !(education['isPursuing'] ==
+                                                        true),
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: 'End Year',
+                                                      border:
+                                                          OutlineInputBorder(),
+                                                      hintText: 'e.g., 2024',
+                                                    ),
+                                                keyboardType:
+                                                    TextInputType.number,
+                                                maxLength: 4,
+                                                onChanged: (value) {
+                                                  setModalState(() {
+                                                    education['endYear'] =
+                                                        value;
+                                                  });
+                                                },
+                                              );
                                             },
                                           ),
                                         ),
