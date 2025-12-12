@@ -71,9 +71,9 @@ class JobSharingService {
       // Job Title (prominent)
       buffer.writeln('*$jobTitle*');
 
-      // Company Name
+      // Company Name (prominent)
       if (companyName != null && companyName.isNotEmpty) {
-        buffer.writeln('*$companyName*\n');
+        buffer.writeln('🏢 *Company:* $companyName\n');
       } else {
         buffer.writeln('');
       }

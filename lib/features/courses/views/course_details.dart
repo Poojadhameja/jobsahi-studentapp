@@ -14,6 +14,7 @@ import '../bloc/courses_state.dart';
 import '../../../core/di/injection_container.dart';
 import '../../../shared/widgets/common/simple_app_bar.dart';
 import '../../../shared/widgets/common/top_snackbar.dart';
+import '../../../shared/services/course_sharing_service.dart';
 
 class CourseDetailsPage extends StatelessWidget {
   final Map<String, dynamic> course;
@@ -45,17 +46,17 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize bookmark state from passed course data
     final courseIdString = widget.course['id']?.toString() ?? '';
     final initialIsSaved = widget.course['isSaved'] == true;
     _currentBookmarkState = initialIsSaved;
-    
+
     // If course data already has isSaved, use it
     if (widget.course['isSaved'] != null) {
       _currentCourseData = Map<String, dynamic>.from(widget.course);
     }
-    
+
     // Fetch course details by ID when screen loads
     final courseId = int.tryParse(courseIdString);
     if (courseId != null) {
@@ -98,7 +99,8 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
           } else {
             if (_currentCourseData != null) {
               displayCourse = _currentCourseData!;
-              isBookmarked = _currentBookmarkState ?? displayCourse['isSaved'] == true;
+              isBookmarked =
+                  _currentBookmarkState ?? displayCourse['isSaved'] == true;
             } else {
               displayCourse = widget.course;
               // Check saved status from passed course data
@@ -256,6 +258,45 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    // Share button
+                    Material(
+                      color: Colors.transparent,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: () {
+                          _shareCourse(context, currentCourse);
+                        },
+                        customBorder: const CircleBorder(),
+                        splashColor: Colors.grey.shade300,
+                        highlightColor: Colors.grey.shade200,
+                        radius: 20,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.share,
+                                color: Colors.grey.shade600,
+                                size: 20,
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Share',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     // Bookmark button
                     Material(
                       color: Colors.transparent,
@@ -335,6 +376,51 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
   String _capitalizeFirst(String text) {
     if (text.isEmpty) return text;
     return text[0].toUpperCase() + text.substring(1);
+  }
+
+  /// Share course
+  Future<void> _shareCourse(
+    BuildContext context,
+    Map<String, dynamic> currentCourse,
+  ) async {
+    try {
+      final courseId = currentCourse['id']?.toString() ?? '';
+      final courseTitle = currentCourse['title']?.toString() ?? 'Course';
+      final instituteName = currentCourse['institute']?.toString();
+      final fees = currentCourse['fees'] != null
+          ? '₹${currentCourse['fees'].toString()}'
+          : null;
+      final duration = currentCourse['duration']?.toString();
+      final category = currentCourse['category']?.toString();
+      final description =
+          currentCourse['description']?.toString() ??
+          currentCourse['module_description']?.toString();
+
+      if (courseId.isEmpty) {
+        TopSnackBar.showError(
+          context,
+          message: 'Unable to share course. Course ID not found.',
+        );
+        return;
+      }
+
+      await CourseSharingService.instance.shareCourse(
+        courseId: courseId,
+        courseTitle: courseTitle,
+        instituteName: instituteName,
+        fees: fees,
+        duration: duration,
+        category: category,
+        description: description,
+      );
+    } catch (e) {
+      if (mounted) {
+        TopSnackBar.showError(
+          context,
+          message: 'Failed to share course: ${e.toString()}',
+        );
+      }
+    }
   }
 
   /// Builds the tab bar
@@ -760,7 +846,6 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
       ),
     );
   }
-
 
   /// Builds the enroll button at the bottom
   Widget _buildEnrollButton(
