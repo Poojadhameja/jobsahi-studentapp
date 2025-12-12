@@ -219,7 +219,7 @@ class _ApplicationTrackerScreenViewState
           child: Scaffold(
             backgroundColor: AppConstants.backgroundColor,
             appBar: widget.isFromProfile
-                ? ProfileNavigationAppBar(title: 'Application Tracker')
+                ? ProfileNavigationAppBar(title: 'Job Status')
                 : null,
             body: BlocBuilder<JobsBloc, JobsState>(
               buildWhen: (previous, current) {

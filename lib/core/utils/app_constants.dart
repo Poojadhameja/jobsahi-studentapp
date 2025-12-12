@@ -103,7 +103,7 @@ class AppConstants {
   /// Navigation Labels
   static const String homeLabel = 'Home';
   static const String coursesLabel = 'Courses';
-  static const String applicationsLabel = 'Application Tracker';
+  static const String applicationsLabel = 'Job Status';
   static const String messagesLabel = 'Messages';
   static const String profileLabel = 'Profile';
 
@@ -222,10 +222,10 @@ class AppConstants {
 
   /// Production server base URL
   // static const String baseUrl =
-      // 'https://beige-jaguar-560051.hostingersite.com/api';
+  // 'https://beige-jaguar-560051.hostingersite.com/api';
 
   /// Use device-to-PC LAN IP if testing on a real device
-  // static const String lanBaseUrl = 'http://10.167.188.31:8000/api';
+  static const String lanBaseUrl = 'http://10.167.188.31:8000/api';
 
   // Auth
   static const String createUserEndpoint = '/user/create_user.php';

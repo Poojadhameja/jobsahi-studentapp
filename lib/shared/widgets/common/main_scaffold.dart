@@ -99,7 +99,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       case 2:
         // Application Tracker tab - show title with back button
         return TabAppBar(
-          title: 'Application Tracker',
+          title: 'Job Status',
           onBackPressed: () => _handleBackPress(context, currentIndex),
         );
       case 3:
