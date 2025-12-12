@@ -12,10 +12,12 @@ import '../bloc/auth_state.dart';
 
 class LoginOtpEmailScreen extends StatefulWidget {
   final bool showBackButton;
+  final String? returnPath; // Path to redirect to after successful login
 
   const LoginOtpEmailScreen({
     super.key,
     this.showBackButton = false, // Default false since login is auth root
+    this.returnPath, // Optional return path after login
   });
 
   @override
@@ -114,7 +116,15 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
             _isSubmitting = false;
           });
           // Use go instead of push to replace the route and prevent back navigation
-          context.go(AppRoutes.loginVerifiedPopup);
+          // Pass return path to success popup if available
+          final returnPath = widget.returnPath;
+          if (returnPath != null && returnPath.isNotEmpty) {
+            context.go(
+              '${AppRoutes.loginVerifiedPopup}?returnPath=${Uri.encodeComponent(returnPath)}',
+            );
+          } else {
+            context.go(AppRoutes.loginVerifiedPopup);
+          }
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
@@ -130,168 +140,178 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
               }
             });
           }
-          
+
           return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) {
-          if (didPop) return;
-          _handleBackPress();
-        },
-        child: KeyboardDismissWrapper(
-          child: Scaffold(
-            backgroundColor: Colors.white,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  // Sticky header section
-                  Builder(
-                    builder: (context) {
-                      // Check if back button should be shown
-                      final shouldShowBackButton =
-                          widget.showBackButton && context.canPop();
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              _handleBackPress();
+            },
+            child: KeyboardDismissWrapper(
+              child: Scaffold(
+                backgroundColor: Colors.white,
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      // Sticky header section
+                      Builder(
+                        builder: (context) {
+                          // Check if back button should be shown
+                          final shouldShowBackButton =
+                              widget.showBackButton && context.canPop();
 
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppConstants.largePadding,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            /// Back button (conditionally shown)
-                            if (shouldShowBackButton) ...[
-                              const SizedBox(height: 2),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.arrow_back,
-                                  color: AppConstants.textPrimaryColor,
-                                ),
-                                onPressed: () {
-                                  context.pop();
-                                },
-                              ),
-                              const SizedBox(height: 4),
-                            ] else
-                              const SizedBox(height: 50),
-
-                            /// Profile avatar & title
-                            Center(
-                              child: Column(
-                                children: [
-                                  const CircleAvatar(
-                                    radius: 40,
-                                    backgroundColor: Color(0xFFE0E7EF),
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 45,
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppConstants.largePadding,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// Back button (conditionally shown)
+                                if (shouldShowBackButton) ...[
+                                  const SizedBox(height: 2),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.arrow_back,
                                       color: AppConstants.textPrimaryColor,
+                                    ),
+                                    onPressed: () {
+                                      context.pop();
+                                    },
+                                  ),
+                                  const SizedBox(height: 4),
+                                ] else
+                                  const SizedBox(height: 50),
+
+                                /// Profile avatar & title
+                                Center(
+                                  child: Column(
+                                    children: [
+                                      const CircleAvatar(
+                                        radius: 40,
+                                        backgroundColor: Color(0xFFE0E7EF),
+                                        child: Icon(
+                                          Icons.person,
+                                          size: 45,
+                                          color: AppConstants.textPrimaryColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      const Text(
+                                        "Sign in with",
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppConstants.textPrimaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+
+                                /// Phone / Email toggle
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _buildToggleButton(
+                                      "Phone",
+                                      isOTPSelected,
+                                      () {
+                                        setState(() => isOTPSelected = true);
+                                      },
+                                    ),
+                                    _buildToggleButton(
+                                      "Email",
+                                      !isOTPSelected,
+                                      () {
+                                        setState(() => isOTPSelected = false);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+
+                                /// Hindi welcome text
+                                const Center(
+                                  child: Text(
+                                    "अपने सपनों की नौकरी तक पहुंचने के लिए लॉग इन करें",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF4F789B),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Scrollable content section
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppConstants.largePadding,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 8),
+
+                              /// Login input section
+                              isOTPSelected
+                                  ? _buildOTPLogin()
+                                  : _buildEmailLogin(),
+
+                              const SizedBox(height: 24),
+
+                              /// Or divider
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Divider(color: Color(0xFF58B248)),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    child: const Text(
+                                      "Or Login with",
+                                      style: TextStyle(
+                                        color: Color(0xFF58B248),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  const Text(
-                                    "Sign in with",
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppConstants.textPrimaryColor,
-                                    ),
+                                  const Expanded(
+                                    child: Divider(color: Color(0xFF58B248)),
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 20),
+                              const SizedBox(height: 20),
 
-                            /// Phone / Email toggle
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildToggleButton("Phone", isOTPSelected, () {
-                                  setState(() => isOTPSelected = true);
-                                }),
-                                _buildToggleButton("Email", !isOTPSelected, () {
-                                  setState(() => isOTPSelected = false);
-                                }),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
+                              /// Social login buttons
+                              _buildSocialLoginButtons(),
 
-                            /// Hindi welcome text
-                            const Center(
-                              child: Text(
-                                "अपने सपनों की नौकरी तक पहुंचने के लिए लॉग इन करें",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF4F789B),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                              const SizedBox(height: 24),
 
-                  // Scrollable content section
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.largePadding,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-
-                          /// Login input section
-                          isOTPSelected ? _buildOTPLogin() : _buildEmailLogin(),
-
-                          const SizedBox(height: 24),
-
-                          /// Or divider
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Divider(color: Color(0xFF58B248)),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
-                                child: const Text(
-                                  "Or Login with",
-                                  style: TextStyle(
-                                    color: Color(0xFF58B248),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              const Expanded(
-                                child: Divider(color: Color(0xFF58B248)),
-                              ),
+                              /// Create account link
+                              _buildCreateAccountLink(),
+                              const SizedBox(height: 20),
                             ],
                           ),
-                          const SizedBox(height: 20),
-
-                          /// Social login buttons
-                          _buildSocialLoginButtons(),
-
-                          const SizedBox(height: 24),
-
-                          /// Create account link
-                          _buildCreateAccountLink(),
-                          const SizedBox(height: 20),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      );
+          );
         },
       ),
     );
@@ -831,11 +851,11 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
               : () {
                   debugPrint("🔵 Google login button pressed");
                   context.read<AuthBloc>().add(
-                        const SocialLoginEvent(
-                          provider: 'google',
-                          context: null, // Google doesn't need context
-                        ),
-                      );
+                    const SocialLoginEvent(
+                      provider: 'google',
+                      context: null, // Google doesn't need context
+                    ),
+                  );
                 },
         ),
         const SizedBox(height: 16),
@@ -847,11 +867,11 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
               : () {
                   debugPrint("🔵 LinkedIn login button pressed");
                   context.read<AuthBloc>().add(
-                        SocialLoginEvent(
-                          provider: 'linkedin',
-                          context: context, // LinkedIn needs context for WebView
-                        ),
-                      );
+                    SocialLoginEvent(
+                      provider: 'linkedin',
+                      context: context, // LinkedIn needs context for WebView
+                    ),
+                  );
                 },
         ),
       ],

@@ -17,6 +17,7 @@ import '../bloc/jobs_state.dart';
 
 import 'about_company.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../shared/services/job_sharing_service.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   /// Job data to display
@@ -150,7 +151,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         // Initialize with widget data or stored data
         // Prioritize widget.job if it has application data (e.g., after applying)
         Map<String, dynamic> currentJob;
-        if (widget.job['application'] != null || 
+        if (widget.job['application'] != null ||
             widget.job['application_id'] != null ||
             widget.job['application_status'] != null) {
           // Use widget.job if it has application data (fresh from navigation)
@@ -165,7 +166,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         } else {
           currentJob = _currentJobData ?? widget.job;
         }
-        
+
         bool isBookmarked = false;
         Map<String, dynamic>? companyInfo = _currentCompanyInfo;
         Map<String, dynamic>? statistics = _currentStatistics;
@@ -173,13 +174,14 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
         // Get job ID for bookmark check
         final jobId = currentJob['id']?.toString() ?? '';
-        
+
         // Check if widget.job has application data and update _applicationId immediately
         if (widget.job['application'] is Map<String, dynamic>) {
           final appData = widget.job['application'] as Map<String, dynamic>;
-          final appId = appData['application_id']?.toString() ?? 
-                       appData['id']?.toString() ?? 
-                       widget.job['application_id']?.toString();
+          final appId =
+              appData['application_id']?.toString() ??
+              appData['id']?.toString() ??
+              widget.job['application_id']?.toString();
           if (appId != null && appId.isNotEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
@@ -191,7 +193,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       ..._currentJobData!,
                       'application': appData,
                       'application_id': appId,
-                      'application_status': widget.job['application_status'] ?? 'pending',
+                      'application_status':
+                          widget.job['application_status'] ?? 'pending',
                     };
                   }
                 });
@@ -210,7 +213,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     _currentJobData = {
                       ..._currentJobData!,
                       'application_id': appId,
-                      'application_status': widget.job['application_status'] ?? 'pending',
+                      'application_status':
+                          widget.job['application_status'] ?? 'pending',
                     };
                   }
                 });
@@ -294,24 +298,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     ),
                   )
                 : DefaultTabController(
-                        length: 2,
-                        child: Column(
-                          children: [
+                    length: 2,
+                    child: Column(
+                      children: [
                         // Job header section with card (fixed)
-                            Padding(
-                              padding: const EdgeInsets.all(
-                                AppConstants.defaultPadding,
-                              ),
-                              child: _buildJobHeaderCard(
-                                context,
-                                currentJob,
-                                isBookmarked,
-                                companyInfo,
-                              ),
-                            ),
+                        Padding(
+                          padding: const EdgeInsets.all(
+                            AppConstants.defaultPadding,
+                          ),
+                          child: _buildJobHeaderCard(
+                            context,
+                            currentJob,
+                            isBookmarked,
+                            companyInfo,
+                          ),
+                        ),
 
                         // Tab bar (fixed)
-                            _buildTabBar(),
+                        _buildTabBar(),
 
                         // Tab content (scrollable)
                         Expanded(
@@ -328,14 +332,14 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                 const Duration(milliseconds: 500),
                               );
                             },
-                              child: _buildTabContent(
-                                currentJob,
-                                companyInfo,
-                                statistics,
+                            child: _buildTabContent(
+                              currentJob,
+                              companyInfo,
+                              statistics,
                             ),
-                              ),
-                            ),
-                          ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
           ),
@@ -387,7 +391,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Title and Bookmark in a Row
+                // Title, Bookmark, and Share in a Row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -433,6 +437,44 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Share button
+                    Material(
+                      color: Colors.transparent,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: () =>
+                            _shareJob(context, currentJob, companyInfo),
+                        customBorder: const CircleBorder(),
+                        splashColor: Colors.grey.shade300,
+                        highlightColor: Colors.grey.shade200,
+                        radius: 20,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.share,
+                                color: Colors.grey.shade600,
+                                size: 20,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Share',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -1075,7 +1117,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     );
   }
 
-
   /// Key responsibilities list with icons (similar to skill test instructions)
   Widget _buildKeyResponsibilities(Map<String, dynamic> currentJob) {
     // Get skills_required first, then requirements, then fallback
@@ -1235,9 +1276,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             child: Text(
               isJobClosed
                   ? 'Closed'
-                  : (hasApplied
-                        ? 'Track Application'
-                        : 'Continue to apply'),
+                  : (hasApplied ? 'Track Application' : 'Continue to apply'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1294,5 +1333,55 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       pathParameters: {'id': jobId},
       extra: jobPayload,
     );
+  }
+
+  /// Shares the job link
+  Future<void> _shareJob(
+    BuildContext context,
+    Map<String, dynamic> currentJob,
+    Map<String, dynamic>? companyInfo,
+  ) async {
+    try {
+      final jobId = currentJob['id']?.toString() ?? '';
+      final jobTitle = currentJob['title']?.toString() ?? 'Job';
+      final companyName =
+          companyInfo?['company_name']?.toString() ??
+          currentJob['company']?.toString();
+      final salary = currentJob['salary']?.toString();
+      final location = currentJob['location']?.toString();
+      final experienceRequired = currentJob['experience_required']?.toString();
+      final jobType = currentJob['job_type']?.toString();
+      final vacancies = currentJob['no_of_vacancies']?.toString();
+      final description =
+          currentJob['about']?.toString() ??
+          currentJob['description']?.toString();
+
+      if (jobId.isEmpty) {
+        TopSnackBar.showError(
+          context,
+          message: 'Unable to share job. Job ID not found.',
+        );
+        return;
+      }
+
+      await JobSharingService.instance.shareJob(
+        jobId: jobId,
+        jobTitle: jobTitle,
+        companyName: companyName,
+        salary: salary,
+        location: location,
+        experienceRequired: experienceRequired,
+        jobType: jobType,
+        vacancies: vacancies,
+        description: description,
+      );
+    } catch (e) {
+      if (mounted) {
+        TopSnackBar.showError(
+          context,
+          message: 'Failed to share job: ${e.toString()}',
+        );
+      }
+    }
   }
 }

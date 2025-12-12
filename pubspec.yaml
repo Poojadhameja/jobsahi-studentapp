@@ -80,6 +80,9 @@ dependencies:
 
   # WebView for LinkedIn OAuth
   webview_flutter: ^4.4.2
+  
+  # Share functionality for sharing job links
+  share_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

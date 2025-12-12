@@ -233,7 +233,7 @@ class _SplashScreenViewState extends State<_SplashScreenView>
                                   style: TextStyle(fontWeight: FontWeight.w500),
                                 ),
                                 TextSpan(
-                                  text: 'Satpuda Group of Colleges',
+                                  text: 'Satpuda Group of Education',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.grey.shade700,

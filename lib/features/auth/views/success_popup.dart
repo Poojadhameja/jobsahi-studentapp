@@ -17,6 +17,22 @@ class SuccessPopupScreen extends StatefulWidget {
     required this.navigationRoute,
   });
 
+  /// Factory constructor to create from route state
+  factory SuccessPopupScreen.fromRoute(GoRouterState state) {
+    final returnPath = state.uri.queryParameters['returnPath'];
+    final navigationRoute = returnPath != null && returnPath.isNotEmpty
+        ? returnPath
+        : '/home';
+
+    return SuccessPopupScreen(
+      title: 'Login Successful!',
+      description:
+          'Welcome back! You have successfully logged in. Let\'s continue your job search journey.',
+      buttonText: 'Continue to App',
+      navigationRoute: navigationRoute,
+    );
+  }
+
   @override
   State<SuccessPopupScreen> createState() => _SuccessPopupScreenState();
 }

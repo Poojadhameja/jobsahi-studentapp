@@ -1124,10 +1124,15 @@ class _EnhancedProfileDetailsViewState
                                     return;
                                   }
                                   // Extract values from correct controllers
-                                  final updatedName = nameController.text.trim();
-                                  final updatedEmail = emailController.text.trim();
-                                  final updatedPhone = phoneController.text.trim();
-                                  final updatedLocation = locationController.text.trim();
+                                  final updatedName = nameController.text
+                                      .trim();
+                                  final updatedEmail = emailController.text
+                                      .trim();
+                                  final updatedPhone = phoneController.text
+                                      .trim();
+                                  final updatedLocation = locationController
+                                      .text
+                                      .trim();
                                   final updatedBio = bioController.text.trim();
 
                                   // Validate bio: must be empty OR have at least 15 letters
@@ -1148,12 +1153,20 @@ class _EnhancedProfileDetailsViewState
                                   }
 
                                   // Debug: Verify controller values before sending
-                                  debugPrint('🔵 [ProfileForm] Saving profile header:');
-                                  debugPrint('   nameController.text: "${nameController.text}"');
-                                  debugPrint('   bioController.text: "${bioController.text}"');
+                                  debugPrint(
+                                    '🔵 [ProfileForm] Saving profile header:',
+                                  );
+                                  debugPrint(
+                                    '   nameController.text: "${nameController.text}"',
+                                  );
+                                  debugPrint(
+                                    '   bioController.text: "${bioController.text}"',
+                                  );
                                   debugPrint('   updatedName: "$updatedName"');
                                   debugPrint('   updatedBio: "$updatedBio"');
-                                  debugPrint('   finalBio (after validation): "$finalBio"');
+                                  debugPrint(
+                                    '   finalBio (after validation): "$finalBio"',
+                                  );
 
                                   bloc.add(
                                     UpdateProfileHeaderInlineEvent(
@@ -1949,15 +1962,15 @@ class _EnhancedProfileDetailsViewState
               builder: (context, constraints) {
                 final maxHeight = MediaQuery.of(context).size.height * 0.7;
                 return ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: maxHeight,
-                  ),
+                  constraints: BoxConstraints(maxHeight: maxHeight),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Flexible(
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(AppConstants.defaultPadding),
+                          padding: const EdgeInsets.all(
+                            AppConstants.defaultPadding,
+                          ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1967,175 +1980,186 @@ class _EnhancedProfileDetailsViewState
                                 title: 'Edit Skills',
                                 onClose: handleClose,
                               ),
-                        const SizedBox(height: AppConstants.defaultPadding),
-                        _buildMainCard(
-                          children: [
-                            if (skillsDraft.isEmpty)
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(
-                                  AppConstants.defaultPadding,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
-                                  ),
-                                ),
-                                child: const Text(
-                                  'No skills added yet. Add your skills to improve your profile.',
-                                  style: TextStyle(
-                                    color: AppConstants.textSecondaryColor,
-                                  ),
-                                ),
-                              ),
-                            if (skillsDraft.isNotEmpty) ...[
-                              ...List.generate(skillsDraft.length, (index) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppConstants.smallPadding,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextFormField(
-                                          key: ValueKey('skill_field_$index'),
-                                          initialValue: skillsDraft[index],
-                                          decoration: InputDecoration(
-                                            labelText: 'Skill ${index + 1}',
-                                            border: const OutlineInputBorder(),
-                                          ),
-                                          onChanged: (value) {
-                                            setModalState(() {
-                                              skillsDraft[index] = value;
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        tooltip: 'Remove skill',
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: AppConstants.errorColor,
-                                        ),
-                                        onPressed: () {
-                                          setModalState(() {
-                                            skillsDraft.removeAt(index);
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }),
                               const SizedBox(
                                 height: AppConstants.defaultPadding,
                               ),
-                            ],
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: newSkillController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Add new skill',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    maxLength: 25,
-                                    onSubmitted: (value) =>
-                                        addSkill(value, setModalState),
-                                  ),
-                                ),
-                                const SizedBox(
-                                  width: AppConstants.smallPadding,
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: ElevatedButton.icon(
-                                    onPressed: () => addSkill(
-                                      newSkillController.text,
-                                      setModalState,
-                                    ),
-                                    icon: const Icon(Icons.add, size: 18),
-                                    label: const Text('Add'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
+                              _buildMainCard(
+                                children: [
+                                  if (skillsDraft.isEmpty)
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(
+                                        AppConstants.defaultPadding,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.grey.shade200,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'No skills added yet. Add your skills to improve your profile.',
+                                        style: TextStyle(
+                                          color:
+                                              AppConstants.textSecondaryColor,
+                                        ),
                                       ),
                                     ),
+                                  if (skillsDraft.isNotEmpty) ...[
+                                    ...List.generate(skillsDraft.length, (
+                                      index,
+                                    ) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: AppConstants.smallPadding,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextFormField(
+                                                key: ValueKey(
+                                                  'skill_field_$index',
+                                                ),
+                                                initialValue:
+                                                    skillsDraft[index],
+                                                decoration: InputDecoration(
+                                                  labelText:
+                                                      'Skill ${index + 1}',
+                                                  border:
+                                                      const OutlineInputBorder(),
+                                                ),
+                                                onChanged: (value) {
+                                                  setModalState(() {
+                                                    skillsDraft[index] = value;
+                                                  });
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            IconButton(
+                                              tooltip: 'Remove skill',
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                color: AppConstants.errorColor,
+                                              ),
+                                              onPressed: () {
+                                                setModalState(() {
+                                                  skillsDraft.removeAt(index);
+                                                });
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+                                    const SizedBox(
+                                      height: AppConstants.defaultPadding,
+                                    ),
+                                  ],
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller: newSkillController,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Add new skill',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          maxLength: 25,
+                                          onSubmitted: (value) =>
+                                              addSkill(value, setModalState),
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        width: AppConstants.smallPadding,
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: ElevatedButton.icon(
+                                          onPressed: () => addSkill(
+                                            newSkillController.text,
+                                            setModalState,
+                                          ),
+                                          icon: const Icon(Icons.add, size: 18),
+                                          label: const Text('Add'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Fixed bottom button
-                Container(
-                  padding: EdgeInsets.only(
-                    left: AppConstants.defaultPadding,
-                    right: AppConstants.defaultPadding,
-                    top: AppConstants.defaultPadding,
-                    bottom: viewInsets + AppConstants.defaultPadding,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppConstants.cardBackgroundColor,
-                    border: Border(
-                      top: BorderSide(color: Colors.grey.shade200),
-                    ),
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: hasChanges
-                          ? () {
-                              final sanitizedSkills = skillsDraft
-                                  .map((skill) => skill.trim())
-                                  .where((skill) => skill.isNotEmpty)
-                                  .toList();
-                              bloc.add(
-                                UpdateProfileSkillsInlineEvent(
-                                  skills: sanitizedSkills,
-                                ),
-                              );
-                              Navigator.of(context).pop();
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: hasChanges
-                            ? Colors.green
-                            : Colors.grey.shade400,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        elevation: hasChanges ? 2 : 0,
                       ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      // Fixed bottom button
+                      Container(
+                        padding: EdgeInsets.only(
+                          left: AppConstants.defaultPadding,
+                          right: AppConstants.defaultPadding,
+                          top: AppConstants.defaultPadding,
+                          bottom: viewInsets + AppConstants.defaultPadding,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppConstants.cardBackgroundColor,
+                          border: Border(
+                            top: BorderSide(color: Colors.grey.shade200),
+                          ),
+                        ),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: hasChanges
+                                ? () {
+                                    final sanitizedSkills = skillsDraft
+                                        .map((skill) => skill.trim())
+                                        .where((skill) => skill.isNotEmpty)
+                                        .toList();
+                                    bloc.add(
+                                      UpdateProfileSkillsInlineEvent(
+                                        skills: sanitizedSkills,
+                                      ),
+                                    );
+                                    Navigator.of(context).pop();
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: hasChanges
+                                  ? Colors.green
+                                  : Colors.grey.shade400,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppConstants.borderRadius,
+                                ),
+                              ),
+                              elevation: hasChanges ? 2 : 0,
+                            ),
+                            child: const Text(
+                              'Save Changes',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          );
+                );
               },
             ),
           ),
@@ -5019,15 +5043,16 @@ class _EnhancedProfileDetailsViewState
     ProfileDetailsLoaded state,
   ) {
     // Calculate completion percentage
-    final completionPercentage = ProfileCompletionService.calculateCompletionPercentage(
-      userProfile: state.userProfile,
-      skills: state.skills,
-      education: state.education,
-      experience: state.experience,
-      certificates: state.certificates,
-      resumeFileName: state.resumeFileName,
-      profileImagePath: state.profileImagePath,
-    );
+    final completionPercentage =
+        ProfileCompletionService.calculateCompletionPercentage(
+          userProfile: state.userProfile,
+          skills: state.skills,
+          education: state.education,
+          experience: state.experience,
+          certificates: state.certificates,
+          resumeFileName: state.resumeFileName,
+          profileImagePath: state.profileImagePath,
+        );
 
     // Get completion details
     final completionDetails = ProfileCompletionService.getCompletionDetails(

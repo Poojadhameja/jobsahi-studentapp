@@ -67,7 +67,6 @@ import '../../features/courses/views/courses_learning_center.dart';
 import '../../features/courses/views/course_details.dart';
 import '../../features/courses/views/saved_courses.dart';
 
-
 // Skill test screens
 import '../../features/skill_test/views/skill_test_details.dart';
 import '../../features/skill_test/views/skill_test_instructions.dart';
@@ -141,12 +140,14 @@ class AppRouter {
           await tokenStorage.clearAll();
         }
 
-        // If trying to access a protected route, redirect to login
+        // If trying to access a protected route, redirect to login with return path
         if (!isPublicRoute) {
           debugPrint(
             '🔒 Access denied: User not authenticated. Redirecting to login.',
           );
-          return AppRoutes.loginOtpEmail;
+          // Store the intended destination in query params for redirect after login
+          final returnPath = path;
+          return '${AppRoutes.loginOtpEmail}?returnPath=${Uri.encodeComponent(returnPath)}';
         }
       }
 
@@ -257,7 +258,12 @@ class AppRouter {
         builder: (context, state) {
           // Check if user came from splash (returning user) or onboarding (new user)
           final fromSplash = state.uri.queryParameters['fromSplash'] == 'true';
-          return LoginOtpEmailScreen(showBackButton: !fromSplash);
+          // Get return path if user was trying to access a protected route
+          final returnPath = state.uri.queryParameters['returnPath'];
+          return LoginOtpEmailScreen(
+            showBackButton: !fromSplash,
+            returnPath: returnPath,
+          );
         },
       ),
 
@@ -270,14 +276,7 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.loginVerifiedPopup,
         name: 'loginVerifiedPopup',
-        builder: (context, state) => SuccessPopupScreen(
-          title: 'Login Successful!',
-          description:
-              'Welcome back! You have successfully logged in. Let\'s continue your job search journey.',
-          buttonText: 'Continue to App',
-          navigationRoute:
-              AppRoutes.home, // Will be overridden by redirect logic
-        ),
+        builder: (context, state) => SuccessPopupScreen.fromRoute(state),
       ),
 
       GoRoute(
@@ -437,7 +436,9 @@ class AppRouter {
           debugPrint('🔵 [Router] Path parameters: ${state.pathParameters}');
           Map<String, dynamic> job;
           if (state.extra is Map<String, dynamic>) {
-            job = Map<String, dynamic>.from(state.extra as Map<String, dynamic>);
+            job = Map<String, dynamic>.from(
+              state.extra as Map<String, dynamic>,
+            );
             job['id'] = id;
           } else {
             // Create a job object with the correct ID from URL
@@ -511,14 +512,14 @@ class AppRouter {
         builder: (context, state) {
           final id = state.pathParameters['id'];
           final extra = state.extra;
-          
+
           // Prefer extra data if available (most reliable)
           if (extra is Map<String, dynamic>) {
             final job = Map<String, dynamic>.from(extra);
             job['id'] = id ?? job['id']?.toString() ?? '0';
             return JobStepScreen(job: job);
           }
-          
+
           // Fallback to finding job by ID
           final job = _findJobByIdOrDefault(id);
           job['id'] = id ?? job['id']?.toString() ?? '0';
@@ -533,8 +534,9 @@ class AppRouter {
           final id = state.pathParameters['id'] ?? '';
           Map<String, dynamic>? initialData;
           if (state.extra is Map<String, dynamic>) {
-            initialData =
-                Map<String, dynamic>.from(state.extra as Map<String, dynamic>);
+            initialData = Map<String, dynamic>.from(
+              state.extra as Map<String, dynamic>,
+            );
           }
           return StudentApplicationDetailScreen(
             applicationId: id,
@@ -565,14 +567,14 @@ class AppRouter {
         builder: (context, state) {
           final id = state.pathParameters['id'];
           final extra = state.extra;
-          
+
           // Prefer extra data if available (includes saved status)
           if (extra is Map<String, dynamic>) {
             final course = Map<String, dynamic>.from(extra);
             course['id'] = id ?? course['id']?.toString() ?? '0';
             return CourseDetailsPage(course: course);
           }
-          
+
           // Fallback to generating course by ID
           final course = _generateCourseById(id);
           course['id'] = id ?? course['id']?.toString() ?? '0';
@@ -838,17 +840,17 @@ Map<String, dynamic> _findJobByIdOrDefault(String? id) {
     (job) => job?['id']?.toString() == id,
     orElse: () => null,
   );
-  
+
   // Return match if found, otherwise return default job
   if (match != null) {
     return match;
   }
-  
+
   // If no match found, check if recommendedJobs has items, otherwise return default
   if (JobData.recommendedJobs.isNotEmpty) {
     return JobData.recommendedJobs.first;
   }
-  
+
   return getDefaultJob();
 }
 
