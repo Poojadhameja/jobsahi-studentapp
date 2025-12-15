@@ -94,6 +94,7 @@ class PersonalInfo {
   final String location;
   final double latitude;
   final double longitude;
+  final String? profileImage;
 
   PersonalInfo({
     required this.email,
@@ -104,6 +105,7 @@ class PersonalInfo {
     required this.location,
     required this.latitude,
     required this.longitude,
+    this.profileImage,
   });
 
   factory PersonalInfo.fromJson(Map<String, dynamic> json) {
@@ -116,6 +118,7 @@ class PersonalInfo {
       location: json['location'] ?? '',
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
+      profileImage: json['profile_image']?.toString(),
     );
   }
 
@@ -129,6 +132,7 @@ class PersonalInfo {
       'location': location,
       'latitude': latitude,
       'longitude': longitude,
+      'profile_image': profileImage,
     };
   }
 }
@@ -370,11 +374,13 @@ class Project {
 class Documents {
   final String resume;
   final String certificates;
+  final String? profileImage;
   final String aadharNumber;
 
   Documents({
     required this.resume,
     required this.certificates,
+    this.profileImage,
     required this.aadharNumber,
   });
 
@@ -382,6 +388,7 @@ class Documents {
     return Documents(
       resume: json['resume'] ?? '',
       certificates: json['certificates'] ?? '',
+      profileImage: json['profile_image']?.toString(),
       aadharNumber: json['aadhar_number'] ?? '',
     );
   }
@@ -390,6 +397,7 @@ class Documents {
     return {
       'resume': resume,
       'certificates': certificates,
+      'profile_image': profileImage,
       'aadhar_number': aadharNumber,
     };
   }

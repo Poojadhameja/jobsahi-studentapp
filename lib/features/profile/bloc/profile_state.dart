@@ -521,3 +521,33 @@ class SkillsChangesSavedState extends ProfileState {
   @override
   List<Object?> get props => [];
 }
+
+/// Resume Upload Success State
+class ResumeUploadSuccess extends ProfileState {
+  final String message;
+
+  const ResumeUploadSuccess({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// Certificate Upload Success State
+class CertificateUploadSuccess extends ProfileState {
+  final String message;
+
+  const CertificateUploadSuccess({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// Uploading File State
+class UploadingFileState extends ProfileState {
+  final String fileName;
+
+  const UploadingFileState({required this.fileName});
+
+  @override
+  List<Object?> get props => [fileName];
+}

@@ -9,6 +9,7 @@ import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/common/top_snackbar.dart';
 import '../../../shared/services/location_service.dart';
+import '../../../shared/utils/file_picker_helper.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -77,6 +78,10 @@ class _EnhancedProfileDetailsViewState
         }
         return current is CertificateDeletedSuccess ||
             current is ProfileImageRemovedSuccess ||
+            current is ProfileImageUpdateSuccess ||
+            current is ResumeUploadSuccess ||
+            current is CertificateUploadSuccess ||
+            current is UploadingFileState ||
             current is ProfileError;
       },
       listener: (context, state) {
@@ -86,6 +91,38 @@ class _EnhancedProfileDetailsViewState
           TopSnackBar.showSuccess(
             context,
             message: 'Profile image removed successfully!',
+          );
+        } else if (state is ProfileImageUpdateSuccess) {
+          TopSnackBar.showSuccess(
+            context,
+            message: 'Profile image updated successfully!',
+          );
+        } else if (state is ResumeUploadSuccess) {
+          TopSnackBar.showSuccess(context, message: state.message);
+        } else if (state is CertificateUploadSuccess) {
+          TopSnackBar.showSuccess(context, message: state.message);
+        } else if (state is UploadingFileState) {
+          // Show loading indicator
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Text('Uploading ${state.fileName}...'),
+                  ),
+                ],
+              ),
+              duration: Duration(seconds: 2),
+            ),
           );
         } else if (state is ProfileError) {
           TopSnackBar.showError(context, message: state.message);
@@ -280,11 +317,11 @@ class _EnhancedProfileDetailsViewState
               Stack(
                 children: [
                   Container(
-                    width: 76,
-                    height: 76,
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
+                      border: Border.all(color: Colors.white, width: 1.5),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.2),
@@ -294,17 +331,26 @@ class _EnhancedProfileDetailsViewState
                       ],
                     ),
                     child: CircleAvatar(
-                      radius: 32,
+                      radius: 49,
                       backgroundColor: Colors.white,
-                      child: state.profileImagePath != null
+                      child: state.profileImagePath != null &&
+                              state.profileImagePath!.isNotEmpty
                           ? ClipOval(
-                              child: Image.asset(
+                              child: Image.network(
                                 state.profileImagePath!,
                                 fit: BoxFit.cover,
-                                width: 64,
-                                height: 64,
+                                width: 97,
+                                height: 97,
                                 errorBuilder: (context, error, stackTrace) {
                                   return _buildDefaultProfileImage();
+                                },
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  );
                                 },
                               ),
                             )
@@ -655,26 +701,213 @@ class _EnhancedProfileDetailsViewState
                   await handleClose();
                 }
               },
-              child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(
-                          AppConstants.defaultPadding,
-                        ),
-                        child: Form(
-                          key: formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildSheetHeader(
-                                context: sheetContext,
-                                title: 'Edit Profile Info',
-                                onClose: handleClose,
-                              ),
+              child: BlocBuilder<ProfileBloc, ProfileState>(
+                bloc: bloc,
+                builder: (blocContext, blocState) {
+                  // Get latest profile image path from state
+                  String? currentProfileImagePath;
+                  if (blocState is ProfileDetailsLoaded) {
+                    currentProfileImagePath = blocState.profileImagePath;
+                  } else if (blocState is ProfileImageUpdateSuccess) {
+                    currentProfileImagePath = blocState.imagePath;
+                  } else if (blocState is ProfileImageRemovedSuccess) {
+                    currentProfileImagePath = null;
+                  } else {
+                    currentProfileImagePath = state.profileImagePath;
+                  }
+                  
+                  return SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(
+                              AppConstants.defaultPadding,
+                            ),
+                            child: Form(
+                              key: formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSheetHeader(
+                                    context: sheetContext,
+                                    title: 'Edit Profile Info',
+                                    onClose: handleClose,
+                                  ),
+                                  const SizedBox(
+                                    height: AppConstants.defaultPadding,
+                                  ),
+                                  // Profile Image Section
+                                  _buildMainCard(
+                                    children: [
+                                      const Text(
+                                        'Profile Image',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppConstants.textPrimaryColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppConstants.smallPadding),
+                                      // Profile Image Preview
+                                      Center(
+                                        child: GestureDetector(
+                                          onTap: () async {
+                                            // Directly open gallery on tap
+                                            final file = await FilePickerHelper.pickProfileImage();
+                                            if (file != null) {
+                                              // Check file size (max 5MB)
+                                              if (file.size > 5 * 1024 * 1024) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text('File size should be less than 5MB'),
+                                                      backgroundColor: Colors.red,
+                                                    ),
+                                                  );
+                                                }
+                                                return;
+                                              }
+                                              bloc.add(UploadProfileImageEvent(file));
+                                            }
+                                          },
+                                          child: Container(
+                                            width: 150,
+                                            height: 150,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: AppConstants.borderColor,
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.1),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Stack(
+                                              children: [
+                                                // Profile Image (only show if exists)
+                                                if (currentProfileImagePath != null &&
+                                                    currentProfileImagePath!.isNotEmpty)
+                                                  ClipOval(
+                                                    child: Image.network(
+                                                      currentProfileImagePath!,
+                                                      fit: BoxFit.cover,
+                                                      width: 150,
+                                                      height: 150,
+                                                      errorBuilder: (context, error, stackTrace) {
+                                                        // Return empty container on error
+                                                        return Container(
+                                                          color: AppConstants.backgroundColor,
+                                                        );
+                                                      },
+                                                      loadingBuilder: (context, child, loadingProgress) {
+                                                        if (loadingProgress == null) return child;
+                                                        return const Center(
+                                                          child: CircularProgressIndicator(),
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                // Upload Icon Overlay - Centered (only show if no image)
+                                                if (currentProfileImagePath == null ||
+                                                    currentProfileImagePath!.isEmpty)
+                                                  Center(
+                                                    child: Container(
+                                                      width: 36,
+                                                      height: 36,
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: AppConstants.secondaryColor,
+                                                        border: Border.all(
+                                                          color: Colors.white,
+                                                          width: 2,
+                                                        ),
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.cloud_upload,
+                                                        color: Colors.white,
+                                                        size: 18,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppConstants.smallPadding),
+                                      // Action Buttons Row
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          // Upload/Change Button
+                                          TextButton.icon(
+                                            onPressed: () async {
+                                              // Directly open gallery
+                                              final file = await FilePickerHelper.pickProfileImage();
+                                              if (file != null) {
+                                                // Check file size (max 5MB)
+                                                if (file.size > 5 * 1024 * 1024) {
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text('File size should be less than 5MB'),
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    );
+                                                  }
+                                                  return;
+                                                }
+                                                bloc.add(UploadProfileImageEvent(file));
+                                              }
+                                            },
+                                            icon: const Icon(
+                                              Icons.upload_file,
+                                              size: 18,
+                                            ),
+                                            label: Text(
+                                              currentProfileImagePath != null &&
+                                                      currentProfileImagePath!.isNotEmpty
+                                                  ? 'Change Profile Image'
+                                                  : 'Add Profile Image',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ),
+                                          // Delete Button (only if image exists)
+                                          if (currentProfileImagePath != null &&
+                                              currentProfileImagePath!.isNotEmpty) ...[
+                                            const SizedBox(width: 16),
+                                            TextButton.icon(
+                                              onPressed: () {
+                                                bloc.add(const RemoveProfileImageEvent());
+                                              },
+                                              icon: const Icon(
+                                                Icons.delete_outline,
+                                                size: 18,
+                                                color: AppConstants.errorColor,
+                                              ),
+                                              label: const Text(
+                                                'Delete',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: AppConstants.errorColor,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                               const SizedBox(
                                 height: AppConstants.defaultPadding,
                               ),
@@ -1205,6 +1438,8 @@ class _EnhancedProfileDetailsViewState
                     ),
                   ],
                 ),
+                  );
+                },
               ),
             );
           },
@@ -1497,6 +1732,12 @@ class _EnhancedProfileDetailsViewState
               socialLinks: socialLinks!,
               socialRebuildCounter: socialRebuildCounter!,
               socialFieldKeys: socialFieldKeys!,
+            );
+          case 'profile_image':
+            return _buildProfileImageEditSheet(
+              parentContext: context,
+              bloc: bloc,
+              currentImageUrl: state.profileImagePath,
             );
           default:
             return _buildUnsupportedSectionSheet(sheetContext, section);
@@ -3303,209 +3544,78 @@ class _EnhancedProfileDetailsViewState
     String? lastUpdated,
     String? downloadUrl,
   }) {
-    final nameController = TextEditingController(text: resumeFileName ?? '');
-    final dateController = TextEditingController(text: lastUpdated ?? '');
-    final urlController = TextEditingController(text: downloadUrl ?? '');
-    final formKey = GlobalKey<FormState>();
-
-    return StatefulBuilder(
-      builder: (context, setModalState) {
-        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
-
-        // Add listeners to trigger rebuilds when text changes
-        void setupListeners() {
-          nameController.removeListener(() {});
-          dateController.removeListener(() {});
-          urlController.removeListener(() {});
-          nameController.addListener(() => setModalState(() {}));
-          dateController.addListener(() => setModalState(() {}));
-          urlController.addListener(() => setModalState(() {}));
-        }
-
-        setupListeners();
-
-        // Check if there are changes
-        final currentName = nameController.text.trim();
-        final currentDate = dateController.text.trim();
-        final currentUrl = urlController.text.trim();
-        final initialName = (resumeFileName ?? '').trim();
-        final initialDate = (lastUpdated ?? '').trim();
-        final initialUrl = (downloadUrl ?? '').trim();
-        final hasChanges =
-            currentName != initialName ||
-            currentDate != initialDate ||
-            currentUrl != initialUrl;
-
-        String? validateUrl(String? value) {
-          final trimmed = value?.trim() ?? '';
-          if (trimmed.isEmpty) {
-            return null;
-          }
-          final uri = Uri.tryParse(trimmed);
-          if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-            return 'Enter a valid URL starting with http or https';
-          }
-          return null;
-        }
-
-        Future<void> handleClose() async {
-          if (hasChanges) {
-            final shouldSave = await _showUnsavedChangesDialog(context);
-            if (shouldSave == null) return; // Dialog dismissed
-            if (shouldSave) {
-              // Save changes
-              if (!formKey.currentState!.validate()) {
-                return;
-              }
-              final name = nameController.text.trim();
-              final updated = dateController.text.trim();
-              final url = urlController.text.trim();
-              final hasOtherValues = updated.isNotEmpty || url.isNotEmpty;
-
-              if (name.isEmpty && hasOtherValues) {
-                TopSnackBar.showError(
-                  parentContext,
-                  message:
-                      'Resume name is required when other details are provided.',
-                );
-                return;
-              }
-
-              bloc.add(
-                UpdateProfileResumeInlineEvent(
-                  fileName: name,
-                  lastUpdated: updated.isNotEmpty ? updated : null,
-                  downloadUrl: url.isNotEmpty ? url : null,
-                ),
-              );
-            }
-          }
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
-        }
-
-        return PopScope(
-          canPop: !hasChanges,
-          onPopInvokedWithResult: (didPop, result) async {
-            if (!didPop && hasChanges) {
-              await handleClose();
-            }
-          },
-          child: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: viewInsets),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSheetHeader(
-                          context: context,
-                          title: 'Edit Resume',
-                          onClose: handleClose,
-                        ),
-                        const SizedBox(height: AppConstants.defaultPadding),
-                        TextFormField(
-                          controller: nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Resume File Name',
-                            hintText: 'Resume.pdf',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppConstants.smallPadding),
-                        TextFormField(
-                          controller: dateController,
-                          decoration: const InputDecoration(
-                            labelText: 'Last Updated',
-                            hintText: 'e.g., 15 July 2024',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppConstants.smallPadding),
-                        TextFormField(
-                          controller: urlController,
-                          decoration: const InputDecoration(
-                            labelText: 'Resume URL (optional)',
-                            hintText: 'https://example.com/resume.pdf',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.url,
-                          validator: validateUrl,
-                        ),
-                        const SizedBox(height: AppConstants.largePadding),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: hasChanges
-                                ? () {
-                                    if (!formKey.currentState!.validate()) {
-                                      return;
-                                    }
-                                    final name = nameController.text.trim();
-                                    final updated = dateController.text.trim();
-                                    final url = urlController.text.trim();
-                                    final hasOtherValues =
-                                        updated.isNotEmpty || url.isNotEmpty;
-
-                                    if (name.isEmpty && hasOtherValues) {
-                                      ScaffoldMessenger.of(
-                                        parentContext,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Resume name is required when other details are provided.',
-                                          ),
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                      return;
-                                    }
-
-                                    bloc.add(
-                                      UpdateProfileResumeInlineEvent(
-                                        fileName: name,
-                                        lastUpdated: updated.isNotEmpty
-                                            ? updated
-                                            : null,
-                                        downloadUrl: url.isNotEmpty
-                                            ? url
-                                            : null,
-                                      ),
-                                    );
-                                    Navigator.of(context).pop();
-                                  }
-                                : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: hasChanges
-                                  ? Colors.green
-                                  : Colors.grey.shade400,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.borderRadius,
-                                ),
-                              ),
-                              elevation: hasChanges ? 2 : 0,
-                            ),
-                            child: const Text('Save Changes'),
-                          ),
-                        ),
-                      ],
-                    ),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Resume',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.textPrimaryColor,
                   ),
                 ),
+                IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () => Navigator.of(parentContext).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.defaultPadding),
+            
+            // Upload Section
+            ElevatedButton.icon(
+              onPressed: () async {
+                final file = await FilePickerHelper.pickResume();
+                if (file != null) {
+                  // Check file size (max 10MB)
+                  if (file.size > 10 * 1024 * 1024) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        SnackBar(
+                          content: Text('File size should be less than 10MB'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  bloc.add(UploadResumeEvent(file));
+                  Navigator.of(parentContext).pop();
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(parentContext).showSnackBar(
+                      SnackBar(
+                        content: Text('No file selected'),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: Icon(Icons.upload_file),
+              label: Text(resumeFileName?.isEmpty ?? true ? 'Upload Resume' : 'Update Resume'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.primaryColor,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppConstants.defaultPadding,
+                  vertical: AppConstants.defaultPadding,
+                ),
+                minimumSize: Size(double.infinity, 50),
               ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -3514,447 +3624,78 @@ class _EnhancedProfileDetailsViewState
     required ProfileBloc bloc,
     required List<Map<String, dynamic>> initialCertificates,
   }) {
-    final certificateDrafts = initialCertificates
-        .map((cert) => Map<String, dynamic>.from(cert))
-        .toList();
-
-    if (certificateDrafts.isEmpty) {
-      certificateDrafts.add({
-        'name': '',
-        'type': 'Certificate',
-        'uploadDate': '',
-        'path': '',
-        'extension': '',
-        'size': 0,
-      });
-    }
-
-    const certificateTypes = ['Certificate', 'License', 'ID Proof', 'Other'];
-
-    String inferExtensionFromInputs({
-      required String name,
-      required String url,
-    }) {
-      final candidates = <String>[name, url];
-      for (final candidate in candidates) {
-        final trimmed = candidate.trim();
-        if (trimmed.contains('.')) {
-          final parts = trimmed.split('.');
-          final ext = parts.isNotEmpty ? parts.last.trim() : '';
-          if (ext.isNotEmpty) {
-            return ext;
-          }
-        }
-      }
-      return 'file';
-    }
-
-    String? validateUrl(String? value) {
-      final trimmed = value?.trim() ?? '';
-      if (trimmed.isEmpty) {
-        return null;
-      }
-      final uri = Uri.tryParse(trimmed);
-      if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-        return 'Enter a valid URL starting with http or https';
-      }
-      return null;
-    }
-
-    return StatefulBuilder(
-      builder: (context, setModalState) {
-        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
-        // Check if there are changes
-        final sanitizedCurrent = certificateDrafts
-            .map(_normalizeCertificateMap)
-            .where((cert) => cert['name'].toString().isNotEmpty)
-            .toList();
-        final sanitizedInitial = initialCertificates
-            .map(_normalizeCertificateMap)
-            .where((cert) => cert['name'].toString().isNotEmpty)
-            .toList();
-        final hasChanges = !_areCertificateListsEqual(
-          sanitizedCurrent,
-          sanitizedInitial,
-        );
-
-        void addCertificate() {
-          setModalState(() {
-            certificateDrafts.add({
-              'name': '',
-              'type': 'Certificate',
-              'uploadDate': '',
-              'path': '',
-              'extension': '',
-              'size': 0,
-            });
-          });
-        }
-
-        void removeCertificate(int index) {
-          setModalState(() {
-            certificateDrafts.removeAt(index);
-            if (certificateDrafts.isEmpty) {
-              addCertificate();
-            }
-          });
-        }
-
-        Future<void> handleClose() async {
-          if (hasChanges) {
-            final shouldSave = await _showUnsavedChangesDialog(context);
-            if (shouldSave == null) return; // Dialog dismissed
-            if (shouldSave) {
-              // Save changes
-              final sanitizedCertificates = <Map<String, dynamic>>[];
-              String? urlValidationMessage;
-              var hasValidationError = false;
-
-              for (final certificate in certificateDrafts) {
-                final name = certificate['name']?.toString().trim() ?? '';
-                final type = certificate['type']?.toString().trim() ?? '';
-                final uploadDate =
-                    certificate['uploadDate']?.toString().trim() ?? '';
-                final url = certificate['path']?.toString().trim() ?? '';
-
-                final hasAnyValue = [
-                  name,
-                  type,
-                  uploadDate,
-                  url,
-                ].any((value) => value.isNotEmpty);
-
-                if (hasAnyValue && name.isEmpty) {
-                  hasValidationError = true;
-                  break;
-                }
-
-                final validationMessage = validateUrl(url);
-                if (validationMessage != null) {
-                  urlValidationMessage = validationMessage;
-                  break;
-                }
-
-                if (name.isEmpty) {
-                  continue;
-                }
-
-                sanitizedCertificates.add({
-                  'name': name,
-                  'type': type.isNotEmpty ? type : 'Certificate',
-                  'uploadDate': uploadDate.isNotEmpty
-                      ? uploadDate
-                      : 'Not specified',
-                  'extension': inferExtensionFromInputs(name: name, url: url),
-                  if (url.isNotEmpty) 'path': url,
-                  'size': certificate['size'] is num
-                      ? (certificate['size'] as num).toInt()
-                      : 0,
-                });
-              }
-
-              if (hasValidationError) {
-                TopSnackBar.showError(
-                  parentContext,
-                  message: 'Please provide a name for each certificate.',
-                );
-                return;
-              }
-
-              if (urlValidationMessage != null) {
-                TopSnackBar.showError(
-                  parentContext,
-                  message: urlValidationMessage,
-                );
-                return;
-              }
-
-              bloc.add(
-                UpdateProfileCertificatesInlineEvent(
-                  certificates: sanitizedCertificates,
-                ),
-              );
-            }
-          }
-          if (context.mounted) {
-            Navigator.of(context).pop();
-          }
-        }
-
-        return PopScope(
-          canPop: !hasChanges,
-          onPopInvokedWithResult: (didPop, result) async {
-            if (!didPop && hasChanges) {
-              await handleClose();
-            }
-          },
-          child: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: viewInsets),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSheetHeader(
-                        context: context,
-                        title: 'Manage Certificates',
-                        onClose: handleClose,
-                      ),
-                      const SizedBox(height: AppConstants.defaultPadding),
-                      ...List.generate(certificateDrafts.length, (index) {
-                        final certificate = certificateDrafts[index];
-                        final selectedType =
-                            certificate['type']?.toString() ?? 'Certificate';
-
-                        return Container(
-                          margin: const EdgeInsets.only(
-                            bottom: AppConstants.defaultPadding,
-                          ),
-                          padding: const EdgeInsets.all(
-                            AppConstants.defaultPadding,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppConstants.backgroundColor,
-                            borderRadius: BorderRadius.circular(
-                              AppConstants.borderRadius,
-                            ),
-                            border: Border.all(color: AppConstants.borderColor),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Certificate ${index + 1}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  IconButton(
-                                    tooltip: 'Delete certificate',
-                                    icon: const Icon(
-                                      Icons.delete_outline,
-                                      color: AppConstants.errorColor,
-                                    ),
-                                    onPressed: () => removeCertificate(index),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: AppConstants.smallPadding),
-                              TextFormField(
-                                key: ValueKey('certificate_name_$index'),
-                                initialValue:
-                                    certificate['name']?.toString() ?? '',
-                                decoration: const InputDecoration(
-                                  labelText: 'Certificate Name',
-                                  border: OutlineInputBorder(),
-                                ),
-                                onChanged: (value) {
-                                  setModalState(() {
-                                    certificate['name'] = value;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: AppConstants.smallPadding),
-                              DropdownButtonFormField<String>(
-                                value: certificateTypes.contains(selectedType)
-                                    ? selectedType
-                                    : 'Certificate',
-                                items: certificateTypes
-                                    .map(
-                                      (type) => DropdownMenuItem<String>(
-                                        value: type,
-                                        child: Text(type),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (value) {
-                                  if (value == null) return;
-                                  setModalState(() {
-                                    certificate['type'] = value;
-                                  });
-                                },
-                                decoration: const InputDecoration(
-                                  labelText: 'Certificate Type',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              const SizedBox(height: AppConstants.smallPadding),
-                              TextFormField(
-                                key: ValueKey('certificate_date_$index'),
-                                initialValue:
-                                    certificate['uploadDate']?.toString() ?? '',
-                                decoration: const InputDecoration(
-                                  labelText: 'Achievement Date',
-                                  hintText: 'e.g., 10 July 2024',
-                                  border: OutlineInputBorder(),
-                                ),
-                                onChanged: (value) {
-                                  setModalState(() {
-                                    certificate['uploadDate'] = value;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: AppConstants.smallPadding),
-                              TextFormField(
-                                key: ValueKey('certificate_url_$index'),
-                                initialValue:
-                                    certificate['path']?.toString() ?? '',
-                                decoration: const InputDecoration(
-                                  labelText: 'Certificate URL (optional)',
-                                  hintText:
-                                      'https://example.com/certificate.pdf',
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.url,
-                                onChanged: (value) {
-                                  setModalState(() {
-                                    certificate['path'] = value;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: addCertificate,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Certificate'),
-                        ),
-                      ),
-                      const SizedBox(height: AppConstants.largePadding),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: hasChanges
-                              ? () {
-                                  final sanitizedCertificates =
-                                      <Map<String, dynamic>>[];
-                                  String? urlValidationMessage;
-                                  var hasValidationError = false;
-
-                                  for (final certificate in certificateDrafts) {
-                                    final name =
-                                        certificate['name']
-                                            ?.toString()
-                                            .trim() ??
-                                        '';
-                                    final type =
-                                        certificate['type']
-                                            ?.toString()
-                                            .trim() ??
-                                        '';
-                                    final uploadDate =
-                                        certificate['uploadDate']
-                                            ?.toString()
-                                            .trim() ??
-                                        '';
-                                    final url =
-                                        certificate['path']
-                                            ?.toString()
-                                            .trim() ??
-                                        '';
-
-                                    final hasAnyValue = [
-                                      name,
-                                      type,
-                                      uploadDate,
-                                      url,
-                                    ].any((value) => value.isNotEmpty);
-
-                                    if (hasAnyValue && name.isEmpty) {
-                                      hasValidationError = true;
-                                      break;
-                                    }
-
-                                    final validationMessage = validateUrl(url);
-                                    if (validationMessage != null) {
-                                      urlValidationMessage = validationMessage;
-                                      break;
-                                    }
-
-                                    if (name.isEmpty) {
-                                      continue;
-                                    }
-
-                                    sanitizedCertificates.add({
-                                      'name': name,
-                                      'type': type.isNotEmpty
-                                          ? type
-                                          : 'Certificate',
-                                      'uploadDate': uploadDate.isNotEmpty
-                                          ? uploadDate
-                                          : 'Not specified',
-                                      'extension': inferExtensionFromInputs(
-                                        name: name,
-                                        url: url,
-                                      ),
-                                      if (url.isNotEmpty) 'path': url,
-                                      'size': certificate['size'] is num
-                                          ? (certificate['size'] as num).toInt()
-                                          : 0,
-                                    });
-                                  }
-
-                                  if (hasValidationError) {
-                                    ScaffoldMessenger.of(
-                                      parentContext,
-                                    ).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Please provide a name for each certificate.',
-                                        ),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  if (urlValidationMessage != null) {
-                                    ScaffoldMessenger.of(
-                                      parentContext,
-                                    ).showSnackBar(
-                                      SnackBar(
-                                        content: Text(urlValidationMessage),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  bloc.add(
-                                    UpdateProfileCertificatesInlineEvent(
-                                      certificates: sanitizedCertificates,
-                                    ),
-                                  );
-                                  Navigator.of(context).pop();
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: hasChanges
-                                ? Colors.green
-                                : Colors.grey.shade400,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Save Changes'),
-                        ),
-                      ),
-                    ],
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Certificates',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.textPrimaryColor,
                   ),
                 ),
+                IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () => Navigator.of(parentContext).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.defaultPadding),
+            
+            // Upload Section
+            ElevatedButton.icon(
+              onPressed: () async {
+                final file = await FilePickerHelper.pickCertificate();
+                if (file != null) {
+                  // Check file size (max 10MB)
+                  if (file.size > 10 * 1024 * 1024) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        SnackBar(
+                          content: Text('File size should be less than 10MB'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  bloc.add(UploadCertificateEvent(file));
+                  Navigator.of(parentContext).pop();
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(parentContext).showSnackBar(
+                      SnackBar(
+                        content: Text('No file selected'),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: Icon(Icons.upload_file),
+              label: Text('Upload Certificate'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.secondaryColor,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppConstants.defaultPadding,
+                  vertical: AppConstants.defaultPadding,
+                ),
+                minimumSize: Size(double.infinity, 50),
               ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -4618,6 +4359,151 @@ class _EnhancedProfileDetailsViewState
           },
         );
       },
+    );
+  }
+
+  Widget _buildProfileImageEditSheet({
+    required BuildContext parentContext,
+    required ProfileBloc bloc,
+    String? currentImageUrl,
+  }) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Profile Image',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.textPrimaryColor,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(parentContext).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.defaultPadding),
+            
+            // Current Image Preview
+            Center(
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppConstants.borderColor,
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: currentImageUrl != null && currentImageUrl.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          currentImageUrl,
+                          fit: BoxFit.cover,
+                          width: 150,
+                          height: 150,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildDefaultProfileImage();
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
+                        ),
+                      )
+                    : _buildDefaultProfileImage(),
+              ),
+            ),
+            const SizedBox(height: AppConstants.defaultPadding * 2),
+            
+            // Upload Button
+            ElevatedButton.icon(
+              onPressed: () async {
+                final file = await FilePickerHelper.pickProfileImage();
+                if (file != null) {
+                  // Check file size (max 5MB)
+                  if (file.size > 5 * 1024 * 1024) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('File size should be less than 5MB'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                    return;
+                  }
+
+                  bloc.add(UploadProfileImageEvent(file));
+                  Navigator.of(parentContext).pop();
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(parentContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('No image selected'),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Upload Image'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppConstants.secondaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.defaultPadding,
+                  vertical: AppConstants.defaultPadding,
+                ),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+            const SizedBox(height: AppConstants.smallPadding),
+            
+            // Delete Button (only if image exists)
+            if (currentImageUrl != null && currentImageUrl.isNotEmpty)
+              OutlinedButton.icon(
+                onPressed: () {
+                  bloc.add(const RemoveProfileImageEvent());
+                  Navigator.of(parentContext).pop();
+                },
+                icon: const Icon(Icons.delete_outline, color: AppConstants.errorColor),
+                label: const Text(
+                  'Remove Image',
+                  style: TextStyle(color: AppConstants.errorColor),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppConstants.errorColor),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.defaultPadding,
+                    vertical: AppConstants.defaultPadding,
+                  ),
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -5371,7 +5257,7 @@ class _EnhancedProfileDetailsViewState
     );
   }
 
-  /// Certificates Content
+  /// Resume Content - Preview Only
   Widget _buildResumeContent(BuildContext context, ProfileDetailsLoaded state) {
     final resumeName = state.resumeFileName?.trim() ?? '';
     final updatedDate = state.lastResumeUpdatedDate?.trim() ?? '';
@@ -5389,6 +5275,7 @@ class _EnhancedProfileDetailsViewState
       title: 'Resume',
       fileName: resumeName,
       lastUpdated: updatedDate.isNotEmpty ? updatedDate : 'Unknown',
+      fileUrl: state.resumeDownloadUrl,
       onDownload: () => _downloadResume(context, state.resumeDownloadUrl),
     );
   }
@@ -5403,28 +5290,26 @@ class _EnhancedProfileDetailsViewState
         )
         .toList();
 
-    return Column(
-      children: [
-        // Certificates
-        if (certificates.isNotEmpty) ...[
-          ...certificates.map(
-            (cert) => _buildDocumentCard(
-              icon: _getCertificateIcon(cert['type'] ?? ''),
-              title: cert['name'] ?? 'Document',
-              fileName: cert['name'] ?? 'Document',
-              lastUpdated: cert['uploadDate'] ?? 'Unknown',
-              onDownload: () => _downloadDocument(context, cert),
-            ),
-          ),
-        ],
+    if (certificates.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.folder_outlined,
+        title: 'No Certificates Added',
+        subtitle: 'Upload your certificates to showcase achievements',
+      );
+    }
 
-        if (certificates.isEmpty)
-          _buildEmptyState(
-            icon: Icons.folder_outlined,
-            title: 'No Certificates Added',
-            subtitle: 'Upload your certificates to showcase achievements',
-          ),
-      ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: certificates.map(
+        (cert) => _buildDocumentCard(
+          icon: _getCertificateIcon(cert['type'] ?? ''),
+          title: cert['name'] ?? 'Document',
+          fileName: cert['name'] ?? 'Document',
+          lastUpdated: cert['uploadDate'] ?? 'Unknown',
+          fileUrl: cert['path']?.toString(),
+          onDownload: () => _downloadDocument(context, cert),
+        ),
+      ).toList(),
     );
   }
 
@@ -5884,57 +5769,326 @@ class _EnhancedProfileDetailsViewState
     required String lastUpdated,
     required VoidCallback onDownload,
     VoidCallback? onDelete,
+    String? fileUrl,
   }) {
+    // Check if file is an image
+    final isImage = _isImageFile(fileName);
+    final isPdf = _isPdfFile(fileName);
+    final canPreview = fileUrl != null && fileUrl.isNotEmpty;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: AppConstants.smallPadding),
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      margin: const EdgeInsets.only(bottom: AppConstants.defaultPadding),
       decoration: BoxDecoration(
         color: AppConstants.backgroundColor,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        border: Border.all(color: AppConstants.borderColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppConstants.primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppConstants.primaryColor, size: 20),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppConstants.borderColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          const SizedBox(width: AppConstants.smallPadding),
-          Expanded(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Large Preview Section
+          GestureDetector(
+            onTap: canPreview && fileUrl != null
+                ? () => _previewDocument(context, fileUrl!, fileName)
+                : null,
+            child: Container(
+              height: 280,
+              decoration: BoxDecoration(
+                color: AppConstants.primaryColor.withValues(alpha: 0.05),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  // Preview Content
+                  Center(
+                    child: canPreview && isImage && fileUrl != null
+                        ? ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(16),
+                              topRight: Radius.circular(16),
+                            ),
+                            child: Image.network(
+                              fileUrl!,
+                              width: double.infinity,
+                              height: 280,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildPreviewPlaceholder(
+                                  icon: icon,
+                                  title: title,
+                                  isPdf: isPdf,
+                                );
+                              },
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  height: 280,
+                                  color: Colors.grey[100],
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              (loadingProgress.expectedTotalBytes ?? 1)
+                                          : null,
+                                      strokeWidth: 3,
+                                      color: AppConstants.primaryColor,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : _buildPreviewPlaceholder(
+                            icon: icon,
+                            title: title,
+                            isPdf: isPdf,
+                          ),
+                  ),
+                  // Preview Overlay (for non-images)
+                  if (canPreview && !isImage)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                          ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.3),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Preview Badge
+                  if (canPreview)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isImage
+                                  ? Icons.image
+                                  : isPdf
+                                      ? Icons.picture_as_pdf
+                                      : Icons.insert_drive_file,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              isImage
+                                  ? 'Image'
+                                  : isPdf
+                                      ? 'PDF'
+                                      : 'File',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          // Content Section
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppConstants.textPrimaryColor,
-                  ),
+                // Title and Actions Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppConstants.textPrimaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 14,
+                                color: AppConstants.textSecondaryColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Updated: $lastUpdated',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppConstants.textSecondaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  'Updated: $lastUpdated',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppConstants.textSecondaryColor,
-                  ),
+                const SizedBox(height: 16),
+                // Action Buttons
+                Row(
+                  children: [
+                    // Preview Button
+                    if (canPreview && fileUrl != null)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _previewDocument(context, fileUrl!, fileName),
+                          icon: Icon(
+                            isImage ? Icons.preview : Icons.visibility,
+                            size: 18,
+                          ),
+                          label: const Text('Preview'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppConstants.secondaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (canPreview && fileUrl != null)
+                      const SizedBox(width: 12),
+                    // Download Button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onDownload,
+                        icon: const Icon(Icons.download, size: 18),
+                        label: const Text('Download'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppConstants.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Delete Button
+                    if (onDelete != null) ...[
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppConstants.errorColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: AppConstants.errorColor,
+                          ),
+                          onPressed: onDelete,
+                          tooltip: 'Delete',
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.download, color: AppConstants.primaryColor),
-            onPressed: onDownload,
-          ),
-          if (onDelete != null)
-            IconButton(
-              icon: const Icon(Icons.delete, color: AppConstants.errorColor),
-              onPressed: onDelete,
+        ],
+      ),
+    );
+  }
+
+  /// Build preview placeholder for non-image files
+  Widget _buildPreviewPlaceholder({
+    required IconData icon,
+    required String title,
+    bool isPdf = false,
+  }) {
+    return Container(
+      height: 280,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppConstants.primaryColor.withValues(alpha: 0.1),
+            AppConstants.secondaryColor.withValues(alpha: 0.1),
+          ],
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppConstants.primaryColor.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
             ),
+            child: Icon(
+              isPdf ? Icons.picture_as_pdf : icon,
+              size: 64,
+              color: AppConstants.primaryColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isPdf ? 'PDF Document' : 'Document Preview',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppConstants.textSecondaryColor,
+            ),
+          ),
         ],
       ),
     );
@@ -6491,18 +6645,152 @@ class _EnhancedProfileDetailsViewState
     }
   }
 
+  /// Check if file is an image based on extension
+  bool _isImageFile(String fileName) {
+    final ext = fileName.toLowerCase().split('.').last;
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].contains(ext);
+  }
+
+  /// Check if file is a PDF
+  bool _isPdfFile(String fileName) {
+    final ext = fileName.toLowerCase().split('.').last;
+    return ext == 'pdf';
+  }
+
+  /// Show image preview in a dialog
+  void _showImagePreview(BuildContext context, String imageUrl, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          children: [
+            // Image preview
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 300,
+                        height: 300,
+                        color: Colors.grey[300],
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 48, color: Colors.red),
+                            SizedBox(height: 8),
+                            Text('Failed to load image'),
+                          ],
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 300,
+                        height: 300,
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            // Close button
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 20),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            // Title
+            Positioned(
+              bottom: 8,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Preview document (image or PDF)
+  Future<void> _previewDocument(
+    BuildContext context,
+    String fileUrl,
+    String fileName,
+  ) async {
+    if (_isImageFile(fileName)) {
+      // Show image preview dialog
+      _showImagePreview(context, fileUrl, fileName);
+    } else if (_isPdfFile(fileName)) {
+      // Open PDF in browser
+      await _openUrl(context, fileUrl);
+    } else {
+      // For other file types, try to open in browser
+      await _openUrl(context, fileUrl);
+    }
+  }
+
   void _downloadResume(BuildContext context, String? url) {
-    final message = url != null && url.isNotEmpty
-        ? 'Opening resume: $url'
-        : 'Downloading resume...';
-    TopSnackBar.showInfo(context, message: message);
+    if (url != null && url.isNotEmpty) {
+      _openUrl(context, url);
+    } else {
+      TopSnackBar.showError(context, message: 'Resume URL not available');
+    }
   }
 
   void _downloadDocument(BuildContext context, Map<String, dynamic> document) {
-    TopSnackBar.showInfo(
-      context,
-      message: 'Downloading ${document['name'] ?? 'document'}...',
-    );
+    final url = document['path']?.toString();
+    if (url != null && url.isNotEmpty) {
+      _openUrl(context, url);
+    } else {
+      TopSnackBar.showError(
+        context,
+        message: 'Document URL not available',
+      );
+    }
   }
 
   IconData _getCertificateIcon(String type) {

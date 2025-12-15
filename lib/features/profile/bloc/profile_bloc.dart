@@ -8,6 +8,8 @@ import '../../../shared/services/api_service.dart';
 import '../../../shared/services/location_service.dart';
 import '../../../shared/services/token_storage.dart';
 import '../../../shared/services/profile_cache_service.dart';
+import '../../../shared/services/file_upload_service.dart';
+import '../../../shared/utils/file_picker_helper.dart';
 import '../../../core/utils/network_error_helper.dart';
 import '../models/student_profile.dart';
 
@@ -42,6 +44,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<RefreshProfileDataEvent>(_onRefreshProfileData);
     on<ToggleSectionEvent>(_onToggleSection);
     on<DeleteCertificateEvent>(_onDeleteCertificate);
+    on<UploadProfileImageEvent>(_onUploadProfileImage);
     on<RemoveProfileImageEvent>(_onRemoveProfileImage);
     on<UpdateJobTypeEvent>(_onUpdateJobType);
     on<UpdateExperienceLevelEvent>(_onUpdateExperienceLevel);
@@ -65,6 +68,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<SaveProfileChangesEvent>(_onSaveProfileChanges);
     on<UpdateSkillsListEvent>(_onUpdateSkillsList);
     on<SaveSkillsChangesEvent>(_onSaveSkillsChanges);
+    on<UploadResumeEvent>(_onUploadResume);
+    on<UploadCertificateEvent>(_onUploadCertificate);
   }
 
   /// Handle load profile data with caching support
@@ -288,6 +293,17 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           final userName = profile.personalInfo.userName.trim();
           final finalBio = (bioValue == userName || bioValue.isEmpty) ? '' : bioValue;
 
+          // Get profile image from documents or personal_info
+          final profileImageUrl = profile.documents.profileImage ?? 
+                                  profile.personalInfo.profileImage;
+          
+          profileImagePath = profileImageUrl?.isNotEmpty == true 
+              ? profileImageUrl 
+              : null;
+          profileImageName = profileImagePath != null 
+              ? profileImagePath!.split('/').last 
+              : null;
+
           userProfile = {
             'id': profile.userId.toString(),
             'name': profile.personalInfo.userName,
@@ -299,7 +315,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             'gender': profile.personalInfo.gender,
             'dateOfBirth': profile.personalInfo.dateOfBirth,
             'bio': finalBio,
-            'profileImage': null,
+            'profileImage': profileImagePath,
             'portfolioLink': portfolioLink ?? '',
             'linkedinUrl': linkedinUrl ?? '',
             'githubUrl': githubUrl ?? '',
@@ -321,8 +337,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             'preferredLocation': profile.personalInfo.location,
             'expectedSalary': 'Not specified',
           };
-          profileImagePath = null;
-          profileImageName = null;
 
           debugPrint(
             '✅ [ProfileBloc] Profile data loaded successfully from API',
@@ -1416,20 +1430,91 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
   }
 
+  /// Handle Profile Image Upload Event
+  Future<void> _onUploadProfileImage(
+    UploadProfileImageEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    try {
+      final currentState = state;
+      if (currentState is! ProfileDetailsLoaded) {
+        emit(ProfileError(message: 'Profile not loaded. Please refresh.'));
+        return;
+      }
+
+      // Check file size (max 5MB for images)
+      if (event.file.size > 5 * 1024 * 1024) {
+        emit(ProfileError(message: 'File size should be less than 5MB'));
+        return;
+      }
+
+      emit(UploadingFileState(fileName: event.file.name));
+
+      final fileUploadService = FileUploadService();
+      final result = await fileUploadService.uploadProfileImage(event.file);
+
+      if (result['success'] == true) {
+        final data = result['data'] as Map<String, dynamic>;
+        final imageUrl = data['profile_image_url'] as String?;
+        final fileName = data['file_name'] as String?;
+
+        emit(currentState.copyWith(
+          profileImagePath: imageUrl,
+          profileImageName: fileName,
+        ));
+
+        emit(ProfileImageUpdateSuccess(
+          imagePath: imageUrl ?? '',
+        ));
+
+        // Refresh profile data to get latest info
+        add(RefreshProfileDataEvent());
+      } else {
+        emit(ProfileError(
+          message: result['message'] ?? 'Profile image upload failed. Please try again.',
+        ));
+      }
+    } catch (e) {
+      debugPrint('🔴 [ProfileBloc] Profile image upload error: $e');
+      emit(ProfileError(message: 'Error uploading profile image: ${e.toString()}'));
+    }
+  }
+
   /// Handle remove profile image
-  void _onRemoveProfileImage(
+  Future<void> _onRemoveProfileImage(
     RemoveProfileImageEvent event,
     Emitter<ProfileState> emit,
-  ) {
-    if (state is ProfileDetailsLoaded) {
-      final currentState = state as ProfileDetailsLoaded;
+  ) async {
+    try {
+      final currentState = state;
+      if (currentState is! ProfileDetailsLoaded) {
+        emit(ProfileError(message: 'Profile not loaded. Please refresh.'));
+        return;
+      }
 
-      emit(
-        currentState.copyWith(profileImagePath: null, profileImageName: null),
-      );
+      // Call API to delete profile image
+      final result = await _apiService.deleteProfileImage();
 
-      // Emit success state
-      emit(const ProfileImageRemovedSuccess());
+      if (result['success'] == true) {
+        // Update local state
+        emit(currentState.copyWith(
+          profileImagePath: null,
+          profileImageName: null,
+        ));
+
+        // Emit success state
+        emit(const ProfileImageRemovedSuccess());
+
+        // Refresh profile data to get latest info
+        add(RefreshProfileDataEvent());
+      } else {
+        emit(ProfileError(
+          message: result['message'] ?? 'Failed to delete profile image. Please try again.',
+        ));
+      }
+    } catch (e) {
+      debugPrint('🔴 [ProfileBloc] Profile image delete error: $e');
+      emit(ProfileError(message: 'Error deleting profile image: ${e.toString()}'));
     }
   }
 
@@ -1889,6 +1974,119 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       emit(currentState.copyWith(isSaving: false));
       emit(const SkillsChangesSavedState());
+    }
+  }
+
+  /// Handle Resume Upload Event
+  Future<void> _onUploadResume(
+    UploadResumeEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    try {
+      final currentState = state;
+      if (currentState is! ProfileDetailsLoaded) {
+        emit(ProfileError(message: 'Profile not loaded. Please refresh.'));
+        return;
+      }
+
+      // Check file size (max 10MB)
+      if (event.file.size > 10 * 1024 * 1024) {
+        emit(ProfileError(message: 'File size should be less than 10MB'));
+        return;
+      }
+
+      emit(UploadingFileState(fileName: event.file.name));
+
+      final fileUploadService = FileUploadService();
+      final result = await fileUploadService.uploadResume(event.file);
+
+      if (result['success'] == true) {
+        final data = result['data'] as Map<String, dynamic>;
+        final resumeUrl = data['resume_url'] as String?;
+        final fileName = data['file_name'] as String?;
+
+        // Update state with new resume info
+        emit(currentState.copyWith(
+          resumeDownloadUrl: resumeUrl,
+          resumeFileName: fileName,
+          lastResumeUpdatedDate: DateTime.now().toIso8601String(),
+        ));
+
+        emit(ResumeUploadSuccess(
+          message: result['message'] ?? 'Resume uploaded successfully!',
+        ));
+
+        // Refresh profile data to get latest info
+        add(RefreshProfileDataEvent());
+      } else {
+        emit(ProfileError(
+          message: result['message'] ?? 'Resume upload failed. Please try again.',
+        ));
+      }
+    } catch (e) {
+      debugPrint('🔴 [ProfileBloc] Resume upload error: $e');
+      emit(ProfileError(message: 'Error uploading resume: ${e.toString()}'));
+    }
+  }
+
+  /// Handle Certificate Upload Event
+  Future<void> _onUploadCertificate(
+    UploadCertificateEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    try {
+      final currentState = state;
+      if (currentState is! ProfileDetailsLoaded) {
+        emit(ProfileError(message: 'Profile not loaded. Please refresh.'));
+        return;
+      }
+
+      // Check file size (max 10MB)
+      if (event.file.size > 10 * 1024 * 1024) {
+        emit(ProfileError(message: 'File size should be less than 10MB'));
+        return;
+      }
+
+      emit(UploadingFileState(fileName: event.file.name));
+
+      final fileUploadService = FileUploadService();
+      final result = await fileUploadService.uploadCertificate(event.file);
+
+      if (result['success'] == true) {
+        final data = result['data'] as Map<String, dynamic>;
+        final certificateUrl = data['certificate_url'] as String?;
+        final fileName = data['file_name'] as String?;
+
+        // Add certificate to current state
+        final newCertificate = {
+          'name': fileName ?? 'Certificate',
+          'type': 'Certificate',
+          'uploadDate': DateTime.now().toIso8601String(),
+          'path': certificateUrl,
+          'extension': FilePickerHelper.getFileExtension(fileName ?? ''),
+        };
+
+        final updatedCertificates = List<Map<String, dynamic>>.from(
+          currentState.certificates,
+        );
+        updatedCertificates.add(newCertificate);
+
+        emit(currentState.copyWith(certificates: updatedCertificates));
+
+        emit(CertificateUploadSuccess(
+          message: result['message'] ?? 'Certificate uploaded successfully!',
+        ));
+
+        // Refresh profile data to get latest info
+        add(RefreshProfileDataEvent());
+      } else {
+        emit(ProfileError(
+          message: result['message'] ?? 'Certificate upload failed. Please try again.',
+        ));
+      }
+    } catch (e) {
+      debugPrint('🔴 [ProfileBloc] Certificate upload error: $e');
+      emit(ProfileError(message: 'Error uploading certificate: ${e.toString()}'));
     }
   }
 

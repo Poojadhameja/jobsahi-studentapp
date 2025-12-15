@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:file_picker/file_picker.dart';
 
 /// Profile events
 abstract class ProfileEvent extends Equatable {
@@ -8,7 +9,7 @@ abstract class ProfileEvent extends Equatable {
 /// Load profile data event
 class LoadProfileDataEvent extends ProfileEvent {
   final bool forceRefresh;
-  
+
   const LoadProfileDataEvent({this.forceRefresh = false});
 
   @override
@@ -195,14 +196,14 @@ class UpdateProfileContactInlineEvent extends ProfileEvent {
 
   @override
   List<Object?> get props => [
-        email,
-        phone,
-        location,
-        gender,
-        dateOfBirth,
-        contactEmail,
-        contactPhone,
-      ];
+    email,
+    phone,
+    location,
+    gender,
+    dateOfBirth,
+    contactEmail,
+    contactPhone,
+  ];
 }
 
 /// Inline general information update event
@@ -228,9 +229,7 @@ class UpdateProfileGeneralInfoInlineEvent extends ProfileEvent {
 class UpdateProfileSocialLinksInlineEvent extends ProfileEvent {
   final List<Map<String, dynamic>> socialLinks;
 
-  const UpdateProfileSocialLinksInlineEvent({
-    required this.socialLinks,
-  });
+  const UpdateProfileSocialLinksInlineEvent({required this.socialLinks});
 
   @override
   List<Object?> get props => [socialLinks];
@@ -302,6 +301,16 @@ class DeleteCertificateEvent extends ProfileEvent {
 
   @override
   List<Object?> get props => [certificate];
+}
+
+/// Upload Profile Image Event
+class UploadProfileImageEvent extends ProfileEvent {
+  final PlatformFile file;
+
+  const UploadProfileImageEvent(this.file);
+
+  @override
+  List<Object?> get props => [file];
 }
 
 /// Remove profile image event
@@ -515,4 +524,24 @@ class SaveSkillsChangesEvent extends ProfileEvent {
 
   @override
   List<Object?> get props => [];
+}
+
+/// Upload Resume Event
+class UploadResumeEvent extends ProfileEvent {
+  final PlatformFile file;
+
+  const UploadResumeEvent(this.file);
+
+  @override
+  List<Object?> get props => [file];
+}
+
+/// Upload Certificate Event
+class UploadCertificateEvent extends ProfileEvent {
+  final PlatformFile file;
+
+  const UploadCertificateEvent(this.file);
+
+  @override
+  List<Object?> get props => [file];
 }

@@ -1024,6 +1024,44 @@ extension StudentProfileApi on ApiService {
       rethrow;
     }
   }
+
+  /// Delete profile image
+  Future<Map<String, dynamic>> deleteProfileImage() async {
+    debugPrint('🔵 [StudentProfile] Deleting profile image');
+
+    final userLoggedIn = await isLoggedIn();
+    if (!userLoggedIn) {
+      debugPrint('🔴 [StudentProfile] User not authenticated');
+      throw Exception('User must be logged in to delete profile image');
+    }
+
+    try {
+      final response = await post(AppConstants.profileImageDeleteEndpoint);
+
+      debugPrint('🔵 [StudentProfile] Delete Response Status: ${response.statusCode}');
+      debugPrint('🔵 [StudentProfile] Delete Response Data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic> && data['success'] == true) {
+          debugPrint('✅ [StudentProfile] Profile image deleted successfully');
+          return {
+            'success': true,
+            'message': data['message'] ?? 'Profile image deleted successfully',
+          };
+        } else {
+          final message = data['message'] ?? 'Failed to delete profile image';
+          debugPrint('🔴 [StudentProfile] Delete failed: $message');
+          throw Exception(message);
+        }
+      } else {
+        throw Exception('Failed to delete profile image. Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('🔴 [StudentProfile] Error deleting profile image: $e');
+      rethrow;
+    }
+  }
 }
 
 /// Student Applications API methods
