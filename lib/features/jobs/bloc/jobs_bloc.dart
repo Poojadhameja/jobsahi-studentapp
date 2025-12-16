@@ -1935,7 +1935,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
           }
 
           final resumePath = selectedProfile.documents.resume;
-          if (resumePath.isNotEmpty) {
+          if (resumePath != null && resumePath.isNotEmpty) {
             final resumeName = resumePath.split('/').last;
             resumeFile = PlatformFile(
               name: resumeName,

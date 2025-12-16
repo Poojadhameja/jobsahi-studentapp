@@ -7,7 +7,8 @@ class ProfileCacheService {
   static const String _profileDataKey = 'profile_data_cache';
   static const String _cacheTimestampKey = 'profile_cache_timestamp';
   static const String _profileImageKey = 'profile_image_cache';
-  static const String _profileImageTimestampKey = 'profile_image_cache_timestamp';
+  static const String _profileImageTimestampKey =
+      'profile_image_cache_timestamp';
 
   static ProfileCacheService? _instance;
   static ProfileCacheService get instance =>
@@ -41,6 +42,7 @@ class ProfileCacheService {
     String? lastResumeUpdatedDate,
     int? resumeFileSize,
     String? resumeDownloadUrl,
+    String? baseUrl,
   }) async {
     try {
       final prefs = await _getPrefs();
@@ -57,6 +59,7 @@ class ProfileCacheService {
         'lastResumeUpdatedDate': lastResumeUpdatedDate,
         'resumeFileSize': resumeFileSize,
         'resumeDownloadUrl': resumeDownloadUrl,
+        'baseUrl': baseUrl,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
       final jsonString = jsonEncode(data);
@@ -97,8 +100,11 @@ class ProfileCacheService {
     }
   }
 
-  /// Check if cache is valid (less than specified hours old)
-  Future<bool> isCacheValid({int maxAgeHours = 24}) async {
+  /// Check if cache is valid (less than specified hours old and same baseUrl)
+  Future<bool> isCacheValid({
+    int maxAgeHours = 24,
+    String? currentBaseUrl,
+  }) async {
     try {
       final timestamp = await getCacheTimestamp();
       if (timestamp == null) return false;
@@ -107,7 +113,24 @@ class ProfileCacheService {
       final now = DateTime.now();
       final difference = now.difference(cacheTime);
 
-      return difference.inHours < maxAgeHours;
+      // Check if cache is expired
+      if (difference.inHours >= maxAgeHours) {
+        return false;
+      }
+
+      // Check if baseUrl matches (if provided)
+      if (currentBaseUrl != null) {
+        final cachedData = await getProfileData();
+        final cachedBaseUrl = cachedData?['baseUrl'] as String?;
+        if (cachedBaseUrl != null && cachedBaseUrl != currentBaseUrl) {
+          debugPrint(
+            '⚠️ [ProfileCache] BaseUrl mismatch - Cache: $cachedBaseUrl, Current: $currentBaseUrl',
+          );
+          return false; // Cache is invalid if baseUrl changed
+        }
+      }
+
+      return true;
     } catch (e) {
       return false;
     }
@@ -196,6 +219,7 @@ class ProfileCacheService {
           lastResumeUpdatedDate: cachedData['lastResumeUpdatedDate'],
           resumeFileSize: cachedData['resumeFileSize'],
           resumeDownloadUrl: cachedData['resumeDownloadUrl'],
+          baseUrl: cachedData['baseUrl'] as String?,
         );
       }
       return false;
@@ -205,4 +229,3 @@ class ProfileCacheService {
     }
   }
 }
-

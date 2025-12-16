@@ -793,6 +793,12 @@ extension StudentProfileApi on ApiService {
   /// Requires authentication token (Bearer token)
   Future<StudentProfileResponse> getStudentProfile() async {
     debugPrint('🔵 [StudentProfile] Fetching student profile data');
+    debugPrint(
+      '🔵 [StudentProfile] Endpoint: ${AppConstants.studentProfileEndpoint}',
+    );
+    debugPrint(
+      '🔵 [StudentProfile] Full URL: ${AppConstants.baseUrl}${AppConstants.studentProfileEndpoint}',
+    );
 
     // Ensure user has a valid token before making the request
     final userLoggedIn = await isLoggedIn();
@@ -801,8 +807,14 @@ extension StudentProfileApi on ApiService {
       throw Exception('User must be logged in to view profile');
     }
 
+    debugPrint(
+      '✅ [StudentProfile] User authenticated, proceeding with API call',
+    );
+
     try {
+      debugPrint('🔵 [StudentProfile] Making GET request now...');
       final response = await get(AppConstants.studentProfileEndpoint);
+      debugPrint('✅ [StudentProfile] GET request completed');
       debugPrint(
         '🔵 [StudentProfile] API Response Status: ${response.statusCode}',
       );
@@ -1038,7 +1050,9 @@ extension StudentProfileApi on ApiService {
     try {
       final response = await post(AppConstants.profileImageDeleteEndpoint);
 
-      debugPrint('🔵 [StudentProfile] Delete Response Status: ${response.statusCode}');
+      debugPrint(
+        '🔵 [StudentProfile] Delete Response Status: ${response.statusCode}',
+      );
       debugPrint('🔵 [StudentProfile] Delete Response Data: ${response.data}');
 
       if (response.statusCode == 200) {
@@ -1055,7 +1069,9 @@ extension StudentProfileApi on ApiService {
           throw Exception(message);
         }
       } else {
-        throw Exception('Failed to delete profile image. Status: ${response.statusCode}');
+        throw Exception(
+          'Failed to delete profile image. Status: ${response.statusCode}',
+        );
       }
     } catch (e) {
       debugPrint('🔴 [StudentProfile] Error deleting profile image: $e');

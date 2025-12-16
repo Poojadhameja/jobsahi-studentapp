@@ -90,13 +90,18 @@ class ProfileHeaderCard extends StatelessWidget {
                           child: CircleAvatar(
                             radius: isCompact ? 20 : 26,
                             backgroundColor: Colors.white,
-                            child: profileImagePath != null
+                            child: profileImagePath != null &&
+                                    profileImagePath!.isNotEmpty
                                 ? ClipOval(
-                                    child: Image.asset(
+                                    child: Image.network(
                                       profileImagePath!,
                                       fit: BoxFit.cover,
                                       width: isCompact ? 40 : 52,
                                       height: isCompact ? 40 : 52,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return _buildDefaultProfileImage(isCompact);
+                                      },
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                             return _buildDefaultProfileImage(
@@ -293,13 +298,22 @@ class CompactProfileHeader extends StatelessWidget {
                 backgroundColor: AppConstants.primaryColor.withValues(
                   alpha: 0.1,
                 ),
-                child: profileImagePath != null
+                child: profileImagePath != null &&
+                        profileImagePath!.isNotEmpty
                     ? ClipOval(
-                        child: Image.asset(
+                        child: Image.network(
                           profileImagePath!,
                           fit: BoxFit.cover,
                           width: 50,
                           height: 50,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Icon(
+                              Icons.person,
+                              color: AppConstants.primaryColor,
+                              size: 25,
+                            );
+                          },
                           errorBuilder: (context, error, stackTrace) {
                             return const Icon(
                               Icons.person,

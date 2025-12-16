@@ -11,6 +11,7 @@ import '../../../shared/services/profile_cache_service.dart';
 import '../../../shared/services/file_upload_service.dart';
 import '../../../shared/utils/file_picker_helper.dart';
 import '../../../core/utils/network_error_helper.dart';
+import '../../../core/utils/app_constants.dart';
 import '../models/student_profile.dart';
 
 /// Profile BLoC
@@ -80,19 +81,47 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     try {
       // Initialize cache service
       await _cacheService.initialize();
-      
+
       // Check cache first (unless force refresh)
       Map<String, dynamic>? cachedData;
       bool useCache = false;
-      
+
       if (!event.forceRefresh) {
-        final isCacheValid = await _cacheService.isCacheValid(maxAgeHours: 24);
+        final isCacheValid = await _cacheService.isCacheValid(
+          maxAgeHours: 24,
+          currentBaseUrl: AppConstants.baseUrl,
+        );
+        debugPrint('🔵 [ProfileBloc] Cache valid check: $isCacheValid');
+        debugPrint('🔵 [ProfileBloc] Current BaseUrl: ${AppConstants.baseUrl}');
         if (isCacheValid) {
           cachedData = await _cacheService.getProfileData();
+          debugPrint(
+            '🔵 [ProfileBloc] Cached data exists: ${cachedData != null && cachedData.isNotEmpty}',
+          );
           if (cachedData != null && cachedData.isNotEmpty) {
-            useCache = true;
-            debugPrint('✅ [ProfileBloc] Using cached profile data');
-            
+            // Check if cache has resume/certificates - if not, force API call
+            final hasResume =
+                cachedData['resumeDownloadUrl'] != null &&
+                cachedData['resumeDownloadUrl'].toString().isNotEmpty;
+            final hasCertificates =
+                cachedData['certificates'] != null &&
+                (cachedData['certificates'] as List).isNotEmpty;
+
+            debugPrint(
+              '🔵 [ProfileBloc] Cache check - Resume: $hasResume, Certificates: $hasCertificates',
+            );
+
+            // If cache doesn't have resume/certificates, don't use cache - fetch from API
+            if (!hasResume && !hasCertificates) {
+              debugPrint(
+                '⚠️ [ProfileBloc] Cache missing resume/certificates - forcing API call',
+              );
+              useCache = false;
+            } else {
+              useCache = true;
+              debugPrint('✅ [ProfileBloc] Using cached profile data');
+            }
+
             // Emit cached data immediately
             emit(
               ProfileDetailsLoaded(
@@ -139,12 +168,17 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           }
         }
       }
-      
+
       // If force refresh or no cache, show loading
       if (event.forceRefresh || !useCache) {
+        debugPrint(
+          '🔵 [ProfileBloc] Will call API (forceRefresh: ${event.forceRefresh}, useCache: $useCache)',
+        );
         emit(const ProfileLoading());
+      } else {
+        debugPrint('⚠️ [ProfileBloc] Skipping API call - using cache');
       }
-      
+
       // Initialize default values
       var userProfile = Map<String, dynamic>.from(UserData.currentUser);
       var skills = List<String>.from(UserData.currentUser['skills'] ?? []);
@@ -156,7 +190,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         'expectedSalary': UserData.currentUser['expectedSalary'] ?? '',
       };
       var certificates = <Map<String, dynamic>>[];
-      
+
       String? profileImagePath = userProfile['profileImage'] as String?;
       String? profileImageName;
       String? resumeFileName = userProfile['resume_file_name'] as String?;
@@ -177,7 +211,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       try {
         debugPrint('🔵 [ProfileBloc] Calling getStudentProfile API...');
+        debugPrint(
+          '🔵 [ProfileBloc] API Endpoint: ${AppConstants.baseUrl}${AppConstants.studentProfileEndpoint}',
+        );
+        debugPrint('🔵 [ProfileBloc] Making GET request...');
+
         final studentProfileResponse = await _apiService.getStudentProfile();
+
+        debugPrint('✅ [ProfileBloc] API call successful!');
+        debugPrint('✅ [ProfileBloc] Response received');
         final profiles = studentProfileResponse.data.profiles;
 
         if (profiles.isNotEmpty) {
@@ -262,27 +304,51 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
               : <String>[];
 
           final resumePath = profile.documents.resume;
-          resumeFileName = resumePath.isNotEmpty
+          resumeFileName = (resumePath != null && resumePath.isNotEmpty)
               ? resumePath.split('/').last
               : null;
           lastResumeUpdatedDate = null; // API doesn't provide this
           resumeFileSize = 0;
-          resumeDownloadUrl = resumePath.isNotEmpty ? resumePath : null;
+          resumeDownloadUrl = (resumePath != null && resumePath.isNotEmpty)
+              ? resumePath
+              : null;
+
+          debugPrint('📄 [ProfileBloc] Resume Path: $resumePath');
+          debugPrint(
+            '📄 [ProfileBloc] Resume Download URL: $resumeDownloadUrl',
+          );
+          debugPrint('📄 [ProfileBloc] Resume File Name: $resumeFileName');
 
           certificates = [];
 
-          final certificatePath = profile.documents.certificates;
-          if (certificatePath.isNotEmpty) {
-            final certificateName = certificatePath.split('/').last;
-            certificates.add({
-              'name': certificateName,
-              'type': 'Certificate',
-              'uploadDate': '',
-              'size': 0,
-              'extension': certificateName.split('.').last,
-              'path': certificatePath,
-            });
+          // Process certificates - now it's a List<Certificate>
+          final certificatesList = profile.documents.certificates;
+          debugPrint(
+            '📜 [ProfileBloc] Certificates List Length: ${certificatesList.length}',
+          );
+          debugPrint('📜 [ProfileBloc] Certificates List: $certificatesList');
+
+          if (certificatesList.isNotEmpty) {
+            for (var cert in certificatesList) {
+              debugPrint(
+                '📜 [ProfileBloc] Processing Certificate: ${cert.name} - ${cert.url}',
+              );
+              certificates.add({
+                'name': cert.name,
+                'type': 'Certificate',
+                'uploadDate': cert.uploadedAt ?? '',
+                'size': 0,
+                'extension': cert.name.split('.').last,
+                'path': cert.url,
+                'url': cert.url, // Add URL for direct access
+              });
+            }
           }
+
+          debugPrint(
+            '📜 [ProfileBloc] Final Certificates Count: ${certificates.length}',
+          );
+          debugPrint('📜 [ProfileBloc] Final Certificates: $certificates');
 
           // Contact info
           final contactEmail = profile.contactInfo?.contactEmail ?? '';
@@ -291,23 +357,45 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           // Fix: If bio is same as user name (backend default), set it to empty
           final bioValue = profile.additionalInfo.bio.trim();
           final userName = profile.personalInfo.userName.trim();
-          final finalBio = (bioValue == userName || bioValue.isEmpty) ? '' : bioValue;
+          final finalBio = (bioValue == userName || bioValue.isEmpty)
+              ? ''
+              : bioValue;
 
           // Get profile image from documents or personal_info
-          final profileImageUrl = profile.documents.profileImage ?? 
-                                  profile.personalInfo.profileImage;
-          
-          profileImagePath = profileImageUrl?.isNotEmpty == true 
-              ? profileImageUrl 
+          final profileImageUrl =
+              profile.documents.profileImage ??
+              profile.personalInfo.profileImage;
+
+          profileImagePath = profileImageUrl?.isNotEmpty == true
+              ? profileImageUrl
               : null;
-          profileImageName = profileImagePath != null 
-              ? profileImagePath!.split('/').last 
+          profileImageName = profileImagePath != null
+              ? profileImagePath.split('/').last
               : null;
+
+          // ✅ Get name and email from API, fallback to TokenStorage if empty
+          // This ensures Google/LinkedIn login data is always displayed
+          String? apiName = profile.personalInfo.userName.trim();
+          String? apiEmail = profile.personalInfo.email.trim();
+
+          // Fallback to TokenStorage if API doesn't provide name/email
+          if (apiName.isEmpty) {
+            apiName = await _tokenStorage.getUserName();
+            debugPrint(
+              '⚠️ [ProfileBloc] Name empty in API, using TokenStorage: $apiName',
+            );
+          }
+          if (apiEmail.isEmpty) {
+            apiEmail = await _tokenStorage.getUserEmail();
+            debugPrint(
+              '⚠️ [ProfileBloc] Email empty in API, using TokenStorage: $apiEmail',
+            );
+          }
 
           userProfile = {
             'id': profile.userId.toString(),
-            'name': profile.personalInfo.userName,
-            'email': profile.personalInfo.email,
+            'name': apiName ?? '',
+            'email': apiEmail ?? '',
             'phone': profile.personalInfo.phoneNumber,
             'contactEmail': contactEmail,
             'contactPhone': contactPhone,
@@ -344,7 +432,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           debugPrint('🔵 [ProfileBloc] Skills count: ${skills.length}');
           debugPrint('🔵 [ProfileBloc] Experience count: ${experience.length}');
           loadedFromApi = true;
-          
+
           // Store in cache after successful API load
           await _cacheService.storeProfileData(
             userProfile: userProfile,
@@ -359,6 +447,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
             lastResumeUpdatedDate: lastResumeUpdatedDate,
             resumeFileSize: resumeFileSize,
             resumeDownloadUrl: resumeDownloadUrl,
+            baseUrl: AppConstants.baseUrl,
           );
           debugPrint('✅ [ProfileBloc] Profile data cached successfully');
         } else {
@@ -366,8 +455,24 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         }
       } catch (e, stackTrace) {
         debugPrint('🔴 [ProfileBloc] API call failed, using fallback data');
+        debugPrint('🔴 [ProfileBloc] Error Type: ${e.runtimeType}');
         debugPrint('🔴 [ProfileBloc] Error: $e');
+        debugPrint('🔴 [ProfileBloc] Error Message: ${e.toString()}');
         debugPrint('🔴 [ProfileBloc] StackTrace: $stackTrace');
+
+        // Check if it's a network error
+        if (e.toString().contains('SocketException') ||
+            e.toString().contains('Failed host lookup') ||
+            e.toString().contains('Connection refused')) {
+          debugPrint('🔴 [ProfileBloc] Network Error Detected!');
+        }
+
+        // Check if it's an authentication error
+        if (e.toString().contains('401') ||
+            e.toString().contains('Unauthorized') ||
+            e.toString().contains('not authenticated')) {
+          debugPrint('🔴 [ProfileBloc] Authentication Error Detected!');
+        }
       }
 
       final sectionExpansionStates = {
@@ -391,6 +496,31 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       userProfile.putIfAbsent('longitude', () => 0.0);
       userProfile.putIfAbsent('projects', () => <Map<String, dynamic>>[]);
 
+      // ✅ Final fallback to TokenStorage for name and email if they're missing or empty
+      // This ensures Google/LinkedIn login data is always displayed even if API fails
+      final storedName = await _tokenStorage.getUserName();
+      final storedEmail = await _tokenStorage.getUserEmail();
+
+      if ((userProfile['name'] == null ||
+              (userProfile['name'] as String).isEmpty) &&
+          storedName != null &&
+          storedName.isNotEmpty) {
+        userProfile['name'] = storedName;
+        debugPrint(
+          '✅ [ProfileBloc] Using name from TokenStorage: $storedName',
+        );
+      }
+
+      if ((userProfile['email'] == null ||
+              (userProfile['email'] as String).isEmpty) &&
+          storedEmail != null &&
+          storedEmail.isNotEmpty) {
+        userProfile['email'] = storedEmail;
+        debugPrint(
+          '✅ [ProfileBloc] Using email from TokenStorage: $storedEmail',
+        );
+      }
+
       // Store in cache if loaded from API (even if it failed, store what we have)
       if (loadedFromApi || event.forceRefresh) {
         await _cacheService.storeProfileData(
@@ -406,6 +536,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           lastResumeUpdatedDate: lastResumeUpdatedDate,
           resumeFileSize: resumeFileSize,
           resumeDownloadUrl: resumeDownloadUrl,
+          baseUrl: AppConstants.baseUrl,
         );
       }
 
@@ -520,7 +651,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Update skills (Note: In real app, this would be an API call)
       // UserData.userSkills = event.skills; // This is const, so we can't modify it
 
-      emit(SkillsUpdateSuccess(skills: event.skills)      );
+      emit(SkillsUpdateSuccess(skills: event.skills));
     } catch (e) {
       _handleError(e, emit, defaultMessage: 'Failed to update skills');
     }
@@ -540,7 +671,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Add education (Note: In real app, this would be an API call)
       // UserData.userEducation.add(newEducation); // This is const, so we can't modify it
 
-      emit(EducationUpdateSuccess(message: 'Education updated successfully')      );
+      emit(EducationUpdateSuccess(message: 'Education updated successfully'));
     } catch (e) {
       _handleError(e, emit, defaultMessage: 'Failed to update education');
     }
@@ -560,7 +691,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Add experience (Note: In real app, this would be an API call)
       // UserData.userExperience.add(newExperience); // This is const, so we can't modify it
 
-      emit(ExperienceUpdateSuccess(message: 'Experience updated successfully')      );
+      emit(ExperienceUpdateSuccess(message: 'Experience updated successfully'));
     } catch (e) {
       _handleError(e, emit, defaultMessage: 'Failed to update experience');
     }
@@ -582,7 +713,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       //   UserData.userExperience.removeAt(event.index);
       // }
 
-      emit(ExperienceUpdateSuccess(message: 'Experience deleted successfully')      );
+      emit(ExperienceUpdateSuccess(message: 'Experience deleted successfully'));
     } catch (e) {
       _handleError(e, emit, defaultMessage: 'Failed to delete experience');
     }
@@ -669,15 +800,13 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       final updatedState = currentState.copyWith(
         resumeFileName: sanitizedName.isNotEmpty ? sanitizedName : null,
-        lastResumeUpdatedDate: sanitizedDate.isNotEmpty
-            ? sanitizedDate
-            : null,
+        lastResumeUpdatedDate: sanitizedDate.isNotEmpty ? sanitizedDate : null,
         resumeDownloadUrl: sanitizedUrl.isNotEmpty ? sanitizedUrl : null,
         certificates: updatedCertificates,
       );
-      
+
       emit(updatedState);
-      
+
       // Update cache
       await _updateCacheFromState(updatedState);
     }
@@ -940,6 +1069,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         lastResumeUpdatedDate: state.lastResumeUpdatedDate,
         resumeFileSize: state.resumeFileSize,
         resumeDownloadUrl: state.resumeDownloadUrl,
+        baseUrl: AppConstants.baseUrl,
       );
     } catch (e) {
       debugPrint('⚠️ [ProfileBloc] Failed to update cache: $e');
@@ -975,28 +1105,31 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     // Build personal_info - backend accepts both flat and nested structure
     // Backend expects: dob OR date_of_birth in personal_info
     final dobValue = _normalizeDate(userProfile['dateOfBirth']);
-    final genderValue = (userProfile['gender']?.toString() ?? '').trim().toLowerCase();
+    final genderValue = (userProfile['gender']?.toString() ?? '')
+        .trim()
+        .toLowerCase();
     final locationValue = (userProfile['location']?.toString() ?? '').trim();
-    
+
     final personalInfo = <String, dynamic>{
       'email': userProfile['email']?.toString() ?? '',
       'user_name': userProfile['name']?.toString() ?? '',
       'phone_number': userProfile['phone']?.toString() ?? '',
     };
-    
+
     // Add optional fields only if they have values (backend only updates non-null fields)
     if (dobValue.isNotEmpty) {
       personalInfo['dob'] = dobValue; // Backend checks for 'dob' first
-      personalInfo['date_of_birth'] = dobValue; // Also send date_of_birth for compatibility
+      personalInfo['date_of_birth'] =
+          dobValue; // Also send date_of_birth for compatibility
     }
-    
+
     if (genderValue.isNotEmpty) {
       personalInfo['gender'] = genderValue;
     }
-    
+
     // Always include location (even if empty) so backend can clear it when user empties the field
     personalInfo['location'] = locationValue;
-    
+
     // Always include latitude/longitude (can be 0.0)
     personalInfo['latitude'] = latitude;
     personalInfo['longitude'] = longitude;
@@ -1119,22 +1252,22 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       'education': educationPayload,
       'experience': experiencePayload,
     };
-    
+
     // Add optional fields only if they have values
     if (projectsPayload.isNotEmpty) {
       professionalInfo['projects'] = projectsPayload;
     }
-    
+
     final jobTypeValue = (userProfile['jobType']?.toString() ?? '').trim();
     if (jobTypeValue.isNotEmpty) {
       professionalInfo['job_type'] = jobTypeValue;
     }
-    
+
     final tradeValue = (userProfile['trade']?.toString() ?? '').trim();
     if (tradeValue.isNotEmpty) {
       professionalInfo['trade'] = tradeValue;
     }
-    
+
     if (languages.isNotEmpty) {
       professionalInfo['languages'] = languages;
     }
@@ -1145,25 +1278,29 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       'personal_info': personalInfo,
       'professional_info': professionalInfo,
     };
-    
+
     // Add documents only if it has any values
     if (documents.isNotEmpty) {
       payload['documents'] = documents;
     }
-    
+
     // Always send social_links (even if empty array) - backend handles empty arrays
     payload['social_links'] = socialLinksPayload;
-    
+
     // Add additional_info only if bio has value AND meets minimum 15 letters requirement
     final bioValue = (userProfile['bio']?.toString() ?? '').trim();
     if (bioValue.isNotEmpty) {
       // Validate: bio must have at least 15 letters
       final lettersOnly = bioValue.replaceAll(RegExp(r'[^a-zA-Z]'), '');
       if (lettersOnly.length >= 15) {
-      payload['additional_info'] = {'bio': bioValue};
-        debugPrint('✅ [ProfileBloc] Bio meets requirement (${lettersOnly.length} letters), including in payload');
+        payload['additional_info'] = {'bio': bioValue};
+        debugPrint(
+          '✅ [ProfileBloc] Bio meets requirement (${lettersOnly.length} letters), including in payload',
+        );
       } else {
-        debugPrint('⚠️ [ProfileBloc] Bio has less than 15 letters (${lettersOnly.length}), not including in payload');
+        debugPrint(
+          '⚠️ [ProfileBloc] Bio has less than 15 letters (${lettersOnly.length}), not including in payload',
+        );
         // Don't include bio if it doesn't meet requirement
       }
     } else {
@@ -1171,8 +1308,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
 
     // Add contact_info if either field has a value
-    final contactEmailValue = (userProfile['contactEmail']?.toString() ?? '').trim();
-    final contactPhoneValue = (userProfile['contactPhone']?.toString() ?? '').trim();
+    final contactEmailValue = (userProfile['contactEmail']?.toString() ?? '')
+        .trim();
+    final contactPhoneValue = (userProfile['contactPhone']?.toString() ?? '')
+        .trim();
     if (contactEmailValue.isNotEmpty || contactPhoneValue.isNotEmpty) {
       final contactInfoPayload = <String, dynamic>{};
       if (contactEmailValue.isNotEmpty) {
@@ -1218,24 +1357,24 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
 
     final documents = <String, dynamic>{};
-    
+
     // Add resume only if available
     final resumeValue = state.resumeDownloadUrl?.toString() ?? '';
     if (resumeValue.isNotEmpty) {
       documents['resume'] = resumeValue;
     }
-    
+
     // Add certificates only if available
     if (certificatesValue.isNotEmpty) {
       documents['certificates'] = certificatesValue;
     }
-    
+
     // Add aadhar_number only if available (backend checks both flat and nested)
     final aadharValue = (userProfile['aadharNumber']?.toString() ?? '').trim();
     if (aadharValue.isNotEmpty) {
       documents['aadhar_number'] = aadharValue;
     }
-    
+
     return documents;
   }
 
@@ -1389,19 +1528,19 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
   String _formatErrorMessage(Object error) {
     if (error is Exception) {
-    final message = error.toString();
+      final message = error.toString();
       if (message.startsWith('Exception: ')) {
         final extracted = message.substring('Exception: '.length);
         return extracted.isEmpty ? 'An unexpected error occurred' : extracted;
       }
       return message.isEmpty ? 'An unexpected error occurred' : message;
     }
-    
+
     final message = error.toString();
     if (message.isEmpty || message == 'null') {
       return 'An unexpected error occurred';
     }
-    
+
     return message.startsWith('Exception: ')
         ? message.substring('Exception: '.length)
         : message;
@@ -1458,25 +1597,31 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         final imageUrl = data['profile_image_url'] as String?;
         final fileName = data['file_name'] as String?;
 
-        emit(currentState.copyWith(
-          profileImagePath: imageUrl,
-          profileImageName: fileName,
-        ));
+        emit(
+          currentState.copyWith(
+            profileImagePath: imageUrl,
+            profileImageName: fileName,
+          ),
+        );
 
-        emit(ProfileImageUpdateSuccess(
-          imagePath: imageUrl ?? '',
-        ));
+        emit(ProfileImageUpdateSuccess(imagePath: imageUrl ?? ''));
 
         // Refresh profile data to get latest info
         add(RefreshProfileDataEvent());
       } else {
-        emit(ProfileError(
-          message: result['message'] ?? 'Profile image upload failed. Please try again.',
-        ));
+        emit(
+          ProfileError(
+            message:
+                result['message'] ??
+                'Profile image upload failed. Please try again.',
+          ),
+        );
       }
     } catch (e) {
       debugPrint('🔴 [ProfileBloc] Profile image upload error: $e');
-      emit(ProfileError(message: 'Error uploading profile image: ${e.toString()}'));
+      emit(
+        ProfileError(message: 'Error uploading profile image: ${e.toString()}'),
+      );
     }
   }
 
@@ -1497,10 +1642,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       if (result['success'] == true) {
         // Update local state
-        emit(currentState.copyWith(
-          profileImagePath: null,
-          profileImageName: null,
-        ));
+        emit(
+          currentState.copyWith(profileImagePath: null, profileImageName: null),
+        );
 
         // Emit success state
         emit(const ProfileImageRemovedSuccess());
@@ -1508,13 +1652,19 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         // Refresh profile data to get latest info
         add(RefreshProfileDataEvent());
       } else {
-        emit(ProfileError(
-          message: result['message'] ?? 'Failed to delete profile image. Please try again.',
-        ));
+        emit(
+          ProfileError(
+            message:
+                result['message'] ??
+                'Failed to delete profile image. Please try again.',
+          ),
+        );
       }
     } catch (e) {
       debugPrint('🔴 [ProfileBloc] Profile image delete error: $e');
-      emit(ProfileError(message: 'Error deleting profile image: ${e.toString()}'));
+      emit(
+        ProfileError(message: 'Error deleting profile image: ${e.toString()}'),
+      );
     }
   }
 
@@ -2006,22 +2156,29 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         final fileName = data['file_name'] as String?;
 
         // Update state with new resume info
-        emit(currentState.copyWith(
-          resumeDownloadUrl: resumeUrl,
-          resumeFileName: fileName,
-          lastResumeUpdatedDate: DateTime.now().toIso8601String(),
-        ));
+        emit(
+          currentState.copyWith(
+            resumeDownloadUrl: resumeUrl,
+            resumeFileName: fileName,
+            lastResumeUpdatedDate: DateTime.now().toIso8601String(),
+          ),
+        );
 
-        emit(ResumeUploadSuccess(
-          message: result['message'] ?? 'Resume uploaded successfully!',
-        ));
+        emit(
+          ResumeUploadSuccess(
+            message: result['message'] ?? 'Resume uploaded successfully!',
+          ),
+        );
 
         // Refresh profile data to get latest info
         add(RefreshProfileDataEvent());
       } else {
-        emit(ProfileError(
-          message: result['message'] ?? 'Resume upload failed. Please try again.',
-        ));
+        emit(
+          ProfileError(
+            message:
+                result['message'] ?? 'Resume upload failed. Please try again.',
+          ),
+        );
       }
     } catch (e) {
       debugPrint('🔴 [ProfileBloc] Resume upload error: $e');
@@ -2073,30 +2230,45 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
         emit(currentState.copyWith(certificates: updatedCertificates));
 
-        emit(CertificateUploadSuccess(
-          message: result['message'] ?? 'Certificate uploaded successfully!',
-        ));
+        emit(
+          CertificateUploadSuccess(
+            message: result['message'] ?? 'Certificate uploaded successfully!',
+          ),
+        );
 
         // Refresh profile data to get latest info
         add(RefreshProfileDataEvent());
       } else {
-        emit(ProfileError(
-          message: result['message'] ?? 'Certificate upload failed. Please try again.',
-        ));
+        emit(
+          ProfileError(
+            message:
+                result['message'] ??
+                'Certificate upload failed. Please try again.',
+          ),
+        );
       }
     } catch (e) {
       debugPrint('🔴 [ProfileBloc] Certificate upload error: $e');
-      emit(ProfileError(message: 'Error uploading certificate: ${e.toString()}'));
+      emit(
+        ProfileError(message: 'Error uploading certificate: ${e.toString()}'),
+      );
     }
   }
 
   /// Helper method to handle errors and emit appropriate error state
   /// Detects network errors and formats messages accordingly
-  void _handleError(dynamic error, Emitter<ProfileState> emit, {String? defaultMessage}) {
+  void _handleError(
+    dynamic error,
+    Emitter<ProfileState> emit, {
+    String? defaultMessage,
+  }) {
     final errorMessage = NetworkErrorHelper.isNetworkError(error)
         ? NetworkErrorHelper.getNetworkErrorMessage(error)
-        : NetworkErrorHelper.extractErrorMessage(error, defaultMessage: defaultMessage);
-    
+        : NetworkErrorHelper.extractErrorMessage(
+            error,
+            defaultMessage: defaultMessage,
+          );
+
     emit(ProfileError(message: errorMessage));
   }
 }
