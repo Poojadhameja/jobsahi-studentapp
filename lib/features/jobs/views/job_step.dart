@@ -142,16 +142,83 @@ class _JobStepScreenState extends State<JobStepScreen> {
     );
   }
 
+  /// Safely extracts company logo URL from job data
+  String? _getCompanyLogo(Map<String, dynamic> job) {
+    // First try company_logo (flat string)
+    if (job['company_logo'] != null) {
+      final logo = job['company_logo'];
+      if (logo is String && logo.isNotEmpty) {
+        return logo;
+      }
+    }
+    
+    // Then try company as map with company_logo
+    final company = job['company'];
+    if (company != null && company is Map) {
+      final logo = company['company_logo'];
+      if (logo != null && logo is String && logo.isNotEmpty) {
+        return logo;
+      }
+    }
+    
+    return null;
+  }
+
   Widget _buildJobOverviewSection(Map<String, dynamic> job) {
+    final companyLogoUrl = _getCompanyLogo(job);
+    
     return Row(
       children: [
+        // Company logo or job icon
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: companyLogoUrl != null ? EdgeInsets.zero : const EdgeInsets.all(12),
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-            color: AppConstants.primaryColor.withOpacity(0.1),
+            color: companyLogoUrl != null
+                ? Colors.transparent
+                : AppConstants.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(Icons.work, color: AppConstants.primaryColor, size: 24),
+          child: companyLogoUrl != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    companyLogoUrl,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: AppConstants.primaryColor.withOpacity(0.1),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppConstants.primaryColor,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppConstants.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.work,
+                          color: AppConstants.primaryColor,
+                          size: 24,
+                        ),
+                      );
+                    },
+                  ),
+                )
+              : Icon(Icons.work, color: AppConstants.primaryColor, size: 24),
         ),
         const SizedBox(width: AppConstants.defaultPadding),
         Expanded(

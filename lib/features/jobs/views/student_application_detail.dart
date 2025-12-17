@@ -105,11 +105,16 @@ class _StudentApplicationDetailScreenState
   @override
   Widget build(BuildContext context) {
     final navigationSource = widget.navigationSource;
+    
+    // Determine title based on navigation source
+    final title = navigationSource == 'hired_jobs' 
+        ? 'Hired Job Details'
+        : 'Application Detail';
 
     return Scaffold(
       backgroundColor: AppConstants.cardBackgroundColor,
       appBar: SimpleAppBar(
-        title: 'Application Detail',
+        title: title,
         showBackButton: true,
         onBack: () => _handleBackNavigation(context, navigationSource),
       ),
@@ -218,6 +223,7 @@ class _StudentApplicationDetailScreenState
           _capitalizeFirst(title),
           _capitalizeFirst(company),
           statusLabel,
+          data,
         ),
         const SizedBox(height: AppConstants.defaultPadding),
 
@@ -238,8 +244,32 @@ class _StudentApplicationDetailScreenState
     );
   }
 
+  /// Safely extracts company logo URL from job data
+  String? _getCompanyLogo(Map<String, dynamic> data) {
+    // First try company_logo (flat string)
+    if (data['company_logo'] != null) {
+      final logo = data['company_logo'];
+      if (logo is String && logo.isNotEmpty) {
+        return logo;
+      }
+    }
+    
+    // Then try company as map with company_logo
+    final company = data['company'];
+    if (company != null && company is Map) {
+      final logo = company['company_logo'];
+      if (logo != null && logo is String && logo.isNotEmpty) {
+        return logo;
+      }
+    }
+    
+    return null;
+  }
+
   /// Builds the header card (matching interview details structure)
-  Widget _buildHeaderCard(String title, String company, String statusLabel) {
+  Widget _buildHeaderCard(String title, String company, String statusLabel, Map<String, dynamic> data) {
+    final companyLogoUrl = _getCompanyLogo(data);
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -259,16 +289,49 @@ class _StudentApplicationDetailScreenState
         children: [
           Row(
             children: [
+              // Company logo or job icon
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppConstants.successColor,
+                  color: companyLogoUrl != null
+                      ? Colors.transparent
+                      : AppConstants.successColor,
                   borderRadius: BorderRadius.circular(
                     AppConstants.smallBorderRadius,
                   ),
                 ),
-                child: const Icon(Icons.work, color: Colors.white, size: 24),
+                child: companyLogoUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.smallBorderRadius,
+                        ),
+                        child: Image.network(
+                          companyLogoUrl,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: AppConstants.successColor,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: AppConstants.successColor,
+                              child: const Icon(Icons.work, color: Colors.white, size: 24),
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(Icons.work, color: Colors.white, size: 24),
               ),
               const SizedBox(width: AppConstants.defaultPadding),
               Expanded(

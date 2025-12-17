@@ -281,6 +281,8 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       'views': job.views,
       'company_name':
           job.companyName, // Add company_name field for direct access
+      'company_logo':
+          job.companyLogo ?? '', // Add company_logo field for direct access
     };
   }
 
@@ -1356,6 +1358,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
               interviewMap['title'] = interview.jobTitle;
               interviewMap['company_name'] = interview.companyName;
               interviewMap['company'] = interview.companyName;
+              interviewMap['company_logo'] = interview.companyLogo ?? '';
 
               debugPrint(
                 '🔵 [Jobs] ✅ Added interview to Shortlisted tab - interview_id: ${interview.interviewId}, job_title: ${interview.jobTitle}, application_id: $applicationId, job_id: $jobId, isHired: $isHired, status: ${interviewMap['status']}, raw_status: ${interviewMap['raw_status']}',
@@ -1690,6 +1693,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       'title': (application['job_title']?.toString() ?? 'Job Title').trim(),
       'company_name': companyName,
       'company': companyName,
+      'company_logo': application['company_logo']?.toString() ?? '',
       'location': interviewLocation.isNotEmpty
           ? interviewLocation.trim()
           : location,
@@ -1778,6 +1782,7 @@ class JobsBloc extends Bloc<JobsEvent, JobsState> {
       'title': (hiredJob['job_title']?.toString() ?? 'Job Title').trim(),
       'company_name': companyName,
       'company': companyName,
+      'company_logo': hiredJob['company_logo']?.toString() ?? '',
       'location': location,
       'experience': experienceDisplay,
       'type': _formatJobType(jobType) ?? 'Full-time',

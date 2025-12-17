@@ -100,6 +100,7 @@ class Job {
   final String createdAt;
   final int views;
   final String? companyName; // New field for company name
+  final String? companyLogo; // Company logo URL
 
   const Job({
     required this.id,
@@ -120,6 +121,7 @@ class Job {
     required this.createdAt,
     required this.views,
     this.companyName, // Optional company name
+    this.companyLogo, // Optional company logo
   });
 
   /// Create Job from JSON
@@ -162,6 +164,8 @@ class Job {
       views: json['views'] as int? ?? 0,
       companyName:
           json['company_name'] as String?, // Parse company_name from API
+      companyLogo:
+          json['company_logo'] as String?, // Parse company_logo from API
     );
   }
 
@@ -186,6 +190,7 @@ class Job {
       'created_at': createdAt,
       'views': views,
       'company_name': companyName, // Include company_name in JSON output
+      'company_logo': companyLogo, // Include company_logo in JSON output
     };
   }
 

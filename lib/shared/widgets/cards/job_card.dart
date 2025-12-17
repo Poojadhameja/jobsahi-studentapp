@@ -272,23 +272,85 @@ class _JobCardState extends State<JobCard> with SingleTickerProviderStateMixin {
     return cardContent;
   }
 
+  /// Safely extracts company logo URL from job data
+  String? _getCompanyLogo(Map<String, dynamic> job) {
+    // First try company_logo (flat string)
+    if (job['company_logo'] != null) {
+      final logo = job['company_logo'];
+      if (logo is String && logo.isNotEmpty) {
+        return logo;
+      }
+    }
+
+    // Then try company as map with company_logo
+    final company = job['company'];
+    if (company != null && company is Map) {
+      final logo = company['company_logo'];
+      if (logo != null && logo is String && logo.isNotEmpty) {
+        return logo;
+      }
+    }
+
+    return null;
+  }
+
   /// Builds the job header section matching applied cards style (icon, title, company, deadline badge)
   Widget _buildJobHeader(Map<String, dynamic> job) {
+    final companyLogoUrl = _getCompanyLogo(job);
+
     return Stack(
       children: [
         Row(
           children: [
-            // Job icon - matching applied cards style
+            // Company logo or job icon - matching applied cards style
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppConstants.successColor,
+                color: companyLogoUrl != null
+                    ? Colors.transparent
+                    : AppConstants.successColor,
                 borderRadius: BorderRadius.circular(
                   AppConstants.smallBorderRadius,
                 ),
               ),
-              child: const Icon(Icons.work, color: Colors.white, size: 24),
+              child: companyLogoUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.smallBorderRadius,
+                      ),
+                      child: Image.network(
+                        companyLogoUrl,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: AppConstants.successColor,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: AppConstants.successColor,
+                            child: const Icon(
+                              Icons.work,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : const Icon(Icons.work, color: Colors.white, size: 24),
             ),
             const SizedBox(width: AppConstants.defaultPadding),
             // Job title and company - matching applied cards style

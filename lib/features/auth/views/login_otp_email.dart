@@ -25,7 +25,7 @@ class LoginOtpEmailScreen extends StatefulWidget {
 }
 
 class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
-  bool isOTPSelected = true; // false = Email selected, true = Phone selected
+  bool isOTPSelected = false; // false = Email selected, true = Phone selected (Phone hidden, default to Email)
   bool _isPasswordVisible = false;
   bool _isSubmitting = false; // Track submission state locally
 
@@ -210,26 +210,27 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
                                 ),
                                 const SizedBox(height: 20),
 
-                                /// Phone / Email toggle
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    _buildToggleButton(
-                                      "Phone",
-                                      isOTPSelected,
-                                      () {
-                                        setState(() => isOTPSelected = true);
-                                      },
-                                    ),
-                                    _buildToggleButton(
-                                      "Email",
-                                      !isOTPSelected,
-                                      () {
-                                        setState(() => isOTPSelected = false);
-                                      },
-                                    ),
-                                  ],
-                                ),
+                                /// Email only (Phone tab hidden)
+                                // Phone tab removed - only Email login available
+                                // Row(
+                                //   mainAxisAlignment: MainAxisAlignment.center,
+                                //   children: [
+                                //     _buildToggleButton(
+                                //       "Phone",
+                                //       isOTPSelected,
+                                //       () {
+                                //         setState(() => isOTPSelected = true);
+                                //       },
+                                //     ),
+                                //     _buildToggleButton(
+                                //       "Email",
+                                //       !isOTPSelected,
+                                //       () {
+                                //         setState(() => isOTPSelected = false);
+                                //       },
+                                //     ),
+                                //   ],
+                                // ),
                                 const SizedBox(height: 20),
 
                                 /// Hindi welcome text
@@ -261,10 +262,8 @@ class _LoginOtpEmailScreenState extends State<LoginOtpEmailScreen> {
                             children: [
                               const SizedBox(height: 8),
 
-                              /// Login input section
-                              isOTPSelected
-                                  ? _buildOTPLogin()
-                                  : _buildEmailLogin(),
+                              /// Login input section - Email only (Phone hidden)
+                              _buildEmailLogin(),
 
                               const SizedBox(height: 24),
 

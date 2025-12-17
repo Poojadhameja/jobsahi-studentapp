@@ -123,9 +123,7 @@ class _CourseDetailsPageViewState extends State<_CourseDetailsPageView> {
                 showBackButton: true,
                 onBack: () => _handleBackNavigation(context),
               ),
-              bottomNavigationBar: isLoading
-                  ? null
-                  : _buildEnrollButton(context, displayCourse),
+              bottomNavigationBar: null, // Enroll Now button removed
               body: isLoading
                   ? const Center(
                       child: CircularProgressIndicator(

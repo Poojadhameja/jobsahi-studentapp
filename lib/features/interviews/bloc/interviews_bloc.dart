@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'interviews_event.dart';
 import 'interviews_state.dart';
 import '../repositories/interviews_repository.dart';
-import '../models/interview_detail.dart';
 
 /// Interviews BLoC
 /// Handles all interview-related business logic
@@ -169,6 +168,7 @@ class InterviewsBloc extends Bloc<InterviewsEvent, InterviewsState> {
             'id': responseData.company.id,
             'company_name': responseData.company.companyName,
             'company_address': responseData.company.companyAddress,
+            'company_logo': responseData.company.companyLogo,
           },
         };
 

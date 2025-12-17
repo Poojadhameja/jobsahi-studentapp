@@ -178,16 +178,56 @@ class _InterviewDetailScreenState extends State<InterviewDetailScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppConstants.successColor,
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.smallBorderRadius,
-                  ),
-                ),
-                child: const Icon(Icons.work, color: Colors.white, size: 24),
+              // Company logo or job icon
+              Builder(
+                builder: (context) {
+                  // Get company logo from detail.company
+                  final companyLogoUrl = detail.company.companyLogo;
+                  
+                  return Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: companyLogoUrl != null && companyLogoUrl.isNotEmpty
+                          ? Colors.transparent
+                          : AppConstants.successColor,
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.smallBorderRadius,
+                      ),
+                    ),
+                    child: companyLogoUrl != null && companyLogoUrl.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.smallBorderRadius,
+                            ),
+                            child: Image.network(
+                              companyLogoUrl,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: AppConstants.successColor,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: AppConstants.successColor,
+                                  child: const Icon(Icons.work, color: Colors.white, size: 24),
+                                );
+                              },
+                            ),
+                          )
+                        : const Icon(Icons.work, color: Colors.white, size: 24),
+                  );
+                },
               ),
               const SizedBox(width: AppConstants.defaultPadding),
               Expanded(

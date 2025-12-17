@@ -95,18 +95,78 @@ class _AboutCompanyScreenViewState extends State<_AboutCompanyScreenView>
       child: Column(
         children: [
           // Company logo
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.business,
-              size: 40,
-              color: Color.fromARGB(255, 0, 70, 88),
-            ),
+          Builder(
+            builder: (context) {
+              // Get company logo from company map
+              final companyLogoUrl = widget.company['company_logo']?.toString() ?? 
+                                   widget.company['logo']?.toString();
+              
+              if (companyLogoUrl != null && companyLogoUrl.isNotEmpty) {
+                return Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.network(
+                      companyLogoUrl,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.white,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color.fromARGB(255, 0, 70, 88),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.white,
+                          child: Icon(
+                            Icons.business,
+                            size: 40,
+                            color: Color.fromARGB(255, 0, 70, 88),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              }
+              
+              // Fallback to icon if no logo
+              return Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  Icons.business,
+                  size: 40,
+                  color: Color.fromARGB(255, 0, 70, 88),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 12),
 

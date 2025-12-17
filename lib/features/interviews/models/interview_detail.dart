@@ -305,18 +305,21 @@ class CompanyInfo {
   final int id;
   final String companyName;
   final String companyAddress;
+  final String? companyLogo;
 
   const CompanyInfo({
     required this.id,
     required this.companyName,
     required this.companyAddress,
+    this.companyLogo,
   });
 
   factory CompanyInfo.fromJson(Map<String, dynamic> json) {
     return CompanyInfo(
       id: json['id'] as int? ?? 0,
       companyName: json['company_name'] as String? ?? '',
-      companyAddress: json['company_address'] as String? ?? '',
+      companyAddress: json['location'] as String? ?? json['company_address'] as String? ?? '',
+      companyLogo: json['company_logo'] as String?,
     );
   }
 
@@ -325,6 +328,7 @@ class CompanyInfo {
       'id': id,
       'company_name': companyName,
       'company_address': companyAddress,
+      'company_logo': companyLogo,
     };
   }
 }

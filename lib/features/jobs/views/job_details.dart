@@ -371,18 +371,60 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left side - Job icon (matching job card style)
-          Container(
-            width: 48,
-            height: 48,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppConstants.successColor,
-              borderRadius: BorderRadius.circular(
-                AppConstants.smallBorderRadius,
-              ),
-            ),
-            child: const Icon(Icons.work, color: Colors.white, size: 24),
+          // Left side - Company logo or Job icon (matching job card style)
+          Builder(
+            builder: (context) {
+              // Get company logo from companyInfo or currentJob
+              String? companyLogoUrl = companyInfo?['company_logo']?.toString();
+              if (companyLogoUrl == null || companyLogoUrl.isEmpty) {
+                companyLogoUrl = currentJob['company_logo']?.toString();
+              }
+              
+              return Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: companyLogoUrl != null && companyLogoUrl.isNotEmpty
+                      ? Colors.transparent
+                      : AppConstants.successColor,
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.smallBorderRadius,
+                  ),
+                ),
+                child: companyLogoUrl != null && companyLogoUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.smallBorderRadius,
+                        ),
+                        child: Image.network(
+                          companyLogoUrl,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: AppConstants.successColor,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: AppConstants.successColor,
+                              child: const Icon(Icons.work, color: Colors.white, size: 24),
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(Icons.work, color: Colors.white, size: 24),
+              );
+            },
           ),
           const SizedBox(width: AppConstants.defaultPadding),
           // Right side - Job details

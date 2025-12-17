@@ -100,18 +100,74 @@ class ShortlistedJobCard extends StatelessWidget {
     }
   }
 
+  /// Safely extracts company logo URL from job data
+  String? _getCompanyLogo() {
+    // First try company_logo (flat string)
+    if (jobData['company_logo'] != null) {
+      final logo = jobData['company_logo'];
+      if (logo is String && logo.isNotEmpty) {
+        return logo;
+      }
+    }
+    
+    // Then try company as map with company_logo
+    final company = jobData['company'];
+    if (company != null && company is Map) {
+      final logo = company['company_logo'];
+      if (logo != null && logo is String && logo.isNotEmpty) {
+        return logo;
+      }
+    }
+    
+    return null;
+  }
+
   Widget _buildHeader() {
+    final companyLogoUrl = _getCompanyLogo();
+    
     return Row(
       children: [
-        // Job icon - based on status
+        // Company logo or job icon - based on status
         Container(
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: AppConstants.successColor,
+            color: companyLogoUrl != null 
+                ? Colors.transparent 
+                : AppConstants.successColor,
             borderRadius: BorderRadius.circular(AppConstants.smallBorderRadius),
           ),
-          child: Icon(_getStatusIcon(status), color: Colors.white, size: 24),
+          child: companyLogoUrl != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.smallBorderRadius,
+                  ),
+                  child: Image.network(
+                    companyLogoUrl,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: AppConstants.successColor,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: AppConstants.successColor,
+                        child: Icon(_getStatusIcon(status), color: Colors.white, size: 24),
+                      );
+                    },
+                  ),
+                )
+              : Icon(_getStatusIcon(status), color: Colors.white, size: 24),
         ),
         const SizedBox(width: AppConstants.defaultPadding),
         // Job title and company - matching applied cards style

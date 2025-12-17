@@ -5,6 +5,7 @@ class Interview {
   final int? applicationId; // application_id from the interview
   final String jobTitle;
   final String companyName;
+  final String? companyLogo;
   final String scheduledAt;
   final String mode;
   final String status;
@@ -22,6 +23,7 @@ class Interview {
     this.applicationId,
     required this.jobTitle,
     required this.companyName,
+    this.companyLogo,
     required this.scheduledAt,
     required this.mode,
     required this.status,
@@ -40,11 +42,14 @@ class Interview {
     Map<String, dynamic> jobData;
     String companyName;
 
+    String? companyLogo;
+    
     if (json.containsKey('interview') && json.containsKey('job')) {
       // New nested structure
       interviewData = json['interview'] as Map<String, dynamic>? ?? {};
       jobData = json['job'] as Map<String, dynamic>? ?? {};
       companyName = json['company_name'] as String? ?? '';
+      companyLogo = json['company_logo'] as String?;
     } else {
       // Old flat structure (for backward compatibility)
       interviewData = json;
@@ -53,6 +58,7 @@ class Interview {
         'title': json['job_title'] as String? ?? '',
       };
       companyName = json['company_name'] as String? ?? '';
+      companyLogo = json['company_logo'] as String?;
     }
 
     // Extract job_id from top level (new API structure) or from job/interview data
@@ -95,6 +101,7 @@ class Interview {
           interviewData['job_title'] as String? ??
           '',
       companyName: companyName,
+      companyLogo: companyLogo,
       scheduledAt: interviewData['scheduled_at'] as String? ?? '',
       mode: interviewData['mode'] as String? ?? 'online',
       status: interviewData['status'] as String? ?? 'scheduled',
@@ -115,6 +122,7 @@ class Interview {
       'application_id': applicationId,
       'job_title': jobTitle,
       'company_name': companyName,
+      'company_logo': companyLogo,
       'scheduled_at': scheduledAt,
       'mode': mode,
       'status': status,
@@ -177,6 +185,7 @@ class Interview {
       'title': jobTitle,
       'company_name': companyName,
       'company': companyName,
+      'company_logo': companyLogo ?? '',
       'scheduled_at': scheduledAt,
       'scheduledAt': scheduledAt,
       'mode': mode,
