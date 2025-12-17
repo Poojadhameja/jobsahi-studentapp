@@ -7,6 +7,16 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+// Load keystore properties for release signing
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.jobsahi.app"
     compileSdk = flutter.compileSdkVersion
@@ -33,11 +43,26 @@ android {
         versionName = flutter.versionName
     }
 
+    // Signing configurations for release builds
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                // Keystore file is in android/ directory, so use parent directory
+                storeFile = file("../${keystoreProperties["storeFile"] as String}")
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Use release signing config for Play Store uploads
+            signingConfig = signingConfigs.getByName("release")
+            // Enable code shrinking and resource optimization for smaller APK/AAB
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 }

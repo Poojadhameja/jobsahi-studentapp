@@ -218,7 +218,7 @@ class AppConstants {
 
   /// API Endpoints
   /// Local development base URL
-  // static const String baseUrl = 'http://localhost/jobsahi-API/api/';
+  // static conflust String baseUrl = 'http://localhost/jobsahi-API/api/';
 
   /// Production server base URL
   static const String baseUrl =
