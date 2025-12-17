@@ -12,13 +12,14 @@ class FilePickerHelper {
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
         allowMultiple: false,
-        withData: false, // Don't load file data immediately (better performance)
+        withData:
+            false, // Don't load file data immediately (better performance)
         withReadStream: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.single;
-        
+
         // Check if file has valid data
         if (file.size > 0) {
           // On web, path is null but bytes are available
@@ -48,13 +49,14 @@ class FilePickerHelper {
         type: FileType.custom,
         allowedExtensions: ['pdf', 'zip', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
         allowMultiple: false,
-        withData: false, // Don't load file data immediately (better performance)
+        withData:
+            false, // Don't load file data immediately (better performance)
         withReadStream: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.single;
-        
+
         // Check if file has valid data
         if (file.size > 0) {
           // On web, path is null but bytes are available
@@ -97,13 +99,14 @@ class FilePickerHelper {
         type: FileType.custom,
         allowedExtensions: ['jpg', 'jpeg', 'png'],
         allowMultiple: false,
-        withData: false, // Don't load file data immediately (better performance)
+        withData:
+            false, // Don't load file data immediately (better performance)
         withReadStream: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
         final file = result.files.single;
-        
+
         // Check if file has valid data
         if (file.size > 0) {
           // Check file size (max 5MB)

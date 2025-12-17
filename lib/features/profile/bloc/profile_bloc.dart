@@ -506,9 +506,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           storedName != null &&
           storedName.isNotEmpty) {
         userProfile['name'] = storedName;
-        debugPrint(
-          '✅ [ProfileBloc] Using name from TokenStorage: $storedName',
-        );
+        debugPrint('✅ [ProfileBloc] Using name from TokenStorage: $storedName');
       }
 
       if ((userProfile['email'] == null ||
