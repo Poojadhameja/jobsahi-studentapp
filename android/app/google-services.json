@@ -12,7 +12,16 @@
           "package_name": "com.jobsahi.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "943709278646-cmbt63oc9cdsk1v0bka658fculfg4f8e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jobsahi.app",
+            "certificate_hash": "7cfbee999bce23902a71801f65ce4aa9429e8c1a"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDhiSChnoLMe5xSN7UoHUz7btHSnqJ29QQ"
