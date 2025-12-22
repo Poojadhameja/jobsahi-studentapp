@@ -65,6 +65,13 @@ class _CreateAccountScreenViewState extends State<_CreateAccountScreenView> {
           });
         }
 
+        // Reset loading state when returning to initial state (e.g., cancelled OAuth)
+        if (state is AuthInitial && _isLocallySubmitting) {
+          setState(() {
+            _isLocallySubmitting = false;
+          });
+        }
+
         // Handle specific error states with snackbars
         if (state is EmailAlreadyExistsError) {
           setState(() {

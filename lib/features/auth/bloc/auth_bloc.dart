@@ -253,8 +253,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final accessToken = await oauthService.signInWithGoogle();
 
         if (accessToken == null) {
-          // User cancelled
-          emit(const AuthError(message: 'Google sign-in was cancelled'));
+          // User cancelled - silently return without showing error
+          debugPrint('🔵 Google Sign-In cancelled by user - no error shown');
+          emit(const AuthInitial()); // Clear loading state
           return;
         }
 
@@ -280,8 +281,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final code = await oauthService.signInWithLinkedIn(context);
 
         if (code == null) {
-          // User cancelled
-          emit(const AuthError(message: 'LinkedIn sign-in was cancelled'));
+          // User cancelled - silently return without showing error
+          debugPrint('🔵 LinkedIn Sign-In cancelled by user - no error shown');
+          emit(const AuthInitial()); // Clear loading state
           return;
         }
 

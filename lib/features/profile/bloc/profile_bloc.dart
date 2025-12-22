@@ -1266,9 +1266,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       professionalInfo['trade'] = tradeValue;
     }
 
-    if (languages.isNotEmpty) {
-      professionalInfo['languages'] = languages;
-    }
+    // Always include languages (even if empty list) so backend can clear removed languages
+    professionalInfo['languages'] = languages;
 
     // Build payload - match backend structure exactly
     // Backend only updates fields that are provided (not null)
@@ -1285,7 +1284,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     // Always send social_links (even if empty array) - backend handles empty arrays
     payload['social_links'] = socialLinksPayload;
 
-    // Add additional_info only if bio has value AND meets minimum 15 letters requirement
+    // Always include additional_info with bio (even if empty) so backend can clear it when user empties the field
     final bioValue = (userProfile['bio']?.toString() ?? '').trim();
     if (bioValue.isNotEmpty) {
       // Validate: bio must have at least 15 letters
@@ -1296,13 +1295,16 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           '✅ [ProfileBloc] Bio meets requirement (${lettersOnly.length} letters), including in payload',
         );
       } else {
+        // If bio has less than 15 letters, send empty string to clear it
+        payload['additional_info'] = {'bio': ''};
         debugPrint(
-          '⚠️ [ProfileBloc] Bio has less than 15 letters (${lettersOnly.length}), not including in payload',
+          '⚠️ [ProfileBloc] Bio has less than 15 letters (${lettersOnly.length}), sending empty string to clear',
         );
-        // Don't include bio if it doesn't meet requirement
       }
     } else {
-      debugPrint('ℹ️ [ProfileBloc] Bio is empty, not including in payload');
+      // Always send bio field (even if empty) so backend can clear it
+      payload['additional_info'] = {'bio': ''};
+      debugPrint('ℹ️ [ProfileBloc] Bio is empty, sending empty string to clear in backend');
     }
 
     // Add contact_info if either field has a value

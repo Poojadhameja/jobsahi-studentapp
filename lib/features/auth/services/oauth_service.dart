@@ -99,6 +99,7 @@ class OAuthService {
   ) async {
     String? authorizationCode;
     bool isCompleted = false;
+    final ValueNotifier<bool> isLoadingNotifier = ValueNotifier<bool>(true);
 
     // Create WebViewController for webview_flutter 4.x
     final WebViewController controller = WebViewController()
@@ -145,71 +146,116 @@ class OAuthService {
           },
           onPageStarted: (String url) {
             debugPrint('🔵 LinkedIn WebView page started: $url');
+            isLoadingNotifier.value = true;
           },
           onPageFinished: (String url) {
             debugPrint('🔵 LinkedIn WebView page finished: $url');
+            isLoadingNotifier.value = false;
           },
           onWebResourceError: (WebResourceError error) {
             debugPrint('🔴 LinkedIn WebView error: ${error.description}');
+            isLoadingNotifier.value = false;
           },
         ),
-      )
-      ..loadRequest(Uri.parse(initialUrl));
+      );
 
+    // Show popup/dialog without header card
     await showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (BuildContext context) {
+      barrierColor: Colors.black54, // Semi-transparent barrier instead of black
+      builder: (BuildContext dialogContext) {
+        // Load URL after dialog is shown to prevent black flash
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          controller.loadRequest(Uri.parse(initialUrl));
+        });
+        
         return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16), // Rounded corners
+          ),
           insetPadding: const EdgeInsets.all(20),
-          child: Container(
-            width: double.infinity,
-            height: MediaQuery.of(context).size.height * 0.8,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-            child: Column(
-              children: [
-                // Header with close button
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey, width: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Continue with LinkedIn',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          isCompleted = true;
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                // WebView
-                Expanded(child: WebViewWidget(controller: controller)),
-              ],
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16), // Ensure corners are rounded
+            child: Container(
+              width: double.infinity,
+              height: MediaQuery.of(context).size.height * 0.8,
+              decoration: const BoxDecoration(
+                color: Colors.white, // White background to avoid black screen
+              ),
+              child: _LinkedInWebViewWidget(
+                controller: controller,
+                isLoadingNotifier: isLoadingNotifier,
+                onClose: () {
+                  isCompleted = true;
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
             ),
           ),
         );
       },
-    );
+    ).then((_) {
+      // Dialog was dismissed (by tapping outside or back button)
+      if (!isCompleted) {
+        isCompleted = true;
+      }
+    });
 
     if (!isCompleted) {
       return null;
     }
 
     return authorizationCode;
+  }
+}
+
+/// Widget to show LinkedIn WebView with loading indicator
+class _LinkedInWebViewWidget extends StatelessWidget {
+  final WebViewController controller;
+  final ValueNotifier<bool> isLoadingNotifier;
+  final VoidCallback onClose;
+
+  const _LinkedInWebViewWidget({
+    required this.controller,
+    required this.isLoadingNotifier,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isLoadingNotifier,
+      builder: (context, isLoading, child) {
+        return Container(
+          color: Colors.white, // Ensure white background always
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // White background layer
+              Container(
+                color: Colors.white,
+                width: double.infinity,
+                height: double.infinity,
+              ),
+              // WebView wrapped in white background
+              Container(
+                color: Colors.white,
+                child: WebViewWidget(controller: controller),
+              ),
+              // Loading indicator overlay
+              if (isLoading)
+                Container(
+                  color: Colors.white, // White background while loading
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

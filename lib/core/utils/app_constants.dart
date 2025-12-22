@@ -222,7 +222,7 @@ class AppConstants {
 
   /// Production server base URL
   static const String baseUrl =
-      'https://beige-jaguar-560051.hostingersite.com/api';
+      'https://mediumvioletred-hippopotamus-394642.hostingersite.com/api';
 
   /// Use device-to-PC LAN IP if testing on a real device
   static const String lanBaseUrl = 'http://10.167.188.31:8000/api';

@@ -14,7 +14,23 @@
       },
       "oauth_client": [
         {
-          "client_id": "943709278646-cmbt63oc9cdsk1v0bka658fculfg4f8e.apps.googleusercontent.com",
+          "client_id": "943709278646-09jvsq50p148561trdjm4hpenorifagl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jobsahi.app",
+            "certificate_hash": "30c019559213eea0e62ef2355e3e93339c1259e4"
+          }
+        },
+        {
+          "client_id": "943709278646-iir56itege4tk1hq9nr30h106u08a01d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jobsahi.app",
+            "certificate_hash": "2f52a92eba55c7e52360dd3190f9288b13153aff"
+          }
+        },
+        {
+          "client_id": "943709278646-umlmcnfj694427iv5iv3fn9gpa8fmuc8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.jobsahi.app",
