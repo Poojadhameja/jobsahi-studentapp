@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage>
 
   // Banner images from assets (default, will be loaded from cache if available)
   List<String> _bannerImages = [
-    'assets/images/banner/banner1.jpg',
+    'assets/images/banner/banner1.png',
     'assets/images/banner/banner2.jpg',
     'assets/images/banner/banner3.jpg',
     'assets/images/banner/banner4.jpg',
