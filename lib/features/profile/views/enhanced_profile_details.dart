@@ -5049,16 +5049,16 @@ class _EnhancedProfileDetailsViewState
         const SizedBox(height: AppConstants.defaultPadding),
 
         // Contact Section
-        _buildModernSectionCard(
-          context: context,
-          state: state,
-          title: 'Contact',
-          icon: Icons.contact_page_outlined,
-          section: 'contact',
-          child: _buildContactContent(state.userProfile),
-        ),
+        // _buildModernSectionCard(
+        //   context: context,
+        //   state: state,
+        //   title: 'Contact',
+        //   icon: Icons.contact_page_outlined,
+        //   section: 'contact',
+        //   child: _buildContactContent(state.userProfile),
+        // ),
 
-        const SizedBox(height: AppConstants.defaultPadding),
+        // const SizedBox(height: AppConstants.defaultPadding),
 
         // Social Links Section
         _buildModernSectionCard(

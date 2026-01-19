@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage>
 
   // Banner images from assets (default, will be loaded from cache if available)
   List<String> _bannerImages = [
-    'assets/images/banner/banner1.png',
+    'assets/images/banner/banner1.jpg',
     'assets/images/banner/banner2.jpg',
     'assets/images/banner/banner3.jpg',
     'assets/images/banner/banner4.jpg',
@@ -134,7 +134,7 @@ class _HomePageState extends State<HomePage>
 
       // Check if banners are already loaded from cache
       final isBannerLoaded = await cacheService.isBannerLoaded();
-      
+
       // Try to load from cache
       final cachedBanners = await cacheService.getBannerImages();
       if (cachedBanners != null && cachedBanners.isNotEmpty) {
@@ -146,7 +146,7 @@ class _HomePageState extends State<HomePage>
         debugPrint(
           '🔵 [Home] Loaded ${_bannerImages.length} banner images from cache',
         );
-        
+
         // If banners are already loaded, mark as preloaded to skip reload
         if (isBannerLoaded) {
           if (mounted) {
@@ -159,7 +159,9 @@ class _HomePageState extends State<HomePage>
           if (mounted && (_bannerTimer == null || !_bannerTimer!.isActive)) {
             _startBannerTimer();
           }
-          debugPrint('🔵 [Home] Banners already loaded from cache, skipping preload');
+          debugPrint(
+            '🔵 [Home] Banners already loaded from cache, skipping preload',
+          );
           return; // Skip preloading if already loaded
         }
       } else {
@@ -348,9 +350,9 @@ class _HomePageState extends State<HomePage>
         final prevLoaded = previous as HomeLoaded;
         final currLoaded = current as HomeLoaded;
         return prevLoaded.filteredJobs != currLoaded.filteredJobs ||
-               prevLoaded.recommendedJobs != currLoaded.recommendedJobs ||
-               prevLoaded.savedJobIds != currLoaded.savedJobIds ||
-               prevLoaded.showFilters != currLoaded.showFilters;
+            prevLoaded.recommendedJobs != currLoaded.recommendedJobs ||
+            prevLoaded.savedJobIds != currLoaded.savedJobIds ||
+            prevLoaded.showFilters != currLoaded.showFilters;
       },
       builder: (context, state) {
         final isLoading = state is HomeLoading;
@@ -899,15 +901,15 @@ class _HomePageState extends State<HomePage>
                       child: JobCard(
                         job: job,
                         onTap: () {
-                        if (jobId.isNotEmpty) {
-                          NavigationHelper.navigateTo(
-                            AppRoutes.jobDetailsWithId(jobId),
-                          );
-                        }
-                      },
-                      onSaveToggle: () {
-                        _handleSaveToggle(job);
-                      },
+                          if (jobId.isNotEmpty) {
+                            NavigationHelper.navigateTo(
+                              AppRoutes.jobDetailsWithId(jobId),
+                            );
+                          }
+                        },
+                        onSaveToggle: () {
+                          _handleSaveToggle(job);
+                        },
                         isSaved:
                             homeLoaded != null &&
                             homeLoaded.savedJobIds.contains(jobId),
@@ -1159,11 +1161,13 @@ class JobList extends StatelessWidget {
           child: JobCard(
             job: job,
             onTap: () {
-            if (jobId.isNotEmpty) {
-              NavigationHelper.navigateTo(AppRoutes.jobDetailsWithId(jobId));
-            }
-          },
-            onSaveToggle: onSaveToggle != null ? () => onSaveToggle!(job) : null,
+              if (jobId.isNotEmpty) {
+                NavigationHelper.navigateTo(AppRoutes.jobDetailsWithId(jobId));
+              }
+            },
+            onSaveToggle: onSaveToggle != null
+                ? () => onSaveToggle!(job)
+                : null,
             isSaved: isSaved != null ? isSaved!(job) : false,
             isFeatured: isFeatured,
           ),

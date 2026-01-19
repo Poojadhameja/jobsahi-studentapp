@@ -185,7 +185,7 @@ class AboutPage extends StatelessWidget {
             'Technical Education & Job Placement',
           ),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.location_on, 'Headquarters', 'Central India'),
+          _buildInfoRow(Icons.location_on, 'Headquarter', 'Balaghat (MP) 481001, India'),
           const SizedBox(height: 8),
           _buildInfoRow(
             Icons.school,

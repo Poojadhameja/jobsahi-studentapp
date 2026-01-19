@@ -42,117 +42,117 @@ class _TermsConditionsPageView extends StatelessWidget {
             backgroundColor: Colors.white,
             body: SafeArea(
               child: Column(
-              children: [
-                // Header section with icon, title, description and back button
-                Container(
-                  padding: const EdgeInsets.all(AppConstants.defaultPadding),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Back button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: AppConstants.textPrimaryColor,
-                        ),
-                        onPressed: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go(AppRoutes.settings);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 4),
-
-                      // Icon and title
-                      Center(
-                        child: Column(
-                          children: [
-                            const CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Color(0xFFE0E7EF),
-                              child: Icon(
-                                Icons.article_outlined,
-                                size: 45,
-                                color: AppConstants.textPrimaryColor,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              "Terms & Conditions",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: AppConstants.textPrimaryColor,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              "Satpuda Group's Jobsahi.com",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF4F789B),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-
-                // Main content
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.largePadding,
-                    ),
+                children: [
+                  // Header section with icon, title, description and back button
+                  Container(
+                    padding: const EdgeInsets.all(AppConstants.defaultPadding),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 20),
-                        _buildCardSection(
-                          child: _buildSection(
-                            title: 'Data Sharing',
-                            content:
-                                'Jobsahi आपकी व्यक्तिगत जानकारी को किसी भी अनधिकृत तृतीय पक्ष के साथ साझा नहीं करता है। आपकी जानकारी केवल सेवाओं को प्रदान करने, कानूनी अनुपालन और सुरक्षा उद्देश्यों के लिए उपयोग की जाती है।',
+                        // Back button
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: AppConstants.textPrimaryColor,
+                          ),
+                          onPressed: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go(AppRoutes.settings);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Icon and title
+                        Center(
+                          child: Column(
+                            children: [
+                              const CircleAvatar(
+                                radius: 40,
+                                backgroundColor: Color(0xFFE0E7EF),
+                                child: Icon(
+                                  Icons.article_outlined,
+                                  size: 45,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                "Terms & Conditions",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppConstants.textPrimaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                "Satpuda Group's Jobsahi.com",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF4F789B),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 20),
-                        _buildCardSection(
-                          child: _buildSection(
-                            title: 'International Transfer',
-                            content:
-                                'एक वैश्विक संगठन के रूप में, हमारी संबद्ध कंपनियों और संसाधनों के माध्यम से आपकी जानकारी विभिन्न देशों में सुरक्षित सर्वरों पर संसाधित की जा सकती है। हम लागू कानूनों के अनुरूप आवश्यक सुरक्षा उपायों का पालन करते हैं।',
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildCardSection(
-                          child: _buildSection(
-                            title: 'Third‑party Processing',
-                            content:
-                                'सेवाएं प्रदान करने के लिए, Jobsahi विश्वसनीय तृतीय‑पक्ष भागीदारों के साथ काम कर सकता है। ऐसे मामलों में, हम यह सुनिश्चित करते हैं कि वे सख्ती से गोपनीयता और सुरक्षा मानकों का पालन करें तथा डेटा का उपयोग केवल निर्दिष्ट उद्देश्य के लिए करें।',
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildCardSection(
-                          child: _buildSection(
-                            title: 'Your Consent',
-                            content:
-                                'हमारी सेवाओं का उपयोग करते समय आप इन शर्तों से सहमत होते हैं। यदि आप इन शर्तों से असहमत हैं, तो कृपया सेवाओं का उपयोग बंद करें और किसी भी प्रश्न के लिए हमसे संपर्क करें।',
-                          ),
-                        ),
-                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
-                ),
-              ],
+
+                  // Main content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.largePadding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Data Sharing',
+                              content:
+                                  'Jobsahi आपकी व्यक्तिगत जानकारी को किसी भी अनधिकृत तृतीय पक्ष के साथ साझा नहीं करता है। आपकी जानकारी केवल सेवाओं को प्रदान करने, कानूनी अनुपालन और सुरक्षा उद्देश्यों के लिए उपयोग की जाती है।',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'International Transfer',
+                              content:
+                                  'एक वैश्विक संगठन के रूप में, हमारी संबद्ध कंपनियों और संसाधनों के माध्यम से आपकी जानकारी विभिन्न देशों में सुरक्षित सर्वरों पर संसाधित की जा सकती है। हम लागू कानूनों के अनुरूप आवश्यक सुरक्षा उपायों का पालन करते हैं।',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Third‑party Processing',
+                              content:
+                                  'सेवाएं प्रदान करने के लिए, Jobsahi विश्वसनीय तृतीय‑पक्ष भागीदारों के साथ काम कर सकता है। ऐसे मामलों में, हम यह सुनिश्चित करते हैं कि वे सख्ती से गोपनीयता और सुरक्षा मानकों का पालन करें तथा डेटा का उपयोग केवल निर्दिष्ट उद्देश्य के लिए करें।',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Your Consent',
+                              content:
+                                  'हमारी सेवाओं का उपयोग करते समय आप इन शर्तों से सहमत होते हैं। यदि आप इन शर्तों से असहमत हैं, तो कृपया सेवाओं का उपयोग बंद करें और किसी भी प्रश्न के लिए हमसे संपर्क करें।',
+                            ),
+                          ),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           ),
         );
       },

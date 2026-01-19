@@ -106,12 +106,12 @@ class ContactUsPage extends StatelessWidget {
           const SizedBox(height: 16),
           _buildContactRow(Icons.email_outlined, 'Email', 'info@jobsahi.com'),
           const SizedBox(height: 8),
-          _buildContactRow(Icons.phone_outlined, 'Phone', '+91 12345 67890'),
+          _buildContactRow(Icons.phone_outlined, 'Phone', '+91 6262604110'),
           const SizedBox(height: 8),
           _buildContactRow(
             Icons.location_on_outlined,
             'Address',
-            'Central India',
+            'Satpuda Engineering College, Manjhapur, Lalburra Road, Balaghat (MP) 481001, India',
           ),
           const SizedBox(height: 8),
           _buildContactRow(
@@ -234,8 +234,8 @@ class ContactUsPage extends StatelessWidget {
           const SizedBox(height: 8),
           _buildContactRow(
             Icons.work,
-            'LinkedIn',
-            'Visit LinkedIn Profile',
+            'Youtube',
+            'Visit Youtube Channel',
             isClickable: true,
             onTap: () => _openLinkedIn(context),
           ),
@@ -247,8 +247,8 @@ class ContactUsPage extends StatelessWidget {
 
   Future<void> _openWhatsApp(BuildContext context) async {
     // Replace with your WhatsApp number (format: country code + number without +)
-    const whatsappNumber = '911234567890';
-    final whatsappUrl = 'https://wa.me/$whatsappNumber';
+    const whatsappNumber = '916262604110';
+    final whatsappUrl = 'https://chat.whatsapp.com/Fc5qWSqocPzKMqI44uK0ek?mode=ems_share_c';
 
     try {
       final uri = Uri.parse(whatsappUrl);
@@ -272,7 +272,7 @@ class ContactUsPage extends StatelessWidget {
 
   Future<void> _openFacebook(BuildContext context) async {
     // Replace with your Facebook page URL
-    const facebookUrl = 'https://www.facebook.com/jobsahi';
+    const facebookUrl = 'https://www.facebook.com/profile.php?id=61578120184793';
 
     try {
       final uri = Uri.parse(facebookUrl);
@@ -296,7 +296,7 @@ class ContactUsPage extends StatelessWidget {
 
   Future<void> _openInstagram(BuildContext context) async {
     // Replace with your Instagram profile URL
-    const instagramUrl = 'https://www.instagram.com/jobsahi';
+    const instagramUrl = 'https://www.instagram.com/jobsahiofficial';
 
     try {
       final uri = Uri.parse(instagramUrl);
@@ -320,7 +320,7 @@ class ContactUsPage extends StatelessWidget {
 
   Future<void> _openLinkedIn(BuildContext context) async {
     // Replace with your LinkedIn company/profile URL
-    const linkedInUrl = 'https://www.linkedin.com/company/jobsahi';
+    const linkedInUrl = 'https://www.youtube.com/@JobSahiSatpudaGroup';
 
     try {
       final uri = Uri.parse(linkedInUrl);
@@ -336,14 +336,14 @@ class ContactUsPage extends StatelessWidget {
       if (context.mounted) {
         TopSnackBar.showError(
           context,
-          message: 'Could not open LinkedIn. Please try again.',
+          message: 'Could not open Youtube. Please try again.',
         );
       }
     }
   }
 
   Future<void> _openWebsite(BuildContext context) async {
-    const websiteUrl = 'https://www.google.com';
+    const websiteUrl = 'https://www.jobsahi.com';
 
     try {
       final uri = Uri.parse(websiteUrl);
