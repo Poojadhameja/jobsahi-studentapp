@@ -333,36 +333,54 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                     else if (_permissionStatus == AuthorizationStatus.denied)
                       Column(
                         children: [
-                          ElevatedButton(
-                            onPressed: _isLoading ? null : _openSettings,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppConstants.primaryColor,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppConstants.defaultPadding,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.borderRadius,
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _openSettings,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppConstants.primaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppConstants.defaultPadding,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.borderRadius,
+                                  ),
                                 ),
                               ),
-                            ),
-                            child: const Text(
-                              'Open Settings',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                              child: const Text(
+                                'Open Settings',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
                           const SizedBox(height: AppConstants.defaultPadding),
-                          TextButton(
-                            onPressed: _isLoading ? null : _requestPermission,
-                            child: const Text(
-                              'Try Again',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppConstants.primaryColor,
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _requestPermission,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppConstants.primaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppConstants.defaultPadding,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.borderRadius,
+                                  ),
+                                ),
+                              ),
+                              child: const Text(
+                                'One Tap',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -403,121 +421,6 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                               ),
                       ),
 
-                    const SizedBox(height: AppConstants.largePadding * 2),
-
-                    // ==================== PREFERENCES SECTION ====================
-                    _buildSectionHeader(
-                      'Notification Preferences',
-                      Icons.settings_outlined,
-                    ),
-                    const SizedBox(height: AppConstants.defaultPadding),
-
-                    Text(
-                      'Choose what notifications you want to receive',
-                      style: AppConstants.bodyStyle.copyWith(
-                        color: const Color(0xFF666666),
-                        fontSize: 14,
-                      ),
-                    ),
-
-                    const SizedBox(height: AppConstants.largePadding),
-
-                    // Job Alerts
-                    _buildPreferenceTile(
-                      context,
-                      icon: Icons.work_outline,
-                      title: 'Job Alerts',
-                      subtitle: 'Get notified about new job opportunities',
-                      value: preferences['jobAlerts'] ?? true,
-                      onChanged: (value) {
-                        setState(() {
-                          _preferences['jobAlerts'] = value;
-                        });
-                        _savePreferences();
-                      },
-                    ),
-
-                    const SizedBox(height: AppConstants.defaultPadding),
-
-                    // Application Updates
-                    _buildPreferenceTile(
-                      context,
-                      icon: Icons.update_outlined,
-                      title: 'Application Updates',
-                      subtitle: 'Stay informed about your application status',
-                      value: preferences['applicationUpdates'] ?? true,
-                      onChanged: (value) {
-                        setState(() {
-                          _preferences['applicationUpdates'] = value;
-                        });
-                        _savePreferences();
-                      },
-                    ),
-
-                    const SizedBox(height: AppConstants.defaultPadding),
-
-                    // Messages
-                    _buildPreferenceTile(
-                      context,
-                      icon: Icons.message_outlined,
-                      title: 'Messages',
-                      subtitle: 'Receive messages from employers',
-                      value: preferences['messages'] ?? true,
-                      onChanged: (value) {
-                        setState(() {
-                          _preferences['messages'] = value;
-                        });
-                        _savePreferences();
-                      },
-                    ),
-
-                    const SizedBox(height: AppConstants.defaultPadding),
-
-                    // Promotional
-                    _buildPreferenceTile(
-                      context,
-                      icon: Icons.local_offer_outlined,
-                      title: 'Promotional',
-                      subtitle: 'Receive offers and promotional content',
-                      value: preferences['promotional'] ?? false,
-                      onChanged: (value) {
-                        setState(() {
-                          _preferences['promotional'] = value;
-                        });
-                        _savePreferences();
-                      },
-                    ),
-
-                    const SizedBox(height: AppConstants.largePadding * 2),
-
-                    // View History Button
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        context.push(AppRoutes.notificationHistory);
-                      },
-                      icon: const Icon(Icons.history, color: Colors.white),
-                      label: const Text(
-                        'View Notification History',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppConstants.primaryColor,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppConstants.defaultPadding,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.borderRadius,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: AppConstants.largePadding),
                   ],
                 ),
               ),
@@ -603,4 +506,3 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     );
   }
 }
-
