@@ -116,33 +116,105 @@ class _TermsConditionsPageView extends StatelessWidget {
                           const SizedBox(height: 20),
                           _buildCardSection(
                             child: _buildSection(
-                              title: 'Data Sharing',
+                              title: 'Acceptance of Terms',
                               content:
-                                  'Jobsahi आपकी व्यक्तिगत जानकारी को किसी भी अनधिकृत तृतीय पक्ष के साथ साझा नहीं करता है। आपकी जानकारी केवल सेवाओं को प्रदान करने, कानूनी अनुपालन और सुरक्षा उद्देश्यों के लिए उपयोग की जाती है।',
+                                  'By accessing or using JobSahi, you agree to be bound by these Terms and Conditions.',
                             ),
                           ),
                           const SizedBox(height: 20),
                           _buildCardSection(
                             child: _buildSection(
-                              title: 'International Transfer',
+                              title: 'Description of Services',
                               content:
-                                  'एक वैश्विक संगठन के रूप में, हमारी संबद्ध कंपनियों और संसाधनों के माध्यम से आपकी जानकारी विभिन्न देशों में सुरक्षित सर्वरों पर संसाधित की जा सकती है। हम लागू कानूनों के अनुरूप आवश्यक सुरक्षा उपायों का पालन करते हैं।',
+                                  'JobSahi provides a job portal platform including: job search and applications, resume upload and profile creation, profile image upload, achievement certificate upload, communication between candidates and recruiters.',
                             ),
                           ),
                           const SizedBox(height: 20),
                           _buildCardSection(
                             child: _buildSection(
-                              title: 'Third‑party Processing',
+                              title: 'User Accounts',
                               content:
-                                  'सेवाएं प्रदान करने के लिए, Jobsahi विश्वसनीय तृतीय‑पक्ष भागीदारों के साथ काम कर सकता है। ऐसे मामलों में, हम यह सुनिश्चित करते हैं कि वे सख्ती से गोपनीयता और सुरक्षा मानकों का पालन करें तथा डेटा का उपयोग केवल निर्दिष्ट उद्देश्य के लिए करें।',
+                                  'You must provide accurate details, minimum age must be 16 years, and only one account per person. You are responsible for your account activity, keep login credentials confidential, and inform us of any unauthorized access.',
                             ),
                           ),
                           const SizedBox(height: 20),
                           _buildCardSection(
                             child: _buildSection(
-                              title: 'Your Consent',
+                              title: 'Location Permission',
                               content:
-                                  'हमारी सेवाओं का उपयोग करते समय आप इन शर्तों से सहमत होते हैं। यदि आप इन शर्तों से असहमत हैं, तो कृपया सेवाओं का उपयोग बंद करें और किसी भी प्रश्न के लिए हमसे संपर्क करें।',
+                                  'Location is used only when you allow GPS access, it is used only to detect current location for jobs near you, you may deny permission and still use the app, location is not tracked continuously in background.',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'User Content',
+                              content:
+                                  'Resume/CV, profile image, achievement certificates, education and experience information. You retain ownership of uploaded content. You grant JobSahi permission to use it only for job-related services.',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Job Applications',
+                              content:
+                                  'JobSahi does not guarantee employment. Recruiters are responsible for hiring decisions.',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Privacy',
+                              content:
+                                  'Your information is handled according to our Privacy Policy.',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Data Deletion',
+                              content:
+                                  'You may delete data from your profile or request full account deletion. Email: Info@jobsahi.com, Phone: 6262604110',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Limitation of Liability',
+                              content:
+                                  'The platform is provided "as is" without warranties.',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Termination',
+                              content:
+                                  'Your account may be terminated for policy violations or misuse.',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Governing Law',
+                              content:
+                                  'These Terms are governed by the laws of India.',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Changes',
+                              content:
+                                  'Terms may be updated from time to time.',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildCardSection(
+                            child: _buildSection(
+                              title: 'Contact',
+                              content:
+                                  'Email: Info@jobsahi.com, Phone: 6262604110',
                             ),
                           ),
                           const SizedBox(height: 40),
