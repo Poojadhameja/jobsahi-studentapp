@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Internet permission for API calls -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -11,16 +12,19 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     
-    <!-- Storage permissions for file picker (Android 12 and below) -->
-    <!-- For Android 13+ (API 33+), file_picker uses SAF which doesn't need these -->
+    <!-- Storage permissions for file picker (Android 12 and below).
+         For Android 13+ (API 33+), file_picker uses SAF / system pickers
+         which don't need direct media permissions. -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
         android:maxSdkVersion="29" />
     
-    <!-- Media permissions for Android 13+ (API 33+) -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" /> -->
+    <!-- Explicitly remove READ_MEDIA_* permissions to comply with Google Play policy.
+         Android 13+ photo/video access should go through the system photo picker or SAF,
+         which this app already uses via the Flutter file_picker plugin. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
     
     <application
         android:label="Jobsahi"
