@@ -72,6 +72,11 @@ import '../../features/skill_test/views/skill_test_details.dart';
 import '../../features/skill_test/views/skill_test_instructions.dart';
 import '../../features/skill_test/views/skills_test_faq.dart';
 
+// Campus Drive screens
+import '../../features/campus_drive/views/campus_drive_list.dart';
+import '../../features/campus_drive/views/campus_drive_details.dart';
+import '../../features/campus_drive/views/application_details_screen.dart';
+
 // Import data classes
 import '../../shared/data/job_data.dart';
 
@@ -338,6 +343,11 @@ class AppRouter {
             builder: (context, state) => const LearningCenterPage(),
           ),
           GoRoute(
+            path: '/campus-drive',
+            name: 'campus-drive',
+            builder: (context, state) => const CampusDriveListScreen(),
+          ),
+          GoRoute(
             path: '/application-tracker',
             name: 'application-tracker',
             builder: (context, state) {
@@ -586,6 +596,31 @@ class AppRouter {
         path: AppRoutes.savedCourses,
         name: 'savedCourses',
         builder: (context, state) => const SavedCoursesPage(),
+      ),
+
+      // ==================== CAMPUS DRIVE ROUTES ====================
+      GoRoute(
+        path: AppRoutes.campusDriveList,
+        name: 'campusDriveList',
+        builder: (context, state) => const CampusDriveListScreen(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.campusDriveDetails,
+        name: 'campusDriveDetails',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '0';
+          return CampusDriveDetailsScreen(driveId: id);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.campusApplicationDetails,
+        name: 'campusApplicationDetails',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '0';
+          return ApplicationDetailsScreen(applicationId: id);
+        },
       ),
 
       // ==================== SKILL TEST ROUTES ====================

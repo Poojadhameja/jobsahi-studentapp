@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../core/constants/app_routes.dart';
 import 'bottom_navigation.dart';
 import 'tab_navigation_manager.dart';
 import 'custom_app_bar.dart';
@@ -92,17 +93,32 @@ class _MainScaffoldState extends State<MainScaffold> {
         return CustomAppBar(
           showMenuButton: true,
           customTitle: _buildHomeAppBarTitle(context),
+          onMenuPressed: () => _openMenuFromScreen(context, 0),
         );
       case 1:
         // Learning tab - show search bar with back and filter buttons
         return _buildLearningCenterAppBar(context, currentIndex);
       case 2:
+        // Campus Drive tab - show hamburger menu like home
+        return CustomAppBar(
+          showMenuButton: true,
+          customTitle: const Text(
+            'Campus Drive',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppConstants.textPrimaryColor,
+            ),
+          ),
+          onMenuPressed: () => _openMenuFromScreen(context, 2),
+        );
+      case 3:
         // Application Tracker tab - show title with back button
         return TabAppBar(
           title: 'Job Status',
           onBackPressed: () => _handleBackPress(context, currentIndex),
         );
-      case 3:
+      case 4:
         // Profile tab - show title with back button
         return TabAppBar(
           title: 'Profile Details',
@@ -120,10 +136,12 @@ class _MainScaffoldState extends State<MainScaffold> {
       index = 0;
     else if (path.startsWith('/learning'))
       index = 1;
-    else if (path.startsWith('/application-tracker'))
+    else if (path.startsWith('/campus-drive'))
       index = 2;
-    else if (path.startsWith('/profile'))
+    else if (path.startsWith('/application-tracker'))
       index = 3;
+    else if (path.startsWith('/profile'))
+      index = 4;
     else
       index = 0; // Default to home
 
@@ -133,6 +151,23 @@ class _MainScaffoldState extends State<MainScaffold> {
   /// Handle tab selection with stack navigation
   void _onTabSelected(BuildContext context, int index) {
     _navigationManager.switchToTab(index);
+  }
+
+  /// Open menu/profile from a specific screen and remember the source
+  void _openMenuFromScreen(BuildContext context, int sourceScreenIndex) {
+    // Store the source screen index in query parameter
+    String sourceRoute;
+    switch (sourceScreenIndex) {
+      case 0:
+        sourceRoute = 'home';
+        break;
+      case 2:
+        sourceRoute = 'campus-drive';
+        break;
+      default:
+        sourceRoute = 'home';
+    }
+    context.go('${AppRoutes.profile}?from=$sourceRoute');
   }
 
   /// Handle back press with stack navigation logic

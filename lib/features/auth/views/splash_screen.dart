@@ -130,8 +130,8 @@ class _SplashScreenViewState extends State<_SplashScreenView>
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
         if (state is AuthSuccess) {
-          // User is already logged in, navigate to home
-          await _navigateWithMinimumDelay(context, AppRoutes.home);
+          // User is already logged in, navigate to campus drive
+          await _navigateWithMinimumDelay(context, AppRoutes.campusDriveList);
         } else if (state is AuthInitial || state is AuthError) {
           // User is not logged in, check if they've seen onboarding
           final hasSeenOnboarding = await OnboardingService.instance

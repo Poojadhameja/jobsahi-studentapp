@@ -112,6 +112,19 @@ class AppRoutes {
   /// Saved courses
   static const String savedCourses = '/courses/saved';
 
+  // ==================== CAMPUS DRIVE ROUTES ====================
+  /// Campus drive list screen
+  static const String campusDriveList = '/campus-drive';
+
+  /// Campus drive details with dynamic ID
+  static const String campusDriveDetails = '/campus-drive/:id';
+
+  /// My campus applications
+  static const String myCampusApplications = '/campus-drive/my-applications';
+
+  /// Campus application details with dynamic ID
+  static const String campusApplicationDetails = '/campus-drive/application/:id';
+
   // ==================== SKILL TEST ROUTES ====================
   /// Skill test details with dynamic ID
   static const String skillTestDetails = '/skill-test/:id/details';
@@ -196,4 +209,11 @@ class AppRoutes {
 
   /// Generate interview detail route with ID
   static String interviewDetailWithId(String id) => '/interviews/details/$id';
+
+  /// Generate campus drive details route with ID
+  static String campusDriveDetailsWithId(String id) => '/campus-drive/$id';
+
+  /// Generate campus application details route with ID
+  static String campusApplicationDetailsWithId(String id) =>
+      '/campus-drive/application/$id';
 }

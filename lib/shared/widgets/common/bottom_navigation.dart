@@ -45,12 +45,18 @@ class CustomBottomNavigation extends StatelessWidget {
       ),
       BottomNavigationBarItem(
         icon: Icon(
-          currentIndex == 2 ? Icons.assignment : Icons.assignment_outlined,
+          currentIndex == 2 ? Icons.business_center : Icons.business_center_outlined,
+        ),
+        label: AppConstants.campusDriveLabel,
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(
+          currentIndex == 3 ? Icons.assignment : Icons.assignment_outlined,
         ),
         label: AppConstants.applicationsLabel,
       ),
       BottomNavigationBarItem(
-        icon: Icon(currentIndex == 3 ? Icons.person : Icons.person_outline),
+        icon: Icon(currentIndex == 4 ? Icons.person : Icons.person_outline),
         label: AppConstants.profileLabel,
       ),
     ];

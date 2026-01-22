@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/utils/app_constants.dart';
+import '../../../core/utils/application_utils.dart';
 import '../../../shared/widgets/common/no_internet_widget.dart';
 import '../../../shared/widgets/common/keyboard_dismiss_wrapper.dart';
 import '../../../shared/widgets/common/top_snackbar.dart';
@@ -49,6 +50,7 @@ class _EnhancedProfileDetailsView extends StatefulWidget {
 class _EnhancedProfileDetailsViewState
     extends State<_EnhancedProfileDetailsView> {
   ProfileDetailsLoaded? _cachedState;
+  bool _phoneDialogShowing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +136,24 @@ class _EnhancedProfileDetailsViewState
             } else {
               TopSnackBar.showSuccess(context, message: message);
             }
+          }
+
+          // Check if phone number is missing/invalid and show dialog
+          final phone = state.userProfile['phone']?.toString() ?? '';
+          final hasValidPhone = ApplicationUtils.isValidPhoneForUi(phone);
+          if (!hasValidPhone && !_phoneDialogShowing) {
+            _phoneDialogShowing = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (!mounted) return;
+              await ApplicationUtils.showPhoneRequiredDialog(context);
+              if (mounted) {
+                setState(() {
+                  _phoneDialogShowing = false;
+                });
+              } else {
+                _phoneDialogShowing = false;
+              }
+            });
           }
         }
       },

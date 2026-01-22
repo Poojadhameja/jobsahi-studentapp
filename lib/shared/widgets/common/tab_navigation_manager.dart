@@ -14,8 +14,9 @@ class TabNavigationManager extends ChangeNotifier {
   final Map<int, List<String>> _tabStacks = {
     0: ['/home'], // Home tab
     1: ['/learning'], // Learning tab
-    2: ['/application-tracker'], // Application Tracker tab
-    3: ['/profile'], // Profile tab
+    2: ['/campus-drive'], // Campus Drive tab
+    3: ['/application-tracker'], // Application Tracker tab
+    4: ['/profile'], // Profile tab
   };
 
   /// Tab visit history for back navigation
@@ -133,8 +134,10 @@ class TabNavigationManager extends ChangeNotifier {
       case 1:
         return '/learning';
       case 2:
-        return '/application-tracker';
+        return '/campus-drive';
       case 3:
+        return '/application-tracker';
+      case 4:
         return '/profile';
       default:
         return '/home';

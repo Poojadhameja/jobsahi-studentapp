@@ -28,6 +28,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Callback function when notification icon is pressed
   final VoidCallback? onNotificationPressed;
 
+  /// Callback function when menu button is pressed
+  final VoidCallback? onMenuPressed;
+
   /// Background color of the app bar
   final Color? backgroundColor;
 
@@ -40,6 +43,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.customTitle,
     this.onSearch,
     this.onNotificationPressed,
+    this.onMenuPressed,
     this.backgroundColor,
   });
 
@@ -67,10 +71,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 color: AppConstants.textPrimaryColor,
                 size: 24,
               ),
-              onPressed: () {
-                // Navigate to main profile screen with personalized job feed and job status
-                context.go(AppRoutes.profile);
-              },
+              onPressed: onMenuPressed ??
+                  () {
+                    // Default: Navigate to main profile screen
+                    context.go(AppRoutes.profile);
+                  },
               padding: const EdgeInsets.all(8),
               constraints: const BoxConstraints(
                 minWidth: 32, // Very compact width like bell icon
@@ -83,7 +88,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           (showSearchBar
               ? _buildSearchBar()
               : (title != null ? Text(title!) : null)),
-      centerTitle: customTitle == null && !showSearchBar,
+      centerTitle: true,
       actions: showNotificationIcon
           ? [
               Padding(

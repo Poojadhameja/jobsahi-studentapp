@@ -13,6 +13,8 @@ import '../../features/settings/bloc/settings_bloc.dart';
 import '../../features/skill_test/bloc/skill_test_bloc.dart';
 import '../../features/feedback/bloc/feedback_bloc.dart';
 import '../../features/feedback/repository/feedback_repository.dart';
+import '../../features/campus_drive/bloc/campus_drive_bloc.dart';
+import '../../features/campus_drive/repository/campus_drive_repository.dart';
 import '../../shared/services/api_service.dart';
 import '../../shared/services/token_storage.dart';
 import '../../shared/services/inactivity_service.dart';
@@ -76,6 +78,11 @@ void _registerBlocs() {
   sl.registerFactory<FeedbackBloc>(
     () => FeedbackBloc(feedbackRepository: sl<FeedbackRepository>()),
   );
+
+  // Campus Drive BLoCs
+  sl.registerFactory<CampusDriveBloc>(
+    () => CampusDriveBloc(repository: sl<CampusDriveRepository>()),
+  );
 }
 
 /// Register all repositories
@@ -111,11 +118,16 @@ void _registerRepositories() {
     () => FeedbackRepositoryImpl(apiService: sl<ApiService>()),
   );
 
+  // Campus Drive repositories
+  sl.registerLazySingleton<CampusDriveRepository>(
+    () => CampusDriveRepositoryImpl(apiService: sl<ApiService>()),
+  );
+
   // Message repositories
   // sl.registerLazySingleton<MessageRepository>(() => MessageRepositoryImpl());
 
   // Settings repositories
-  // sl.registerLazySingleton<SettingsRepository>(() => SettingsRepositoryImpl());
+  // sl.registerLazySingleton<SettingsRepository>() => SettingsRepositoryImpl());
 
   // Skill Test repositories
   // sl.registerLazySingleton<SkillTestRepository>(() => SkillTestRepositoryImpl());

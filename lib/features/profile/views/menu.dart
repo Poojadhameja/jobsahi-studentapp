@@ -325,10 +325,20 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
 
   /// Handle back navigation
   void _handleBackNavigation(BuildContext context) {
+    // Check if we came from a specific screen
+    final state = GoRouterState.of(context);
+    final fromScreen = state.uri.queryParameters['from'];
+    
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go(AppRoutes.home);
+      // Navigate back to the screen we came from
+      if (fromScreen == 'campus-drive') {
+        context.go(AppRoutes.campusDriveList);
+      } else {
+        // Default to home
+        context.go(AppRoutes.home);
+      }
     }
   }
 

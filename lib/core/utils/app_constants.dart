@@ -103,6 +103,7 @@ class AppConstants {
   /// Navigation Labels
   static const String homeLabel = 'Home';
   static const String coursesLabel = 'Courses';
+  static const String campusDriveLabel = 'Campus Drive';
   static const String applicationsLabel = 'Job Status';
   static const String messagesLabel = 'Messages';
   static const String profileLabel = 'Profile';
@@ -240,6 +241,8 @@ class AppConstants {
   static const String studentProfileEndpoint = '/student/profile.php';
   static const String updateStudentProfileEndpoint =
       '/student/profile_updated.php';
+  static const String updatePhoneNumberEndpoint =
+      '/student/update_phone.php';
 
   // Student Documents (Resume & Certificates) - Cloudflare R2
   static const String resumeUploadEndpoint = '/student/resume-upload.php';

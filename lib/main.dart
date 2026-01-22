@@ -14,6 +14,7 @@ import 'features/courses/bloc/courses_bloc.dart';
 import 'features/interviews/bloc/interviews_bloc.dart';
 import 'features/settings/bloc/settings_bloc.dart';
 import 'features/skill_test/bloc/skill_test_bloc.dart';
+import 'features/campus_drive/bloc/campus_drive_bloc.dart';
 import 'shared/services/api_service.dart';
 import 'shared/services/inactivity_service.dart';
 import 'shared/services/fcm_service.dart';
@@ -156,6 +157,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         BlocProvider<SettingsBloc>(create: (context) => sl<SettingsBloc>()),
         // Skill Test BLoC
         BlocProvider<SkillTestBloc>(create: (context) => sl<SkillTestBloc>()),
+        // Campus Drive BLoC
+        BlocProvider<CampusDriveBloc>(create: (context) => sl<CampusDriveBloc>()),
       ],
       child: MaterialApp.router(
         // Remove the debug banner in the top-right corner (for production apps)
